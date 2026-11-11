@@ -98,6 +98,65 @@ fn chat_custom_tool_names_cannot_also_name_a_function() {
     );
 }
 
+fn custom_tool_request_with_system_tools(
+    system_tools: serde_json::Value,
+) -> CreateChatCompletionRequest {
+    serde_json::from_value(json!({
+        "model":"test",
+        "messages":[
+            {"role":"system","content":"Tools available for this conversation.","tools":system_tools},
+            {"role":"user","content":"Run the requested code."}
+        ],
+        "tools":[{"type":"custom","custom":{"name":"run_python","format":{"type":"text"}}}]
+    }))
+    .unwrap()
+}
+
+#[test]
+fn chat_custom_tool_names_cannot_also_name_a_system_message_function() {
+    let parameters = json!({"type":"object","properties":{"code":{"type":"string"}}});
+    for system_tools in [
+        json!([{"type":"function","function":{"name":"run_python","parameters":parameters}}]),
+        json!([{"name":"run_python","parameters":parameters}]),
+        json!([{"name":"lookup"},{"type":"function","function":{"name":"run_python"}}]),
+    ] {
+        let mut request = custom_tool_request_with_system_tools(system_tools.clone());
+        let before = serde_json::to_value(&request).unwrap();
+        let error = request.normalize_custom_tools().unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("'run_python' is declared as both custom and function"),
+            "{system_tools}: {error}"
+        );
+        // Rejection happens before the request is rewritten for the template.
+        assert_eq!(
+            serde_json::to_value(&request).unwrap(),
+            before,
+            "{system_tools}"
+        );
+    }
+}
+
+#[test]
+fn chat_custom_tools_coexist_with_distinct_system_message_functions() {
+    let system_tools = json!([
+        {"type":"function","function":{"name":"lookup","parameters":{"type":"object"}}},
+        {"name":"search"}
+    ]);
+    let mut request = custom_tool_request_with_system_tools(system_tools.clone());
+    assert_eq!(
+        request.normalize_custom_tools().unwrap(),
+        vec!["run_python".to_string()]
+    );
+    // Dynamic declarations stay in their system message, in their original position.
+    let output = serde_json::to_value(&request).unwrap();
+    assert_eq!(output["messages"][0]["role"], json!("system"));
+    assert_eq!(output["messages"][0]["tools"], system_tools);
+    assert_eq!(output["tools"][0]["type"], json!("function"));
+    assert_eq!(output["tools"][0]["function"]["name"], json!("run_python"));
+}
+
 #[test]
 fn chat_tool_deferral_survives_request_round_trip() {
     for (function_flag, tool_flag, expected) in [
