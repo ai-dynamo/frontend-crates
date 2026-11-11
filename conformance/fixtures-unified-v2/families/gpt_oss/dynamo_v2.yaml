@@ -1,20 +1,20 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"4b1fba60fb8b495b06ca41efd9bfebe326583cea38519bd3b1c7f456653572cf","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e03d5d3921e05ce08181f906b360e5b48619631069d1cf448077865f7a1ec5a6","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_8482ce413bc09511
+  origin: origin_cfa08ef88487d2af
 origins:
-  origin_8482ce413bc09511:
+  origin_cfa08ef88487d2af:
     crate_version: 0.10.4
-    source_sha256: ac5c68b987193c72502db95f0a25060caf3e146d3eb44e0002cf5488e6aa6756
-    git_commit: 396aa9f6b457450151e3ebd33bc5210bc79f0e47
+    source_sha256: af76bc115e0f32b49fc77d497469f27d91b18c28996547679b4bee2d45f84ea0
+    git_commit: e63433ca1970693568cfc76b33aa15afdeafb5a0
 producers:
-  producer_a7c6dc1d5e8c826a:
+  producer_9381797fceab0187:
     captured_with:
       dynamo_v2: 0.10.4
-    capture_origin: origin_8482ce413bc09511
+    capture_origin: origin_cfa08ef88487d2af
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -131,7 +131,7 @@ contexts:
         tool_output_mode: Native
 record_defaults:
   member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml
-  producer: producer_a7c6dc1d5e8c826a
+  producer: producer_9381797fceab0187
   context: context_63bbcc8b0776f125
 records:
   tool_only:
