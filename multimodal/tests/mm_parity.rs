@@ -218,19 +218,31 @@ fn replay(fixture: &Value, case: &Value) -> dynamo_multimodal::Result<Value> {
             }
         })
         .collect();
-    // A router counts an item's whole span from its metadata alone. A family that
-    // sizes media against the whole request refuses that and plans the request.
+    // A router counts an item's whole span and its features from its metadata alone. A
+    // family that sizes media against the whole request refuses that and plans the request.
     let mut whole_request = false;
-    for (item, (features, literals)) in metadata.iter().zip(common::layout_counts(&layout)) {
-        match family.num_media_tokens(item) {
-            Ok(tokens) if tokens == features + literals => {}
-            Ok(tokens) => {
+    let counts = common::layout_counts(&layout);
+    for ((meta, item), (features, literals)) in metadata.iter().zip(&items).zip(counts) {
+        match (
+            family.num_media_tokens(meta),
+            family.num_feature_tokens(meta),
+        ) {
+            (Ok(tokens), _) if tokens != features + literals => {
                 return Err(MmError::internal(format!(
                     "num_media_tokens {tokens} != the item's {features} features + {literals} literals"
                 )));
             }
-            Err(MmError::Unsupported { .. }) => whole_request = true,
-            Err(error) => return Err(error),
+            (Ok(_), Ok(feature_tokens)) if feature_tokens != item.feature_token_count => {
+                return Err(MmError::internal(format!(
+                    "num_feature_tokens {feature_tokens} != the item's feature_token_count {}",
+                    item.feature_token_count
+                )));
+            }
+            (Ok(_), Ok(_)) => {}
+            (Err(MmError::Unsupported { .. }), Err(MmError::Unsupported { .. })) => {
+                whole_request = true
+            }
+            (Err(error), _) | (_, Err(error)) => return Err(error),
         }
     }
     if whole_request {
