@@ -226,9 +226,14 @@ struct HfTokenizerConfigJsonFormatter {
     mixins: Arc<ContextMixins>,
     supports_add_generation_prompt: bool,
     /// How message content is shaped for the template. `Auto` uses
-    /// `requires_content_arrays` and `image_placeholder_template`.
+    /// `requires_content_arrays`, per-role text-array capabilities, and
+    /// `image_placeholder_template`.
     content_format: ChatTemplateContentFormat,
     requires_content_arrays: bool,
+    /// Roles whose text parts the selected template renders without printing
+    /// their containers. Keep these arrays so the template owns separators.
+    default_native_text_array_roles: Vec<&'static str>,
+    tool_use_native_text_array_roles: Vec<&'static str>,
     /// When true, strip tool definitions from the chat template when tool_choice is "none".
     /// This prevents models from generating raw XML tool calls in the content field.
     exclude_tools_when_tool_choice_none: bool,
