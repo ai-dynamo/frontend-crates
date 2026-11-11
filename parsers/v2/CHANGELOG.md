@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.4...dynamo-parsers-v2-v0.10.5) - 2026-11-11
+
 ### Bug fixes
 
 - *(gpt-oss)* Preserve quoted control text in JSON strings and improve Harmony recovery.

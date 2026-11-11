@@ -138,11 +138,11 @@
       ]
     },
     "futureFromByFamily": {
-      "beam": "0.10.4",
-      "deepseek_v41": "0.10.4",
-      "kimi_k2": "0.10.4",
-      "kimi_k3": "0.10.4",
-      "minimax_m3": "0.10.4"
+      "beam": "0.10.5",
+      "deepseek_v41": "0.10.5",
+      "kimi_k2": "0.10.5",
+      "kimi_k3": "0.10.5",
+      "minimax_m3": "0.10.5"
     }
   },
   "nativeReviewFamilies": {

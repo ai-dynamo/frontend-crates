@@ -154,13 +154,13 @@ def test_structural_history_contract_retains_every_family_including_muse_spark()
 
 @pytest.mark.parametrize("family", sorted(HISTORY_CONTRACT["futureFromByFamily"]))
 def test_new_structural_families_preserve_unmeasured_history_and_require_current(family):
-    assert not _requires_structural_capture(family, "0.10.3")
-    _assert_structural_capture(family, "0.10.3", "older", {}, SCENARIO, "digest")
+    assert not _requires_structural_capture(family, "0.10.4")
+    _assert_structural_capture(family, "0.10.4", "older", {}, SCENARIO, "digest")
     with pytest.raises(AssertionError):
-        _assert_structural_capture(family, "0.10.3", "older", {
+        _assert_structural_capture(family, "0.10.4", "older", {
             SCENARIO: {"stimulus": {"semantic_sha256": "changed"}},
         }, SCENARIO, "digest")
-    for version in ("0.10.4", "0.10.5"):
+    for version in ("0.10.5", "0.10.6"):
         assert _requires_structural_capture(family, version)
         with pytest.raises(AssertionError, match="missing structured request"):
             _assert_structural_capture(family, version, "current-or-future", {}, SCENARIO, "digest")
