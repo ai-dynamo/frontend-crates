@@ -22,8 +22,8 @@ impl HarmonyGrammar {
                 json_schema: schema.clone(),
                 style: JsonSchemaStyle::Json,
                 any_order: false,
-                // Unbounded whitespace lets a flat schema run to max_tokens; 16
-                // still admits pretty-printed JSON.
+                // Unbounded whitespace lets a flat schema run to max_tokens. The cap
+                // is per gap: 16 admits a newline plus 2-space indent to depth 7.
                 max_whitespace_cnt: Some(16),
             })),
             // The engine consumes the turn stop after the JSON grammar completes.
