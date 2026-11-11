@@ -2059,12 +2059,15 @@ mod tests {
         let mut parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
         parser.set_in_reasoning(true);
 
+        // Inside reasoning a trailing `<` may start `</think>` (#446), so it
+        // is held for one chunk and released at EOF; the concatenated output
+        // is unchanged.
         let streamed = parser.parse_reasoning_streaming_incremental("literal<", &[]);
         let finished = parser.finish_reasoning_stream();
 
-        assert_eq!(streamed.reasoning_text, "literal<");
+        assert_eq!(streamed.reasoning_text, "literal");
         assert_eq!(streamed.normal_text, "");
-        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.reasoning_text, "<");
         assert_eq!(finished.normal_text, "");
     }
 

@@ -643,11 +643,12 @@ impl ReasoningParser for BasicReasoningParser {
                             overlap(&current_text, &self.think_start_token)
                         };
                         let ol = ol_end.max(ol_tool).max(ol_start);
-                        // A one-byte think-marker overlap remains too ambiguous
-                        // (notably a lone `<` before ordinary tool XML), but a
-                        // configured tool marker must be preserved from its
-                        // first byte or the downstream parser can never recover it.
-                        if ol_end >= 2
+                        // Hold any prefix of the close marker, even a lone `<`,
+                        // or a close split as `<` + `/think>` is never seen; a
+                        // disproved prefix is released as reasoning on the next
+                        // chunk or at EOF. A configured tool marker is likewise
+                        // kept from its first byte.
+                        if ol_end >= 1
                             || ol_start >= 2
                             || ol_tool >= 1
                             || (self.buffer_single_char_marker_prefix && ol == 1)
@@ -1440,6 +1441,82 @@ mod tests {
         let r3 = parser.parse_reasoning_streaming_incremental("ink>second</think> end", &[]);
         assert_eq!(r3.reasoning_text, "second");
         assert_eq!(r3.normal_text, " end");
+    }
+
+    #[test]
+    fn test_streaming_close_marker_split_after_lone_angle() {
+        // #446: a chunk ending in a lone `<` followed by `/think>` must still
+        // close reasoning.
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true);
+
+        let r1 = parser.parse_reasoning_streaming_incremental("<think>reasoning<", &[]);
+        assert_eq!(r1.reasoning_text, "reasoning");
+        assert_eq!(r1.normal_text, "");
+
+        let r2 = parser.parse_reasoning_streaming_incremental("/think>answer", &[]);
+        assert_eq!(r2.reasoning_text, "");
+        assert_eq!(r2.normal_text, "answer");
+
+        let finished = parser.finish_reasoning_stream();
+        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.normal_text, "");
+    }
+
+    #[test]
+    fn test_streaming_held_lone_angle_is_released_when_not_close_marker() {
+        let mut parser =
+            BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true);
+        parser.set_in_reasoning(true);
+
+        let r1 = parser.parse_reasoning_streaming_incremental("if a <", &[]);
+        assert_eq!(r1.reasoning_text, "if a ");
+
+        let r2 = parser.parse_reasoning_streaming_incremental(" b then</think>done", &[]);
+        assert_eq!(r2.reasoning_text, "< b then");
+        assert_eq!(r2.normal_text, "done");
+    }
+
+    #[test]
+    fn test_prompt_injected_reasoning_is_split_invariant() {
+        // GLM-style prompt ending in `<think>`: the completion's only boundary
+        // is `</think>`, followed by tool-call XML that must stay normal text.
+        let input = "Check the runbook first.</think>Let me look.<tool_call>bash<arg_key>command</arg_key><arg_value>ls</arg_value></tool_call>";
+        let (expected_reasoning, expected_normal) =
+            input.split_once("</think>").expect("close marker");
+
+        let collect = |chunks: Vec<&str>| {
+            let mut parser = BasicReasoningParser::new(
+                "<think>".to_string(),
+                "</think>".to_string(),
+                false,
+                true,
+            );
+            parser.set_in_reasoning(true);
+            let mut reasoning = String::new();
+            let mut normal = String::new();
+            for chunk in chunks {
+                let r = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                reasoning.push_str(&r.reasoning_text);
+                normal.push_str(&r.normal_text);
+            }
+            let r = parser.finish_reasoning_stream();
+            reasoning.push_str(&r.reasoning_text);
+            normal.push_str(&r.normal_text);
+            (reasoning, normal)
+        };
+
+        // One byte per chunk, then every two-way split.
+        let bytes: Vec<&str> = (0..input.len()).map(|i| &input[i..i + 1]).collect();
+        let splits = (1..input.len()).map(|i| vec![&input[..i], &input[i..]]);
+        for chunks in std::iter::once(bytes).chain(splits) {
+            let got = collect(chunks.clone());
+            assert_eq!(
+                got,
+                (expected_reasoning.into(), expected_normal.into()),
+                "{chunks:?}"
+            );
+        }
     }
 
     #[test] // REASONING.batch.3.a, helper
