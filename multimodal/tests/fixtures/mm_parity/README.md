@@ -12,6 +12,9 @@ side-by-side view of every table.
 | Table | Baseline | Target | Provenance |
 |---|---|---|---|
 | `glm-5.3-flash.json` | `Glm5NextProcessor` of `zai-org/GLM-5.3-Flash` | `sglang` | The target values of every case are byte-identical to `rust/sglang-processor/tests/fixtures/mm_parity/glm-5.3-flash.json` of SGLang PR #46563 at `916577f5`. `generate.py` reproduces them at SGLang `a2ffd21469`. |
+| `kimi-k3.json` | `KimiK3Processor` (remote code) of `moonshotai/Kimi-K3`, with each case's `media_proc_cfg` overrides | `sglang` | Each value is byte-identical to the former `tests/fixtures/kimi_k3/cases.json`, but for the cases of `transparent_56x56.gif`, `rgba_bitfields_56x56.bmp` and `truncated_96x80.png`, which are other files than the former ones. Kimi-K3.1-Pro gives the same cases; `../kimi_k3/generate.py` checks it. |
+| `mistral-large-4.json` | `PixtralProcessor` of `mistralai/Mistral-Large-4-1T-A52B`, both image backends | `hf` | Regenerated on corpus images from the former `tests/fixtures/pixtral/` cases (transformers 5.19.0). The HF adapter gives that fixture's values on its own inputs, except the EXIF image: `load_image` applies the orientation, which the former loader did not. The `vllm` column runs vLLM's HF `PixtralProcessor` path; vLLM's mistral-common mode, which gives other grids for some sizes, is not in the table. |
+| `nemotron-3.5-super-vl.json` | `NemotronH_Omni_Reasoning_V3Processor`, the remote code of `nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` (`trust_remote_code`), with the image processor's `max_model_len` set to the case's `context_length` | `sglang` | The target values of the 26 cases on the former inputs of `tests/fixtures/nemotron_vl/` (SGLang `a2ffd21469`) are byte-identical to that fixture. The other 7 cases use corpus images in place of generated ones, so their values are regenerated. `families/nemotron_vl.py` also writes `tests/fixtures/nemotron_vl/sizes.json`, the sizes-only SGLang requests and sweeps of `tests/nemotron_vl_planning.rs`. |
 | `qwen2-vl.json` | `Qwen2VLProcessor` of `Qwen/Qwen2-VL-2B-Instruct`, with each case's pixel bounds and its ids mapped (`ID_MAP`) | `hf` | Each digest is the SHA-256 of the former `tests/fixtures/qwen_vl/` golden file (transformers 5.12.1). `aten_upscale` uses `rgb_40x40.png` from `aten_multi`, so its pixel values are regenerated. |
 
 ## The image corpus
@@ -87,8 +90,8 @@ feature span) or `item_offsets` (all of its spans), `feature_shapes` and
 `feature_sha256`, and the family's named extras: model kwargs such as
 `image_grid_thw` or `image_sizes`, `feature_dtypes`, `mrope_sha256` and
 `mrope_delta`. Digests use the reference's byte order: `<i4` ids, `<f4`
-features, `<i8` positions. The replay compares only the fields that
-`expected` holds. `spec_shared` holds the spec fields of every
+features, `<i8` positions, bfloat16 bits as `<u2`. The replay compares only
+the fields that `expected` holds. `spec_shared` holds the spec fields of every
 case, such as a token table; the replay merges it into each case's `spec`.
 
 Unlike SGLang's tables, `expected` holds the HF baseline, not the gate: the
