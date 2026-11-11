@@ -49,17 +49,13 @@ export function classifyUnified(family, golden, observed, leakMarkers) {
   observed = canonicalUnifiedEvents(observed);
   if (sameValue(golden, observed)) return 'MATCH';
   const markers = [...leakMarkers.common, ...(getField(leakMarkers.families, family) || [])];
-  const text = (events, kind) => events.filter((event) => getField(event, 'kind') === kind).map((event) => getField(event, 'text') || '').join('');
-  const hasExcessMarker = kind => {
-    const expected = text(golden, kind), actual = text(observed, kind);
-    return markers.some(marker => marker && actual.split(marker).length > expected.split(marker).length);
-  };
-  if (['text', 'reasoning'].some(kind => hasExcessMarker(kind))) return 'LEAK';
+  if (observed.some((event) => ['text', 'reasoning'].includes(getField(event, 'kind')) && markers.some((marker) => String(getField(event, 'text') || '').includes(marker)))) return 'LEAK';
   const count = (events, kind) => events.filter((event) => getField(event, 'kind') === kind).length;
   if (count(observed, 'reasoning') < count(golden, 'reasoning')) return 'MERGE';
   const calls = (events) => events.filter((event) => getField(event, 'kind') === 'tool_call');
   const expectedCalls = calls(golden), actualCalls = calls(observed);
   if (expectedCalls.length === actualCalls.length && expectedCalls.every((call, index) => getField(call, 'name') === getField(actualCalls[index], 'name')) && expectedCalls.some((call, index) => !sameValue(getField(call, 'arguments'), getField(actualCalls[index], 'arguments')))) return 'ARG_MISMATCH';
+  const text = (events, kind) => events.filter((event) => getField(event, 'kind') === kind).map((event) => getField(event, 'text') || '').join('');
   if (text(golden, 'reasoning') === text(observed, 'reasoning') && text(golden, 'text') === text(observed, 'text')) return 'ORDER';
   return 'LOSS';
 }

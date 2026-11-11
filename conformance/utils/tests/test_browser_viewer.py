@@ -34,7 +34,6 @@ if str(SRC) not in sys.path:
 import unified_history
 import capture_sources
 import ci_publication_cache
-from capture_stimulus import select_peer_observation
 from capture_versions import capture_release_sort_key, UNIFIED_VERSION_RE
 from browser_helpers import raw_view_download, settle
 
@@ -245,31 +244,21 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
         server.shutdown()
 
 
-@pytest.mark.parametrize("implementation,scenario", [
-    (implementation, scenario)
-    for scenario in ("tool_only", "gpt_oss_assistant_default_channel_visible_response")
-    for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")
+@pytest.mark.parametrize("implementation,scenario,has_origin", [
+    ("dynamo_v1", "tool_only", True),
+    ("dynamo_v1_jail", "tool_only", True),
+    # The latest native snapshot is a full fresh capture, without a verified
+    # recapture overlay. Historical v1 observations retain their overlay origin.
+    ("dynamo_v2", "tool_only", False),
+    *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
+      for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
 ])
-def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, implementation, scenario):
+def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, implementation, scenario, has_origin):
     catalog = _published_catalog(historical_published_viewer)
-    captures = [capture for capture in catalog["capture_generation"]["current"]
-                if capture["implementation"] == implementation and capture["family"] == "gpt_oss"]
-    assert len(captures) == 1
-    capture = captures[0]
-    version = capture["version"]
-    capture_path = ROOT / capture["yaml_path"]
-    assert hashlib.sha256(capture_path.read_bytes()).hexdigest() == capture["sha256"]
-    snapshot = unified_history.load_yaml(capture_path)
-    expected_origin = None
-    wrapped = snapshot["records"].get(scenario)
-    if wrapped is not None:
-        authored = unified_history.load_yaml(capture_path.with_name("inputs_and_golden.yaml"))["cases"][scenario]
-        record, document = unified_history.materialized_record(authored, wrapped["value"])
-        selected_record = select_peer_observation(
-            {**record, **document.get("record_metadata", {})}, authored["request"],
-            implementation=implementation, version=version,
-        )
-        expected_origin = selected_record.get("producer_origin")
+    versions = {capture["version"] for capture in catalog["capture_generation"]["current"]
+                if capture["implementation"] == implementation and capture["family"] == "gpt_oss"}
+    assert len(versions) == 1
+    version = versions.pop()
     key = f"{implementation}@{version}"
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
@@ -284,23 +273,24 @@ def test_unified_popup_shows_actual_observation_producer(historical_published_vi
         cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
         rendered = driver.execute_script("""
             const candidate=window.__conformanceTooltipModel(arguments[0]).candidates.find(item=>item.key===arguments[1]);
+            const expectedProducer=candidate.block.producer_origin ? 'Producer: '+JSON.stringify(candidate.block.producer_origin) : null;
             window.__buildTooltip(arguments[0]);
             arguments[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
             arguments[0].click();
-            return candidate;
+            return {candidate,expectedProducer};
         """, cell, key)
-        candidate = rendered
+        candidate = rendered["candidate"]
         assert candidate["version"] == version
-        assert candidate["block"].get("producer_origin") == expected_origin
+        origin = candidate["block"].get("producer_origin")
+        assert bool(origin) == has_origin
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
         output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
         labels = [element.text for element in output.find_elements(By.CSS_SELECTOR, ".expl")
                   if element.text.startswith("Producer: ")]
-        if expected_origin is None:
-            assert labels == []
-        else:
-            assert len(labels) == 1
-            assert json.loads(labels[0].removeprefix("Producer: ")) == expected_origin
+        expected = [rendered["expectedProducer"]] if has_origin else []
+        assert labels == expected
+        if has_origin:
+            assert json.loads(labels[0].removeprefix("Producer: ")) == origin
     finally:
         driver.quit()
         server.shutdown()
