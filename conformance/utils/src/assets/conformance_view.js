@@ -109,37 +109,13 @@
     if (!mc) { return escapeHtml(text == null ? '' : String(text)); }
     return mc.colorizeLinked(text, family == null ? null : family, _familyMarkers, ctx);
   }
-  // Word coloring only, no marker parsing — for the `calls=` JSON blob. The parsed
-  // arguments there are the SAME values the input carried (mode, fast, ...), so they
-  // must share the tooltip's word hues; but the blob is JSON, not model markup, so
-  // running the marker matcher over it would be wrong.
+  // Word coloring only, no marker parsing — for `calls=` JSON and output text/reasoning.
+  // These values can contain marker-shaped data, which should not be interpreted as markup.
   function colorizeWords(text, ctx) {
     var mc = (typeof window !== 'undefined') && window.__markupColorize;
     if (!mc) { return escapeHtml(text == null ? '' : String(text)); }
     return mc.colorizeWords(text == null ? '' : String(text), ctx);
   }
-  // In an OUTPUT content payload (text=/reasoning=) a control marker is LEAKED markup:
-  // a correct parse consumes every marker, so anything marker-shaped left inside content
-  // is a leak and must read as such (red), NOT as a legit marker pair. The generic
-  // colorizer pairs `<think>...</think>` and colors it like real structure, so flag
-  // markers here instead: any angle-bracket token (`<think>`, `</think>`, `<|channel>`,
-  // `<tool_call|>`, `<|tool_call_end|>`, ...) plus gemma4's bare `thought` label (the
-  // opener with its brackets already stripped).
-  function colorizeUnifiedLeak(text, family, ctx) {
-    var s = String(text == null ? '' : text);
-    var re = /<\|?[^<>]*\|?>|thought\n/g;
-    var out = '', last = 0, m;
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > last) { out += colorize(s.slice(last, m.index), family, ctx); }
-      var tok = m[0];
-      if (tok === 'thought\n') { out += '<span class="tt-orphan">thought</span>\n'; }
-      else { out += '<span class="tt-orphan">' + escapeHtml(tok) + '</span>'; }
-      last = m.index + tok.length;
-    }
-    if (last < s.length) { out += colorize(s.slice(last), family, ctx); }
-    return out;
-  }
-
   // --- Lazy tooltip building -------------------------------------------------
   // conformance.js's attachTooltip queries `cell.querySelector('.ttip')` at wire
   // time, so every popup cell needs a `.ttip` element present up front — but the
@@ -261,8 +237,8 @@
     }
     if (b.batch_final != null) {
       const fields = b.batch_final;
-      return '<span class="fldl">reasoning_text=</span>' + colorize(fields.reasoning_text, family, ctx)
-        + '\n<span class="fldl">normal_text=</span>' + colorize(fields.normal_text, family, ctx)
+      return '<span class="fldl">reasoning_text=</span>' + colorizeWords(fields.reasoning_text, ctx)
+        + '\n<span class="fldl">normal_text=</span>' + colorizeWords(fields.normal_text, ctx)
         + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(fields.calls, 0), ctx)
         + '\n\n<span class="expl">Batch output is compared with ordered GOLDEN.</span>'
         + (b.verdict && b.verdict !== 'MATCH' ? '\n<span class="expl">diverges: ' + escapeHtml(b.verdict) + '</span>' : '')
@@ -273,10 +249,10 @@
       var evlines = b.events.map(function (ev) {
         if (ev.kind === 'message_start' || ev.kind === 'message_end') return messageBoundaryHtml(ev);
         if (ev.kind === 'reasoning') {
-          return '<span class="fldl">reasoning=\'</span>' + colorizeUnifiedLeak(ev.text || '', family, ctx) + '<span class="fldl">\'</span>';
+          return '<span class="fldl">reasoning=\'</span>' + colorizeWords(ev.text || '', ctx) + '<span class="fldl">\'</span>';
         }
         if (ev.kind === 'text') {
-          return '<span class="fldl">text=\'</span>' + colorizeUnifiedLeak(ev.text || '', family, ctx) + '<span class="fldl">\'</span>';
+          return '<span class="fldl">text=\'</span>' + colorizeWords(ev.text || '', ctx) + '<span class="fldl">\'</span>';
         }
         if (ev.kind === 'tool_call') {
           // Colorize the name + args like the streaming deltas do (word hues shared with
@@ -318,15 +294,15 @@
     }
     var out;
     if (b.reasoning_text != null) {
-      // Reasoning cell: reasoning_text + normal_text (markers -> bg, words -> fg).
-      out = '<span class="fldl">reasoning_text=\'</span>' + colorize(b.reasoning_text, family, ctx)
+      // Reasoning cell payloads are content, so only apply word hues.
+      out = '<span class="fldl">reasoning_text=\'</span>' + colorizeWords(b.reasoning_text, ctx)
         + '<span class="fldl">\'</span>'
-        + '\n<span class="fldl">normal_text=\'</span>' + colorize(b.normal_text || '', family, ctx)
+        + '\n<span class="fldl">normal_text=\'</span>' + colorizeWords(b.normal_text || '', ctx)
         + '<span class="fldl">\'</span>';
     } else {
       var nt = b.normal_text || '';
       var calls = b.calls || [];
-      out = '<span class="fldl">normal_text=\'</span>' + colorize(nt, family, ctx)
+      out = '<span class="fldl">normal_text=\'</span>' + colorizeWords(nt, ctx)
         + '<span class="fldl">\'</span>'
         + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(calls, 0), ctx);
     }
@@ -378,8 +354,8 @@
     deltas.forEach(function (d) {
       if (d == null) { return; }
       if (d.kind === 'message_start' || d.kind === 'message_end') { unified.push(messageBoundaryHtml(d)); return; }
-      if (d.kind === 'reasoning') { unified.push("<span class=\"fldl\">reasoning='</span>" + colorize(String(d.text || ''), null, ctx) + "<span class=\"fldl\">'</span>"); return; }
-      if (d.kind === 'text') { unified.push("<span class=\"fldl\">text='</span>" + colorize(String(d.text || ''), null, ctx) + "<span class=\"fldl\">'</span>"); return; }
+      if (d.kind === 'reasoning') { unified.push("<span class=\"fldl\">reasoning='</span>" + colorizeWords(String(d.text || ''), ctx) + "<span class=\"fldl\">'</span>"); return; }
+      if (d.kind === 'text') { unified.push("<span class=\"fldl\">text='</span>" + colorizeWords(String(d.text || ''), ctx) + "<span class=\"fldl\">'</span>"); return; }
       if (d.kind === 'tool_call') {
         var tc = "<span class=\"fldl\">tool_call=</span>" + escapeHtml(String(d.name || ''));
         if (d.arguments != null) { tc += " args='" + colorizeWords(String(d.arguments), ctx) + "'"; }
