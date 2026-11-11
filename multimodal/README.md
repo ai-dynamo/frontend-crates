@@ -147,7 +147,7 @@ file (GLM-5.3-Flash).
 | per trusted media part | `fetch::fetch_bytes` *(feature `fetch`, stub)* | trusted media source → raw bytes once implemented; currently returns `MmError::Unsupported` |
 | per decoded image | `content_hash_canonical_image` | shape + dtype + RGB bytes → Dynamo-compatible identity |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
-| per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
+| per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count: every id the item puts in the prompt, literal ids included (Kimi-K3 prints a size header around its pad run) |
 
 Token counts give the expanded prompt length for routing; hashes drive
 prefix-cache-affinity routing and travel downstream as `mm_hashes`. The engine
@@ -310,6 +310,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 | `image::resize::resize_rgba` | `PIL.Image.resize` on an RGBA or LA image (BICUBIC, u8) | **bitwise** against Pillow 12.3 (Pillow resizes premultiplied `RGBa` and divides back with truncation) |
+| `models::kimi_k3::KimiK3Processor::decode_image` | `PIL.Image.open(...)` and `load()`, then `convert("RGBA")` when the mode has alpha or a `transparency` entry and is not RGB, else `convert("RGB")` | no EXIF transpose. JPEG: same pixels (libjpeg-turbo on both sides). PNG, BMP, WebP, GIF: no known difference on the forms the gate accepts; the 8 forms known to differ are an error, and an unknown one would decode with other pixels (§7) |
+| `models::kimi_k3::KimiK3Processor::process_item` | the Kimi-K3 checkpoint's `KimiK3VisionProcessor.preprocess` (SGLang's CPU path) → `pixel_values`, `grid_thws` | **bitwise** against Pillow 12.3 from the decoded pixels on (resize, composite, pad, normalize, patchify); the decode has the scope of the row above |
 
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
 accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
@@ -489,7 +491,130 @@ cross-checks the planned grid against the installed HF processor's
 `image_grid_thw`. Fixture settings beyond the first group are mathematical
 test inputs, not model defaults.
 
-## 7. Roadmap
+## 7. Kimi-K3 images
+
+`KimiK3Processor` (`ProcessorSpec::KimiK3`, `{"family": "kimi_k3", ...}`) is
+the image pipeline of Kimi-K3 and Kimi-K3.1. It mirrors the checkpoint's own
+processor (`kimi_k3_vision_processing.py`, `media_utils.py` of
+`moonshotai/Kimi-K3@f831ab66` and `moonshotai/Kimi-K3.1-Pro@d9e99b07`) on
+Pillow 12.3, which SGLang runs on its CPU path. From the decoded pixels on,
+the output is bit-exact. The decode is bit-exact for JPEG, and has no known
+difference for PNG, BMP, WebP and GIF on the forms it accepts; see "What
+each claim rests on" below. Pillow before 12.2 gives other pixels for an
+image taller than 100 times its width. `spec_from_hf_configs` selects the
+family for `model_type` `kimi_k3` and `kimi_k31`, from the shipped
+`preprocessor_config.json` or from the files that `save_pretrained` writes
+(checked on transformers 5.19.0).
+
+Call `family.decode_image(bytes, &limits)` before `family.process_item`: it
+keeps alpha (`DecodedMedia::ImageRgba`), applies no EXIF transpose, and holds
+the input checks below. The output is `[grid_h * grid_w, 3, 14, 14]` patches
+with `image_grid_thw`; positions are 1-D.
+
+The expansion prints the source size as text:
+`<|media_begin|>image {W}x{H}<|media_content|>`, the pad run, `<|media_end|>`.
+The crate has no tokenizer, so the spec carries the ids of that text in
+`size_tokens`. `spec_from_hf_configs` leaves it empty: pixels and
+`KimiK3Processor::plan` work, and `layout`, `layout_from_metadata` and
+`num_media_tokens` return `Unsupported`. The consumer builds the table with
+the model's tokenizer, passes it as JSON, and must hold the table's rule
+itself (see the `SizeTokens` doc); the crate checks only the table's shape.
+
+Three counts for one image (300x200: 96, 88, 88):
+
+- `num_media_tokens`: the whole expansion, header and end token included.
+- The `Feature` parts of `layout_from_metadata`: the pad run, which takes the
+  embeddings. Pass these counts to `apply_layout`. With decoded pixels this
+  is `ProcessedItem::feature_token_count`.
+- `feature_ranges`: the position of the pad run, which SGLang calls the item
+  offset. `offsets` also cover the header and the end token.
+
+These return an error, never an approximation:
+
+- Spec: a non-null `fixed_output_tokens`, a `transparent_bg_fill_stage` that
+  is absent or not `after_resize`, a background pattern other than
+  `chessboard`, a chessboard field left to the checkpoint's default. From the
+  HF files the error is `Unsupported`.
+- Input, `Unsupported` from the decode gate. The gate reads the format and a
+  few header fields. It refuses a palette, 1-bit, L with tRNS or CMYK source,
+  or a GIF, that needs a resize (Pillow resizes these in the native mode),
+  and any format other than JPEG, PNG, GIF, WebP and BMP. It also refuses
+  the 8 forms whose decode is known to differ from Pillow:
+  1. a BMP that is not uncompressed 24-bit or 32-bit, or has a pixel offset
+     of 0;
+  2. animated WebP;
+  3. a lossy WebP where a segment's filter level is outside 0..63 and a
+     loop-filter delta then moves it (libwebp clamps after the deltas);
+  4. tRNS on 2-bit or 4-bit grayscale, and a 1-bit tRNS sample above 1;
+  5. a palette PNG whose tRNS bytes are `FF* 00 FF* 0A` (Pillow reads them as
+     one transparent entry);
+  6. a PNG with a text chunk named `interlace` before IDAT (Pillow reads the
+     keyword back as its deinterlace switch);
+  7. a GIF whose first frame has a gray-ramp local color table beside a global
+     table that is not a gray ramp (Pillow paints with the global table);
+  8. a GIF with more than one Graphic Control Extension before its first
+     image (Pillow keeps a transparent index that a later extension clears).
+- Input, `InvalidInput` from a decoder. Every other file goes to the crate's
+  shared decoders, which refuse what they cannot read: samples deeper than 8
+  bits, an OS/2 v2 BMP, a 32-bit BITFIELDS BMP with all-zero masks, a
+  lossless grayscale JPEG, and a JPEG that makes libjpeg warn. Pillow decodes
+  each of these.
+- Size: more than 2^53 patch cells, where f64 no longer plans exactly, and a
+  feature buffer that does not fit `usize`.
+
+What each claim rests on:
+
+- After the decode: the resize, composite, pad, normalize, patchify and
+  layout are bit-exact against the checkpoint's processor. The fixtures pin
+  this.
+- JPEG decode: bit-exact. The crate and Pillow both decode with
+  libjpeg-turbo.
+- PNG, BMP, WebP and GIF decode: no known difference on the forms the gate
+  accepts. The crate decodes these with Rust crates (`png`, `image`,
+  `image-webp`, `gif`) that are second implementations of the libraries
+  Pillow uses. The gate refuses each of the 8 forms known to differ, and a
+  fixture pins each refusal. Review sweeps, which are not in this repo,
+  found no other: 2,050 generated files in the last round, and 194 + 2,461
+  generated files and 3,137 files from a development host before it. A form
+  that is not known would decode with other pixels and no error.
+- In each difference found so far, the decoded size was right. So the grid,
+  the token counts and the prompt span were right, and only pixel values
+  differed.
+
+Not covered: a file that breaks its format's rules, or that carries a field
+an encoder should not write. It can decode with other pixels than Pillow's
+and no error. Known forms: a WebP whose VP8X alpha flag does not match its
+data; a WebP whose VP8L `alpha_is_used` bit, which the specification calls a
+hint, does not match its pixels; a PNG whose tRNS chunk is after IDAT,
+before PLTE, longer than PLTE, repeated, or has a non-zero high byte. The
+other direction is open too: the crate decodes some files that Pillow or
+the checkpoint rejects, such as a 32-bit BMP with masks outside Pillow's
+list or a PNG text chunk with the keyword `transparency`. The reference
+gives no pixels for them.
+
+SGLang's GPU path, the default for Kimi-K3 on a CUDA host, is a different
+implementation (float bicubic, straight alpha, a one-step f32 normalize) and
+is not mirrored here.
+
+`tests/mm_parity.rs` replays `tests/fixtures/mm_parity/kimi-k3.json`. Its
+target is SGLang's Python CPU path, which gives the same values as the
+checkpoint's own processor. The decode forms at the shipped limits are rows
+of `decode.json`. The `kimi_k3_golden` test checks what the table cannot
+hold: the prompt expansion from sizes alone, two drawn images (7300x64 and
+9000x4000) at the checkpoint's limits, the configs of both checkpoints, and
+a size sweep of the plan and the prompt span. `kimi_k3/generate.py` runs the
+table's cases and the two drawn images again on Kimi-K3.1-Pro and stops
+unless each value is the same. Regenerate or check with:
+
+```sh
+CUDA_VISIBLE_DEVICES="" python multimodal/tests/fixtures/mm_parity/generate.py \
+    --family kimi_k3 [--check] --model-dir <moonshotai/Kimi-K3 dir> \
+    --vllm-python <python> --llm-mm-harness <binary>
+CUDA_VISIBLE_DEVICES="" python multimodal/tests/fixtures/kimi_k3/generate.py \
+    [--check] <moonshotai/Kimi-K3 dir> <moonshotai/Kimi-K3.1-Pro dir>
+```
+
+## 8. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
 for `models::qwen_vl`. For video it decodes to frames and has the request
@@ -517,8 +642,8 @@ What remains:
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
 3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
-   (§6); its video expansion, then Kimi, are next after
-   `models::qwen_vl`.
+   (§6) and Kimi-K3 has image preprocessing (§7); GLM's video expansion is
+   next after `models::qwen_vl`.
 
 ### Video and audio: planned layout
 
