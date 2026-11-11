@@ -21,4 +21,6 @@ python conformance/utils/src/renderer_reference.py \
 
 Either command accepts `--model <manifest-id>`. Outputs appear under `families/<model>/reference.json` or `dynamo.json` in the required output directory. The directory must be separate from the source store. Inspect and deliberately copy reviewed captures into this store; the capture CLI cannot silently replace inputs or model assets. Dynamo dispatch uses the shared Rust capture example and never writes reference expectations.
 
+Partial Dynamo refreshes must use the same renderer release as the other recorded models. After a renderer package version change, omit `--model` and refresh all five models together. The capture command rejects a partial cross-release refresh before writing results.
+
 Routine checks run offline against the vendored assets. Reference differences remain visible warnings; live Dynamo output differing from its recorded observation, missing cases and invalid evidence fail. No normal test rewrites observations. Tokens, image fetching, model inference and HTTP API conversion are outside this MVP.

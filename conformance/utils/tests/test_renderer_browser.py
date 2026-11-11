@@ -8,7 +8,7 @@ import gzip
 import hashlib
 import json
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 import pytest
 
@@ -94,6 +94,25 @@ def test_tab_filters_and_reset_preserve_the_other_suite(renderer_driver, viewer_
     assert len(driver.execute_script("return window.__conformanceModel.rows")) == 5
     _switch(driver, "tab-unified")
     assert driver.find_element(By.CSS_SELECTOR, "#tab-unified [data-case-search]").get_attribute("value") == "model:Qwen"
+
+
+@pytest.mark.parametrize("legacy_scope", ["global", "parser"])
+def test_legacy_parser_selection_does_not_change_renderer_defaults(renderer_driver, viewer_url, published_viewer, legacy_scope):
+    driver = renderer_driver
+    catalog = runtime_catalog(published_viewer)
+    peer = next(source for source in catalog["sources"]["candidates"] if source["implementation"] == "vllm_python")
+    identity = peer["implementation"] + "@" + peer["version"]
+    peer_key = catalog["metadata"]["selection_policy"]["unified"]["historical_control_aliases"].get(identity, identity)
+    parameters = {"tab": "tab-unified", "ref" if legacy_scope == "global" else "base_tab-unified": "dynamo",
+                  "cmp" if legacy_scope == "global" else "cmp_tab-unified": peer_key}
+    driver.get(viewer_url + "?" + urlencode(parameters))
+    settle(driver, "tab-unified")
+    parser_selection = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
+    assert parser_selection == ["dynamo", peer_key]
+    _switch(driver, "tab-renderer")
+    assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-renderer')).selected") == ["renderer_reference", "renderer_dynamo"]
+    _switch(driver, "tab-unified")
+    assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == parser_selection
 
 
 def test_renderer_layout_theme_keyboard_popup_and_shared_url(renderer_driver, viewer_url):

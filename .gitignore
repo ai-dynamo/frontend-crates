@@ -42,5 +42,6 @@ __pycache__/
 /conformance/viewer-unified-catalog.json
 /conformance/viewer-publication.json
 /conformance/viewer-latest-catalog.json
+/conformance/CONFORMANCE_v2.html
 /logs/
 /build/conformance-cache/

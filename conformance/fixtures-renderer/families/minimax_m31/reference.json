@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "minimax_m31",
-  "inputs_sha256": "e15eae0ed0dff09673dfc70d658fae948d757813dbfbefd8ee876133d339c367",
+  "inputs_sha256": "43b165248be67e9cef75284060fbffe00df3dad99620f7af24b2786bd1af9df1",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "reference",
     "version": "MiniMaxAI/MiniMax-M3.1-Flash@ce7f4df87d2e05262f5775f373dac4772f134041",
     "source_sha256": "961e3f96b2c08d26555efdfeb3b384d5e81181bf0cfc04edbadc31c6e507b431",
-    "adapter_sha256": "9089ffc306a660e67a4ef839b949d26e59108c99ca1a7ac99b8461a259b92ed7",
+    "adapter_sha256": "2a67d112eed8ac2fce54a43bf7e12571b64f3d5a1eb445163c43c70e23add43d",
     "python": "3.12.13",
     "transformers": "5.12.1",
     "jinja2": "3.1.6"
@@ -1326,6 +1326,35 @@
         }
       },
       "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-precedence": {
+      "result": {
+        "kind": "prompt",
+        "text": "]~!b[]~b]system\nYour model version is MiniMax-M3.1, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: adaptive. You are encouraged to think for complex decision-making, multi-step reasoning, or when analyzing function/tool results.\n</thinking_instructions>\n\n<model_id>8bb8149fe</model_id>\n\n<effort>low</effort>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHello[e~[\n]~b]ai\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "low"
+        }
+      },
+      "transformations": [
+        {
+          "name": "top_level_effort_not_forwarded",
+          "authority": "independently-authored direct renderer API boundary: HF formatters consume template reasoning_effort; top-level effort normalization belongs to the consumer"
+        }
+      ],
       "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
     },
     "RENDERER.images-single": {

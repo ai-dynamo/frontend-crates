@@ -1,6 +1,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 // Maintained conformance matrix controller for asynchronously loaded tab models.
+function conformanceLegacyCaptureSelection(params, tabId, initialTab, fallbackReference, resolveSlotKey) {
+  // Global ref/cmp and retired-tab aliases belong to the parser suite.
+  const parser = tabId === 'tab-unified';
+  const initialParserTab = initialTab === 'tab-renderer' ? null : initialTab;
+  const tabs = parser ? [...new Set([initialParserTab, tabId].filter(Boolean))] : [tabId];
+  const baseParam = tabs.map(id => 'base_' + id).find(key => params.has(key));
+  const compareParam = tabs.map(id => 'cmp_' + id).find(key => params.has(key));
+  const globalReference = parser && params.has('ref');
+  const globalCompare = parser && params.has('cmp');
+  if (!baseParam && !compareParam && !globalReference && !globalCompare) return null;
+  const reference = baseParam ? params.get(baseParam) : globalReference ? params.get('ref') : fallbackReference;
+  const compares = compareParam ? params.get(compareParam) : globalCompare ? params.get('cmp') : '';
+  return [reference, ...(compares || '').split(',')].map(resolveSlotKey);
+}
+
 window.initializeConformanceController = function (hooks = {}) {
   // Gutter kept between a popup and the viewport edge (2em at the 16px root size).
   // The tooltip is width:max-content and the widest ones run to the full cap below, so
@@ -1610,16 +1625,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     const identity = legacyCandidates.get(key) || key;
     return byIdentity.get(identity) || byIdentity.get(key) || '';
   };
-  const legacyTabs = [...new Set([initialTab, tab.id].filter(Boolean))];
-  const legacyBaseParam = legacyTabs.map(id => 'base_' + id).find(key => params.has(key));
-  const legacyCompareParam = legacyTabs.map(id => 'cmp_' + id).find(key => params.has(key));
-  const legacyRef = (legacyBaseParam && params.get(legacyBaseParam)) ?? params.get('ref');
-  const legacyCmp = (legacyCompareParam && params.get(legacyCompareParam)) ?? params.get('cmp');
-  const hasLegacy = Boolean(legacyBaseParam || legacyCompareParam || params.has('ref') || params.has('cmp'));
-  const legacySelection = hasLegacy
-    ? [(legacyBaseParam || params.has('ref')) ? legacyRef : preferred[0], ...(legacyCmp || '').split(',')]
-      .map(resolveSlotKey)
-    : null;
+  const legacySelection = conformanceLegacyCaptureSelection(params, tab.id, initialTab, preferred[0], resolveSlotKey);
   // Stream-tab links encode engine columns; other legacy comparisons preserve their authored order.
   const legacy = initialTab === 'tab-toolcalling-streamv1' && legacySelection
     ? legacySelection.reduce((slots, key) => {

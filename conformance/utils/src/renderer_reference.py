@@ -197,6 +197,8 @@ def reference_result(
                     "transformations": [], "metadata_origin": metadata_origin,
                 }
             joined_reasoning(messages, transformations)
+            if "reasoning_effort" in request:
+                record_transform(transformations, "top_level_effort_not_forwarded", "independently-authored direct renderer API boundary: K3 consumes template thinking_effort/reasoning_effort; top-level effort normalization belongs to the consumer")
             thinking = boolean_thinking(args)
             kwargs = {
                 "add_generation_prompt": settings["add_generation_prompt"],
@@ -218,15 +220,40 @@ def reference_result(
             text = "".join(segment.text for segment in segments)
         elif model["formatter"] == "deepseek_v41":
             joined_reasoning(messages, transformations)
+            template_url = next(asset["url"] for asset in model["assets"] if asset["role"] == "chat_template")
             thinking = boolean_thinking(args)
-            if not any(isinstance(args.get(key), bool) for key in ("thinking", "enable_thinking")):
+            thinking_key = next((key for key in ("thinking", "enable_thinking") if isinstance(args.get(key), bool)), None)
+            if thinking_key is not None:
+                authority = (
+                    f"pinned official template enable_thinking alias: {template_url}#L8-L10"
+                    if thinking_key == "enable_thinking"
+                    else "independently-authored renderer API contract: thinking is a boolean alias with priority over enable_thinking and thinking_mode"
+                )
+                record_transform(transformations, f"resolve_{thinking_key}_as_thinking_mode", authority)
+            else:
                 thinking = args.get("thinking_mode", "thinking") != "chat"
+                if "thinking_mode" not in args:
+                    record_transform(transformations, "apply_default_thinking_mode", f"pinned official template default thinking mode: {template_url}#L2-L10")
             effort = request.get("reasoning_effort", args.get("reasoning_effort", 75))
+            if "reasoning_effort" in request:
+                record_transform(
+                    transformations,
+                    "top_level_reasoning_effort_precedes_template" if "reasoning_effort" in args else "project_top_level_reasoning_effort",
+                    "independently-authored renderer API contract: a top-level reasoning_effort value takes precedence over chat_template_args.reasoning_effort",
+                )
+            elif "reasoning_effort" not in args:
+                record_transform(transformations, "apply_default_reasoning_effort", f"pinned official template default high=75: {template_url}#L18-L21")
             if effort == "none":
                 thinking, effort = False, 75
-            effort = {"low": 50, "medium": 62, "high": 75, "max": 100}.get(effort, effort)
+                record_transform(transformations, "disable_thinking_for_none_effort", "independently-authored renderer API contract: none disables thinking while preserving the default numeric effort")
+            effort_map = {"low": 50, "medium": 62, "high": 75, "max": 100}
+            if isinstance(effort, str) and effort in effort_map:
+                named_effort = effort
+                effort = effort_map[named_effort]
+                record_transform(transformations, "map_named_reasoning_effort_to_numeric", f"pinned official template effort_map: {named_effort}={effort}; {template_url}#L19-L21")
             if effort is None:
                 effort = 75
+                record_transform(transformations, "resolve_null_reasoning_effort_default", f"pinned official template null effort resolves to high=75: {template_url}#L18-L21")
             if request.get("tool_choice") == "none":
                 tools = None
                 record_transform(transformations, "exclude_tools_when_tool_choice_none", "DeepSeek formatter API tool-choice contract")
@@ -255,8 +282,10 @@ def reference_result(
             encoded_segments = None
         else:
             if settings["content_format"] == "string":
-                return {"result": {"kind": "unsupported", "reason": "The MVP reference adapter does not emulate stock-engine multimodal string flattening."}, "reference_input": {"messages": messages}, "transformations": []}
+                return {"result": {"kind": "unsupported", "reason": "The MVP reference adapter does not emulate stock-engine multimodal string flattening."}, "reference_input": {"messages": messages}, "transformations": [], "metadata_origin": metadata_origin}
             normalize_hf_messages(messages, transformations, settings["content_format"])
+            if "reasoning_effort" in request:
+                record_transform(transformations, "top_level_effort_not_forwarded", "independently-authored direct renderer API boundary: HF formatters consume template reasoning_effort; top-level effort normalization belongs to the consumer")
             kwargs = {"add_generation_prompt": settings["add_generation_prompt"]}
             if "response_format" in request:
                 kwargs["response_format"] = request["response_format"]
@@ -318,14 +347,16 @@ def output_directory(root: Path, output: Path) -> Path:
 
 
 def atomic_json(path: Path, value: Json) -> None:
+    payload = (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as temporary:
-        temporary.write(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
-        name = temporary.name
+    name = None
     try:
+        with tempfile.NamedTemporaryFile(mode="wb", dir=path.parent, delete=False) as temporary:
+            name = temporary.name
+            temporary.write(payload)
         os.replace(name, path)
     finally:
-        if os.path.exists(name):
+        if name is not None and os.path.exists(name):
             os.unlink(name)
 
 

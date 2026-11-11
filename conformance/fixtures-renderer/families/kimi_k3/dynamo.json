@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "kimi_k3",
-  "inputs_sha256": "5ef812879b0757dcf27989659060da68ad4900dab58185110831d6ebf1e0c5e2",
+  "inputs_sha256": "1c79b9f580f3648459c0d7f5192e8ddb8548e2bf1da6e8ee39ee9daf3632799b",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "dynamo",
     "version": "10.3.2",
     "source_sha256": "1e6b631a4b39f19f4e1c037a69a360fdb4530d1d232293c8cc6deffb02b5b7b8",
-    "adapter_source_sha256": "d985f5ff75a5c478abe6df54d24ee7f2f30b5cfc2320d069654b3fed0705fc2a",
+    "adapter_source_sha256": "f65b3f0209a203ff55e4885a2431a6d04a0c1d88f88b64bc9f8fa6954a5604ea",
     "scope": "public dynamo-renderer API; downstream normalization is not exercised"
   },
   "results": {
@@ -9600,6 +9600,168 @@
           },
           {
             "text": "`thinking_effort` guides on how much to think in your thinking channel (not including the response channel), supported values include `low`, `medium`, `high`, and `max`.\nNow the system is invoked with `thinking_effort=max`.",
+            "allow_special": false
+          },
+          {
+            "text": "<|close|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|end_of_msg|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": " role",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "user",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "Hello",
+            "allow_special": false
+          },
+          {
+            "text": "<|close|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|end_of_msg|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": " role",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "assistant",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "think",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          }
+        ],
+        "pending_segments": 3,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-effort-precedence": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|open|>message role=\"system\" type=\"thinking-effort\"<|sep|>`thinking_effort` guides on how much to think in your thinking channel (not including the response channel), supported values include `low`, `medium`, `high`, and `max`.\nNow the system is invoked with `thinking_effort=low`.<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"user\"<|sep|>Hello<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>",
+        "segments": [
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": " role",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "system",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": " type",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "thinking-effort",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "`thinking_effort` guides on how much to think in your thinking channel (not including the response channel), supported values include `low`, `medium`, `high`, and `max`.\nNow the system is invoked with `thinking_effort=low`.",
             "allow_special": false
           },
           {

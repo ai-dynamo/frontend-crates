@@ -37,6 +37,8 @@ Run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test renderer_confo
 
 Both latest and history publications include the current renderer suite. Parser-only older catalogs remain readable. The published standalone HTML supports both tabs offline; the source development catalog remains parser-only until the native publisher assembles the renderer resource. Use the normal report generation commands below, then inspect both tabs over HTTP. Historical renderer regression experiments stay outside this latest-only store.
 
+`--model` supports partial Dynamo refreshes within one recorded renderer release. After the renderer package version changes, omit `--model` and refresh every model together; the capture command rejects a partial cross-release refresh before writing results. This keeps the shared capture card's version truthful without changing the output-only replay gate.
+
 ## Latest captures and retained history
 
 ### Normalized current YAML

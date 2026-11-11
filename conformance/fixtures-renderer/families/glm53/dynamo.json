@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "glm53",
-  "inputs_sha256": "a6ffc051a79aa63e0d5075aecfdc23d0fb23f6c63f3f1a861ce6c4d61518d245",
+  "inputs_sha256": "b0b18803ca97d0d742439ca815ba785d13084c12079ce9bd513b9b02c32f0347",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "dynamo",
     "version": "10.3.2",
     "source_sha256": "1e6b631a4b39f19f4e1c037a69a360fdb4530d1d232293c8cc6deffb02b5b7b8",
-    "adapter_source_sha256": "d985f5ff75a5c478abe6df54d24ee7f2f30b5cfc2320d069654b3fed0705fc2a",
+    "adapter_source_sha256": "f65b3f0209a203ff55e4885a2431a6d04a0c1d88f88b64bc9f8fa6954a5604ea",
     "scope": "public dynamo-renderer API; downstream normalization is not exercised"
   },
   "results": {
@@ -258,6 +258,15 @@
       "result": {
         "kind": "prompt",
         "text": "[gMASK]<sop><|system|>Reasoning Effort: Max<|user|>Hello<|assistant|><think>",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-effort-precedence": {
+      "result": {
+        "kind": "prompt",
+        "text": "[gMASK]<sop><|system|>Reasoning Effort: Low<|user|>Hello<|assistant|><think>",
         "segments": null,
         "pending_segments": 0,
         "media_message_order": null

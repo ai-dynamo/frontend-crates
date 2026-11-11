@@ -183,3 +183,21 @@ test('history discovery preserves the renderer suite while upgrading parser sele
     await assert.rejects(discoverHistory(base, recent, { publication, fetchImpl: fetchFor(changed) }), /preserve.*renderer/);
   }
 });
+
+test('legacy parser links do not populate renderer capture slots', async () => {
+  const context = vm.createContext({ window: {} });
+  vm.runInContext(await readFile(new URL('../utils/src/assets/conformance.js', import.meta.url), 'utf8'), context);
+  const select = (query, tabId, initialTab = 'tab-unified') => {
+    const result = context.conformanceLegacyCaptureSelection(new URLSearchParams(query), tabId, initialTab,
+      tabId === 'tab-renderer' ? 'renderer_reference' : 'dynamo', key => key === 'none' ? '' : key);
+    return result === null ? result : [...result];
+  };
+  for (const query of ['ref=dynamo&cmp=peer', 'base_tab-unified=dynamo&cmp_tab-unified=peer']) {
+    assert.deepEqual(select(query, 'tab-unified'), ['dynamo', 'peer']);
+    assert.equal(select(query, 'tab-renderer'), null, 'renderer must keep both of its default entries');
+  }
+  assert.deepEqual(select('base_tab-toolcalling-streamv1=dynamo&cmp_tab-toolcalling-streamv1=peer', 'tab-unified', 'tab-toolcalling-streamv1'), ['dynamo', 'peer']);
+  assert.deepEqual(select('ref=dynamo&cmp=peer&cmp_tab-renderer=renderer_dynamo', 'tab-renderer'), ['renderer_reference', 'renderer_dynamo']);
+  assert.deepEqual(select('ref=dynamo&cmp=peer&base_tab-renderer=renderer_dynamo&cmp_tab-renderer=none', 'tab-renderer'), ['renderer_dynamo', '']);
+  assert.equal(select('base_tab-renderer=renderer_reference&cmp_tab-renderer=renderer_dynamo', 'tab-unified', 'tab-renderer'), null);
+});

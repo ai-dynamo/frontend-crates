@@ -137,6 +137,60 @@ def test_atomic_json_preserves_unicode(tmp_path: Path) -> None:
     assert reference.load_json(target) == {"text": "東京 中文 🦀"}
 
 
+def test_atomic_json_rejects_unpaired_surrogate_but_accepts_a_json_pair(tmp_path: Path) -> None:
+    target = tmp_path / "capture.json"
+    with pytest.raises(UnicodeEncodeError):
+        reference.atomic_json(target, {"text": "\ud800"})
+    assert not target.exists()
+    assert list(tmp_path.iterdir()) == []
+    paired = json.loads('{"text":"\\ud83e\\udd80"}')
+    reference.atomic_json(target, paired)
+    assert reference.load_json(target) == {"text": "🦀"}
+
+
+def test_deepseek_medium_effort_records_pinned_template_authority() -> None:
+    observed = reference.reference_result(STORE, model_named("deepseek_v41"), case_named("deepseek_v41", "controls-effort-medium"))
+    assert observed["reference_input"]["kwargs"]["reasoning_effort"] == 62
+    transform = next(item for item in observed["transformations"] if item["name"] == "map_named_reasoning_effort_to_numeric")
+    assert "medium=62" in transform["authority"]
+    assert "314113f8a7dadb388215396ba5fbee2c610a04d6/chat_template.jinja#L19-L21" in transform["authority"]
+
+
+def test_deepseek_thinking_alias_records_pinned_template_authority() -> None:
+    observed = reference.reference_result(STORE, model_named("deepseek_v41"), case_named("deepseek_v41", "controls-thinking-disabled"))
+    assert observed["reference_input"]["kwargs"]["thinking_mode"] == "chat"
+    transform = next(item for item in observed["transformations"] if item["name"] == "resolve_enable_thinking_as_thinking_mode")
+    assert "pinned official template enable_thinking alias" in transform["authority"]
+    assert "314113f8a7dadb388215396ba5fbee2c610a04d6/chat_template.jinja#L8-L10" in transform["authority"]
+
+
+def test_deepseek_precedence_labels_authored_api_rule_separately() -> None:
+    observed = reference.reference_result(STORE, model_named("deepseek_v41"), case_named("deepseek_v41", "controls-effort-precedence"))
+    assert observed["reference_input"]["kwargs"]["reasoning_effort"] == 62
+    transform = next(item for item in observed["transformations"] if item["name"] == "top_level_reasoning_effort_precedes_template")
+    assert "independently-authored renderer API contract" in transform["authority"]
+    assert "top-level" in transform["authority"]
+
+
+def test_conflicting_effort_case_applies_to_every_formatter() -> None:
+    descriptions = set()
+    for model in MANIFEST["models"]:
+        case = case_named(model["id"], "controls-effort-precedence")
+        descriptions.add(case["description"])
+        assert case["group"] == "controls"
+        assert case["request"]["reasoning_effort"] == "medium"
+        assert list(case["settings"]["chat_template_args"].values()) == ["low"]
+    assert descriptions == {"Resolve conflicting top-level and template reasoning effort."}
+
+
+def test_unsupported_content_format_retains_metadata_authority() -> None:
+    case = copy.deepcopy(case_named("glm53", "conversation-single"))
+    case["settings"]["content_format"] = "string"
+    observed = reference.reference_result(STORE, model_named("glm53"), case)
+    assert observed["result"]["kind"] == "unsupported"
+    assert observed["metadata_origin"] == case["metadata_origin"]
+
+
 def test_all_independent_reference_results_are_reproducible() -> None:
     require_template_runtime()
     for model in MANIFEST["models"]:

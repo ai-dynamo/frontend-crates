@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "deepseek_v41",
-  "inputs_sha256": "beffd239ac6ec5966fe77135b9535b60f8c982a8c7cf50b3a5d3257c7c224e5e",
+  "inputs_sha256": "a62410832265513f7f3f345990570a66a881d23426e23e3862697449273ab429",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "dynamo",
     "version": "10.3.2",
     "source_sha256": "1e6b631a4b39f19f4e1c037a69a360fdb4530d1d232293c8cc6deffb02b5b7b8",
-    "adapter_source_sha256": "d985f5ff75a5c478abe6df54d24ee7f2f30b5cfc2320d069654b3fed0705fc2a",
+    "adapter_source_sha256": "f65b3f0209a203ff55e4885a2431a6d04a0c1d88f88b64bc9f8fa6954a5604ea",
     "scope": "public dynamo-renderer API; downstream normalization is not exercised"
   },
   "results": {
@@ -323,7 +323,7 @@
         "media_message_order": null
       }
     },
-    "RENDERER.deepseek-effort-precedence": {
+    "RENDERER.controls-effort-precedence": {
       "result": {
         "kind": "prompt",
         "text": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 62 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Hello<｜Assistant｜><think>",

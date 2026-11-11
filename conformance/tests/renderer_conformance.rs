@@ -134,6 +134,7 @@ fn source_assets_request_order_and_capture_membership_are_bound() {
         "reference_input",
         "metadata_origin",
         "transformation",
+        "blank_authority",
     ] {
         let temporary = tempfile::tempdir().unwrap();
         let store = temporary.path().join(renderer::STORE);
@@ -172,7 +173,7 @@ fn source_assets_request_order_and_capture_membership_are_bound() {
                 }
                 fs::write(path, serde_json::to_vec_pretty(&capture).unwrap()).unwrap();
             }
-            "reference_input" | "metadata_origin" | "transformation" => {
+            "reference_input" | "metadata_origin" | "transformation" | "blank_authority" => {
                 let path = store.join(format!("families/{id}/reference.json"));
                 let mut capture: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
                 let first = capture["results"]
@@ -183,6 +184,8 @@ fn source_assets_request_order_and_capture_membership_are_bound() {
                     .unwrap();
                 if mutation == "transformation" {
                     first["transformations"] = json!([{"name":"rewrite","authority":null}]);
+                } else if mutation == "blank_authority" {
+                    first["metadata_origin"] = " \t\n".into();
                 } else {
                     first[mutation] = Value::Null;
                 }

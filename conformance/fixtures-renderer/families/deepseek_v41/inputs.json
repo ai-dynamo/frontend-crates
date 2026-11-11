@@ -1388,9 +1388,9 @@
       "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
     },
     {
-      "id": "RENDERER.deepseek-effort-precedence",
-      "group": "deepseek_v41",
-      "description": "Top-level reasoning_effort takes precedence over the template argument.",
+      "id": "RENDERER.controls-effort-precedence",
+      "group": "controls",
+      "description": "Resolve conflicting top-level and template reasoning effort.",
       "request": {
         "model": "deepseek-ai/DeepSeek-V4.1-Flash",
         "messages": [

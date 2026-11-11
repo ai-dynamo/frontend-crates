@@ -261,17 +261,17 @@ pub fn validate_capture(
             ensure!(
                 observation["metadata_origin"]
                     .as_str()
-                    .is_some_and(|value| !value.is_empty()),
+                    .is_some_and(|value| !value.trim().is_empty()),
                 "reference metadata needs authority"
             );
             for transformation in observation["transformations"].as_array().unwrap() {
                 ensure!(
                     transformation["name"]
                         .as_str()
-                        .is_some_and(|value| !value.is_empty())
+                        .is_some_and(|value| !value.trim().is_empty())
                         && transformation["authority"]
                             .as_str()
-                            .is_some_and(|value| !value.is_empty()),
+                            .is_some_and(|value| !value.trim().is_empty()),
                     "reference transformation needs named authority"
                 );
             }
@@ -405,4 +405,27 @@ pub fn reference_matches(expected: &Value, observed: &Value, message_count: usiz
         }
     }
     expected == observed
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn json_admission_rejects_invalid_unicode_without_rejecting_valid_pairs() {
+        let temporary = tempfile::tempdir().unwrap();
+        for bytes in [br#"{"text":"\ud800"}"#.as_slice(), b"{\"text\":\"\xff\"}"] {
+            fs::write(temporary.path().join("invalid.json"), bytes).unwrap();
+            assert!(read_json(temporary.path(), "invalid.json").is_err());
+        }
+        fs::write(
+            temporary.path().join("valid.json"),
+            br#"{"text":"\ud83e\udd80"}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            read_json(temporary.path(), "valid.json").unwrap().0["text"],
+            "🦀"
+        );
+    }
 }

@@ -1309,6 +1309,35 @@
       "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
     },
     {
+      "id": "RENDERER.controls-effort-precedence",
+      "group": "controls",
+      "description": "Resolve conflicting top-level and template reasoning effort.",
+      "request": {
+        "model": "zai-org/GLM-5.3",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "reasoning_effort": "medium"
+      },
+      "settings": {
+        "add_generation_prompt": true,
+        "chat_template_args": {
+          "reasoning_effort": "low"
+        },
+        "request_mode": "typed",
+        "content_format": "auto",
+        "exclude_tools_when_tool_choice_none": false
+      },
+      "metadata_expectation": {
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    {
       "id": "RENDERER.images-single",
       "group": "images",
       "description": "One synthetic image content block; no bytes are fetched.",

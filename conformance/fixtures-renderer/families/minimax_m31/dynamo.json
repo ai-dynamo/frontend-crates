@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "minimax_m31",
-  "inputs_sha256": "e15eae0ed0dff09673dfc70d658fae948d757813dbfbefd8ee876133d339c367",
+  "inputs_sha256": "43b165248be67e9cef75284060fbffe00df3dad99620f7af24b2786bd1af9df1",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "dynamo",
     "version": "10.3.2",
     "source_sha256": "1e6b631a4b39f19f4e1c037a69a360fdb4530d1d232293c8cc6deffb02b5b7b8",
-    "adapter_source_sha256": "d985f5ff75a5c478abe6df54d24ee7f2f30b5cfc2320d069654b3fed0705fc2a",
+    "adapter_source_sha256": "f65b3f0209a203ff55e4885a2431a6d04a0c1d88f88b64bc9f8fa6954a5604ea",
     "scope": "public dynamo-renderer API; downstream normalization is not exercised"
   },
   "results": {
@@ -267,6 +267,15 @@
       "result": {
         "kind": "prompt",
         "text": "]~!b[]~b]system\nYour model version is MiniMax-M3.1, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: adaptive. You are encouraged to think for complex decision-making, multi-step reasoning, or when analyzing function/tool results.\n</thinking_instructions>\n\n<model_id>8bb8149fe</model_id>\n\n<effort>max</effort>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHello[e~[\n]~b]ai\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      }
+    },
+    "RENDERER.controls-effort-precedence": {
+      "result": {
+        "kind": "prompt",
+        "text": "]~!b[]~b]system\nYour model version is MiniMax-M3.1, developed by MiniMax. Knowledge cutoff: January 2026. Founded in early 2022, MiniMax is a global AI foundation model company committed to advancing the frontiers of AI towards AGI.\n\n<thinking_instructions>\nYou have a thinking capability that allows you to reason step by step before responding. When thinking is enabled, wrap your reasoning in <mm:think></mm:think> tags before your response. When thinking is disabled, begin your response directly after the </mm:think> prefix. When thinking is adaptive, decide on your own whether to think for the current turn.\nCurrent thinking mode: adaptive. You are encouraged to think for complex decision-making, multi-step reasoning, or when analyzing function/tool results.\n</thinking_instructions>\n\n<model_id>8bb8149fe</model_id>\n\n<effort>low</effort>[e~[\n]~b]developer\nYou are a helpful assistant.[e~[\n]~b]user\nHello[e~[\n]~b]ai\n",
         "segments": null,
         "pending_segments": 0,
         "media_message_order": null

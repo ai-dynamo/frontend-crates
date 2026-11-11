@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "kimi_k3",
-  "inputs_sha256": "5ef812879b0757dcf27989659060da68ad4900dab58185110831d6ebf1e0c5e2",
+  "inputs_sha256": "1c79b9f580f3648459c0d7f5192e8ddb8548e2bf1da6e8ee39ee9daf3632799b",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "reference",
     "version": "moonshotai/Kimi-K3@f831ab66814297da540d832a5235f8e904f29d06",
     "source_sha256": "49ff03305fdc4be26867972788d36150b67f8a9e852e62bb7959d87482223676",
-    "adapter_sha256": "9089ffc306a660e67a4ef839b949d26e59108c99ca1a7ac99b8461a259b92ed7",
+    "adapter_sha256": "2a67d112eed8ac2fce54a43bf7e12571b64f3d5a1eb445163c43c70e23add43d",
     "python": "3.12.13",
     "transformers": "5.12.1",
     "jinja2": "3.1.6"
@@ -10877,6 +10877,194 @@
         }
       },
       "transformations": [
+        {
+          "name": "resolve_k3_default_effort_and_image_prompt_hook",
+          "authority": "independently-authored API defaults plus official encoding_k3.py image_prompts hook"
+        }
+      ],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-precedence": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|open|>message role=\"system\" type=\"thinking-effort\"<|sep|>`thinking_effort` guides on how much to think in your thinking channel (not including the response channel), supported values include `low`, `medium`, `high`, and `max`.\nNow the system is invoked with `thinking_effort=low`.<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"user\"<|sep|>Hello<|close|>message<|sep|><|end_of_msg|><|open|>message role=\"assistant\"<|sep|><|open|>think<|sep|>",
+        "segments": [
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": " role",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "system",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": " type",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "thinking-effort",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "`thinking_effort` guides on how much to think in your thinking channel (not including the response channel), supported values include `low`, `medium`, `high`, and `max`.\nNow the system is invoked with `thinking_effort=low`.",
+            "allow_special": false
+          },
+          {
+            "text": "<|close|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|end_of_msg|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": " role",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "user",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "Hello",
+            "allow_special": false
+          },
+          {
+            "text": "<|close|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|end_of_msg|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "message",
+            "allow_special": false
+          },
+          {
+            "text": " role",
+            "allow_special": false
+          },
+          {
+            "text": "=\"",
+            "allow_special": false
+          },
+          {
+            "text": "assistant",
+            "allow_special": false
+          },
+          {
+            "text": "\"",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          },
+          {
+            "text": "<|open|>",
+            "allow_special": true
+          },
+          {
+            "text": "think",
+            "allow_special": false
+          },
+          {
+            "text": "<|sep|>",
+            "allow_special": true
+          }
+        ],
+        "pending_segments": 3,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "thinking": true,
+          "thinking_effort": "low",
+          "image_prompts": []
+        }
+      },
+      "transformations": [
+        {
+          "name": "top_level_effort_not_forwarded",
+          "authority": "independently-authored direct renderer API boundary: K3 consumes template thinking_effort/reasoning_effort; top-level effort normalization belongs to the consumer"
+        },
         {
           "name": "resolve_k3_default_effort_and_image_prompt_hook",
           "authority": "independently-authored API defaults plus official encoding_k3.py image_prompts hook"

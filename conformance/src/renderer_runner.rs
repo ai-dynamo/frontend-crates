@@ -298,6 +298,15 @@ pub fn capture(root: &Path, output: &Path, selected: Option<&str>) -> Result<()>
         selected.is_none_or(|id| models.iter().any(|model| model["id"] == id)),
         "unknown renderer model"
     );
+    if selected.is_some() {
+        let current = producer(&root)?;
+        check_partial_versions(
+            &root,
+            models,
+            selected,
+            current["version"].as_str().unwrap(),
+        )?;
+    }
     // Complete every invocation before creating a publishable output directory.
     let mut captures = Vec::new();
     for model in models
@@ -316,6 +325,66 @@ pub fn capture(root: &Path, output: &Path, selected: Option<&str>) -> Result<()>
         fs::write(directory.join("dynamo.json"), bytes)?;
     }
     Ok(())
+}
+
+fn check_partial_versions(
+    root: &Path,
+    models: &[Value],
+    selected: Option<&str>,
+    version: &str,
+) -> Result<()> {
+    let Some(selected) = selected else {
+        return Ok(());
+    };
+    for model in models.iter().filter(|model| model["id"] != selected) {
+        let id = model["id"].as_str().context("missing model ID")?;
+        let name = format!("families/{id}/dynamo.json");
+        if root.join(renderer::STORE).join(&name).exists() {
+            let (recorded, _) = renderer::read_json(&root.join(renderer::STORE), &name)?;
+            ensure!(
+                recorded["producer"]["version"] == version,
+                "renderer release changed: model {id} was captured with {}; omit --model and refresh all models with {version} to avoid mixed producer versions",
+                recorded["producer"]["version"]
+            );
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_recapture_across_a_release_fails_before_writing_results() {
+        let temporary = tempfile::tempdir().unwrap();
+        let directory = temporary
+            .path()
+            .join(renderer::STORE)
+            .join("families/retained");
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(
+            directory.join("dynamo.json"),
+            br#"{"producer":{"version":"10.3.2"}}"#,
+        )
+        .unwrap();
+        let models = vec![json!({"id":"selected"}), json!({"id":"retained"})];
+        assert!(
+            check_partial_versions(temporary.path(), &models, Some("selected"), "10.3.2").is_ok()
+        );
+        let error = check_partial_versions(temporary.path(), &models, Some("selected"), "10.3.3")
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("omit --model and refresh all models")
+        );
+        assert!(check_partial_versions(temporary.path(), &models, None, "10.3.3").is_ok());
+        assert_eq!(
+            fs::read(directory.join("dynamo.json")).unwrap(),
+            br#"{"producer":{"version":"10.3.2"}}"#
+        );
+    }
 }
 
 #[derive(Default, Debug)]

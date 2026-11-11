@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "model": "qwen38",
-  "inputs_sha256": "9a88becf6f6ffdae8f3a10b154933c89bf6e3fe0427888b7a69ce33b658eaf0f",
+  "inputs_sha256": "99effc12fd2426237d4c7d79e7e7470a5adfc9bbf0a8dac4a4601ae505334488",
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "reference",
     "version": "Qwen/Qwen3.8-27B@37561816e66b5b9153b1b64c10968c18c1e6f4a0",
     "source_sha256": "af16f654968d47d09a6c604e00370b12dbc21f76456f59c9e98b82e84d9f6375",
-    "adapter_sha256": "9089ffc306a660e67a4ef839b949d26e59108c99ca1a7ac99b8461a259b92ed7",
+    "adapter_sha256": "2a67d112eed8ac2fce54a43bf7e12571b64f3d5a1eb445163c43c70e23add43d",
     "python": "3.12.13",
     "transformers": "5.12.1",
     "jinja2": "3.1.6"
@@ -1302,6 +1302,35 @@
         }
       },
       "transformations": [],
+      "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
+    },
+    "RENDERER.controls-effort-precedence": {
+      "result": {
+        "kind": "prompt",
+        "text": "<|im_start|>system\nReasoning effort is set to low. Keep your thinking brief and focused, moving directly to the conclusion without unnecessary elaboration.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n<think>\n",
+        "segments": null,
+        "pending_segments": 0,
+        "media_message_order": null
+      },
+      "reference_input": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ],
+        "tools": null,
+        "kwargs": {
+          "add_generation_prompt": true,
+          "reasoning_effort": "low"
+        }
+      },
+      "transformations": [
+        {
+          "name": "top_level_effort_not_forwarded",
+          "authority": "independently-authored direct renderer API boundary: HF formatters consume template reasoning_effort; top-level effort normalization belongs to the consumer"
+        }
+      ],
       "metadata_origin": "authored-contract: RenderedPrompt channel stub and source-message image ordering; independent of recorded Dynamo output"
     },
     "RENDERER.images-single": {
