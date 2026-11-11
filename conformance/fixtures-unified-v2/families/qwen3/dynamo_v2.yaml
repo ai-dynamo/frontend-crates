@@ -1,20 +1,20 @@
-capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"28ba621c5010dfcbae5d391e67d1b9c47c6a60fd4954abc02a2e2bca8d8098c7","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
+capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"a6d52ee82ff85374b2e44f876e4eb2ebc880cf5b537da4a233bf231ed01b368e","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_1b253d82509d18f6
+  origin: origin_49bba05eefe0a46c
 origins:
-  origin_1b253d82509d18f6:
-    crate_version: 0.10.4
-    source_sha256: af76bc115e0f32b49fc77d497469f27d91b18c28996547679b4bee2d45f84ea0
-    git_commit: 53912026aace765f761404a105204e002e573deb
+  origin_49bba05eefe0a46c:
+    crate_version: 0.10.5
+    source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
+    git_commit: db074b635f197d005701466bc539f3efeee878b2
 producers:
-  producer_636692326c07c515:
+  producer_638222ade9786bb4:
     captured_with:
-      dynamo_v2: 0.10.4
-    capture_origin: origin_1b253d82509d18f6
+      dynamo_v2: 0.10.5
+    capture_origin: origin_49bba05eefe0a46c
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -144,8 +144,8 @@ contexts:
             type: object
         tool_output_mode: Native
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.4.yaml
-  producer: producer_636692326c07c515
+  member: conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.5.yaml
+  producer: producer_638222ade9786bb4
   context: context_63bbcc8b0776f125
 records:
   tool_only:

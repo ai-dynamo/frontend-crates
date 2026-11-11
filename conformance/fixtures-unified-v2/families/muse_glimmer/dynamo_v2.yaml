@@ -1,20 +1,20 @@
-capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e6386c615b3b9d2ad327da1f0102dcf065b4b94a4ee4bc2eb3301e6dc41adcaa","source":"conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
+capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"1d400eff1395d7fd19247903e75735daede9796e59a4d8d04bbc48ee49163484","source":"conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_1b253d82509d18f6
+  origin: origin_49bba05eefe0a46c
 origins:
-  origin_1b253d82509d18f6:
-    crate_version: 0.10.4
-    source_sha256: af76bc115e0f32b49fc77d497469f27d91b18c28996547679b4bee2d45f84ea0
-    git_commit: 53912026aace765f761404a105204e002e573deb
+  origin_49bba05eefe0a46c:
+    crate_version: 0.10.5
+    source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
+    git_commit: db074b635f197d005701466bc539f3efeee878b2
 producers:
-  producer_636692326c07c515:
+  producer_638222ade9786bb4:
     captured_with:
-      dynamo_v2: 0.10.4
-    capture_origin: origin_1b253d82509d18f6
+      dynamo_v2: 0.10.5
+    capture_origin: origin_49bba05eefe0a46c
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -97,8 +97,8 @@ contexts:
         starting_state: Response
         tool_output_mode: GuidedJson
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.4.yaml
-  producer: producer_636692326c07c515
+  member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.5.yaml
+  producer: producer_638222ade9786bb4
   context: context_63bbcc8b0776f125
 records:
   tool_only:
