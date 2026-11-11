@@ -377,10 +377,12 @@ unified:
       arg_json_null_const: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_json_null.
       arg_json_null_nullable: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_json_null.
       arg_json_null_oneof: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_json_null.
+      arg_json_null_ref: Native Harmony ignores schema references; native input and oracle retained as arg_json_null; marker-aligned delivery is covered by the shared split and finish regression.
       arg_numeric_14_enum_decimal: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_numeric_14_const_decimal.
       arg_numeric_14_enum_exponent: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_numeric_14_const_exponent.
       arg_string_null_const: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_string_null.
       arg_string_null_enum: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_string_null.
+      arg_string_null_ref: Native Harmony ignores schema references; native input and oracle retained as arg_string_null; marker-aligned delivery is covered by the shared split and finish regression.
       arg_string_null_sibling_anyof: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_string_null.
       arg_string_null_sibling_oneof: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_string_null.
       arg_string_null_union: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_string_null.

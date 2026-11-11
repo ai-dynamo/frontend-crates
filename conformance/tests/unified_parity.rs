@@ -198,7 +198,18 @@ fn structural_response_case_checks_the_schema_before_parsing() {
     families.sort();
     assert_eq!(
         families,
-        ["deepseek_v4", "glm47", "gpt_oss", "muse_spark", "qwen3"]
+        [
+            "beam",
+            "deepseek_v4",
+            "deepseek_v41",
+            "glm47",
+            "gpt_oss",
+            "kimi_k2",
+            "kimi_k3",
+            "minimax_m3",
+            "muse_spark",
+            "qwen3"
+        ]
     );
 }
 
@@ -854,9 +865,84 @@ fn unified_parser_is_chunk_invariant() {
     );
 }
 
+fn assert_delivery_lifecycle(family: &str, case: &GoldenCase, id: &str) {
+    let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+    let whole = events(
+        family,
+        std::slice::from_ref(&case.input),
+        &case.init,
+        &tools,
+    );
+    assert_eq!(
+        whole,
+        Ok(case.golden.clone()),
+        "{id}: independently authored oracle"
+    );
+    let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+    for _ in 0..2 {
+        case.init.apply(&mut parser, family);
+        let mut output = parser.push(&case.input).unwrap();
+        if case
+            .golden
+            .iter()
+            .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+        {
+            assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: complete input must make call progress before finish");
+        }
+        output.extend(parser.finish().unwrap().events);
+        assert_eq!(assemble(&output), case.golden, "{id}: finish and reuse");
+        parser.reset();
+    }
+    for split in case
+        .input
+        .char_indices()
+        .map(|(at, _)| at)
+        .chain([case.input.len()])
+    {
+        let chunks = vec![
+            case.input[..split].into(),
+            String::new(),
+            case.input[split..].into(),
+        ];
+        assert_eq!(
+            events(family, &chunks, &case.init, &tools),
+            whole,
+            "{id} split={split}"
+        );
+    }
+    if family == "gpt_oss" {
+        let ids = dynamo_parsers_v2::encode_harmony(&case.input).unwrap();
+        for split in 0..=ids.len() {
+            parser.reset();
+            case.init.apply(&mut parser, family);
+            let mut output = parser.push_tokens(&ids[..split]).unwrap();
+            output.extend(parser.push_tokens(&[]).unwrap());
+            output.extend(parser.push_tokens(&ids[split..]).unwrap());
+            if case
+                .golden
+                .iter()
+                .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+            {
+                assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: token delivery must complete before finish");
+            }
+            output.extend(parser.finish().unwrap().events);
+            assert_eq!(assemble(&output), case.golden, "{id} token split={split}");
+        }
+    }
+    let mut characters = chunk_every(&case.input, 1);
+    characters.push(String::new());
+    assert_eq!(
+        events(family, &characters, &case.init, &tools),
+        whole,
+        "{id} characters and terminal empty push"
+    );
+}
+
 #[test]
 fn gpt_oss_delivery_repetitions_share_split_and_finish_coverage() {
     let scenarios = [
+        "arg_json_null",
+        "arg_string_null",
         "guided_json_gt_in_argument_trailing_close",
         "guided_json_gt_in_argument_wrapped",
         "guided_json_marker_inside_argument",
@@ -881,75 +967,45 @@ fn gpt_oss_delivery_repetitions_share_split_and_finish_coverage() {
     for scenario in scenarios {
         let id = format!("UNIFIED.{scenario}.gpt_oss");
         let case = &file.cases[&id];
-        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
-        let whole = events(
-            "gpt_oss",
-            std::slice::from_ref(&case.input),
-            &case.init,
-            &tools,
-        );
-        assert_eq!(
-            whole,
-            Ok(case.golden.clone()),
-            "{id}: independently authored oracle"
-        );
-        let mut parser = create_unified_parser_for_family("gpt_oss", &tools).unwrap();
-        for _ in 0..2 {
-            case.init.apply(&mut parser, "gpt_oss");
-            let mut output = parser.push(&case.input).unwrap();
-            if case
-                .golden
-                .iter()
-                .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
-            {
-                assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: complete input must make call progress before finish");
+        assert_delivery_lifecycle("gpt_oss", case, &id);
+        let whole = Ok(case.golden.clone());
+        if matches!(scenario, "arg_json_null" | "arg_string_null") {
+            let mut reference = case.tools.clone().unwrap();
+            let city = reference[0]["parameters"]["properties"]["city"].clone();
+            reference[0]["parameters"] = serde_json::json!({
+                "type": "object", "$defs": {"City": city},
+                "properties": {"city": {"$ref": "#/$defs/City"}}
+            });
+            let referenced_tools = common::unified_tools_for_schemas(Some(&reference));
+            for tool_set in [referenced_tools.as_slice(), &[]] {
+                for (label, chunks) in splittings(&case.input) {
+                    assert_eq!(
+                        events("gpt_oss", &chunks, &case.init, tool_set),
+                        whole,
+                        "{id} schema-independent {label} delivery"
+                    );
+                }
             }
-            output.extend(parser.finish().unwrap().events);
-            assert_eq!(assemble(&output), case.golden, "{id}: finish and reuse");
-            parser.reset();
         }
-        for split in case
-            .input
-            .char_indices()
-            .map(|(at, _)| at)
-            .chain([case.input.len()])
-        {
-            let chunks = vec![
-                case.input[..split].into(),
-                String::new(),
-                case.input[split..].into(),
-            ];
-            assert_eq!(
-                events("gpt_oss", &chunks, &case.init, &tools),
-                whole,
-                "{id} split={split}"
-            );
-        }
-        let ids = dynamo_parsers_v2::encode_harmony(&case.input).unwrap();
-        for split in 0..=ids.len() {
-            parser.reset();
-            case.init.apply(&mut parser, "gpt_oss");
-            let mut output = parser.push_tokens(&ids[..split]).unwrap();
-            output.extend(parser.push_tokens(&[]).unwrap());
-            output.extend(parser.push_tokens(&ids[split..]).unwrap());
-            if case
-                .golden
-                .iter()
-                .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
-            {
-                assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: token delivery must complete before finish");
-            }
-            output.extend(parser.finish().unwrap().events);
-            assert_eq!(assemble(&output), case.golden, "{id} token split={split}");
-        }
-        let mut characters = chunk_every(&case.input, 1);
-        characters.push(String::new());
-        assert_eq!(
-            events("gpt_oss", &characters, &case.init, &tools),
-            whole,
-            "{id} characters and terminal empty push"
-        );
     }
+}
+
+#[test]
+fn native_review_variants_share_split_and_finish_coverage() {
+    let mut checked = 0;
+    for file in load_native_golden() {
+        for scenario in [
+            "tool_body_whitespace",
+            "gpt_oss_quoted_call_header_then_visible_prose",
+        ] {
+            let id = format!("UNIFIED.{scenario}.{}", file.family);
+            if let Some(case) = file.cases.get(&id) {
+                assert_delivery_lifecycle(&file.family, case, &id);
+                checked += 1;
+            }
+        }
+    }
+    assert_eq!(checked, 20);
 }
 
 #[test]
@@ -1062,6 +1118,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "hermes",
         "kimi_k2",
         "kimi_k3",
+        "minimax_m3",
         "mistral_4",
         "muse_glimmer",
         "muse_spark",
@@ -1124,7 +1181,9 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         checked,
         native_families * reference_scenarios.len()
             + template_families * template_reference_scenarios.len()
-            + dotted_native_families.len() * dotted_scenarios.len(),
+            + dotted_native_families.len() * dotted_scenarios.len()
+            // Native Harmony's two reference repetitions use the delivery lifecycle owner.
+            - 2,
     );
 }
 

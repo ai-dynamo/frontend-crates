@@ -990,6 +990,10 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_4878f82e06d1ba60:
+  - name: python
+    parameters:
+      type: string
   tools_746b20394956becb:
   - name: schema_probe
     parameters:
@@ -1706,10 +1710,6 @@ tools:
           oneOf:
           - type: string
           - type: integer
-  tools_4878f82e06d1ba60:
-  - name: python
-    parameters:
-      type: string
   tools_1c0b6cc6a42cfbde:
   - name: schema_probe
     parameters:
@@ -3582,6 +3582,9 @@ requests:
   9225fe80c6c1dd9a7e800d65f865284f8c56fa51c853d8ac65f40127630833bd:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3.5}<|call|>'
     tools: tools_686a0bb91b79903e
+  926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8:
+    input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+    tools: tools_4878f82e06d1ba60
   92c8ba60c1d18b491eea53d9e6692708609712735d93beadb393d8e22764ccd9:
     init:
       starting_state: Response
@@ -8729,7 +8732,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 3d352e75afc03e25aba4d13708959faab9b2e432cc9b16bcfbe28da74a5edc94
     golden:
@@ -9183,6 +9186,7 @@ cases:
         value:
           s: </atem:parameter>
   arg_json_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -9196,6 +9200,7 @@ cases:
       arguments:
         city: null
   arg_string_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -10109,7 +10114,7 @@ cases:
     - I3
     - I5
     - I7
-    description: Dynamo Native Unified projects a JSON argument body addressed to python as a generic tool call. This syntax-only policy differs from vLLM builtin filtering and does not claim OpenAI builtin API parity or support raw Python bodies.
+    description: 'Dynamo Native Unified projects a JSON object addressed to python as a generic tool call. This deliberately noncanonical commentary-channel case tests Dynamo''s JSON projection policy: the dictionary body does not execute its code string. Canonical builtin Python requests use analysis and raw Python code; vLLM filters builtin recipients differently.'
     display_id: UNIFIED.gpt_oss-native_builtin_recipient_json
     request: 885a3fc00d909b57252bbfb6224eb178d66eb89dd09d7b1fd220008474dca031
     golden:
@@ -10147,9 +10152,9 @@ cases:
     - I3
     - I5
     - I7
-    description: 'A framed assistant commentary call to the built-in python recipient carries raw print(1) and ends with tool handoff. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.'
+    description: 'A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony''s documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.'
     display_id: UNIFIED.gpt_oss-native_builtin_python_raw
-    request: d436b933d3a4b2d91af899afc5fb8baed1178934ae51478130fd6bef445c804e
+    request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     golden:
     - kind: tool_call
       name: python
@@ -10205,7 +10210,7 @@ cases:
     - I3
     - I5
     - I7
-    description: A balanced visible JSON string quotes a complete assistant tool header and handoff before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
     display_id: UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
     request: 489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95
     golden:

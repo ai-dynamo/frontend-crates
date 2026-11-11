@@ -579,6 +579,7 @@ SHARED_CASE_VARIANTS = {
     "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call", name_suffix="truncated_json_then_valid_call"),
     "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
     "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace", name_suffix="leading_json_body_whitespace"),
+    "gpt_oss_quoted_call_header_then_visible_prose": CaseVariant("native_quoted_control_in_response", "JSON string followed by prose", name_suffix="json_string_then_prose"),
     "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response", name_suffix="malformed_argument_then_visible_response"),
     "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header", name_suffix="quoted_closer_and_response_header"),
 }

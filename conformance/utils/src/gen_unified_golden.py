@@ -83,6 +83,7 @@ DOTTED_NAME_FAMILIES = frozenset({
     "hermes",
     "kimi_k2",
     "kimi_k3",
+    "minimax_m3",
     "mistral_4",
     "muse_glimmer",
     "muse_spark",
@@ -4442,16 +4443,17 @@ def _structured_response_case():
     reason = "Check London météo🙂 before answering; this is prose, not JSON."
     inputs, initializations = {}, {}
     unsupported = D("UNSUPPORTED", "Parser-only peer capture does not execute structural-tag generation constraints.")
-    for family in ("gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark"):
+    for family in ("beam", "gpt_oss", "qwen3", "glm47", "deepseek_v4", "deepseek_v41", "kimi_k2", "kimi_k3", "minimax_m3", "muse_spark"):
         if family == "muse_spark":
             prefix = reason + "<|eom|><|start|>assistant to=user<|message|>"
             suffix, state, visible_prefix = "", "Reasoning", ""
-        elif family == "gpt_oss":
+        elif family in {"gpt_oss", "beam"}:
             prefix = r_reason(family, reason).removeprefix("<|start|>assistant") + r_text(family, "").removesuffix("<|return|>")
-            suffix, state, visible_prefix = "<|return|>", "None", ""
+            suffix = "<|return|>" if family == "gpt_oss" else ""
+            state, visible_prefix = "None", ""
         else:
             visible_prefix = "\n\n" if family == "qwen3" else ""
-            prefix = reason + "</think>" + visible_prefix
+            prefix = reason + control_tokens(family)[1] + visible_prefix
             suffix, state = "", "Reasoning"
         rejected = [prefix + invalid + suffix for invalid in (
             "[]", '{"location":',
@@ -4471,7 +4473,7 @@ def _structured_response_case():
         ])
     return (
         "structured_response_after_reasoning",
-        "No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.",
+        "No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.",
         ["P5", "I5"], [], OnlyFamilies(initializations), {"finish_reason": "stop"},
         OnlyFamilies(inputs, inherit_grammar=False), [],
     )
@@ -4485,7 +4487,7 @@ GPT_OSS_ORACLE_CORRECTIONS = frozenset(['gpt_oss_commentary_text_interrupted_by_
 
 
 _GPT_OSS_RECOVERY_CASES = (
-    ("gpt_oss_quoted_call_header_then_visible_prose", "A balanced visible JSON string quotes a complete assistant tool header and handoff before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.",
+    ("gpt_oss_quoted_call_header_then_visible_prose", "A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.",
      '<|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>',
      [{"kind":"text", "text":'"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'}]),
     ("gpt_oss_unclosed_commentary_then_quoted_final", "An unfinished commentary quote precedes a complete assistant final message containing its own quotes. The later quote cannot validate the earlier JSON-looking prefix; retain both visible bodies and remove the real message controls.",
@@ -4506,7 +4508,7 @@ _GPT_OSS_RECOVERY_CASES = (
     ("gpt_oss_broadcast_recipient_analysis", "Dynamo normalizes to=all like an omitted recipient, following openai-harmony 0.0.8 renderer behavior. This compatibility policy keeps the analysis body as reasoning; it is not a claim that format.md defines all.",
      '<|start|>assistant to=all<|channel|>analysis<|message|>checking<|end|>',
      [{"kind":"reasoning", "text":"checking"}]),
-    ("gpt_oss_native_builtin_recipient_json", "Dynamo Native Unified projects a JSON argument body addressed to python as a generic tool call. This syntax-only policy differs from vLLM builtin filtering and does not claim OpenAI builtin API parity or support raw Python bodies.",
+    ("gpt_oss_native_builtin_recipient_json", "Dynamo Native Unified projects a JSON object addressed to python as a generic tool call. This deliberately noncanonical commentary-channel case tests Dynamo's JSON projection policy: the dictionary body does not execute its code string. Canonical builtin Python requests use analysis and raw Python code; vLLM filters builtin recipients differently.",
      '<|start|>assistant to=python<|channel|>commentary<|message|>{"code":"print(1)"}<|call|>',
      [{"kind":"tool_call", "name":"python", "arguments":{"code":"print(1)"}}]),
 
@@ -4669,8 +4671,8 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_visible_scalar_string_quoted_controls", "A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.",
      '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
      [{"kind":"text", "text":'"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}]),
-    ("gpt_oss_native_builtin_python_raw", "A framed assistant commentary call to the built-in python recipient carries raw print(1) and ends with tool handoff. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.",
-     '<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>',
+    ("gpt_oss_native_builtin_python_raw", "A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony's documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.",
+     '<|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>',
      [{"kind":"tool_call", "name":"python", "arguments":'"print(1)"'}]),
     ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.",
      '<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>',
@@ -4753,6 +4755,11 @@ def _native_review_variants(scenario):
         arguments = {"city": "Paris"}
         golden = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
         return {
+            **{family: (_dsml_json_tool(family, "get_weather", ' \n\t' + json.dumps(arguments) + '\t \n'), golden, M)
+               for family in ("deepseek_v4", "deepseek_v41")},
+            "hermes": (r_tool_arguments("hermes", "get_weather", arguments, 0)
+                       .replace(control_tokens("hermes")[2], control_tokens("hermes")[2] + ' \n\t', 1)
+                       .replace(control_tokens("hermes")[3], '\t \n' + control_tokens("hermes")[3], 1), golden, M),
             "kimi_k2": (
                 r_tool_arguments("kimi_k2", "get_weather", arguments, 0).replace(
                     "<|tool_call_argument_begin|>", "<|tool_call_argument_begin|> \n\t", 1
@@ -4763,6 +4770,14 @@ def _native_review_variants(scenario):
                 r_tool_arguments("mistral_4", "get_weather", arguments, 0).replace("[ARGS]", "[ARGS] \n\t", 1),
                 golden, M,
             ),
+        }
+    if scenario == "gpt_oss_quoted_call_header_then_visible_prose":
+        # Beam and Mistral retain structural-token precedence inside quotations.
+        return {
+            family: (default_response_prefix(family) + r_text(family, literal),
+                     [{"kind": "text", "text": literal}], M)
+            for family in _NATIVE_QUOTED_CONTROL if family not in {"gpt_oss", "beam", "mistral_4"}
+            for literal in [json.dumps(r_tool_arguments(family, "lookup", {"q": "x"}, 0), ensure_ascii=False) + " trailing"]
         }
     if scenario == "gpt_oss_quoted_truncated_tool_then_final":
         golden = [{"kind": "text", "text": "Answer"}]
@@ -5357,7 +5372,6 @@ def _build_cases(fam):
     if fam == "gpt_oss":
         for case in cases.values():
             case.setdefault("tools", [])
-    if fam == "gpt_oss":
         for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items():
             if not active or scenario + "_pr424" in RETIRED_SCENARIOS:
                 continue

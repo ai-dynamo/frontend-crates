@@ -1,20 +1,20 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e03d5d3921e05ce08181f906b360e5b48619631069d1cf448077865f7a1ec5a6","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"a69b95a4b7cb232487c90e41b016e7614683b459ea7068a6d85528c87870517a","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_cfa08ef88487d2af
+  origin: origin_1b253d82509d18f6
 origins:
-  origin_cfa08ef88487d2af:
+  origin_1b253d82509d18f6:
     crate_version: 0.10.4
     source_sha256: af76bc115e0f32b49fc77d497469f27d91b18c28996547679b4bee2d45f84ea0
-    git_commit: e63433ca1970693568cfc76b33aa15afdeafb5a0
+    git_commit: 53912026aace765f761404a105204e002e573deb
 producers:
-  producer_9381797fceab0187:
+  producer_636692326c07c515:
     captured_with:
       dynamo_v2: 0.10.4
-    capture_origin: origin_cfa08ef88487d2af
+    capture_origin: origin_1b253d82509d18f6
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -131,7 +131,7 @@ contexts:
         tool_output_mode: Native
 record_defaults:
   member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml
-  producer: producer_9381797fceab0187
+  producer: producer_636692326c07c515
   context: context_63bbcc8b0776f125
 records:
   tool_only:
@@ -8686,104 +8686,6 @@ records:
           kind: tool_call
           name: null
       - expected: []
-  arg_json_null_ref:
-    case_key: arg_json_null_ref
-    request: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
-    output:
-      assembled:
-      - arguments: '{"city": null}'
-        kind: tool_call
-        name: get_weather
-      chunks:
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected:
-        - arguments: ''
-          complete: false
-          kind: tool_call
-          name: get_weather
-        - arguments: '{"'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: city
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: '":'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: ' null'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: '}'
-          complete: false
-          kind: tool_call
-          name: null
-      - expected:
-        - arguments: ''
-          complete: true
-          kind: tool_call
-          name: null
-      - expected: []
-  arg_string_null_ref:
-    case_key: arg_string_null_ref
-    request: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
-    output:
-      assembled:
-      - arguments: '{"city": "null"}'
-        kind: tool_call
-        name: get_weather
-      chunks:
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected:
-        - arguments: ''
-          complete: false
-          kind: tool_call
-          name: get_weather
-        - arguments: '{"'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: city
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: '":'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: ' "'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: 'null'
-          complete: false
-          kind: tool_call
-          name: null
-        - arguments: '"}'
-          complete: false
-          kind: tool_call
-          name: null
-      - expected:
-        - arguments: ''
-          complete: true
-          kind: tool_call
-          name: null
-      - expected: []
   blank_framing_tool_only:
     case_key: blank_framing_tool_only
     request: a1b6dfd5ebcba51f7d16ee24f24c09f253dd36190c65bb8940cf138d89ac6aeb
@@ -11585,7 +11487,7 @@ records:
       - expected: []
   gpt_oss_native_builtin_python_raw:
     case_key: gpt_oss_native_builtin_python_raw
-    request: d436b933d3a4b2d91af899afc5fb8baed1178934ae51478130fd6bef445c804e
+    request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     output:
       assembled: []
       chunks:

@@ -6361,6 +6361,37 @@ requests:
     - 76
     - 26
     finish_step: true
+  df0a2dfee99580bb4bcd533ae637771fbd1c00dedb3a1807c364443058005765:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
+        - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+    input: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+    tools: tools_9db8284c68087826
   df784e2eb4e767185a616184a14b0be16da0e39c21f593bd9c8746c0cae93ae3:
     input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.server.weather:0<|tool_call_argument_begin|>{"location": "Beijing"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.server.time:1<|tool_call_argument_begin|>{"timezone": "Asia/Shanghai"}<|tool_call_end|><|tool_calls_section_end|>'
     tools: tools_cd234037a001916f
@@ -6754,6 +6785,9 @@ requests:
     - 17
     - 26
     finish_step: true
+  f708af0826cf78ee0ee63ff14df99049868543275f78dc6de21b23ee43a2a288:
+    input: '"<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{\"q\": \"x\"}<|tool_call_end|><|tool_calls_section_end|>" trailing'
+    tools: tools_81b3b17af2bd185e
   f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6:
     input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|> \n\t{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>"
     tools: tools_bc4305bb8be412b3
@@ -11383,3 +11417,26 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: f708af0826cf78ee0ee63ff14df99049868543275f78dc6de21b23ee43a2a288
+    golden:
+    - kind: text
+      text: '"<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{\"q\": \"x\"}<|tool_call_end|><|tool_calls_section_end|>" trailing'
+  structured_response_after_reasoning:
+    policy:
+    - P5
+    - I5
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    display_id: UNIFIED.36-structured_response_after_reasoning
+    request: df0a2dfee99580bb4bcd533ae637771fbd1c00dedb3a1807c364443058005765
+    golden:
+    - kind: reasoning
+      text: Check London météo🙂 before answering; this is prose, not JSON.
+    - kind: text
+      text: '{"location":"London","temperature":12,"conditions":"cloudy"}'

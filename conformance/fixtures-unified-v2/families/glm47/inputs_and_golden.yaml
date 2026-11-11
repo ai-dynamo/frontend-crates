@@ -161,6 +161,13 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_a6aee3f30418a3a4:
   - name: schema_probe
     parameters:
@@ -2057,6 +2064,9 @@ requests:
     - 12
     - 12
     finish_step: true
+  0d3febd2c7adb86915def552c6bc681d49c69c04885d03e82d2d0f002fa6f226:
+    input: '"<tool_call>lookup<arg_key>q</arg_key><arg_value>x</arg_value></tool_call>" trailing'
+    tools: tools_81b3b17af2bd185e
   10fd8d0573e5d2fbbf2ea273ef0dc732d05e6cc95b1f1513453bda4d1b010c27:
     init:
       starting_state: Reasoning
@@ -9631,7 +9641,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
     golden:
@@ -10538,3 +10548,14 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 0d3febd2c7adb86915def552c6bc681d49c69c04885d03e82d2d0f002fa6f226
+    golden:
+    - kind: text
+      text: '"<tool_call>lookup<arg_key>q</arg_key><arg_value>x</arg_value></tool_call>" trailing'
