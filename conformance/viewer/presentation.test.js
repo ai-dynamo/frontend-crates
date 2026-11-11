@@ -312,6 +312,15 @@ const coverageFixture = scopes => {
 };
 const familySubsets = Array.from({ length: 2 ** coverageFamilies.length }, (_, mask) =>
   coverageFamilies.filter((_, index) => mask & (1 << index)));
+const fullFamilyFixture = coverageFixture([coverageFamilies, coverageFamilies]);
+const fullFamilyPanel = await unifiedPanel(fullFamilyFixture.catalog, fullFamilyFixture.reader);
+for (const families of familySubsets) {
+  const fixture = coverageFixture([coverageFamilies, coverageFamilies]);
+  const panel = await unifiedPanel(fixture.catalog, fixture.reader, { captureFamilies: families });
+  assert.deepEqual(panel.rows.filter(row => families.includes(row.family)), fullFamilyPanel.rows.filter(row => families.includes(row.family)));
+  assert.deepEqual(panel.columns, fullFamilyPanel.columns);
+  assert.deepEqual(fixture.reads.sort(), families.flatMap(family => ['dynamo_v1', 'dynamo_v2'].map(implementation => `${family}:${implementation}`)).sort());
+}
 for (const left of familySubsets) for (const right of familySubsets) {
   const scopes = [left, right];
   for (const reverse of [false, true]) {

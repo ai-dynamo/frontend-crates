@@ -925,6 +925,23 @@ fn gpt_oss_delivery_repetitions_share_split_and_finish_coverage() {
                 "{id} split={split}"
             );
         }
+        let ids = dynamo_parsers_v2::encode_harmony(&case.input).unwrap();
+        for split in 0..=ids.len() {
+            parser.reset();
+            case.init.apply(&mut parser, "gpt_oss");
+            let mut output = parser.push_tokens(&ids[..split]).unwrap();
+            output.extend(parser.push_tokens(&[]).unwrap());
+            output.extend(parser.push_tokens(&ids[split..]).unwrap());
+            if case
+                .golden
+                .iter()
+                .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+            {
+                assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: token delivery must complete before finish");
+            }
+            output.extend(parser.finish().unwrap().events);
+            assert_eq!(assemble(&output), case.golden, "{id} token split={split}");
+        }
         let mut characters = chunk_every(&case.input, 1);
         characters.push(String::new());
         assert_eq!(
@@ -932,6 +949,84 @@ fn gpt_oss_delivery_repetitions_share_split_and_finish_coverage() {
             whole,
             "{id} characters and terminal empty push"
         );
+    }
+}
+
+#[test]
+fn gpt_oss_long_arguments_make_progress_before_handoff() {
+    const START: &str = "<|start|>";
+    const MESSAGE: &str = "<|message|>";
+    const HANDOFF: &str = "<|call|>";
+    let long = format!("{}{}", "quote \\\" slash \\\\ é🙂 ".repeat(128), START);
+    for position in 0..=3 {
+        let mut fields = vec![
+            "true".to_string(),
+            "null".to_string(),
+            "\"short\"".to_string(),
+        ];
+        fields.insert(position, serde_json::to_string(&long).unwrap());
+        let body = format!(
+            "{{{}}}",
+            fields
+                .iter()
+                .enumerate()
+                .map(|(i, value)| format!("\"k{i}\":{value}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let pause = body.find(START).unwrap();
+        let prefix = format!(
+            "{START}assistant to=functions.lookup{MESSAGE}{}",
+            &body[..pause]
+        );
+        let expected = vec![UnifiedEvent::ToolCall {
+            name: "lookup".into(),
+            arguments: serde_json::from_str(&body).unwrap(),
+        }];
+        for tokens in [false, true] {
+            for chunk_size in [1, 17, 128] {
+                let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
+                for _ in 0..2 {
+                    parser.initialize(&[]).unwrap();
+                    let mut push = |part: &str| {
+                        let mut output = Vec::new();
+                        if tokens {
+                            for ids in dynamo_parsers_v2::encode_harmony(part)
+                                .unwrap()
+                                .chunks(chunk_size)
+                            {
+                                output.extend(parser.push_tokens(ids).unwrap());
+                            }
+                        } else {
+                            for chunk in chunk_every(part, chunk_size) {
+                                output.extend(parser.push(&chunk).unwrap());
+                            }
+                        }
+                        output
+                    };
+                    let mut output = push(&prefix);
+                    assert_eq!(
+                        dynamo_parsers_v2::tool_arguments_raw(&output)
+                            .get(&0)
+                            .map(String::as_str),
+                        Some(&body[..pause]),
+                        "position={position} tokens={tokens} chunks={chunk_size}: long-field progress"
+                    );
+                    output.extend(push(&body[pause..]));
+                    assert_eq!(
+                        dynamo_parsers_v2::tool_arguments_raw(&output).get(&0),
+                        Some(&body)
+                    );
+                    assert!(!output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)));
+                    output.extend(push(HANDOFF));
+                    assert_eq!(output.iter().filter(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)).count(), 1);
+                    assert_eq!(assemble(&output), expected);
+                    output.extend(parser.finish().unwrap().events);
+                    assert_eq!(assemble(&output), expected);
+                    parser.reset();
+                }
+            }
+        }
     }
 }
 

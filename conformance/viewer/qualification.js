@@ -13,7 +13,7 @@ import { expandFamily, expandSnapshot, isNormalized } from './normalization.js';
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
 import { selectedCellOutcome } from './model.js';
-import { leafCells, isApplicableCell, validateCaseCell } from './model.js';
+import { leafCells, isApplicableCell, validateCaseCell, selectedUnifiedFamilies, tabCandidates } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
 const execFileAsync = promisify(execFile);
@@ -208,7 +208,12 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const known = options.knownDivergences ? await reader.parser.parseYaml(await readFile(options.knownDivergences), { path: options.knownDivergences }) : null;
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
     for (const spec of selected) {
-      const tab = await buildTab(catalog, reader, spec.id);
+      let captureFamilies = null;
+      if (options.models?.length && !options.knownDivergences) {
+        const available = [...selectedUnifiedFamilies(catalog, tabCandidates(catalog, spec).filter(({ source }) => source.implementation !== 'golden'))];
+        captureFamilies = selectRows({ id: spec.id, rows: available.map(family => ({ family, model_label: family })) }, options.models).map(row => row.family);
+      }
+      const tab = await buildTab(catalog, reader, spec.id, { captureFamilies });
       if (options.knownDivergences && tab.id === 'tab-unified') validateUnifiedKnownDivergences({ tabs: [tab] }, known, Object.keys(catalog.metadata.unified_presentation.parser_generations), catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
       status.reports.push(...buildStatus(page, [tab], options.models, status.html).reports);
     }

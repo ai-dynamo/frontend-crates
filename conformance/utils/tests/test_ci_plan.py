@@ -12,6 +12,16 @@ import ci_coverage
 import ci_plan
 
 
+@pytest.mark.parametrize("module", sorted(path.name for path in (ci_plan.ROOT / ci_plan.TESTS).glob("test_*browser*.py")))
+def test_browser_modules_have_a_browser_lane(module):
+    selector = f"{ci_plan.TESTS}/{module}"
+    for lane in ("fixtures", "core"):
+        assert f"--ignore={selector}" in ci_plan.pytest_arguments(lane)
+    owners = [lane.name for lane in ci_plan.LANES if selector in ci_plan.pytest_arguments(lane.name)]
+    assert owners
+    assert set(owners) <= {"browser", "viewer", "native-browser", "first-matrix"}
+
+
 def test_matrix_changes_group_count_without_workflow_changes(monkeypatch):
     before = ci_plan.plan()
     original = next(lane for lane in ci_plan.LANES if lane.name == "viewer")

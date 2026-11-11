@@ -483,7 +483,15 @@ def test_current_source_status_needs_no_history_or_publisher_and_cleans_view(tmp
         environment.pop(key, None)
     environment["TMPDIR"] = str(temporary)
     destination = tmp_path / "status.json"
-    result = subprocess.run(["node", str(root / "conformance/viewer/qualification.js"), "status", "--root", str(root),
+    preload = tmp_path / "capture-scope.mjs"
+    preload.write_text(f'''import {{ FixtureResources }} from {json.dumps((root / "conformance/viewer/resources.js").as_uri())};
+const read = FixtureResources.prototype.unified;
+FixtureResources.prototype.unified = function(family, ...args) {{
+  if (family !== "qwen3") throw new Error(`single-model status decoded ${{family}}`);
+  return read.call(this, family, ...args);
+}};
+''')
+    result = subprocess.run(["node", "--import", str(preload), str(root / "conformance/viewer/qualification.js"), "status", "--root", str(root),
                              "--model", "qwen3", "--tab", "unified", "--summary-only", "--status-path", str(destination)],
                             env=environment, capture_output=True, text=True, timeout=90)
     assert result.returncode == 0, result.stderr

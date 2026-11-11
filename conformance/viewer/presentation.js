@@ -62,7 +62,7 @@ function captureParserRoute({ source, control }, family, metadata, recorded) {
 }
 
 
-export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined } = {}) {
+export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined, captureFamilies = null } = {}) {
   const metadata = catalog.metadata;
   const spec = metadata.tabs.find((tab) => tab.id === 'tab-unified');
   const descriptors = tabCandidates(catalog, spec);
@@ -90,7 +90,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     }
     byFamily.set(family, cases);
     for (const descriptor of chosen) {
-      const { records } = capturesFamily(descriptor.source, family)
+      const { records } = capturesFamily(descriptor.source, family) && (captureFamilies === null || captureFamilies.includes(family))
         ? await reader.unified(family, descriptor.source.implementation, descriptor.source.version, document) : { records: new Map() };
       const captures = new Map();
       for (const [id, record] of records) {

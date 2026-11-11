@@ -24,10 +24,12 @@ QUALIFICATION_NODES = (
     f"{TESTS}/test_model.py::test_shared_javascript_matrix_contracts",
     f"{TESTS}/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column",
 )
-BROWSER_MODULES = (
-    "test_browser_smoke.py", "test_browser_viewer.py", "test_native_publication_browser.py",
-    "test_capture_split_browser.py", "test_browser_download_scheduler.py",
-)
+BROWSER_MODULES = {
+    "browser": ("test_browser_smoke.py",),
+    "viewer": ("test_browser_viewer.py", "test_browser_harry_comparison.py"),
+    "native-browser": ("test_native_publication_browser.py", "test_capture_split_browser.py",
+                       "test_browser_download_scheduler.py"),
+}
 VIEWER_SMOKE_TESTS = (
     "test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose",
     "test_popup_headings_include_compact_references",
@@ -112,20 +114,20 @@ def resource_shard(item):
 def pytest_arguments(lane):
     if lane in {"fixtures", "core"}:
         return [TESTS, "-q", "--conformance-scope", "fixtures" if lane == "fixtures" else "publication",
-                *[f"--ignore={TESTS}/{name}" for name in BROWSER_MODULES],
+                *[f"--ignore={TESTS}/{name}" for names in BROWSER_MODULES.values() for name in names],
                 *[f"--deselect={node}" for node in QUALIFICATION_NODES]]
     if lane == "qualification":
         return [*QUALIFICATION_NODES, "-vv", "-rP", "--durations=25"]
     if lane == "native-browser":
-        return [*[f"{TESTS}/{name}" for name in BROWSER_MODULES[2:]], "-vv", "--durations=25"]
+        return [*[f"{TESTS}/{name}" for name in BROWSER_MODULES[lane]], "-vv", "--durations=25"]
     if lane == "browser":
-        return [f"{TESTS}/test_browser_smoke.py", "-k",
+        return [f"{TESTS}/{BROWSER_MODULES[lane][0]}", "-k",
                 " and ".join(f"not {name}" for name in (FIRST_MATRIX_TEST, *VIEWER_SMOKE_TESTS)),
                 "-vv", "--durations=25"]
     if lane == "first-matrix":
-        return [f"{TESTS}/test_browser_smoke.py", "-k", FIRST_MATRIX_TEST, "-vv", "--durations=25"]
+        return [f"{TESTS}/{BROWSER_MODULES['browser'][0]}", "-k", FIRST_MATRIX_TEST, "-vv", "--durations=25"]
     if lane == "viewer":
-        return [f"{TESTS}/test_browser_viewer.py",
+        return [*[f"{TESTS}/{name}" for name in BROWSER_MODULES[lane]],
                 *[f"{TESTS}/test_browser_smoke.py::{name}" for name in VIEWER_SMOKE_TESTS], "-vv", "--durations=25"]
     if lane == "all":
         return [TESTS, "-q"]
