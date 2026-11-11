@@ -97,6 +97,7 @@ they call and how they obtain the spec:
 pub trait MmFamilyProcessor: Send + Sync {
     fn capabilities(&self) -> Capabilities; // query with supports(Modality)
     fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize>;
+    fn num_feature_tokens(&self, media: &MediaMetadata) -> Result<usize>; // num_media_tokens by default
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem>;
     fn process_items(&self, input_ids: &[i32], media: &[DecodedMedia])
         -> Result<Vec<ProcessedItem>>;                            // maps process_item by default
@@ -150,6 +151,7 @@ pipeline; a mistral-common engine such as vLLM counts differently (§8).
 | per decoded image | `content_hash_canonical_image` | shape + dtype + RGB bytes → Dynamo-compatible identity |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
 | per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count: every id the item puts in the prompt, literal ids included (Kimi-K3 prints a size header around its pad run) |
+| per media part | `MmFamilyProcessor::num_feature_tokens` | typed lightweight metadata → the count of the item's feature positions, the ones that take embeddings; the same number unless the family's expansion adds literal ids |
 
 Token counts give the expanded prompt length for routing (a family that
 sizes media by the whole request needs `layout_from_metadata` for the exact
@@ -522,18 +524,19 @@ with `image_grid_thw`; positions are 1-D.
 The expansion prints the source size as text:
 `<|media_begin|>image {W}x{H}<|media_content|>`, the pad run, `<|media_end|>`.
 The crate has no tokenizer, so the spec carries the ids of that text in
-`size_tokens`. `spec_from_hf_configs` leaves it empty: pixels and
-`KimiK3Processor::plan` work, and `layout`, `layout_from_metadata` and
-`num_media_tokens` return `Unsupported`. The consumer builds the table with
-the model's tokenizer, passes it as JSON, and must hold the table's rule
-itself (see the `SizeTokens` doc); the crate checks only the table's shape.
+`size_tokens`. `spec_from_hf_configs` leaves it empty: pixels,
+`num_feature_tokens` and `KimiK3Processor::plan` work, and `layout`,
+`layout_from_metadata` and `num_media_tokens` return `Unsupported`. The
+consumer builds the table with the model's tokenizer, passes it as JSON, and
+must hold the table's rule itself (see the `SizeTokens` doc); the crate
+checks only the table's shape.
 
 Three counts for one image (300x200: 96, 88, 88):
 
 - `num_media_tokens`: the whole expansion, header and end token included.
-- The `Feature` parts of `layout_from_metadata`: the pad run, which takes the
-  embeddings. Pass these counts to `apply_layout`. With decoded pixels this
-  is `ProcessedItem::feature_token_count`.
+- `num_feature_tokens`: the pad run, which takes the embeddings. Pass these
+  counts to `apply_layout`. With decoded pixels this is
+  `ProcessedItem::feature_token_count`.
 - `feature_ranges`: the position of the pad run, which SGLang calls the item
   offset. `offsets` also cover the header and the end token.
 
@@ -647,8 +650,8 @@ when it serves the checkpoint with the HF tokenizer (`tokenizer.json` and
   (HF's `_get_num_multimodal_tokens`, which misreads an image 1 or 3 pixels
   high; this crate follows the processor call). `apply_layout` takes the
   number of embeddings, `rows * cols`, not the span: in an engine
-  `ProcessedItem::feature_token_count`, in a router the sum of the item's
-  `Feature` parts from `layout_from_metadata` (doctest on `PixtralProcessor`).
+  `ProcessedItem::feature_token_count`, in a router `num_feature_tokens`
+  (doctest on `PixtralProcessor`).
 
 `spec_from_model_dir` takes this path for a directory without `config.json`
 (the NVFP4 repo) or with one that says `mistral_large4`. The token ids and
@@ -727,9 +730,9 @@ image depends on the number of images in the call. As a result:
   `apply_layout` takes those counts. `NemotronVlProcessor::plan_images` gives
   the same counts and the tile sizes, also with no pixel work.
 - `num_media_tokens` is the prompt span of one image alone with no text: its
-  feature tokens plus the two markers (882 for 1280x720 with `sglang` sizing,
-  922 with `hf`). It equals the span in a request only when the request
-  budget does not bind.
+  feature tokens, which `num_feature_tokens` gives, plus the two markers (882
+  and 880 for 1280x720 with `sglang` sizing, 922 and 920 with `hf`). They
+  equal the request's numbers only when the request budget does not bind.
 - `apply_layout` returns `offsets` that span `<img>` to `</img>`. The item
   offsets of SGLang are the `<image>` run, which is `feature_ranges`.
 

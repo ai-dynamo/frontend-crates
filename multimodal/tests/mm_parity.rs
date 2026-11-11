@@ -205,7 +205,8 @@ fn replay(fixture: &Value, case: &Value) -> dynamo_multimodal::Result<Value> {
     let layout = family.layout(&input_ids, &items)?;
     let features: Vec<usize> = items.iter().map(|item| item.feature_token_count).collect();
     let expanded = token_layout::apply_layout(&input_ids, &layout, &features, usize::MAX)?;
-    for (media, (features, literals)) in media.iter().zip(common::layout_counts(&layout)) {
+    let counts = common::layout_counts(&layout);
+    for ((media, item), (features, literals)) in media.iter().zip(&items).zip(counts) {
         let (DecodedMedia::Image { height, width, .. }
         | DecodedMedia::ImageRgba { height, width, .. }) = media
         else {
@@ -215,14 +216,22 @@ fn replay(fixture: &Value, case: &Value) -> dynamo_multimodal::Result<Value> {
             width: *width as u32,
             height: *height as u32,
         };
-        // A router counts an item's whole span from its metadata alone. A family
-        // that sizes media against the whole request refuses `process_item` and
+        // A router counts an item's whole span and its features from its metadata alone.
+        // A family that sizes media against the whole request refuses `process_item` and
         // counts the item alone, which the request budget can only shrink.
         let tokens = family.num_media_tokens(&metadata)?;
+        let feature_tokens = family.num_feature_tokens(&metadata)?;
         let alone = || matches!(family.process_item(media), Err(MmError::Unsupported { .. }));
-        if tokens != features + literals && !(tokens > features + literals && alone()) {
+        let budget_binds = tokens > features + literals && alone();
+        if tokens != features + literals && !budget_binds {
             return Err(MmError::internal(format!(
                 "num_media_tokens {tokens} != the item's {features} features + {literals} literals"
+            )));
+        }
+        if feature_tokens != item.feature_token_count && !budget_binds {
+            return Err(MmError::internal(format!(
+                "num_feature_tokens {feature_tokens} != the item's feature_token_count {}",
+                item.feature_token_count
             )));
         }
     }

@@ -108,6 +108,9 @@ fn replay(case: &Value) -> dynamo_multimodal::Result<Value> {
     let spans = (metadata.iter())
         .map(|image| family.num_media_tokens(image))
         .collect::<dynamo_multimodal::Result<Vec<_>>>()?;
+    for (image, count) in metadata.iter().zip(&counts) {
+        assert_eq!(family.num_feature_tokens(image)?, *count);
+    }
     let mut summary = json!({
         "input_ids_sha256": common::sha256_le(expanded.input_ids.iter().map(|id| id.to_le_bytes())),
         "num_input_ids": expanded.input_ids.len(),
@@ -260,6 +263,10 @@ fn without_size_tokens_pixels_work_and_the_expansion_is_unsupported() {
         width: 96,
         height: 80,
     };
+    assert_eq!(
+        family.num_feature_tokens(&image).unwrap(),
+        item.feature_token_count
+    );
     for result in [
         family.num_media_tokens(&image).map(|_| ()),
         family.layout_from_metadata(&[163605], &[image]).map(|_| ()),
@@ -283,6 +290,7 @@ fn plan_and_prompt_span_match_the_references_over_a_size_sweep() {
     let family = processor_from_spec(&with_size_tokens(&counts["spec"]).to_string()).unwrap();
     let spec: KimiK3Spec = serde_json::from_value(counts["spec"].clone()).unwrap();
     let typed = KimiK3Processor::new(spec).unwrap();
+    let placeholder = counts["spec"]["image_token_id"].as_i64().unwrap() as i32;
     let rows = counts["rows"].as_array().unwrap();
     let mut refused = 0;
     for row in rows {
@@ -298,6 +306,10 @@ fn plan_and_prompt_span_match_the_references_over_a_size_sweep() {
                 family.num_media_tokens(&media),
                 Err(MmError::LimitExceeded { .. })
             ));
+            assert!(matches!(
+                family.num_feature_tokens(&media),
+                Err(MmError::LimitExceeded { .. })
+            ));
             continue;
         }
         let plan = typed.plan(width as u32, height as u32).unwrap();
@@ -309,6 +321,16 @@ fn plan_and_prompt_span_match_the_references_over_a_size_sweep() {
         assert_eq!(
             family.num_media_tokens(&media).unwrap() as u64,
             span,
+            "{width}x{height}"
+        );
+        let features = family.num_feature_tokens(&media).unwrap();
+        assert_eq!(features as u64, tokens, "{width}x{height}");
+        let layout = family
+            .layout_from_metadata(&[placeholder], &[media])
+            .unwrap();
+        assert_eq!(
+            common::layout_counts(&layout),
+            [(features, span as usize - features)],
             "{width}x{height}"
         );
     }

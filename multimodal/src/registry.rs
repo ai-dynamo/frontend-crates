@@ -1226,6 +1226,41 @@ mod tests {
         assert!(spec_from_model_dir(std::path::Path::new("/nonexistent")).is_err());
     }
 
+    /// Qwen-VL, GLM and DeepSeek-V4.1 expand an item into feature positions
+    /// only, so the default holds: the feature count is the prompt span.
+    #[test]
+    fn num_feature_tokens_defaults_to_the_prompt_span() {
+        for (spec, (width, height), tokens) in [
+            (
+                r#"{"family": "qwen_vl", "image_token_id": 151655, "patch_size": 14,
+                    "merge_size": 2, "temporal_patch_size": 2, "min_pixels": 3136,
+                    "max_pixels": 12845056, "image_mean": [0.5, 0.5, 0.5],
+                    "image_std": [0.5, 0.5, 0.5]}"#,
+                (100, 76),
+                12,
+            ),
+            (
+                r#"{"family": "glm5_next", "image_token_id": 154854, "patch_size": 14,
+                    "merge_size": 2, "temporal_patch_size": 2, "patch_expand_factor": 1,
+                    "min_image_tokens": 16, "max_image_tokens": 8000}"#,
+                (1024, 768),
+                1036,
+            ),
+            (
+                r#"{"family": "deepseek_v41", "image_token_id": 100, "vision_patch_size": 1,
+                    "vision_downsample_ratio": 1, "vision_min_pixels": 0,
+                    "vision_max_n_token": 1024}"#,
+                (4, 6),
+                32,
+            ),
+        ] {
+            let family = processor_from_spec(spec).unwrap();
+            let image = crate::processor::MediaMetadata::Image { width, height };
+            assert_eq!(family.num_media_tokens(&image).unwrap(), tokens, "{spec}");
+            assert_eq!(family.num_feature_tokens(&image).unwrap(), tokens, "{spec}");
+        }
+    }
+
     // Trimmed from moonshotai/Kimi-K3; the preprocessor config is complete.
     const KIMI_K3_CONFIG: &str = r#"{
         "architectures": ["KimiK3ForConditionalGeneration"],
