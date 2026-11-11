@@ -11422,6 +11422,8 @@ cases:
     - I3
     - I5
     - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
     description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: f708af0826cf78ee0ee63ff14df99049868543275f78dc6de21b23ee43a2a288

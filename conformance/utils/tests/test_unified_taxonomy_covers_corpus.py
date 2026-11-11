@@ -31,7 +31,7 @@ SRC = UTILS / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS
+from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS, MODEL_CONTRACTS
 from conformance.utils.tests.schema_oracle import _local_reference, matches_schema
 from conformance.utils.tests.fixture_test_support import assert_unique_behaviour, semantic_key
 
@@ -764,7 +764,8 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
 
 def test_scenario_families_matches_declared_scope():
     scoped = {
-        "structured_response_after_reasoning": {"beam", "gpt_oss", "qwen3", "glm47", "deepseek_v4", "deepseek_v41", "kimi_k2", "kimi_k3", "minimax_m3", "muse_spark"},
+        "structured_response_after_reasoning": set(MODEL_CONTRACTS["nativeReviewFamilies"]["structured"]),
+        **{scenario: set(MODEL_CONTRACTS["nativeReviewFamilies"]["dotted"]) for scenario in G.DOTTED_NAME_SCENARIOS},
         "guided_json_quoted_bare_header_in_answer": set(G.GUIDED_FAMILIES),
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer", "muse_spark"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
@@ -3126,7 +3127,7 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
 
 
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
-    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3", "mistral_4", "hermes", "deepseek_v4", "deepseek_v41"}),
+    ("tool_body_whitespace", "tool_only", set(MODEL_CONTRACTS["nativeReviewFamilies"]["whitespace"])),
     ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
     ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3", "mistral_4"}),
 ])

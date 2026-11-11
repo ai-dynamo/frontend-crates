@@ -10358,6 +10358,8 @@ cases:
     - I3
     - I5
     - I7
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
     description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
     display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
     request: b226f1554c998256ed2f36b3476f871663cec690dfe134e79da7b1cf1662651f
@@ -10371,6 +10373,8 @@ cases:
     - I3
     - I5
     - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
     description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: c0e8fd28c84b7625d74b3b9dd8f9a81aa47ddfb9656458bb5f7dd08bb1958316

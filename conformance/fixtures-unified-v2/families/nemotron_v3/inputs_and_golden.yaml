@@ -13612,11 +13612,13 @@ cases:
       arguments:
         city: Paris
   gpt_oss_quoted_call_header_then_visible_prose:
-    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
     policy:
     - I3
     - I5
     - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: 0c28caf1edf9acf57c626b456c16998e025d58034239b7086285bf0933f1e382
     golden:

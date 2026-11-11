@@ -136,6 +136,53 @@
         "0.7.27",
         "0.7.28"
       ]
+    },
+    "futureFromByFamily": {
+      "beam": "0.10.4",
+      "deepseek_v41": "0.10.4",
+      "kimi_k2": "0.10.4",
+      "kimi_k3": "0.10.4",
+      "minimax_m3": "0.10.4"
     }
+  },
+  "nativeReviewFamilies": {
+    "whitespace": [
+      "deepseek_v4",
+      "deepseek_v41",
+      "gpt_oss",
+      "hermes",
+      "kimi_k2",
+      "kimi_k3",
+      "mistral_4"
+    ],
+    "structured": [
+      "beam",
+      "deepseek_v4",
+      "deepseek_v41",
+      "glm47",
+      "gpt_oss",
+      "kimi_k2",
+      "kimi_k3",
+      "minimax_m3",
+      "muse_spark",
+      "qwen3"
+    ],
+    "dotted": [
+      "beam",
+      "deepseek_v4",
+      "deepseek_v41",
+      "gemma4",
+      "glm47",
+      "gpt_oss",
+      "hermes",
+      "kimi_k2",
+      "kimi_k3",
+      "minimax_m3",
+      "mistral_4",
+      "muse_glimmer",
+      "muse_spark",
+      "nemotron_v3",
+      "qwen3"
+    ]
   }
 }

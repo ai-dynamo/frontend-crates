@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from conformance.utils.tests import MODEL_CONTRACTS
 import gen_unified_golden as generator
 import unified_history as history
 import unified_taxonomy as taxonomy
@@ -83,8 +84,8 @@ def test_examples_change_only_incidental_tokens(authored, family, original, acti
 
 
 def test_replacements_keep_existing_family_coverage(authored):
-    # mistral_4 joined after the replacement, so it has no retired original.
-    assert generator.scenario_families("tool_body_whitespace") == {*WHITESPACE_FAMILIES, "mistral_4"}
+    # Newly applicable families have no retired original from the cosmetic replacement.
+    assert generator.scenario_families("tool_body_whitespace") == set(MODEL_CONTRACTS["nativeReviewFamilies"]["whitespace"])
     assert generator.scenario_families("interrupted_reasoning_then_response") == set(RESPONSE_FAMILIES)
     for scenario in ("reason_markup_in_arg", "reason_markup_in_arg_with_text"):
         assert generator.scenario_families(scenario + "_consistent") == {"gpt_oss"}
