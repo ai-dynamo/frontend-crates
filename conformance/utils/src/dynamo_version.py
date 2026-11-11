@@ -286,9 +286,9 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     _validate_provenance_origin(repo_root, recorded)
     version = current["crate_version"]
     tag = f"dynamo-parsers-v2-v{version}"
-    # Keep the frozen release tag as an independent source check even when
-    # an unpublished producer carries a source-qualified provenance identity.
-    if _git(repo_root, "tag", "--list", tag).strip():
+    # An exact-source unpublished receipt may follow unrelated workspace changes
+    # without claiming the released tag produced that build.
+    if current["kind"] == "release" and _git(repo_root, "tag", "--list", tag).strip():
         released_source = source_fingerprint(repo_root, f"refs/tags/{tag}")
         if released_source != current["source_sha256"]:
             raise ValueError(

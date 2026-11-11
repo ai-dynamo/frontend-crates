@@ -232,6 +232,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_f7439c846ab88b86:
   - name: get_weather
     parameters:
@@ -1889,6 +1898,75 @@ requests:
   1957678a23f99a8600cfbabaeb2870db1259823d967bbba2b375fd6801092f59:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": {"x": 1}}'
     tools: tools_480df45d35724608
+  1966934fb6a205a19a1769b838e9392785de7be83fb02897131cef27475cb782:
+    input: '[TOOL_CALLS]write_file[ARGS]{"content": "<think></think>answer"}'
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
   1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5:
     input: '[TOOL_CALLS]f[ARGS]{"x":"[TOOL_CALLS]g[ARGS]{}","tail":"unfinished[TOOL_CALLS]run[ARGS]{"cmd":"ls"}'
     tools: tools_cbf47ccf5fd2ef00
@@ -5822,3 +5900,14 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
+    policy:
+    - I7
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: 1966934fb6a205a19a1769b838e9392785de7be83fb02897131cef27475cb782
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer

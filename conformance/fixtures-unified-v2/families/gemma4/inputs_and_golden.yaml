@@ -1829,6 +1829,24 @@ tools:
           - const: auto
           - type: integer
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
+  tools_ac03f4607c61c9ce:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+      required:
+      - cmd
 requests:
   007c353777be65875f99bcfd6f5036830a81dc7ffb01a30db004d7336370bb86:
     init:
@@ -5486,6 +5504,693 @@ requests:
     - 22
     - 10
     - 33
+  125ca59c4e2f2ca19e795b5fbfec482e74cfea0f4ce3013ca66f61843564f21e:
+    input: <|tool_call>call:write_file{content:<|"|><think></think>answer<|"|>}<tool_call|>
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  22ee3f7262c7b40e3103fb0eae155c65dc2885bd424d44a5ff4e8b0e8dd2750b:
+    input: '"The special <channel|> marker ..."'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  2ed9053627a025b06d313bc85b77c0fae047b21ead6ecec61fef9b66a3ef1390:
+    input: '''1''=''1<channel|>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  5c04e286fd2579b205dbad1b0449473dd76de9df7103e0375a64e555e48b4d50:
+    input: The special <channel|> marker is used to delineate parser paths
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  79f7e288969500a9a92e60ad76b5c0f530415c92fb4fd507e57ebd10e34ed299:
+    input: 'f''" OR x -- ''
+
+      <channel|>"Answer"'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  8741f9232e1f5ba40cd37f4f6ef3ce3fba3ae75846f9307a173c5c5b4126674d:
+    input: '`name`''s path.<channel|>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  98d9fc329099588c9a3cef95d5a2ce3f9e73c32ef2b2ecb40ee3f3e422dce5a0:
+    input: The literal "<|tool_call>" marker is part of the explanation. <|tool_call>call:run{cmd:<|"|>Paris<|"|>}<tool_call|>
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  9d3167809492810b15560362944b30ac8583dfb795f4a9c5dce682fc45686e6c:
+    input: '`pytest -x<channel|>Run `pytest`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  abac28e41fd5759461cbd753b118e6cf79fea7129ee372efbcb7024cc17fc339:
+    input: '''90s<channel|>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  c3fe98575e8df9120069ec9fde1b981398a68ec4b9fbd91ef49a4bb67d9adb38:
+    input: 27"<channel|>"Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  c63ce5aff7ca7a471fe621106f9ab0bd727f6def960ee68199d5c8b8b3b42723:
+    input: '`name<channel|>`Answer`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  ca8fe5327f690c3c23c6b053061de7e7caa4d5074ae802a851f052b866377ea2:
+    input: '''<channel|>''<channel|>Answer'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  d5092348ac27a1a0dc3aa8307e75cd546d06b600e6274e63cabf6fe6948873fa:
+    input: The special "<channel|>" marker is used to delineate parser paths
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
 cases:
   tool_only:
     historical_ids:
@@ -9997,3 +10702,168 @@ cases:
     golden:
     - kind: text
       text: '"<|tool_call>call:lookup{q:<|\"|>x<|\"|>}<tool_call|>" trailing'
+  quoted_name_possessive_inline_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: 8741f9232e1f5ba40cd37f4f6ef3ce3fba3ae75846f9307a173c5c5b4126674d
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+  inch_mark_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer
+    request: c3fe98575e8df9120069ec9fde1b981398a68ec4b9fbd91ef49a4bb67d9adb38
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+  unclosed_backtick_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: c63ce5aff7ca7a471fe621106f9ab0bd727f6def960ee68199d5c8b8b3b42723
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+  decade_apostrophe_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    request: abac28e41fd5759461cbd753b118e6cf79fea7129ee372efbcb7024cc17fc339
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+  unclosed_command_backtick_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: 9d3167809492810b15560362944b30ac8583dfb795f4a9c5dce682fc45686e6c
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+  sql_fragment_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 2ed9053627a025b06d313bc85b77c0fae047b21ead6ecec61fef9b66a3ef1390
+    golden:
+    - kind: reasoning
+      text: '''1''=''1'
+    - kind: text
+      text: '''Answer'''
+  mixed_quotes_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: 79f7e288969500a9a92e60ad76b5c0f530415c92fb4fd507e57ebd10e34ed299
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+  native_quoted_reasoning_closer_then_answer:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: ca8fe5327f690c3c23c6b053061de7e7caa4d5074ae802a851f052b866377ea2
+    golden:
+    - kind: reasoning
+      text: '''<channel|>'''
+    - kind: text
+      text: Answer
+  native_unquoted_reasoning_closer_in_sentence:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    request: 5c04e286fd2579b205dbad1b0449473dd76de9df7103e0375a64e555e48b4d50
+    golden:
+    - kind: reasoning
+      text: The special <channel|> marker is used to delineate parser paths
+  native_quoted_reasoning_closer_in_sentence:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: d5092348ac27a1a0dc3aa8307e75cd546d06b600e6274e63cabf6fe6948873fa
+    golden:
+    - kind: reasoning
+      text: The special "<channel|>" marker is used to delineate parser paths
+  native_reasoning_closer_in_quoted_sentence:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    request: 22ee3f7262c7b40e3103fb0eae155c65dc2885bd424d44a5ff4e8b0e8dd2750b
+    golden:
+    - kind: reasoning
+      text: '"The special <channel|> marker ..."'
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
+    policy:
+    - I7
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: 125ca59c4e2f2ca19e795b5fbfec482e74cfea0f4ce3013ca66f61843564f21e
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer
+  native_quoted_control_then_call_progress:
+    description: '#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Character delivery and a separate finish step retain when text, argument deltas, and call completion arrive before EOF; final assembly alone cannot prove progress.'
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.8-native_quoted_control_then_call_progress
+    request: 98d9fc329099588c9a3cef95d5a2ce3f9e73c32ef2b2ecb40ee3f3e422dce5a0
+    golden:
+    - kind: text
+      text: 'The literal "<|tool_call>" marker is part of the explanation. '
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: Paris

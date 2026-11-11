@@ -812,3 +812,37 @@ def test_sealed_release_context_qualifies_a_shallow_checkout(tmp_path):
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(context))
     assert ci_publication_cache.read_context(restored, path=path) == context
+
+
+@pytest.mark.parametrize("changed_workspace", [False, True])
+def test_capture_provenance_distinguishes_release_from_exact_current_source(tmp_path, changed_workspace):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    version = ci_publication_cache.dynamo_version
+    released = version.dynamo_v2_provenance(root)
+    assert released["kind"] == "release"
+    if changed_workspace:
+        (root / "Cargo.toml").write_text('[workspace]\nmembers = ["parsers/v2"]\n')
+    recorded = version.dynamo_v2_provenance(root)
+    assert recorded["kind"] == ("unpublished" if changed_workspace else "release")
+    assert version.validate_capture_provenance(root, recorded) == version.compact_capture_origin(recorded)
+    if changed_workspace:
+        with pytest.raises(ValueError, match="source does not match release tag"):
+            version.validate_capture_provenance(root, released)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("source_sha256", "0" * 64),
+    ("git_head_tree", "0" * 40),
+    ("kind", "release"),
+])
+def test_unpublished_capture_provenance_rejects_tampering(tmp_path, field, value):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    (root / "Cargo.lock").write_text("version = 4\n")
+    version = ci_publication_cache.dynamo_version
+    recorded = version.dynamo_v2_provenance(root)
+    assert recorded["kind"] == "unpublished"
+    recorded[field] = value
+    with pytest.raises(ValueError, match="source identity"):
+        version.validate_capture_provenance(root, recorded)

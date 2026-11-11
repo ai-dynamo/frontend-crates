@@ -1796,6 +1796,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
 requests:
   00a9138c0ed26f32abc963e8a3e600c16fdca5b7e57832db350134c100a86329:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -7776,6 +7785,171 @@ requests:
     - 1
     - 10
     finish_step: true
+  9d508acb3f9f8dae96403efd7792b5e069b4b0fe0bb73dbe97ee770d88418e81:
+    input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
+
+      <think></think>answer
+
+      </rfl:parameter><|call|>'
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
 cases:
   arg_json_null:
     policy:
@@ -11780,3 +11954,14 @@ cases:
       text: Check London météo🙂 before answering; this is prose, not JSON.
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
+    policy:
+    - I7
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: 9d508acb3f9f8dae96403efd7792b5e069b4b0fe0bb73dbe97ee770d88418e81
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer

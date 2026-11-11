@@ -1794,6 +1794,24 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
+  tools_ac03f4607c61c9ce:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+      required:
+      - cmd
 requests:
   007070f2a7e8afe35eb6424f3c9d5e9755f821c5d42f443082ba2075778ea95a:
     input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="capture_payload">]<]minimax[>[<count>42]<]minimax[>[</count>]<]minimax[>[<ratio>3.5]<]minimax[>[</ratio>]<]minimax[>[<flag>true]<]minimax[>[</flag>]<]minimax[>[<narrowed>42]<]minimax[>[</narrowed>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
@@ -8684,6 +8702,905 @@ requests:
     - 1
     - 12
     finish_step: true
+  2286604759a3b78e3df779721e8760abb4587c2276aed62258732c052b2e6d04:
+    input: '''1''=''1</mm:think>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  255ff7ea466f68bc25a18729aec225e74436a85d3c845d4cfd3f7a0dabca70c2:
+    input: '''90s</mm:think>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  385a4edc3a5a464ea0fb92c887ed92cd05a1df20b2feaa0ec00d42a769d13e03:
+    input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="write_file">]<]minimax[>[<content><think></think>answer]<]minimax[>[</content>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  4f0bb34845d3eb6411c1c568821709149341a10470a7b39d1a6c9ac5c64a11c6:
+    input: '''</mm:think>''</mm:think>Answer'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  5acc44e80c1d6cec6073946b2f3493aa11675128809155294e1346f328d77f5f:
+    input: '`name`''s path.</mm:think>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  67e217df5ca27e23f22ee56c0fb27438115fad1d9a3ad3a9c4e3558ccf0cb7c6:
+    input: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation. ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="run">]<]minimax[>[<cmd>Paris]<]minimax[>[</cmd>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  a21a992ef95cb0b5b304b0f640bb47a01ba35f24655fe0923e80416cdb69c43c:
+    input: The special "</mm:think>" marker is used to delineate parser paths
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  aaed9d514630bc2f3ba603f8bc5f3237d2f42dc84818632628abeca44967d959:
+    input: '"The special </mm:think> marker ..."'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  ad0f809983f13f2c457d3a05e49def2c7ca3f6a798cb5247aebd9543a5b64158:
+    input: '`pytest -x</mm:think>Run `pytest`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  b8c2dc6130773449e00b7320e150126af60731f9d18513f08a7cbaa1c209a699:
+    input: '`name</mm:think>`Answer`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  b8d5af893cc4d533df0d1bd39a1095c2a84f76ac7bf2bebadc0f7601e8943507:
+    input: 'f''" OR x -- ''
+
+      </mm:think>"Answer"'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  c7abc14328caa9d491fffa8f7c1c78a99f98085904e73d0dca0dc7070b1f8f11:
+    input: The special </mm:think> marker is used to delineate parser paths
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
+  cb2f8ae3036a4146834f7d876304ddfc20a9df72548c46ffc2e6809eb1b3c7ce:
+    input: 27"</mm:think>"Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    finish_step: true
 cases:
   tool_only:
     description: Single tool call, no reasoning. Must stay green everywhere (the existing tool suite's world).
@@ -12621,3 +13538,168 @@ cases:
       name: server.time
       arguments:
         timezone: Asia/Shanghai
+  quoted_name_possessive_inline_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: 5acc44e80c1d6cec6073946b2f3493aa11675128809155294e1346f328d77f5f
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+  inch_mark_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer
+    request: cb2f8ae3036a4146834f7d876304ddfc20a9df72548c46ffc2e6809eb1b3c7ce
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+  unclosed_backtick_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: b8c2dc6130773449e00b7320e150126af60731f9d18513f08a7cbaa1c209a699
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+  decade_apostrophe_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    request: 255ff7ea466f68bc25a18729aec225e74436a85d3c845d4cfd3f7a0dabca70c2
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+  unclosed_command_backtick_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: ad0f809983f13f2c457d3a05e49def2c7ca3f6a798cb5247aebd9543a5b64158
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+  sql_fragment_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 2286604759a3b78e3df779721e8760abb4587c2276aed62258732c052b2e6d04
+    golden:
+    - kind: reasoning
+      text: '''1''=''1'
+    - kind: text
+      text: '''Answer'''
+  mixed_quotes_before_reasoning_closer:
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: b8d5af893cc4d533df0d1bd39a1095c2a84f76ac7bf2bebadc0f7601e8943507
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+  native_quoted_reasoning_closer_then_answer:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: 4f0bb34845d3eb6411c1c568821709149341a10470a7b39d1a6c9ac5c64a11c6
+    golden:
+    - kind: reasoning
+      text: '''</mm:think>'''
+    - kind: text
+      text: Answer
+  native_unquoted_reasoning_closer_in_sentence:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    request: c7abc14328caa9d491fffa8f7c1c78a99f98085904e73d0dca0dc7070b1f8f11
+    golden:
+    - kind: reasoning
+      text: The special </mm:think> marker is used to delineate parser paths
+  native_quoted_reasoning_closer_in_sentence:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: a21a992ef95cb0b5b304b0f640bb47a01ba35f24655fe0923e80416cdb69c43c
+    golden:
+    - kind: reasoning
+      text: The special "</mm:think>" marker is used to delineate parser paths
+  native_reasoning_closer_in_quoted_sentence:
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    policy:
+    - I2
+    - I5
+    - P6
+    display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    request: aaed9d514630bc2f3ba603f8bc5f3237d2f42dc84818632628abeca44967d959
+    golden:
+    - kind: reasoning
+      text: '"The special </mm:think> marker ..."'
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
+    policy:
+    - I7
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: 385a4edc3a5a464ea0fb92c887ed92cd05a1df20b2feaa0ec00d42a769d13e03
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer
+  native_quoted_control_then_call_progress:
+    description: '#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Character delivery and a separate finish step retain when text, argument deltas, and call completion arrive before EOF; final assembly alone cannot prove progress.'
+    policy:
+    - I2
+    - I5
+    - I7
+    display_id: UNIFIED.8-native_quoted_control_then_call_progress
+    request: 67e217df5ca27e23f22ee56c0fb27438115fad1d9a3ad3a9c4e3558ccf0cb7c6
+    golden:
+    - kind: text
+      text: 'The literal "]<]minimax[>[<tool_call>" marker is part of the explanation. '
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: Paris

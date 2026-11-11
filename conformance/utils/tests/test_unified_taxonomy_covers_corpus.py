@@ -607,6 +607,7 @@ def test_gpt_oss_response_applicability_is_not_derived_from_the_denylist() -> No
 
 def test_response_state_uses_only_control_marker_contracts() -> None:
     response_scenarios = {
+        "native_quoted_control_then_call_progress",
         "prefilled_response_reasoning_markers_literal",
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_header_after_payload",
@@ -669,6 +670,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             if family in G.scenario_families(scenario.removesuffix("_pr424"))
         }
         native_scenarios = {
+            "native_quoted_control_then_call_progress",
             "native_quoted_control_in_response",
             "native_single_quoted_word_control",
             "native_single_quote_contraction_response",
@@ -1039,7 +1041,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios)
+    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.ISSUE595_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1076,7 +1078,13 @@ def test_kimi_k3_corpus_uses_xtml_not_kimi_k2_wire_syntax():
     cases = build_cases("kimi_k3")
     assert cases
     for case_id, case in cases.items():
-        leaked = [marker for marker in forbidden if marker in case["input"]]
+        wire = case["input"]
+        if case_id == "UNIFIED.reason_markup_in_arg_empty_span_then_text.kimi_k3":
+            assert _native_input_calls("kimi_k3", wire, case["tools"]) == [
+                {"kind": "tool_call", "name": "write_file", "arguments": {"content": "<think></think>answer"}},
+            ]
+            wire = wire.replace("<think></think>answer", "", 1)
+        leaked = [marker for marker in forbidden if marker in wire]
         assert not leaked, f"{case_id} copied Kimi K2 wire syntax: {leaked}"
 
 
@@ -1393,6 +1401,16 @@ def _family_value(scenario, family):
         "native_quoted_control_then_call",
     }:
         return f'The literal "{marker}" marker is part of the explanation.'
+    if scenario == "native_quoted_control_then_call_progress":
+        return f'The literal "{marker}" marker is part of the explanation. '
+    if scenario == "native_quoted_reasoning_closer_then_answer":
+        return f"'{reason_close}'"
+    if scenario == "native_unquoted_reasoning_closer_in_sentence":
+        return f"The special {reason_close} marker is used to delineate parser paths"
+    if scenario == "native_quoted_reasoning_closer_in_sentence":
+        return f'The special "{reason_close}" marker is used to delineate parser paths'
+    if scenario == "native_reasoning_closer_in_quoted_sentence":
+        return f'"The special {reason_close} marker ..."'
     if scenario == "native_single_quoted_word_control":
         return f"The literal 'example {marker} marker' is part of the explanation."
     if scenario in {
@@ -1809,8 +1827,10 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                 arguments, end = decoder.raw_decode(raw, at)
             except json.JSONDecodeError:
                 continue
+            if not isinstance(arguments, dict):
+                continue
             owned_until = end
-            if not isinstance(arguments, dict) or not raw[end:].lstrip().startswith(endings):
+            if not raw[end:].lstrip().startswith(endings):
                 continue
             calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
         return calls
@@ -3307,3 +3327,54 @@ def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
         elif family == "kimi_k3":
             assert case["input"].count('index="1"') == 2
             assert 'index="2"' not in case["input"]
+
+
+@pytest.mark.parametrize("scenario,before,after", [
+    ("quoted_name_possessive_inline_closer", "`name`'s path.", "'Answer'"),
+    ("inch_mark_before_reasoning_closer", '27"', '"Answer"'),
+    ("unclosed_backtick_before_reasoning_closer", "`name", "`Answer`"),
+    ("decade_apostrophe_before_reasoning_closer", "'90s", "'Answer'"),
+    ("unclosed_command_backtick_before_reasoning_closer", "`pytest -x", "Run `pytest`"),
+    ("sql_fragment_before_reasoning_closer", "'1'='1", "'Answer'"),
+    ("mixed_quotes_before_reasoning_closer", "f'\" OR x -- '\n", '"Answer"'),
+])
+def test_issue595_customer_desired_split_stays_independent(scenario, before, after):
+    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+    assert case["input"] == before + "</think>" + after
+    assert case["golden"] == [{"kind": "reasoning", "text": before}, {"kind": "text", "text": after}]
+    assert case["init"] == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
+    assert case["input_chunks"] == list(case["input"])
+    assert case["finish_step"] is True
+
+
+@pytest.mark.parametrize("scenario,literal", [
+    ("native_unquoted_reasoning_closer_in_sentence", "The special </think> marker is used to delineate parser paths"),
+    ("native_quoted_reasoning_closer_in_sentence", 'The special "</think>" marker is used to delineate parser paths'),
+    ("native_reasoning_closer_in_quoted_sentence", '"The special </think> marker ..."'),
+])
+def test_issue595_literal_sentences_keep_exact_quotes(scenario, literal):
+    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+    assert case["input"] == literal
+    assert case["golden"] == [{"kind": "reasoning", "text": literal}]
+    assert case["input_chunks"] == list(literal)
+    assert case["finish_step"] is True
+
+
+def test_issue595_published_progress_input_has_a_real_call_after_the_quoted_header():
+    case = build_cases("glm47")["UNIFIED.native_quoted_control_then_call_progress.glm47"]
+    assert case["input"] == 'The literal "<tool_call>" marker is part of the explanation. <tool_call>run<arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>'
+    assert case["input_chunks"] == list(case["input"])
+    assert case["finish_step"] is True
+    harmony = build_cases("gpt_oss")["UNIFIED.native_quoted_control_then_call_progress.gpt_oss"]
+    assert _native_input_calls("gpt_oss", harmony["input"], harmony["tools"]) == [
+        {"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}},
+    ]
+
+
+@pytest.mark.parametrize("ending", ["", "<|call|>"])
+def test_harmony_fixture_projection_keeps_nested_headers_owned_without_a_terminator(ending):
+    inner = '<|start|>assistant to=functions.fake<|channel|>commentary<|message|>{}<|call|>'
+    arguments = {"content": inner}
+    raw = '<|start|>assistant to=functions.write_file<|channel|>commentary<|message|>' + json.dumps(arguments) + ending
+    expected = [{"kind": "tool_call", "name": "write_file", "arguments": arguments}] if ending else []
+    assert _native_input_calls("gpt_oss", raw) == expected

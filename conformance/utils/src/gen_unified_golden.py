@@ -3906,6 +3906,92 @@ def _quoted_name_possessive_cases() -> Iterator[tuple]:
 EDGE += list(_quoted_name_possessive_cases())
 
 
+# #595 expectations express the reported workload interpretation, independently
+# of quote-aware parser observations. Token-native controls have separate policy.
+ISSUE595_FAMILIES = frozenset(UNIFIED_FAMILIES - {"qwen3_coder"})
+ISSUE595_REASONING_FAMILIES = ISSUE595_FAMILIES - {"beam", "gpt_oss", "mistral_4"}
+ISSUE595_BOUNDARIES = (
+    ("quoted_name_possessive_inline_closer", "`name`'s path.", "'Answer'"),
+    ("inch_mark_before_reasoning_closer", '27"', '"Answer"'),
+    ("unclosed_backtick_before_reasoning_closer", "`name", "`Answer`"),
+    ("decade_apostrophe_before_reasoning_closer", "'90s", "'Answer'"),
+    ("unclosed_command_backtick_before_reasoning_closer", "`pytest -x", "Run `pytest`"),
+    ("sql_fragment_before_reasoning_closer", "'1'='1", "'Answer'"),
+    ("mixed_quotes_before_reasoning_closer", "f'\" OR x -- '\n", '"Answer"'),
+)
+ISSUE595_LITERAL_SENTENCES = (
+    ("native_unquoted_reasoning_closer_in_sentence", "The special {closer} marker is used to delineate parser paths"),
+    ("native_quoted_reasoning_closer_in_sentence", 'The special "{closer}" marker is used to delineate parser paths'),
+    ("native_reasoning_closer_in_quoted_sentence", '"The special {closer} marker ..."'),
+)
+
+
+def _issue595_cases():
+    for scenario, before, after in ISSUE595_BOUNDARIES:
+        inputs, chunks = {}, {}
+        for family in sorted(ISSUE595_REASONING_FAMILIES):
+            closer = control_tokens(family)[1]
+            pieces = [before, closer, r_text(family, after)]
+            inputs[family] = ("".join(pieces), M, M, [
+                {"kind": "reasoning", "text": before}, {"kind": "text", "text": after},
+            ])
+            chunks[family] = list("".join(pieces))
+        yield (scenario,
+               "#595 customer workload's desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.",
+               ["I2", "I5", "P6"], [],
+               {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+               {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs))
+    for scenario, template in (
+        ("native_quoted_reasoning_closer_then_answer", "'{closer}'"),
+        *ISSUE595_LITERAL_SENTENCES,
+    ):
+        inputs, chunks = {}, {}
+        for family in sorted(ISSUE595_REASONING_FAMILIES):
+            closer = control_tokens(family)[1]
+            reasoning = template.format(closer=closer)
+            suffix = closer + r_text(family, "Answer") if scenario.endswith("then_answer") else ""
+            raw = reasoning + suffix
+            golden = [{"kind": "reasoning", "text": reasoning}]
+            if suffix:
+                golden.append({"kind": "text", "text": "Answer"})
+            inputs[family] = (raw, M, M, golden)
+            chunks[family] = list(raw)
+        yield (scenario,
+               "#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.",
+               ["I2", "I5", "P6"], [],
+               {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+               {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs))
+    inputs, chunks = {}, {}
+    for family in sorted(ISSUE595_FAMILIES):
+        arguments = {"content": "<think></think>answer"}
+        raw = r_tool_arguments(family, "write_file", arguments, 0)
+        raw = default_response_prefix(family) + raw
+        inputs[family] = (raw, M, M, [{"kind": "tool_call", "name": "write_file", "arguments": arguments}])
+        chunks[family] = list(raw)
+    yield ("reason_markup_in_arg_empty_span_then_text",
+           "#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.",
+           ["I7"], [], {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+           {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs),
+           [{"name": "write_file", "parameters": {"type": "object", "properties": {"content": {"type": "string"}}, "required": ["content"]}}])
+    inputs, chunks = {}, {}
+    for family, marker in _NATIVE_QUOTED_CONTROL.items():
+        if family in {"beam", "mistral_4"}:
+            continue
+        prose = f'The literal "{marker}" marker is part of the explanation. '
+        raw = r_text(family, prose) + r_tool_arguments(family, "run", {"cmd": "Paris"}, 0)
+        inputs[family] = (raw, M, M, [
+            {"kind": "text", "text": prose}, {"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}},
+        ])
+        chunks[family] = list(raw)
+    yield ("native_quoted_control_then_call_progress",
+           "#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Character delivery and a separate finish step retain when text, argument deltas, and call completion arrive before EOF; final assembly alone cannot prove progress.",
+           ["I2", "I5", "I7"], [], {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+           {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs),
+           [{"name": "run", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}, "required": ["cmd"]}}])
+
+
+
+
 EDGE.append((
     "guided_response_rejected_header_quote_ownership",
     "DeepSeek V4 prefilled guided Response rejects an incomplete invoke header, then strips its parameter markup; the rejected attribute quote cannot become a prose quote and protect that markup.",
@@ -4842,6 +4928,10 @@ for _name, _description, _input, _golden in (*_GPT_OSS_REVIEW_CASES, *_GPT_OSS_R
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},
         {"finish_reason": "stop"}, _inputs, _tools,
     ))
+
+ISSUE595_CASES = list(_issue595_cases())
+ISSUE595_SCENARIOS = frozenset(case[0] for case in ISSUE595_CASES)
+EDGE += ISSUE595_CASES
 
 _TEMPLATE_FAMILIES = tuple(FAMILIES)
 _TEMPLATE_EDGE_NAMES = frozenset(spec[0] for spec in EDGE)
