@@ -6793,6 +6793,136 @@ requests:
     - 1
     - 1
     finish_step: true
+  2064f98b543d2c8171fcddb0f4bdfd994cae67ded0ebf86071078c8f23122355:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: 27"</think>"Answer"
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 19
+    finish_step: true
+  20a5431a0af5d1e9994e0afdb0f67642ec81e61b95948c28d30e685e5b86db86:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: The special "</think>" marker is used to delineate parser paths
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 63
+    finish_step: true
+  3af678c87bb7130d84a796550d93daf778abd4df22851d1d3eeca99c04756d10:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '''1''=''1</think>''Answer'''
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 22
+    finish_step: true
+  3dce2c1024e3eda6513656b1e65e546c05725342605114ff64c31f84edb25881:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: The special </think> marker is used to delineate parser paths
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 61
+    finish_step: true
+  76a2ea7508ae9955267af5b19ca675d00a3be0edf764d43cf5dc5376e0c2c80a:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: 'f''" OR x -- ''
+
+      </think>"Answer"'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 30
+    finish_step: true
+  877a2d0785e8f85d173d558bdbb55e734d40a05bc25b19089e2ecd8a2fe71200:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '`name</think>`Answer`'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 21
+    finish_step: true
+  94efd70bda0d1452d289f0fe02cf1eb0676343c0727482726e405e12ba2b5aa2:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '''</think>''</think>Answer'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 24
+    finish_step: true
+  9550efc72df0367e1e00b2691a3226f84c011ab77abd5c2115a3478394f165d4:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="write_file"><｜DSML｜ parameter name="content" string="true"><think></think>answer</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 165
+    finish_step: true
+  b010650d69061083077c6c8f42cd7907a1a4162b4b9a26cff79457241d518f10:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '''90s</think>''Answer'''
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 20
+    finish_step: true
+  d483ca7d3705e7290a112453d405d70d583d9435849053f98338414763676605:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '"The special </think> marker ..."'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 33
+    finish_step: true
+  eac62e4b5620cc1c2c3dd484278176b5fff1199942ab4db1331ef90d02ee65a3:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '`name`''s path.</think>''Answer'''
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 30
+    finish_step: true
+  ee88504e2b3706b037e1a3dadc61de93d550a84dd1f1436a20fea4c12af23dcf:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: The literal "<｜DSML｜ calls>" marker is part of the explanation. <｜DSML｜ calls><｜DSML｜ invoke name="run"><｜DSML｜ parameter name="cmd" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 64
+    - 83
+    - 55
+    finish_step: true
+  f75f7f0cb3fe3e362b6addb432c25f85a563f28dbf69714b695178e6fb540629:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '`pytest -x</think>Run `pytest`'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 30
+    finish_step: true
 cases:
   tool_only:
     historical_ids:
@@ -11247,91 +11377,91 @@ cases:
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
   quoted_name_possessive_inline_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-quoted_name_possessive_inline_closer
-    request: 009ef47d103e7a4415a2d77055fb4b133c8c4f080e2e66b63dfffb2444a82f8f
+    request: eac62e4b5620cc1c2c3dd484278176b5fff1199942ab4db1331ef90d02ee65a3
     golden:
     - kind: reasoning
       text: '`name`''s path.'
     - kind: text
       text: '''Answer'''
   inch_mark_before_reasoning_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-inch_mark_before_reasoning_closer
-    request: d28091e4c4922098420112222d3146a3cfe1b13dcf7ca98342ab0ee700898353
+    request: 2064f98b543d2c8171fcddb0f4bdfd994cae67ded0ebf86071078c8f23122355
     golden:
     - kind: reasoning
       text: 27"
     - kind: text
       text: '"Answer"'
   unclosed_backtick_before_reasoning_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
-    request: 23976a6bca7b53ed6682abe5d536ff8fd0bc75a1ad2d3ef81f3fe3632f15b4d7
+    request: 877a2d0785e8f85d173d558bdbb55e734d40a05bc25b19089e2ecd8a2fe71200
     golden:
     - kind: reasoning
       text: '`name'
     - kind: text
       text: '`Answer`'
   decade_apostrophe_before_reasoning_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
-    request: 152392ecb96600a3cfbed10c5c83d0f21478b8aa4b6f2e63dfc3a687787a8d39
+    request: b010650d69061083077c6c8f42cd7907a1a4162b4b9a26cff79457241d518f10
     golden:
     - kind: reasoning
       text: '''90s'
     - kind: text
       text: '''Answer'''
   unclosed_command_backtick_before_reasoning_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
-    request: 08fd024ea28ee953c5ed841794fa07d60fc5805b909ffc3effe899f17b2fd9da
+    request: f75f7f0cb3fe3e362b6addb432c25f85a563f28dbf69714b695178e6fb540629
     golden:
     - kind: reasoning
       text: '`pytest -x'
     - kind: text
       text: Run `pytest`
   sql_fragment_before_reasoning_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
-    request: 97cf5fa0fb19d16721a69a12455a71e31cce5bbebab102cc6f100ae91877107b
+    request: 3af678c87bb7130d84a796550d93daf778abd4df22851d1d3eeca99c04756d10
     golden:
     - kind: reasoning
       text: '''1''=''1'
     - kind: text
       text: '''Answer'''
   mixed_quotes_before_reasoning_closer:
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
     display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
-    request: 21dfa50d18e72cfcf4a1be7b041fa6a8e21d6634e412f68911bfad616b015ac3
+    request: 76a2ea7508ae9955267af5b19ca675d00a3be0edf764d43cf5dc5376e0c2c80a
     golden:
     - kind: reasoning
       text: 'f''" OR x -- ''
@@ -11340,70 +11470,70 @@ cases:
     - kind: text
       text: '"Answer"'
   native_quoted_reasoning_closer_then_answer:
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
-    request: 5c4cfb62ec00c49a939b5304a952f3769c18bf2d351117ad13c31afa8441303c
+    request: 94efd70bda0d1452d289f0fe02cf1eb0676343c0727482726e405e12ba2b5aa2
     golden:
     - kind: reasoning
       text: '''</think>'''
     - kind: text
       text: Answer
   native_unquoted_reasoning_closer_in_sentence:
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
-    request: b7b5ba8e1b5d828c817f576643abda8ec613a57efe4b3136144a29122b31b9bc
+    request: 3dce2c1024e3eda6513656b1e65e546c05725342605114ff64c31f84edb25881
     golden:
     - kind: reasoning
       text: The special </think> marker is used to delineate parser paths
   native_quoted_reasoning_closer_in_sentence:
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
-    request: c9ec9f0521f086b7e6713f1d4590a44610262b26c520912d616e499db5531bdc
+    request: 20a5431a0af5d1e9994e0afdb0f67642ec81e61b95948c28d30e685e5b86db86
     golden:
     - kind: reasoning
       text: The special "</think>" marker is used to delineate parser paths
   native_reasoning_closer_in_quoted_sentence:
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     policy:
     - I2
     - I5
     - P6
+    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
     display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
-    request: 4dac2ce652c39c033f66d6a3d98b9a0678c46f0fe79029f352fe5a861c788870
+    request: d483ca7d3705e7290a112453d405d70d583d9435849053f98338414763676605
     golden:
     - kind: reasoning
       text: '"The special </think> marker ..."'
   reason_markup_in_arg_empty_span_then_text:
-    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
     policy:
     - I7
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
     display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
-    request: bd8252bb35f380ee55ed180027f0af954914afba2444785d07d21c4a2bc238ee
+    request: 9550efc72df0367e1e00b2691a3226f84c011ab77abd5c2115a3478394f165d4
     golden:
     - kind: tool_call
       name: write_file
       arguments:
         content: <think></think>answer
   native_quoted_control_then_call_progress:
-    description: '#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Character delivery and a separate finish step retain when text, argument deltas, and call completion arrive before EOF; final assembly alone cannot prove progress.'
     policy:
     - I2
     - I5
     - I7
+    description: '#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Pause after prose and before the argument value, then deliver the completed call and finish separately to distinguish pre-EOF progress from whole-response buffering.'
     display_id: UNIFIED.8-native_quoted_control_then_call_progress
-    request: a21b770a7629fe4651f5b449fe9b0a7a604e045fd35d161358f1a785cde1518e
+    request: ee88504e2b3706b037e1a3dadc61de93d550a84dd1f1436a20fea4c12af23dcf
     golden:
     - kind: text
       text: 'The literal "<｜DSML｜ calls>" marker is part of the explanation. '

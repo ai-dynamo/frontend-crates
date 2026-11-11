@@ -3935,7 +3935,7 @@ def _issue595_cases():
             inputs[family] = ("".join(pieces), M, M, [
                 {"kind": "reasoning", "text": before}, {"kind": "text", "text": after},
             ])
-            chunks[family] = list("".join(pieces))
+            chunks[family] = ["".join(pieces)]
         yield (scenario,
                "#595 customer workload's desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.",
                ["I2", "I5", "P6"], [],
@@ -3955,7 +3955,7 @@ def _issue595_cases():
             if suffix:
                 golden.append({"kind": "text", "text": "Answer"})
             inputs[family] = (raw, M, M, golden)
-            chunks[family] = list(raw)
+            chunks[family] = [raw]
         yield (scenario,
                "#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.",
                ["I2", "I5", "P6"], [],
@@ -3967,7 +3967,7 @@ def _issue595_cases():
         raw = r_tool_arguments(family, "write_file", arguments, 0)
         raw = default_response_prefix(family) + raw
         inputs[family] = (raw, M, M, [{"kind": "tool_call", "name": "write_file", "arguments": arguments}])
-        chunks[family] = list(raw)
+        chunks[family] = [raw]
     yield ("reason_markup_in_arg_empty_span_then_text",
            "#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.",
            ["I7"], [], {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -3978,13 +3978,15 @@ def _issue595_cases():
         if family in {"beam", "mistral_4"}:
             continue
         prose = f'The literal "{marker}" marker is part of the explanation. '
-        raw = r_text(family, prose) + r_tool_arguments(family, "run", {"cmd": "Paris"}, 0)
+        call = r_tool_arguments(family, "run", {"cmd": "Paris"}, 0)
+        argument_start = call.index("Paris")
+        chunks[family] = [r_text(family, prose), call[:argument_start], call[argument_start:]]
+        raw = "".join(chunks[family])
         inputs[family] = (raw, M, M, [
             {"kind": "text", "text": prose}, {"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}},
         ])
-        chunks[family] = list(raw)
     yield ("native_quoted_control_then_call_progress",
-           "#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Character delivery and a separate finish step retain when text, argument deltas, and call completion arrive before EOF; final assembly alone cannot prove progress.",
+           "#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Pause after prose and before the argument value, then deliver the completed call and finish separately to distinguish pre-EOF progress from whole-response buffering.",
            ["I2", "I5", "I7"], [], {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
            {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs),
            [{"name": "run", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}, "required": ["cmd"]}}])

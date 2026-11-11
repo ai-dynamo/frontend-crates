@@ -3343,7 +3343,7 @@ def test_issue595_customer_desired_split_stays_independent(scenario, before, aft
     assert case["input"] == before + "</think>" + after
     assert case["golden"] == [{"kind": "reasoning", "text": before}, {"kind": "text", "text": after}]
     assert case["init"] == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
-    assert case["input_chunks"] == list(case["input"])
+    assert case["input_chunks"] == [case["input"]]
     assert case["finish_step"] is True
 
 
@@ -3356,19 +3356,38 @@ def test_issue595_literal_sentences_keep_exact_quotes(scenario, literal):
     case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
     assert case["input"] == literal
     assert case["golden"] == [{"kind": "reasoning", "text": literal}]
-    assert case["input_chunks"] == list(literal)
+    assert case["input_chunks"] == [literal]
     assert case["finish_step"] is True
 
 
 def test_issue595_published_progress_input_has_a_real_call_after_the_quoted_header():
     case = build_cases("glm47")["UNIFIED.native_quoted_control_then_call_progress.glm47"]
     assert case["input"] == 'The literal "<tool_call>" marker is part of the explanation. <tool_call>run<arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>'
-    assert case["input_chunks"] == list(case["input"])
+    assert len(case["input_chunks"]) == 3
+    assert case["input_chunks"][0].endswith('explanation. ')
+    assert "Paris" not in case["input_chunks"][1]
+    assert case["input_chunks"][2].startswith("Paris")
     assert case["finish_step"] is True
     harmony = build_cases("gpt_oss")["UNIFIED.native_quoted_control_then_call_progress.gpt_oss"]
     assert _native_input_calls("gpt_oss", harmony["input"], harmony["tools"]) == [
         {"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}},
     ]
+
+
+@pytest.mark.parametrize("family", sorted(G.ISSUE595_FAMILIES))
+def test_issue595_chunks_only_for_streaming_progress(family):
+    for case_id, case in build_cases(family).items():
+        scenario = case_id.removeprefix("UNIFIED.").removesuffix(f".{family}")
+        if scenario not in G.ISSUE595_SCENARIOS:
+            continue
+        chunks = case["input_chunks"]
+        if scenario == "native_quoted_control_then_call_progress":
+            assert len(chunks) == 3, case_id
+            assert "".join(chunks) == case["input"], case_id
+            assert "Paris" not in chunks[1], case_id
+            assert chunks[2].startswith("Paris"), case_id
+        else:
+            assert chunks == [case["input"]], case_id
 
 
 @pytest.mark.parametrize("ending", ["", "<|call|>"])

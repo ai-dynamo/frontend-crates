@@ -2694,6 +2694,12 @@ requests:
   f9aa9b5ebd7180f3db062076420246e1800cb7937fbc20065cad3ccaf24e98e4:
     input: '[TOOL_CALLS]capture_payload[ARGS]{"count": 42, "flag": false, "text": "null"}'
     tools: tools_61f8e5714fc9d54c
+  f9c4d57232560f62ee07029b8c46290d4d19a9a87df22598195ef9b92d52886b:
+    input: '[TOOL_CALLS]write_file[ARGS]{"content": "<think></think>answer"}'
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 64
+    finish_step: true
   fb91d78e0e2307bc5913be6e0d3e34f4036de07f3c943908633c40a7d6f0403a:
     input: 'Sure, one sec. [THINK]checking the forecast[/THINK][TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}'
     tools: tools_cbf47ccf5fd2ef00
@@ -5901,11 +5907,11 @@ cases:
       arguments:
         city: Paris
   reason_markup_in_arg_empty_span_then_text:
-    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
     policy:
     - I7
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
     display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
-    request: 1966934fb6a205a19a1769b838e9392785de7be83fb02897131cef27475cb782
+    request: f9c4d57232560f62ee07029b8c46290d4d19a9a87df22598195ef9b92d52886b
     golden:
     - kind: tool_call
       name: write_file

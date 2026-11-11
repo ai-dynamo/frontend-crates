@@ -5566,6 +5566,16 @@ requests:
     - 16
     - 8
     finish_step: true
+  9ebc6213101866307a4da2e32f371339b5e5cdd0bc566d39826dbb4bc6dd8cdf:
+    input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
+
+      <think></think>answer
+
+      </rfl:parameter><|call|>'
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 156
+    finish_step: true
   9f4bf34b94f279f597d43b8c965e1915b730271068e1c3643472288a918f8954:
     init:
       starting_state: None
@@ -11955,11 +11965,11 @@ cases:
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
   reason_markup_in_arg_empty_span_then_text:
-    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
     policy:
     - I7
+    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
     display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
-    request: 9d508acb3f9f8dae96403efd7792b5e069b4b0fe0bb73dbe97ee770d88418e81
+    request: 9ebc6213101866307a4da2e32f371339b5e5cdd0bc566d39826dbb4bc6dd8cdf
     golden:
     - kind: tool_call
       name: write_file
