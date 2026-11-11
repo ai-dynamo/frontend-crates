@@ -217,12 +217,19 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// lightweight metadata alone — no pixel or feature-extraction work (HF's
     /// `_get_num_multimodal_tokens`). Lets routers account prompt length after
     /// probing only the modality-specific header. Literal ids of the
-    /// expansion count; the positions that take embeddings are the `Feature`
-    /// parts of the layout and [`ProcessedItem::feature_token_count`]. A
+    /// expansion count; [`Self::num_feature_tokens`] leaves them out. A
     /// family that sizes media against the whole request returns the span of
     /// the item alone, which is neither exact nor a bound once the request
     /// budget binds; there [`Self::layout_from_metadata`] is the exact call.
     fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
+
+    /// Positions of one media item that take feature embeddings: the per-item
+    /// count `apply_layout` takes. Equals `num_media_tokens` unless the
+    /// family's expansion adds literal tokens, and like it counts the item
+    /// alone for a family that sizes media against the whole request.
+    fn num_feature_tokens(&self, media: &MediaMetadata) -> crate::Result<usize> {
+        self.num_media_tokens(media)
+    }
 
     /// Describe a prompt expansion from metadata alone, without constructing
     /// tensors. Planning-only families can implement this independently of

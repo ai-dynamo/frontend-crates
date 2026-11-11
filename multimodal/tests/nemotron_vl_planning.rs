@@ -338,6 +338,7 @@ fn hf_requests_match_the_remote_code() {
                     let image = MediaMetadata::Image { width, height };
                     let span = plans[0].num_image_tokens as usize + 2;
                     assert_eq!(planner.num_media_tokens(&image).unwrap(), span);
+                    assert_eq!(planner.num_feature_tokens(&image).unwrap(), span - 2);
                 }
             }
             (Err(MmError::InvalidInput { .. }), Some(_)) => {}
@@ -485,6 +486,7 @@ fn from_sizes(spec: &Value, input_ids: &[i32], sizes: &[(u32, u32)]) -> Result<V
     // With no text, the request is the one `num_media_tokens` sizes: the image and its markers.
     if let ([image], 1) = (&metadata[..], input_ids.len()) {
         assert_eq!(family.num_media_tokens(image)?, counts[0] + 2);
+        assert_eq!(family.num_feature_tokens(image)?, counts[0]);
     }
     let plans =
         planner(spec, spec["max_model_len"].as_u64().unwrap()).plan_images(input_ids, sizes)?;
@@ -510,6 +512,24 @@ fn from_sizes(spec: &Value, input_ids: &[i32], sizes: &[(u32, u32)]) -> Result<V
             .map(|plan| json!([1, 3, plan.resized_height, plan.resized_width]))
             .collect::<Vec<_>>(),
     }))
+}
+
+/// 1280x720 alone, with no text: 880 feature tokens in SGLang's tile and 920
+/// in HF's. `<img>` and `</img>` are the literal ids of the span.
+#[test]
+fn num_feature_tokens_is_the_span_without_the_markers() {
+    let fixture = sizes_fixture();
+    let image = MediaMetadata::Image {
+        width: 1280,
+        height: 720,
+    };
+    for (spec, features) in [("sglang_spec", 880), ("hf_spec", 920)] {
+        let family = processor_from_spec(&fixture[spec].to_string()).unwrap();
+        assert_eq!(family.num_feature_tokens(&image).unwrap(), features);
+        assert_eq!(family.num_media_tokens(&image).unwrap(), features + 2);
+        let layout = family.layout_from_metadata(&[IMAGE], &[image]).unwrap();
+        assert_eq!(common::layout_counts(&layout), [(features, 2)], "{spec}");
+    }
 }
 
 fn item(feature_token_count: usize) -> ProcessedItem {

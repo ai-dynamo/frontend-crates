@@ -293,6 +293,7 @@ fn grid_matches_the_hf_sizing_rule() {
             for error in [
                 family.grid(*width, *height).err(),
                 family.num_media_tokens(&image).err(),
+                family.num_feature_tokens(&image).err(),
                 family.layout_from_metadata(&[IMG], &[image]).err(),
             ] {
                 assert!(
@@ -309,6 +310,15 @@ fn grid_matches_the_hf_sizing_rule() {
             assert_eq!(
                 family.num_media_tokens(&image).unwrap(),
                 (*rows * (*cols + 1)) as usize,
+                "{width}x{height}"
+            );
+            let features = family.num_feature_tokens(&image).unwrap();
+            assert_eq!(features, (*rows * *cols) as usize, "{width}x{height}");
+            // The literal ids are the one that closes each row.
+            let layout = family.layout_from_metadata(&[IMG], &[image]).unwrap();
+            assert_eq!(
+                common::layout_counts(&layout),
+                [(features, *rows as usize)],
                 "{width}x{height}"
             );
         }
@@ -331,9 +341,13 @@ fn metadata_layout_expands_each_placeholder_into_its_own_grid() {
         .each_ref()
         .map(|item| family.num_media_tokens(item).unwrap());
     assert_eq!(spans, [15, 2, 6]);
+    let features = media
+        .each_ref()
+        .map(|item| family.num_feature_tokens(item).unwrap());
+    assert_eq!(features, [12, 1, 4]);
     let ids = [1, IMG, 7, IMG, IMG, 4];
     let layout = family.layout_from_metadata(&ids, &media).unwrap();
-    let expanded = apply_layout(&ids, &layout, &[12, 1, 4], 64).unwrap();
+    let expanded = apply_layout(&ids, &layout, &features, 64).unwrap();
     let row = |cols: usize, close: i32| [vec![IMG; cols], vec![close]].concat();
     let expected = [
         vec![1],
@@ -453,6 +467,10 @@ fn rejects_bad_buffers_and_other_modalities() {
     for media in [video, audio] {
         assert!(matches!(
             family.num_media_tokens(&media),
+            Err(MmError::Unsupported { .. })
+        ));
+        assert!(matches!(
+            family.num_feature_tokens(&media),
             Err(MmError::Unsupported { .. })
         ));
         assert!(matches!(

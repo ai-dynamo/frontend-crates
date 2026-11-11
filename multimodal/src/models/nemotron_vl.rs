@@ -17,8 +17,8 @@
 //! `Unsupported`: engines call [`MmFamilyProcessor::process_items`]. Routers
 //! call `layout_from_metadata`, which is exact for the request; its `Feature`
 //! parts, like [`NemotronVlProcessor::plan_images`], hold the feature counts.
-//! `num_media_tokens` is the span of one image alone: its feature tokens and
-//! the two markers.
+//! `num_media_tokens` is the span of one image alone: its feature tokens
+//! (`num_feature_tokens`) and the two markers.
 //!
 //! Video, audio and the InternVL tile path (`min_num_patches = 0`) are
 //! unsupported.
@@ -104,6 +104,7 @@ pub struct NemotronVlImagePlan {
 /// }).collect();
 /// assert_eq!(counts, [880]); // 1280x704 tile; the HF processor gives 920
 /// assert_eq!(family.num_media_tokens(&media[0])?, 882); // with <img> and </img>
+/// assert_eq!(family.num_feature_tokens(&media[0])?, 880); // the image alone, no text
 /// let expanded = token_layout::apply_layout(&ids, &layout, &counts, 16384)?;
 /// assert_eq!(expanded.offsets, [(1, 882)]); // <img> ... </img>
 /// assert_eq!(expanded.feature_ranges[0][0], 2..882); // SGLang's offsets: (2, 881)
@@ -391,10 +392,14 @@ impl MmFamilyProcessor for NemotronVlProcessor {
     /// One image alone with no text: its feature tokens and the two markers. It is the
     /// engine's span only while the request budget does not bind; the layout is exact.
     fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize> {
+        Ok(self.num_feature_tokens(media)? + 2)
+    }
+
+    fn num_feature_tokens(&self, media: &MediaMetadata) -> Result<usize> {
         match media {
             MediaMetadata::Image { width, height } => {
                 let plan = self.plan_images(&[], &[(*width, *height)])?[0];
-                Ok(plan.num_image_tokens as usize + 2)
+                Ok(plan.num_image_tokens as usize)
             }
             _ => Err(MmError::unsupported("nemotron_vl supports only images")),
         }
