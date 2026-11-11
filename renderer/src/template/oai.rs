@@ -127,8 +127,8 @@ fn may_be_fix_msg_content(
         return messages;
     };
     for (index, msg) in arr.iter_mut().enumerate() {
-        // Merged turns have no explicit part marking the turn boundary, so
-        // retain their existing newline join instead of the template's join.
+        // Synthesized content (merged turns or injected reasoning) retains
+        // its existing normalization instead of acquiring template framing.
         let preserve_text_array = !merged_turns.contains(&index)
             && msg
                 .get("role")
@@ -836,7 +836,7 @@ impl HfTokenizerConfigJsonFormatter {
         crate::reject_unsupported_partial_assistant(&messages_for_template)?;
         crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
 
-        let merged_turns = if system_normalization.is_required() {
+        let mut normalized_turns = if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization)
         } else {
             Vec::new()
@@ -844,11 +844,34 @@ impl HfTokenizerConfigJsonFormatter {
 
         match &self.content_format {
             ChatTemplateContentFormat::Auto => {
+                if !template_handles_reasoning
+                    && let Some(messages) = messages_for_template.as_array()
+                {
+                    normalized_turns.extend(messages.iter().enumerate().filter_map(
+                        |(index, message)| {
+                            if message.get("role").and_then(serde_json::Value::as_str)
+                                != Some("assistant")
+                            {
+                                return None;
+                            }
+                            let has_reasoning = match message.get("reasoning_content") {
+                                Some(serde_json::Value::String(text)) => !text.is_empty(),
+                                Some(serde_json::Value::Array(segments)) => {
+                                    segments.iter().any(|segment| {
+                                        segment.as_str().is_some_and(|text| !text.is_empty())
+                                    })
+                                }
+                                _ => false,
+                            };
+                            has_reasoning.then_some(index)
+                        },
+                    ));
+                }
                 messages_for_template = may_be_fix_msg_content(
                     messages_for_template,
                     self.requires_content_arrays,
                     native_text_array_roles,
-                    &merged_turns,
+                    &normalized_turns,
                     self.image_placeholder_template,
                 );
             }
@@ -3259,6 +3282,77 @@ NORMAL MODE
         assert_eq!(
             render_shape(&f, shape).unwrap(),
             "<user>part one part two</user>",
+        );
+    }
+
+    #[test]
+    fn injected_reasoning_keeps_existing_text_array_boundaries() {
+        let template = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' | '");
+        for template in [
+            template.clone(),
+            template.replace("{{ p.text }}", "<text>{{ p.text }}</text>"),
+        ] {
+            let f = formatter_for(&template);
+            assert!(!f.default_template_handles_reasoning);
+            assert!(f.default_native_text_array_roles.contains(&"assistant"));
+            for (reasoning, content, expected) in [
+                (
+                    json!("r"),
+                    json!([{"type": "text", "text": "part one"}]),
+                    "<assistant><think>r</think>part one</assistant>",
+                ),
+                (
+                    json!(["", "r", ""]),
+                    text_parts("part one", "part two"),
+                    "<assistant><think>r</think>part one\npart two</assistant>",
+                ),
+                (
+                    json!(["r", "s"]),
+                    text_parts("part one", "part two"),
+                    "<assistant><think>r</think><think>s</think>part one\npart two</assistant>",
+                ),
+                (
+                    json!(" "),
+                    text_parts("part one", "part two"),
+                    "<assistant><think> </think>part one\npart two</assistant>",
+                ),
+            ] {
+                let messages = json!([{
+                    "role": "assistant", "content": content, "reasoning_content": reasoning
+                }]);
+                assert_eq!(render_shape(&f, messages.clone()).unwrap(), expected);
+                assert_eq!(render_shape_with_tools(&f, messages).unwrap(), expected);
+            }
+        }
+
+        let f = formatter_for(&template);
+        for reasoning in [json!(""), json!([]), json!(["", ""])] {
+            let messages = json!([{
+                "role": "assistant", "content": text_parts("part one", "part two"),
+                "reasoning_content": reasoning
+            }]);
+            assert_eq!(
+                render_shape(&f, messages).unwrap(),
+                "<assistant>part one | part two</assistant>",
+            );
+        }
+
+        let native_reasoning = template.replace(
+            "<{{ m.role }}>",
+            "<{{ m.role }}>{% if m.reasoning_content is string %}<native>{{ m.reasoning_content }}</native>{% endif %}",
+        );
+        let f = formatter_for(&native_reasoning);
+        assert!(f.default_template_handles_reasoning);
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([{
+                    "role": "assistant", "content": text_parts("part one", "part two"),
+                    "reasoning_content": "r"
+                }])
+            )
+            .unwrap(),
+            "<assistant><native>r</native>part one | part two</assistant>",
         );
     }
 
