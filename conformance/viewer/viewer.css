@@ -23,8 +23,8 @@ body { background: var(--page-bg); color: var(--ink); }
 .tab-panel:not([data-load-state="ready"]) .capture-summary { visibility: hidden; }
 .engine-status-bar { display: flex; gap: 0; height: 8px; margin: 8px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-alt); }
 .engine-status-bar > i { min-width: 1px; flex-basis: 0; }
-.engine-status-bar > .status-pass:only-child,
-.matrix-segments:not(:has(> :not(.status-pass))) > .status-pass { opacity: .2; }
+.comparison-focused .engine-status-bar > .status-pass:only-child,
+.comparison-focused .matrix-segments:not(:has(> :not(.status-pass))) > .status-pass { opacity: .2; }
 .engine-counts { display: flex; flex-wrap: wrap; gap: 5px 12px; }
 .engine-counts > span,.comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .legend-swatch { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--line); border-radius: 2px; }

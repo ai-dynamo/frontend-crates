@@ -201,6 +201,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const focused = focusComparison(baseView, keys, state.focus);
     if (state.focus !== focused.focus) { state.focus = focused.focus; persist(); }
     view = focused.view;
+    panel.classList.toggle('comparison-focused', state.focus !== 'all');
     toolbar.querySelector('[data-focus="difference"]').hidden = keys.filter(key => key !== 'golden').length < 2;
     toolbar.querySelectorAll('[data-focus]').forEach(button => {
       button.disabled = button.dataset.focus !== 'all' && !focused.available[button.dataset.focus];
@@ -232,7 +233,8 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const candidate = key => tab.candidates.find(c => c.key === key);
     const captureLabel = key => {
       const item = candidate(key);
-      return [item?.impl, item?.version].filter(Boolean).join(' ') || key;
+      const generation = item?.implementation?.match(/^dynamo_v([12])(?:_|$)/);
+      return [generation ? `Dynamo v${generation[1]}` : item?.impl, item?.version].filter(Boolean).join(' ') || key;
     };
     const outcomes = (entry,key) => entry ? selectedCaptureOutcome({...entry.cell, variants: entry.leaves},key) : 'unsupported';
     const heading = (tr,label,span=1) => { const th = document.createElement('th'); th.textContent = label; th.colSpan = span; tr.appendChild(th); return th; };

@@ -4,7 +4,7 @@
 import json
 import re
 import threading
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, urlencode
 
 import pytest
 from selenium.webdriver.common.keys import Keys
@@ -12,7 +12,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index
+from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index, _published_capture
 
 
 def counts(driver):
@@ -696,7 +696,7 @@ def test_source_sha_appears_once_on_second_line(published_viewer):
         driver.quit(); server.shutdown(); server.server_close()
 
 
-def test_errors_and_all_green_results_are_dimmed(published_viewer):
+def test_errors_and_all_green_results_follow_focus(published_viewer):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
@@ -708,9 +708,35 @@ def test_errors_and_all_green_results_are_dimmed(published_viewer):
         _ready(driver, 'tab-unified')
         mixed = driver.find_element('css selector', '.matrix-segments:has(> .status-pass):has(> :not(.status-pass)) > .status-pass')
         assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', mixed)) == 1
+        family = driver.execute_script("""
+            const keys=window.__conformanceController.selection(document.getElementById('tab-unified')).selected;
+            const leaves=c=>c?.variants ? c.variants.flatMap(leaves) : c ? [c] : [];
+            return window.__conformanceModel.rows.find(row=>{
+                const cells=Object.values(row.cells).flatMap(leaves).filter(c=>c.applicable ?? c.status!=='na');
+                return cells.length && cells.every(c=>c.cmp?.dynamo && !c.cmp.dynamo.na && !c.cmp.dynamo.err && !c.cmp.dynamo.leak
+                    && JSON.stringify(c.cmp.dynamo.sig)===JSON.stringify(c.cmp.golden?.sig))
+                    && cells.some(c=>{const peer=c.cmp?.[keys[1]];return peer && !peer.na && JSON.stringify(peer.sig)!==JSON.stringify(c.cmp.dynamo.sig)});
+            })?.family;
+        """)
+        assert family
+        field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys('model:' + family)
+        driver.find_element('css selector', '[data-layout=stacked]').click()
+        driver.find_element('css selector', '[data-focus=difference]').click()
+        assert driver.find_element('css selector', '[data-focus=difference]').get_attribute('aria-pressed') == 'true'
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == .2
+        green = driver.find_element('css selector', '.matrix-status.status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == .2
+        driver.find_element('css selector', '[data-focus=all]').click()
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
+        green = driver.find_element('css selector', '.matrix-status.status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
         _clear_slot(driver, 1)
         _ready(driver, 'tab-unified')
         field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys(Keys.CONTROL, 'a', Keys.NULL)
         field.send_keys('model:gpt_oss AND "gpt_oss_native_builtin_python_raw"')
         golden = driver.find_element('css selector', '[data-focus=disagreements]')
         errors = driver.find_element('css selector', '[data-focus=errors]')
@@ -722,12 +748,34 @@ def test_errors_and_all_green_results_are_dimmed(published_viewer):
         field.send_keys('model:beam AND "tool_only"')
         assert counts(driver)['dynamo']['pass'] == counts(driver)['dynamo']['total'] > 0
         passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
-        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) < 1
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
         green = driver.find_element('css selector', '.matrix-segments:not(:has(> :not(.status-pass))) > .status-pass')
-        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) < 1
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
         assert not driver.find_element('css selector', '[data-focus=errors]').is_enabled()
         assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
         assert not driver.find_elements('css selector', '[data-focus=problems]')
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize('vertical', [False, True])
+def test_stacked_dynamo_labels_include_generation(published_viewer, vertical):
+    implementations = ['dynamo_v2', 'dynamo_v1', 'dynamo_v1_jail']
+    versions = {impl: _published_capture(published_viewer, impl)['version'] for impl in implementations}
+    query = urlencode({'tab': 'tab-unified', 'vertical': int(vertical), 'layout_tab-unified': 'stacked',
+                       'search_tab-unified': 'model:gpt_oss AND "tool_only"',
+                       'slots_tab-unified': ','.join(impl + '@' + versions[impl] for impl in implementations)})
+    expected = ['Dynamo v2 ' + versions['dynamo_v2'], 'Dynamo v1 ' + versions['dynamo_v1'],
+                'Dynamo v1 ' + versions['dynamo_v1_jail']]
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f'http://127.0.0.1:{server.server_port}/?{query}')
+        _ready(driver, 'tab-unified')
+        selector = '.matrix-capture-heading' if vertical else '.comparison-matrix tbody tr:not(.matrix-category-row) > th:first-child'
+        labels = [node.get_attribute('textContent').strip().rsplit(' / ', 1)[-1]
+                  for node in driver.find_elements('css selector', selector)]
+        assert sorted(labels) == sorted(expected)
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 

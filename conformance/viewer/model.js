@@ -221,7 +221,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
     : recordedSources;
   const control = (source, key, label, bucket = 'C') => ({
     source,
-    control: { key, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
+    control: { key, implementation: source.implementation, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
       label, label_html: mode === 'unified' ? label : candidateLabelHtml(label), default_bucket: bucket,
       version: source.version, parse_mode: mode === 'unified' ? (source.capture_mode || metadata.unified_capture_policy?.[source.implementation]?.mode || 'stream') : /\([^)]*stream/.test(label) ? 'stream' : /\([^)]*batch/.test(label) ? 'batch' : null,
       language: source.language || metadata.unified_capture_policy?.[source.implementation]?.language || null,
