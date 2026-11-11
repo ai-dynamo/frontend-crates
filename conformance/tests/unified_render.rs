@@ -399,6 +399,7 @@ fn capture_native_case(
         "structural tag",
     )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
+    capture::check_tool_call_ids(parser.as_ref(), &rows)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
     let (assembled, raw_args) = capture::assembled_native_capture(&deltas);
     let assembled = assembled
@@ -924,6 +925,7 @@ fn render_unified_conformance_html() {
                 "tools": common::unified_tool_schemas_for_case(case.tools.as_ref()),
                 "golden": case.golden,
                 "dynamo": got,
+                "parser_path": "unified",
                 "dynamo_error": error,
                 "dynamo_verdict": dclass,
                 "vllm_verdict": vx.map(|e| if e.verdict == "match" { "MATCH".to_string() } else { e.class.clone().unwrap_or_else(|| "DIVERGE".into()) }),

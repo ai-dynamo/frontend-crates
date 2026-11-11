@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+mod smart;
+
+pub use smart::decode_rgb_smart;
+
 use crate::{MmError, Result};
 use image::metadata::Orientation;
 use image::{ImageDecoder, ImageFormat};
@@ -42,23 +46,31 @@ pub fn decode_rgb(data: &[u8], limits: &DecodeLimits) -> Result<(Vec<u8>, usize,
     let rgb = match format(data)? {
         ImageFormat::Jpeg => decode_jpeg(data)?,
         ImageFormat::Gif => GifImage::new(data)?.decode_rgb()?,
-        fmt => {
-            use image::ColorType;
-            let img = image::load_from_memory_with_format(data, fmt)
-                .map_err(invalid("image decode failed"))?;
-            if !matches!(
-                img.color(),
-                ColorType::L8 | ColorType::La8 | ColorType::Rgb8 | ColorType::Rgba8
-            ) {
-                return Err(MmError::invalid_input(format!(
-                    "image decode: unsupported color {:?}",
-                    img.color()
-                )));
-            }
-            img.into_rgb8().into_raw()
-        }
+        fmt => decode_8bit(image::ImageReader::with_format(
+            std::io::Cursor::new(data),
+            fmt,
+        ))?
+        .into_rgb8()
+        .into_raw(),
     };
     Ok((rgb, h, w))
+}
+
+fn decode_8bit(reader: image::ImageReader<std::io::Cursor<&[u8]>>) -> Result<image::DynamicImage> {
+    use image::ColorType;
+    // `decode` reserves the output buffer against the reader's allocation
+    // budget; calling `DynamicImage::from_decoder` directly skips that guard.
+    let image = reader.decode().map_err(invalid("image decode failed"))?;
+    if !matches!(
+        image.color(),
+        ColorType::L8 | ColorType::La8 | ColorType::Rgb8 | ColorType::Rgba8
+    ) {
+        return Err(MmError::invalid_input(format!(
+            "image decode: unsupported color {:?}",
+            image.color()
+        )));
+    }
+    Ok(image)
 }
 
 /// Like [`decode_rgb`], but apply the EXIF orientation used by
@@ -303,7 +315,15 @@ impl<'a> GifImage<'a> {
         )
     }
 
-    fn decode_rgb(mut self) -> Result<Vec<u8>> {
+    fn decode_rgb(self) -> Result<Vec<u8>> {
+        self.decode_pixels::<3>()
+    }
+
+    fn decode_rgba(self) -> Result<Vec<u8>> {
+        self.decode_pixels::<4>()
+    }
+
+    fn decode_pixels<const CHANNELS: usize>(mut self) -> Result<Vec<u8>> {
         let (h, w) = self.dimensions();
         let mut indices = vec![0; usize::from(self.frame.width) * usize::from(self.frame.height)];
         self.decoder
@@ -315,27 +335,38 @@ impl<'a> GifImage<'a> {
             .map_err(invalid("gif palette missing"))?;
         let color = |index: u8| {
             let start = usize::from(index) * 3;
-            palette
+            let rgb = palette
                 .get(start..start + 3)
-                .ok_or_else(|| MmError::invalid_input("gif palette index out of bounds"))
+                .ok_or_else(|| MmError::invalid_input("gif palette index out of bounds"))?;
+            Ok::<_, MmError>([
+                rgb[0],
+                rgb[1],
+                rgb[2],
+                if Some(index) == self.frame.transparent {
+                    0
+                } else {
+                    255
+                },
+            ])
         };
         // Pillow fills the first canvas with the transparent index or zero,
         // ignoring the declared background. RGB conversion preserves its color.
         let background = color(self.frame.transparent.unwrap_or(0))?;
-        let mut rgb = background.repeat(h * w);
+        let mut pixels = background[..CHANNELS].repeat(h * w);
         for (y, row) in indices
             .chunks_exact(usize::from(self.frame.width))
             .enumerate()
         {
-            let start = ((y + usize::from(self.frame.top)) * w + usize::from(self.frame.left)) * 3;
-            for (pixel, &index) in rgb[start..start + row.len() * 3]
-                .chunks_exact_mut(3)
+            let start =
+                ((y + usize::from(self.frame.top)) * w + usize::from(self.frame.left)) * CHANNELS;
+            for (pixel, &index) in pixels[start..start + row.len() * CHANNELS]
+                .chunks_exact_mut(CHANNELS)
                 .zip(row)
             {
-                pixel.copy_from_slice(color(index)?);
+                pixel.copy_from_slice(&color(index)?[..CHANNELS]);
             }
         }
-        Ok(rgb)
+        Ok(pixels)
     }
 }
 
@@ -389,6 +420,22 @@ mod tests {
         let mut buf = std::io::Cursor::new(Vec::new());
         img.write_to(&mut buf, fmt).unwrap();
         buf.into_inner()
+    }
+
+    #[test]
+    fn pixel_decode_preserves_the_reader_allocation_budget() {
+        let bytes = encode(&image::DynamicImage::new_rgb8(2, 2), ImageFormat::Bmp);
+        // A 12-byte image must fit exactly, but not fit in an 11-byte budget.
+        for budget in [11, 12] {
+            let mut reader = image::ImageReader::with_format(
+                std::io::Cursor::new(bytes.as_slice()),
+                ImageFormat::Bmp,
+            );
+            let mut limits = image::Limits::default();
+            limits.max_alloc = Some(budget);
+            reader.limits(limits);
+            assert_eq!(decode_8bit(reader).is_ok(), budget == 12, "budget {budget}");
+        }
     }
 
     #[test]
@@ -478,6 +525,10 @@ mod tests {
         ] {
             assert!(matches!(
                 decode_rgb(header, &limits),
+                Err(MmError::LimitExceeded { .. })
+            ));
+            assert!(matches!(
+                decode_rgb_smart(header, &limits),
                 Err(MmError::LimitExceeded { .. })
             ));
         }

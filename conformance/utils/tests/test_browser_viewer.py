@@ -34,6 +34,7 @@ if str(SRC) not in sys.path:
 import unified_history
 import capture_sources
 import ci_publication_cache
+from capture_versions import capture_release_sort_key, UNIFIED_VERSION_RE
 from browser_helpers import raw_view_download, settle
 
 
@@ -206,6 +207,96 @@ def _ready(driver, tab):
     settle(driver, tab, history_ready=True, idle=False)
 
 
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
+def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer, implementation):
+    catalog = _published_catalog(published_viewer)
+    version = max((source["version"] for source in catalog["sources"]["candidates"]
+                   if source["implementation"] == implementation), key=capture_release_sort_key)
+    key = f"{implementation}@{version}"
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+                           "search_tab-unified": "gpt_oss AND tool_only"})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        _ready(driver, "tab-unified")
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
+        candidate = driver.execute_script("""
+            const model = window.__conformanceTooltipModel(arguments[0]);
+            const candidate = model.candidates.find(item => item.key === arguments[1]);
+            window.__buildTooltip(arguments[0]);
+            arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'}));
+            arguments[0].click();
+            return candidate;
+        """, cell, key)
+        assert candidate["parse_mode"] == "batch"
+        assert "batch_final" in candidate["block"]
+        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+        output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
+        for field in ("reasoning_text=", "normal_text=", "calls="):
+            assert field in output.text
+        assert "Batch output is compared with ordered GOLDEN." in output.text
+        chunks = popup.find_elements(By.CSS_SELECTOR, f'tbody tr:not(.ttip-final) td[data-cand="{key}"]')
+        assert chunks
+        assert all(chunk.text == "Order/chunk not applicable for batch" for chunk in chunks)
+    finally:
+        driver.quit()
+        server.shutdown()
+
+
+@pytest.mark.parametrize("implementation,scenario,has_origin", [
+    ("dynamo_v1", "tool_only", True),
+    ("dynamo_v1_jail", "tool_only", True),
+    # The latest native snapshot is a full fresh capture, without a verified
+    # recapture overlay. Historical v1 observations retain their overlay origin.
+    ("dynamo_v2", "tool_only", False),
+    *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
+      for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
+])
+def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, implementation, scenario, has_origin):
+    catalog = _published_catalog(historical_published_viewer)
+    versions = {capture["version"] for capture in catalog["capture_generation"]["current"]
+                if capture["implementation"] == implementation and capture["family"] == "gpt_oss"}
+    assert len(versions) == 1
+    version = versions.pop()
+    key = f"{implementation}@{version}"
+    server, _requests = _server(root=historical_published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+                           "search_tab-unified": f'model:gpt_oss AND "{scenario}"'})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        _ready(driver, "tab-unified")
+        selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
+        assert len(selected) == 1
+        key = selected[0]
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
+        rendered = driver.execute_script("""
+            const candidate=window.__conformanceTooltipModel(arguments[0]).candidates.find(item=>item.key===arguments[1]);
+            const expectedProducer=candidate.block.producer_origin ? 'Producer: '+JSON.stringify(candidate.block.producer_origin) : null;
+            window.__buildTooltip(arguments[0]);
+            arguments[0].dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+            arguments[0].click();
+            return {candidate,expectedProducer};
+        """, cell, key)
+        candidate = rendered["candidate"]
+        assert candidate["version"] == version
+        origin = candidate["block"].get("producer_origin")
+        assert bool(origin) == has_origin
+        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+        output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
+        labels = [element.text for element in output.find_elements(By.CSS_SELECTOR, ".expl")
+                  if element.text.startswith("Producer: ")]
+        expected = [rendered["expectedProducer"]] if has_origin else []
+        assert labels == expected
+        if has_origin:
+            assert json.loads(labels[0].removeprefix("Producer: ")) == origin
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
     button = driver.find_element("css selector", f"[data-slot-open='{slot}']")
     if programmatic:
@@ -335,6 +426,29 @@ def test_historical_reference_switch_recolors_matrix(historical_published_viewer
         server.shutdown()
         server.server_close()
 
+@pytest.mark.parametrize("publication", ["published_viewer", "historical_published_viewer"])
+def test_published_selectors_show_only_version_numbers(request, publication):
+    site = request.getfixturevalue(publication)
+    server, _requests = _server(root=site)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified")
+        for reload in (False, True):
+            if reload:
+                driver.refresh()
+            _ready(driver, "tab-unified")
+            candidates = driver.execute_script("return window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === 'tab-unified').candidates")
+            versions = [item["version"] for item in candidates if item["key"] != "golden"]
+            assert versions and all(UNIFIED_VERSION_RE.fullmatch(version) for version in versions)
+            labels = driver.execute_script("return [...document.querySelectorAll('#tab-unified select[data-slot-capture] option')].map(option => option.textContent)")
+            assert labels and all("+source." not in label for label in labels)
+            assert all(not re.search(r"[0-9a-f]{40,64}", label) for label in labels)
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(historical_published_viewer):
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
@@ -356,7 +470,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 version = item["version"]
                 minor = tuple(int(part) for part in version.split(".")[:2])
                 current = newest_v2_by_minor.get(minor)
-                if current is None or tuple(int(part) for part in version.split(".")) > tuple(int(part) for part in current["version"].split(".")):
+                if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                     newest_v2_by_minor[minor] = item
             elif item["key"].startswith(("dynamo_v1@", "dynamo_v1_jail@")):
                 producer = item["key"].split("@", 1)[0]
@@ -364,7 +478,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 major = int(version.split(".", 1)[0])
                 line = (producer, major)
                 newest_v1_by_producer_major[line] = max(newest_v1_by_producer_major.get(line, version), version,
-                                                         key=lambda value: tuple(int(part) for part in value.split(".")))
+                                                         key=capture_release_sort_key)
         expected = {item["key"] for item in newest_v2_by_minor.values()}
         expected.update(f"{producer}@{version}" for (producer, _major), version in newest_v1_by_producer_major.items())
         for producer in ("dynamo_v2", "dynamo_v1", "dynamo_v1_jail"):
@@ -429,7 +543,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
             for version in available_versions:
                 major = version.split(".", 1)[0]
                 newest_by_major[major] = max(newest_by_major.get(major, version), version,
-                                             key=lambda value: tuple(int(part) for part in value.split(".")))
+                                             key=capture_release_sort_key)
             recent = sorted(set(available_versions), key=unified_history._capture_release_sort_key, reverse=True)[:2]
             assert selected_versions == set(newest_by_major.values()) | set(recent), producer
         v2_values = {option.get_attribute("value") for option in dynamo_options
@@ -447,7 +561,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
             version = item["version"]
             minor = tuple(int(part) for part in version.split(".")[:2])
             current = newest_by_minor.get(minor)
-            if current is None or tuple(int(part) for part in version.split(".")) > tuple(int(part) for part in current["version"].split(".")):
+            if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                 newest_by_minor[minor] = item
         recent_v2 = sorted(available_v2_versions,
                            key=lambda item: unified_history._capture_release_sort_key(item["version"]), reverse=True)[:2]
@@ -455,6 +569,15 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         direct_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1@")}
         jail_v1_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith("dynamo_v1_jail@")}
         assert direct_v1_versions and jail_v1_versions
+        legacy_choices = {}
+        for implementation in ("dynamo_v1", "dynamo_v1_jail"):
+            candidates = [candidate for candidate in catalog["sources"]["candidates"]
+                          if candidate["implementation"] == implementation
+                          and f"{implementation}@{candidate['version']}" in v1_values]
+            legacy_choices[implementation] = max(candidates, key=lambda candidate: (
+                len(candidate["capture_families"]), capture_release_sort_key(candidate["version"])))
+        direct_key = f"dynamo_v1@{legacy_choices['dynamo_v1']['version']}"
+        jail_key = f"dynamo_v1_jail@{legacy_choices['dynamo_v1_jail']['version']}"
         assert {"dynamo_v1@5.1.3", "dynamo_v1_jail@5.1.3"} <= set(v1_values)
         selected_identity = driver.execute_script("""
           const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === 'tab-unified');
@@ -474,13 +597,13 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         assert not identities_after_picker, "opening a selector fetched capture payloads"
         driver.find_element("css selector", ".comparison-picker[open]").send_keys("\ue00c")
         second = _choose_engine(driver, 1, "dynamo")
-        Select(second).select_by_value("dynamo_v1@10.0.7")
+        Select(second).select_by_value(direct_key)
         _ready(driver, "tab-unified")
         third = _choose_engine(driver, 2, "dynamo")
-        Select(third).select_by_value("dynamo_v1_jail@10.0.7")
+        Select(third).select_by_value(jail_key)
         _ready(driver, "tab-unified")
         visible_families = set(driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label)"))
-        selected_sources = {selected_identity, "dynamo_v1@unified@10.0.7", "dynamo_v1_jail@unified@10.0.7"}
+        selected_sources = {selected_identity, identity_for_key(catalog, direct_key), identity_for_key(catalog, jail_key)}
         expected_families = {family for candidate in catalog["sources"]["candidates"]
                              if f"{candidate['implementation']}@{candidate['mode']}@{candidate['version']}" in selected_sources
                              for family in candidate.get("native_unified_families", candidate["capture_families"])}
@@ -495,20 +618,23 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         """, _historical_dynamo_key(driver))
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == [
-            "dynamo", "dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"]
+            "dynamo", direct_key, jail_key]
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return document.body.classList.contains('transpose-mode')"))
         cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-comparison-table] .matrix-cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
         assert cell is not None
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
-        assert "10.0.7" in popup.text
+        assert all(legacy_choices[implementation]["version"] in popup.text
+                   for implementation in ("dynamo_v1", "dynamo_v1_jail"))
         assert "golden" in popup.text.lower()
         assert not any(path.endswith(".yaml") or "/fixtures-unified-v2/" in path for path in requests)
         fetched = {resources[urlsplit(path).path.removeprefix("/")]["capture_identity"]
                    for path in requests if urlsplit(path).path.removeprefix("/") in resources}
         allowed = {selected_identity, "dynamo_v2@unified@0.7.24", "dynamo_v2@unified@0.6.1",
-                   "dynamo_v1@unified@5.1.3", "dynamo_v1@unified@10.0.7", "dynamo_v1_jail@unified@10.0.7"}
+                   "dynamo_v1@unified@5.1.3", *selected_sources,
+                   f"dynamo_v1@unified@{max(direct_v1_versions, key=capture_release_sort_key)}",
+                   f"dynamo_v1_jail@unified@{max(jail_v1_versions, key=capture_release_sort_key)}"}
         # Switching engines may admit the picker's most recent historical capture
         # before the following explicit selection replaces it.
         allowed.update(f"dynamo_v2@unified@{item['version']}" for item in recent_v2)
@@ -1352,20 +1478,21 @@ def test_unified_slots_migrate_tab_scoped_legacy_url_after_tab_canonicalization(
 
 
 def test_unified_capture_slots_survive_reload_with_url_state(published_viewer):
+    peer_version = _published_capture(published_viewer, "vllm_python")["version"]
     server, _requests = _server(root=published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
-        driver.get(f"{base}/?tab=tab-unified&slots_tab-unified=dynamo_v2%400.7.24,none,vllm_python%400.31.0&keep=1#saved")
+        driver.get(f"{base}/?tab=tab-unified&slots_tab-unified=dynamo_v2%400.7.24,none,vllm_python%40{peer_version}&keep=1#saved")
         _ready(driver, 'tab-unified')
-        expected = {'reference': None, 'selected': ['dynamo', 'vllm_python@0.31.0']}
+        expected = {'reference': None, 'selected': ['dynamo', f'vllm_python@{peer_version}']}
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == expected
-        assert dict(parse_qsl(urlsplit(driver.current_url).query))['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@0.31.0"
+        assert dict(parse_qsl(urlsplit(driver.current_url).query))['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@{peer_version}"
         driver.refresh()
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == expected
         params = dict(parse_qsl(urlsplit(driver.current_url).query))
-        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@0.31.0"
+        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@{peer_version}"
         assert params['keep'] == '1'
         assert urlsplit(driver.current_url).fragment == 'saved'
     finally:
@@ -1486,18 +1613,19 @@ def test_popup_heading_uses_case_id_before_description(published_viewer, vertica
 
 
 def test_unified_slots_migrate_legacy_stream_candidate_keys(published_viewer):
+    peer_version = _published_capture(published_viewer, "vllm_python")["version"]
     server, _requests = _server(root=published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
-        driver.get(f"{base}/?tab=tab-toolcalling-streamv1&base_tab-toolcalling-streamv1=dynamo_v2-0-7-22&cmp_tab-toolcalling-streamv1=vllm_python-0-31-0&keep=1#saved")
+        driver.get(f"{base}/?tab=tab-toolcalling-streamv1&base_tab-toolcalling-streamv1=dynamo_v2-0-7-22&cmp_tab-toolcalling-streamv1=vllm_python-{peer_version.replace('.', '-')}&keep=1#saved")
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {
-            'reference': None, 'selected': ['dynamo', 'vllm_python@0.31.0']
+            'reference': None, 'selected': ['dynamo', f'vllm_python@{peer_version}']
         }
         params = dict(parse_qsl(urlsplit(driver.current_url).query))
         assert params['tab'] == 'tab-unified'
-        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@0.31.0"
+        assert params['slots_tab-unified'] == f"dynamo_v2@{_published_capture(published_viewer)['version']},none,vllm_python@{peer_version}"
         assert params['keep'] == '1'
         assert not any(key.startswith(('base_', 'cmp_')) for key in params)
         assert urlsplit(driver.current_url).fragment == 'saved'

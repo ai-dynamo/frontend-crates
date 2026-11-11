@@ -3,7 +3,7 @@
 
 use super::*;
 
-use crate::{OAIChatLikeRequest, TextInput};
+use crate::{OAIChatLikeRequest, PromptRenderError, TextInput};
 use minijinja::{context, value::Value};
 use serde_json::json;
 use std::{collections::HashMap, result::Result::Ok};
@@ -95,6 +95,11 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
     ("audio_url", "audio"),
 ];
 
+/// A `custom` part as the template sees it: its `kind`, never its payload.
+fn custom_marker(part: &serde_json::Value) -> serde_json::Value {
+    json!({"type": "custom", "kind": part.get("kind")})
+}
+
 /// Project Custom payloads out of template input and normalize native media tags.
 fn convert_media_url_to_placeholder(
     content_array: &mut [serde_json::Value],
@@ -103,7 +108,7 @@ fn convert_media_url_to_placeholder(
     for part in content_array {
         let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
         if part_type == "custom" {
-            *part = serde_json::json!({"type": "custom", "kind": part.get("kind")});
+            *part = custom_marker(part);
         } else if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type)
         {
             *part = serde_json::json!({"type": target_type});
@@ -114,12 +119,21 @@ fn convert_media_url_to_placeholder(
 fn may_be_fix_msg_content(
     mut messages: serde_json::Value,
     preserve_arrays: bool,
+    native_text_array_roles: &[&str],
+    merged_turns: &[usize],
     image_placeholder_template: Option<&str>,
 ) -> serde_json::Value {
     let Some(arr) = messages.as_array_mut() else {
         return messages;
     };
-    for msg in arr {
+    for (index, msg) in arr.iter_mut().enumerate() {
+        // Synthesized content (merged turns or injected reasoning) retains
+        // its existing normalization instead of acquiring template framing.
+        let preserve_text_array = !merged_turns.contains(&index)
+            && msg
+                .get("role")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|role| native_text_array_roles.contains(&role));
         let Some(content) = msg.get_mut("content") else {
             continue;
         };
@@ -142,12 +156,14 @@ fn may_be_fix_msg_content(
                         .iter()
                         .all(|part| part.get("type").and_then(|v| v.as_str()) == Some("text"));
                 if text_only && !preserve_arrays {
-                    let text = parts
-                        .iter()
-                        .filter_map(|part| part.get("text")?.as_str())
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    *content = serde_json::Value::String(text);
+                    if !preserve_text_array {
+                        let text = parts
+                            .iter()
+                            .filter_map(|part| part.get("text")?.as_str())
+                            .collect::<Vec<_>>()
+                            .join("\n");
+                        *content = serde_json::Value::String(text);
+                    }
                 } else if !preserve_arrays
                     // Custom markers belong to the model's array branch. Never
                     // flatten them through a built-in image-placeholder rule.
@@ -202,6 +218,218 @@ fn flatten_mixed_content(parts: &[serde_json::Value], placeholder_tpl: &str) -> 
         }
     }
     out
+}
+
+/// What vLLM's chat parser makes of one content part.
+enum ContentPart<'a> {
+    /// A text or refusal part. `None` when it carries no text; vLLM skips it.
+    Text(Option<&'a str>),
+    /// A media part of this modality.
+    Media(&'static str),
+    /// Dynamo's `custom` part, which vLLM does not have.
+    Custom,
+    Other,
+}
+
+/// Classifies a part by the `type` names of the OpenAI content parts.
+fn content_part(part: &serde_json::Value) -> ContentPart<'_> {
+    let field = |name: &str| part.get(name).and_then(serde_json::Value::as_str);
+    match part.get("type").and_then(serde_json::Value::as_str) {
+        Some("text") => ContentPart::Text(field("text")),
+        Some("refusal") => ContentPart::Text(field("refusal")),
+        Some("image_url") => ContentPart::Media("image"),
+        Some("video_url") => ContentPart::Media("video"),
+        Some("audio_url" | "input_audio") => ContentPart::Media("audio"),
+        Some("custom") => ContentPart::Custom,
+        _ => ContentPart::Other,
+    }
+}
+
+/// vLLM's `string` content format: every message's content becomes one string.
+/// Like vLLM, media items are numbered per modality across the conversation,
+/// and with `use_audio_in_video` a video's audio track counts as an audio item.
+fn flatten_msg_content_to_string(
+    messages: &mut serde_json::Value,
+    media_placeholders: &MediaPlaceholders,
+    use_audio_in_video: bool,
+) -> Result<()> {
+    let Some(msgs) = messages.as_array_mut() else {
+        return Ok(());
+    };
+    let mut media_counts = HashMap::new();
+    for msg in msgs {
+        let Some(msg) = msg.as_object_mut() else {
+            continue;
+        };
+        let content = match msg.get("content") {
+            Some(serde_json::Value::String(_)) => continue,
+            Some(serde_json::Value::Array(parts)) => flatten_parts_to_string(
+                parts,
+                media_placeholders,
+                use_audio_in_video,
+                &mut media_counts,
+            )?,
+            // vLLM renders missing content as an empty string.
+            _ => String::new(),
+        };
+        msg.insert("content".to_string(), serde_json::Value::String(content));
+    }
+    Ok(())
+}
+
+/// One message's parts as vLLM's `_get_full_multimodal_text_prompt` joins them
+/// (`interleave_mm_strings=False`): the text parts joined with `\n`, preceded
+/// by the media placeholders the text does not already contain, grouped by
+/// modality in first-seen order. Like vLLM, empty text parts are skipped.
+fn flatten_parts_to_string(
+    parts: &[serde_json::Value],
+    media_placeholders: &MediaPlaceholders,
+    use_audio_in_video: bool,
+    media_counts: &mut HashMap<&'static str, usize>,
+) -> Result<String> {
+    let mut texts = Vec::new();
+    let mut by_modality: Vec<(&str, Vec<String>)> = Vec::new();
+    for part in parts {
+        match content_part(part) {
+            ContentPart::Text(text) => texts.extend(text.filter(|text| !text.is_empty())),
+            ContentPart::Media(modality) => {
+                // vLLM adds the audio item only for a video with a URL.
+                let audio_track = modality == "video"
+                    && use_audio_in_video
+                    && part["video_url"]["url"]
+                        .as_str()
+                        .is_some_and(|url| !url.is_empty());
+                for modality in std::iter::once(modality).chain(audio_track.then_some("audio")) {
+                    let n = media_counts.entry(modality).or_default();
+                    *n += 1;
+                    let template = match modality {
+                        "image" => &media_placeholders.image,
+                        "video" => &media_placeholders.video,
+                        _ => &media_placeholders.audio,
+                    };
+                    if template.is_empty() {
+                        continue;
+                    }
+                    let placeholder = template.replace("{n}", &n.to_string());
+                    match by_modality.iter_mut().find(|(m, _)| *m == modality) {
+                        Some((_, placeholders)) => placeholders.push(placeholder),
+                        None => by_modality.push((modality, vec![placeholder])),
+                    }
+                }
+            }
+            ContentPart::Custom | ContentPart::Other => {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "content part type {} is not supported with the `string` chat template content format",
+                    part["type"]
+                ))
+                .into());
+            }
+        }
+    }
+    let text = texts.join("\n");
+
+    // vLLM counts each distinct placeholder string, in first-seen order.
+    let mut counts: Vec<(String, usize)> = Vec::new();
+    for placeholder in by_modality.into_iter().flat_map(|(_, p)| p) {
+        match counts.iter_mut().find(|(p, _)| *p == placeholder) {
+            Some((_, count)) => *count += 1,
+            None => counts.push((placeholder, 1)),
+        }
+    }
+    let mut lines = Vec::new();
+    for (placeholder, count) in counts {
+        let present = text.matches(placeholder.as_str()).count();
+        if present > count {
+            return Err(PromptRenderError::invalid_request(format!(
+                "found more '{placeholder}' placeholders in the message text than media items"
+            ))
+            .into());
+        }
+        lines.extend(std::iter::repeat_n(placeholder, count - present));
+    }
+    if lines.is_empty() {
+        return Ok(text);
+    }
+    if !text.is_empty() {
+        lines.push(text);
+    }
+    Ok(lines.join("\n"))
+}
+
+/// vLLM's `_KNOWN_CONTENT_PART_FIELDS`: every field of its content-part types,
+/// which its `openai` format drops. Any other field, such as TranslateGemma's
+/// `source_lang_code`, reaches the template.
+const KNOWN_CONTENT_PART_FIELDS: &[&str] = &[
+    "type",
+    "text",
+    "refusal",
+    "image_url",
+    "video_url",
+    "audio_url",
+    "input_audio",
+    "uuid",
+    "audio_embeds",
+    "closed",
+    "data",
+    "file",
+    "image_embeds",
+    "image_pil",
+    "name",
+    "prompt_cache_breakpoint",
+    "thinking",
+    "video_embeds",
+];
+
+/// One part in vLLM's `openai` format: text, or media reduced to its modality,
+/// plus any extension fields. `None` for a text part without text; vLLM skips it.
+fn openai_part(part: serde_json::Value) -> Option<serde_json::Value> {
+    let mut wrapped = match content_part(&part) {
+        ContentPart::Text(text) => json!({"type": "text", "text": text?}),
+        ContentPart::Media(modality) => json!({"type": modality}),
+        ContentPart::Custom => return Some(custom_marker(&part)),
+        // Passed through as `Auto` does; only `String` must reject what it cannot flatten.
+        ContentPart::Other => return Some(part),
+    };
+    if let serde_json::Value::Object(fields) = part {
+        for (key, value) in fields {
+            if !KNOWN_CONTENT_PART_FIELDS.contains(&key.as_str()) {
+                wrapped[key.as_str()] = value;
+            }
+        }
+    }
+    Some(wrapped)
+}
+
+/// vLLM's `openai` content format: every message's content becomes a list of
+/// parts (see [`openai_part`]). As in vLLM, a `tool` message whose parts are
+/// all text is joined back into one string.
+fn wrap_msg_content_in_parts(messages: &mut serde_json::Value) {
+    let Some(msgs) = messages.as_array_mut() else {
+        return;
+    };
+    for msg in msgs {
+        let is_tool = msg.get("role").and_then(serde_json::Value::as_str) == Some("tool");
+        let parts: Vec<serde_json::Value> = match take_message_content(msg) {
+            serde_json::Value::String(text) => {
+                let mut part = json!({"type": "text"});
+                part["text"] = text.into();
+                vec![part]
+            }
+            serde_json::Value::Array(parts) => parts.into_iter().filter_map(openai_part).collect(),
+            _ => Vec::new(),
+        };
+        let Some(msg) = msg.as_object_mut() else {
+            continue;
+        };
+        let all_text = parts.iter().all(|part| part["type"] == "text");
+        let content = if is_tool && all_text {
+            let texts: Vec<&str> = parts.iter().filter_map(|p| p["text"].as_str()).collect();
+            serde_json::Value::String(texts.join("\n"))
+        } else {
+            serde_json::Value::Array(parts)
+        };
+        msg.insert("content".to_string(), content);
+    }
 }
 
 fn normalize_tool_calls_arguments_in_messages(messages: &mut serde_json::Value) {
@@ -384,6 +612,10 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
         )
     }
 
+    fn raw_tools(&self) -> Option<Value> {
+        self.tools.as_ref().map(Value::from_serialize)
+    }
+
     fn tool_choice(&self) -> Option<Value> {
         self.tool_choice
             .as_ref()
@@ -535,9 +767,14 @@ fn normalize_developer_messages(messages: &mut serde_json::Value) -> Result<()> 
 /// Rewrites an agent-client message stream into a shape strict chat templates
 /// accept. Each rewrite is gated on the restriction the load-time probe actually
 /// found, so a template is never reshaped for a rule it does not enforce.
-fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNormalization) {
+/// Returns the final indices of turns that absorbed another turn's content.
+fn normalize_system_messages(
+    messages: &mut serde_json::Value,
+    rules: SystemNormalization,
+) -> Vec<usize> {
+    let mut merged_turns = Vec::new();
     let serde_json::Value::Array(list) = messages else {
-        return;
+        return merged_turns;
     };
     let role_is =
         |m: &serde_json::Value, r: &str| m.get("role").and_then(|v| v.as_str()) == Some(r);
@@ -551,6 +788,7 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
                 let content = take_message_content(&mut trailing);
                 append_message_content(&mut list[0], content);
             }
+            merged_turns.push(0);
         }
 
         // Demoted in place, not folded to the front: a mid-conversation reminder
@@ -571,12 +809,17 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
             if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
                 let content = take_message_content(&mut m);
                 append_message_content(coalesced.last_mut().unwrap(), content);
+                let index = coalesced.len() - 1;
+                if merged_turns.last() != Some(&index) {
+                    merged_turns.push(index);
+                }
             } else {
                 coalesced.push(m);
             }
         }
         *list = coalesced;
     }
+    merged_turns
 }
 
 impl HfTokenizerConfigJsonFormatter {
@@ -627,6 +870,7 @@ impl HfTokenizerConfigJsonFormatter {
             template_handles_reasoning,
             template_requires_reasoning_string,
             system_normalization,
+            native_text_array_roles,
         ) = if has_tools {
             (
                 "tool_use",
@@ -634,6 +878,7 @@ impl HfTokenizerConfigJsonFormatter {
                 self.tool_use_template_handles_reasoning,
                 self.tool_use_template_requires_reasoning_string,
                 self.tool_use_system_normalization,
+                &self.tool_use_native_text_array_roles,
             )
         } else {
             (
@@ -642,6 +887,7 @@ impl HfTokenizerConfigJsonFormatter {
                 self.default_template_handles_reasoning,
                 self.default_template_requires_reasoning_string,
                 self.default_system_normalization,
+                &self.default_native_text_array_roles,
             )
         };
 
@@ -653,15 +899,61 @@ impl HfTokenizerConfigJsonFormatter {
         if system_normalization.fallback_developer {
             normalize_developer_messages(&mut messages_for_template)?;
         }
-        if system_normalization.is_required() {
-            normalize_system_messages(&mut messages_for_template, system_normalization);
-        }
+        let mut normalized_turns = if system_normalization.is_required() {
+            normalize_system_messages(&mut messages_for_template, system_normalization)
+        } else {
+            Vec::new()
+        };
 
-        messages_for_template = may_be_fix_msg_content(
-            messages_for_template,
-            self.requires_content_arrays,
-            self.image_placeholder_template,
-        );
+        match &self.content_format {
+            ChatTemplateContentFormat::Auto => {
+                if !template_handles_reasoning
+                    && let Some(messages) = messages_for_template.as_array()
+                {
+                    normalized_turns.extend(messages.iter().enumerate().filter_map(
+                        |(index, message)| {
+                            if message.get("role").and_then(serde_json::Value::as_str)
+                                != Some("assistant")
+                            {
+                                return None;
+                            }
+                            let has_reasoning = match message.get("reasoning_content") {
+                                Some(serde_json::Value::String(text)) => !text.is_empty(),
+                                Some(serde_json::Value::Array(segments)) => {
+                                    segments.iter().any(|segment| {
+                                        segment.as_str().is_some_and(|text| !text.is_empty())
+                                    })
+                                }
+                                _ => false,
+                            };
+                            has_reasoning.then_some(index)
+                        },
+                    ));
+                }
+                messages_for_template = may_be_fix_msg_content(
+                    messages_for_template,
+                    self.requires_content_arrays,
+                    native_text_array_roles,
+                    &normalized_turns,
+                    self.image_placeholder_template,
+                );
+            }
+            ChatTemplateContentFormat::String(media_placeholders) => {
+                let use_audio_in_video = req
+                    .mm_processor_kwargs()
+                    .and_then(|kwargs| kwargs.get("use_audio_in_video"))
+                    // vLLM tests the flag with Python truthiness, as Jinja does.
+                    .is_some_and(|flag| Value::from_serialize(flag).is_true());
+                flatten_msg_content_to_string(
+                    &mut messages_for_template,
+                    media_placeholders,
+                    use_audio_in_video,
+                )?;
+            }
+            ChatTemplateContentFormat::OpenAi => {
+                wrap_msg_content_in_parts(&mut messages_for_template);
+            }
+        }
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -1003,7 +1295,7 @@ mod tests {
             {"role": "assistant", "tool_calls": []}
         ]);
         assert_eq!(
-            may_be_fix_msg_content(messages.clone(), false, Some("")),
+            may_be_fix_msg_content(messages.clone(), false, &[], &[], Some("")),
             messages
         );
     }
@@ -1176,6 +1468,34 @@ mod tests {
             "system[Follow instructions.]user[Reply 42.]"
         );
         assert_eq!(serde_json::to_value(&req).unwrap(), original);
+    }
+
+    #[test]
+    fn developer_fallback_preserves_native_user_text_arrays() {
+        let template = format!(
+            "{{% for m in messages %}}{{% if m.role == 'developer' %}}{{{{ raise_exception('Unexpected message role.') }}}}{{% endif %}}{{% endfor %}}{}",
+            TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' | '")
+        );
+        let formatter = formatter_for(&template);
+        for (instructions, system_text) in [
+            (json!([{"role": "developer", "content": "rules"}]), "rules"),
+            (
+                json!([
+                    {"role": "system", "content": text_parts("s1", "s2")},
+                    {"role": "developer", "content": text_parts("d1", "d2")}
+                ]),
+                "s1\ns2\n\nd1\nd2",
+            ),
+        ] {
+            let mut messages = instructions.as_array().unwrap().clone();
+            messages.push(json!({"role": "user", "content": text_parts("u1", "u2")}));
+            let expected = format!("<system>{system_text}</system><user>u1 | u2</user>");
+            assert_eq!(render_shape(&formatter, json!(messages)).unwrap(), expected);
+            assert_eq!(
+                render_shape_with_tools(&formatter, json!(messages)).unwrap(),
+                expected
+            );
+        }
     }
 
     #[test]
@@ -2207,7 +2527,8 @@ mod tests {
 
         // Test array → string normalization (preserve_arrays=false for standard templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: text-only array is concatenated into a single string
         assert_eq!(
@@ -2254,7 +2575,8 @@ mod tests {
 
         // Test array → string normalization (preserve_arrays=false for standard templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: System message with string content remains unchanged
         assert_eq!(
@@ -2299,7 +2621,8 @@ mod tests {
 
         // Empty arrays should be preserved regardless of preserve_arrays setting
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: Empty arrays are preserved as-is
         assert!(messages[0]["content"].is_array());
@@ -2332,6 +2655,8 @@ mod tests {
         let messages = serde_json::to_value(may_be_fix_msg_content(
             messages_raw,
             false,
+            &[],
+            &[],
             Some("<|image_{n}|>"),
         ))
         .unwrap();
@@ -2361,7 +2686,8 @@ mod tests {
 
         // Test with preserve_arrays=false (standard templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: String content is not modified
         assert_eq!(
@@ -2393,7 +2719,8 @@ mod tests {
 
         // Mixed content should be preserved regardless of preserve_arrays setting
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: Mixed content types are preserved as array for template handling
         // image_url should be converted to image placeholder
@@ -2434,6 +2761,8 @@ mod tests {
         let messages = serde_json::to_value(may_be_fix_msg_content(
             messages_raw,
             false,
+            &[],
+            &[],
             Some("<|image_{n}|>"),
         ))
         .unwrap();
@@ -2460,9 +2789,14 @@ mod tests {
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
 
-        let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, Some("<image>")))
-                .unwrap();
+        let messages = serde_json::to_value(may_be_fix_msg_content(
+            messages_raw,
+            false,
+            &[],
+            &[],
+            Some("<image>"),
+        ))
+        .unwrap();
 
         let content = messages[0]["content"].as_str().expect("content flattened");
         assert_eq!(content, "Describe: <image>");
@@ -2490,8 +2824,14 @@ mod tests {
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
 
-        let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, Some(""))).unwrap();
+        let messages = serde_json::to_value(may_be_fix_msg_content(
+            messages_raw,
+            false,
+            &[],
+            &[],
+            Some(""),
+        ))
+        .unwrap();
 
         let content = messages[0]["content"].as_str().expect("content flattened");
         assert_eq!(
@@ -2565,7 +2905,8 @@ mod tests {
 
         // Non-text arrays should be preserved regardless of preserve_arrays setting
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: Non-text content arrays are preserved, with image_url converted to image
         assert!(messages[0]["content"].is_array());
@@ -2663,7 +3004,8 @@ NORMAL MODE
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Mixed types should preserve array structure, with image_url converted to image
         assert!(messages[0]["content"].is_array());
@@ -2693,7 +3035,8 @@ NORMAL MODE
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Unknown types mixed with text should preserve array
         assert!(messages[0]["content"].is_array());
@@ -2836,7 +3179,8 @@ NORMAL MODE
 
         // Apply content normalization with preserve_arrays=false (standard templates)
         let mut messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         normalize_tool_calls_arguments_in_messages(&mut messages);
 
@@ -2965,7 +3309,8 @@ NORMAL MODE
 
         // Test with preserve_arrays=true (multimodal templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, &[], &[], None))
+                .unwrap();
 
         // Verify: String is converted to array format
         assert!(messages[0]["content"].is_array());
@@ -2996,7 +3341,8 @@ NORMAL MODE
 
         // Test with preserve_arrays=true (multimodal templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, &[], &[], None))
+                .unwrap();
 
         // Verify: Array is preserved as-is
         assert!(messages[0]["content"].is_array());
@@ -3004,6 +3350,284 @@ NORMAL MODE
         assert_eq!(content_array.len(), 2);
         assert_eq!(content_array[0]["text"], "part 1");
         assert_eq!(content_array[1]["text"], "part 2");
+    }
+
+    fn text_parts(first: &str, second: &str) -> serde_json::Value {
+        json!([{"type": "text", "text": first}, {"type": "text", "text": second}])
+    }
+
+    const TEXT_PARTS_TMPL: &str = concat!(
+        "{%- for m in messages -%}<{{ m.role }}>",
+        "{%- if m.content is string -%}{{ m.content }}{%- else -%}",
+        "{%- for p in m.content -%}{{ p.text }}",
+        "{%- if not loop.last -%}{{ ARRAY_SEPARATOR }}{%- endif -%}",
+        "{%- endfor -%}{%- endif -%}</{{ m.role }}>{%- endfor -%}"
+    );
+
+    #[test]
+    fn text_part_arrays_keep_template_separators_and_framing() {
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        for separator in [" ", "", "\n", " :: "] {
+            let template = TEXT_PARTS_TMPL.replace(
+                "ARRAY_SEPARATOR",
+                &serde_json::to_string(separator).unwrap(),
+            );
+            let f = formatter_for(&template);
+            assert!(!f.requires_content_arrays);
+            assert_eq!(
+                render_shape(&f, shape.clone()).unwrap(),
+                format!("<user>part one{separator}part two</user>"),
+            );
+        }
+
+        let template = TEXT_PARTS_TMPL
+            .replace("ARRAY_SEPARATOR", "''")
+            .replace("{{ p.text }}", "<text>{{ p.text }}</text>");
+        assert_eq!(
+            render_shape(&formatter_for(&template), shape).unwrap(),
+            "<user><text>part one</text><text>part two</text></user>",
+        );
+    }
+
+    #[test]
+    fn preserved_text_arrays_do_not_fall_through_to_media_flattening() {
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        assert_eq!(
+            may_be_fix_msg_content(shape.clone(), false, &["user"], &[], Some("<image>")),
+            shape,
+        );
+    }
+
+    #[test]
+    fn text_array_support_is_selected_per_role_including_array_only_roles() {
+        let template = concat!(
+            "{%- for m in messages -%}<{{ m.role }}>",
+            "{%- if m.role == 'system' -%}{{ m.content }}",
+            "{%- elif m.role == 'assistant' and m.content is string and m.content|length > 0 -%}",
+            "{{ raise_exception('Assistant content must be an array.') }}",
+            "{%- elif m.content is string -%}{{ m.content }}{%- else -%}",
+            "{%- for p in m.content -%}{{ p.text }}",
+            "{%- if not loop.last -%}|{%- endif -%}{%- endfor -%}",
+            "{%- endif -%}</{{ m.role }}>{%- endfor -%}"
+        );
+        let f = formatter_for(template);
+        assert!(!f.requires_content_arrays);
+        assert!(f.default_native_text_array_roles.contains(&"assistant"));
+        assert!(!f.default_native_text_array_roles.contains(&"system"));
+        let parts = text_parts("part one", "part two");
+        let shape = json!([
+            {"role": "system", "content": parts},
+            {"role": "developer", "content": parts},
+            {"role": "user", "content": parts},
+            {"role": "assistant", "content": parts, "tool_calls": [{
+                "id": "c1", "type": "function", "function": {"name": "noop", "arguments": "{}"}
+            }]},
+            {"role": "tool", "tool_call_id": "c1", "content": parts},
+        ]);
+        let expected = concat!(
+            "<system>part one\npart two</system>",
+            "<developer>part one|part two</developer>",
+            "<user>part one|part two</user>",
+            "<assistant>part one|part two</assistant>",
+            "<tool>part one|part two</tool>"
+        );
+        assert_eq!(render_shape(&f, shape.clone()).unwrap(), expected);
+        assert_eq!(render_shape_with_tools(&f, shape).unwrap(), expected);
+    }
+
+    #[test]
+    fn text_array_support_is_selected_per_template_variant() {
+        let native = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' '");
+        let string =
+            "{%- for m in messages -%}<{{ m.role }}>{{ m.content }}</{{ m.role }}>{%- endfor -%}";
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        for (default, tool_use, default_text, tool_text) in [
+            (
+                native.as_str(),
+                string,
+                "part one part two",
+                "part one\npart two",
+            ),
+            (
+                string,
+                native.as_str(),
+                "part one\npart two",
+                "part one part two",
+            ),
+        ] {
+            let f = formatter_for_templates(default, tool_use);
+            assert_eq!(
+                render_shape(&f, shape.clone()).unwrap(),
+                format!("<user>{default_text}</user>"),
+            );
+            assert_eq!(
+                render_shape_with_tools(&f, shape.clone()).unwrap(),
+                format!("<user>{tool_text}</user>"),
+            );
+        }
+    }
+
+    #[test]
+    fn merged_turns_keep_their_existing_join_with_native_text_arrays() {
+        let strict = concat!(
+            "{%- set ns = namespace(prev='') -%}{%- for m in messages -%}",
+            "{%- if m.role == 'system' and not loop.first -%}",
+            "{{ raise_exception('System message must be first.') }}",
+            "{%- elif m.role == 'user' and ns.prev == 'user' -%}",
+            "{{ raise_exception('Conversation roles must alternate.') }}{%- endif -%}",
+            "<{{ m.role }}>{%- if m.content is string -%}{{ m.content }}{%- else -%}",
+            "{%- for p in m.content -%}{{ p.text }}",
+            "{%- if not loop.last -%}|{%- endif -%}{%- endfor -%}",
+            "{%- endif -%}</{{ m.role }}>{%- set ns.prev = m.role -%}{%- endfor -%}"
+        );
+        let f = formatter_for(strict);
+        assert!(f.default_system_normalization.demote_nonleading_system);
+        assert!(f.default_system_normalization.coalesce_consecutive_users);
+        let shape = json!([
+            {"role": "system", "content": text_parts("s1", "s2")},
+            {"role": "system", "content": "rules"},
+            {"role": "user", "content": text_parts("u1", "u2")},
+            {"role": "assistant", "content": "a"},
+            {"role": "user", "content": "first"},
+            {"role": "user", "content": text_parts("u3", "u4")},
+            {"role": "user", "content": text_parts("u5", "u6")},
+            {"role": "assistant", "content": "a2"},
+            {"role": "user", "content": text_parts("u7", "u8")},
+            {"role": "system", "content": text_parts("s3", "s4")},
+            {"role": "assistant", "content": "a3"},
+            {"role": "system", "content": text_parts("s5", "s6")},
+        ]);
+        let mut normalized = shape.clone();
+        assert_eq!(
+            normalize_system_messages(&mut normalized, f.default_system_normalization),
+            [0, 3, 5],
+        );
+        assert_eq!(
+            render_shape(&f, shape).unwrap(),
+            concat!(
+                "<system>s1\ns2\nrules</system>",
+                "<user>u1|u2</user><assistant>a</assistant>",
+                "<user>first\nu3\nu4\nu5\nu6</user><assistant>a2</assistant>",
+                "<user>u7\nu8\ns3\ns4</user><assistant>a3</assistant>",
+                "<user>s5|s6</user>"
+            ),
+        );
+    }
+
+    #[test]
+    fn demoted_unmerged_text_arrays_use_their_new_role() {
+        let template = concat!(
+            "{%- for m in messages -%}",
+            "{%- if m.role == 'system' and not loop.first -%}",
+            "{{ raise_exception('System message must be first.') }}{%- endif -%}",
+            "<{{ m.role }}>{%- if m.role == 'system' or m.content is string -%}",
+            "{{ m.content }}{%- else -%}{%- for p in m.content -%}{{ p.text }}",
+            "{%- if not loop.last -%}{{ ' ' }}{%- endif -%}{%- endfor -%}",
+            "{%- endif -%}</{{ m.role }}>{%- endfor -%}"
+        );
+        let f = formatter_for(template);
+        assert!(!f.default_native_text_array_roles.contains(&"system"));
+        assert!(f.default_native_text_array_roles.contains(&"user"));
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([
+                    {"role": "user", "content": "first"},
+                    {"role": "assistant", "content": "done"},
+                    {"role": "system", "content": text_parts("part one", "part two")},
+                ])
+            )
+            .unwrap(),
+            "<user>first</user><assistant>done</assistant><user>part one part two</user>",
+        );
+    }
+
+    #[test]
+    fn explicit_content_formats_override_native_text_array_detection() {
+        let template = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' '");
+        let mut f = formatter_for(&template);
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        f.content_format = ChatTemplateContentFormat::String(MediaPlaceholders::default());
+        assert_eq!(
+            render_shape(&f, shape.clone()).unwrap(),
+            "<user>part one\npart two</user>",
+        );
+        f.content_format = ChatTemplateContentFormat::OpenAi;
+        assert_eq!(
+            render_shape(&f, shape).unwrap(),
+            "<user>part one part two</user>",
+        );
+    }
+
+    #[test]
+    fn injected_reasoning_keeps_existing_text_array_boundaries() {
+        let template = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' | '");
+        for template in [
+            template.clone(),
+            template.replace("{{ p.text }}", "<text>{{ p.text }}</text>"),
+        ] {
+            let f = formatter_for(&template);
+            assert!(!f.default_template_handles_reasoning);
+            assert!(f.default_native_text_array_roles.contains(&"assistant"));
+            for (reasoning, content, expected) in [
+                (
+                    json!("r"),
+                    json!([{"type": "text", "text": "part one"}]),
+                    "<assistant><think>r</think>part one</assistant>",
+                ),
+                (
+                    json!(["", "r", ""]),
+                    text_parts("part one", "part two"),
+                    "<assistant><think>r</think>part one\npart two</assistant>",
+                ),
+                (
+                    json!(["r", "s"]),
+                    text_parts("part one", "part two"),
+                    "<assistant><think>r</think><think>s</think>part one\npart two</assistant>",
+                ),
+                (
+                    json!(" "),
+                    text_parts("part one", "part two"),
+                    "<assistant><think> </think>part one\npart two</assistant>",
+                ),
+            ] {
+                let messages = json!([{
+                    "role": "assistant", "content": content, "reasoning_content": reasoning
+                }]);
+                assert_eq!(render_shape(&f, messages.clone()).unwrap(), expected);
+                assert_eq!(render_shape_with_tools(&f, messages).unwrap(), expected);
+            }
+        }
+
+        let f = formatter_for(&template);
+        for reasoning in [json!(""), json!([]), json!(["", ""])] {
+            let messages = json!([{
+                "role": "assistant", "content": text_parts("part one", "part two"),
+                "reasoning_content": reasoning
+            }]);
+            assert_eq!(
+                render_shape(&f, messages).unwrap(),
+                "<assistant>part one | part two</assistant>",
+            );
+        }
+
+        let native_reasoning = template.replace(
+            "<{{ m.role }}>",
+            "<{{ m.role }}>{% if m.reasoning_content is string %}<native>{{ m.reasoning_content }}</native>{% endif %}",
+        );
+        let f = formatter_for(&native_reasoning);
+        assert!(f.default_template_handles_reasoning);
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([{
+                    "role": "assistant", "content": text_parts("part one", "part two"),
+                    "reasoning_content": "r"
+                }])
+            )
+            .unwrap(),
+            "<assistant><native>r</native>part one | part two</assistant>",
+        );
     }
 
     fn user() -> Msg {
@@ -4186,5 +4810,185 @@ NORMAL_MODE
                 render(&formatter, reasoning_tool_call_turn(string)).unwrap()
             );
         }
+    }
+
+    // --- chat template content format (vLLM's --chat-template-content-format) ---
+
+    fn contents(messages: &serde_json::Value) -> serde_json::Value {
+        messages
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["content"].clone())
+            .collect()
+    }
+
+    /// vLLM's `string` format, including the input vLLM rejects.
+    #[test]
+    fn content_format_string_flattens_like_vllm() {
+        let placeholders = MediaPlaceholders {
+            image: "<|image_{n}|>".into(),
+            video: "<video>".into(),
+            audio: "<|audio_{n}|>".into(),
+        };
+        let image = json!({"type": "image_url", "image_url": {"url": "x"}});
+        let flatten = |mut messages: serde_json::Value, use_audio_in_video| {
+            flatten_msg_content_to_string(&mut messages, &placeholders, use_audio_in_video)
+                .map(|()| contents(&messages))
+        };
+
+        // Grouped by modality and numbered across the conversation.
+        let messages = json!([
+            {"role": "user", "content": [
+                {"type": "text", "text": "a"}, &image,
+                {"type": "video_url", "video_url": {"url": "y"}},
+                {"type": "text", "text": "b"}, &image
+            ]},
+            {"role": "user", "content": [&image]}
+        ]);
+        assert_eq!(
+            flatten(messages, false).unwrap(),
+            json!(["<|image_1|>\n<|image_2|>\n<video>\na\nb", "<|image_3|>"])
+        );
+        // Missing content becomes "", and empty text and refusal parts are skipped.
+        let messages = json!([
+            {"role": "system", "content": "plain"},
+            {"role": "assistant"},
+            {"role": "assistant", "content": [
+                {"type": "text", "text": "a"},
+                {"type": "text", "text": ""},
+                {"type": "refusal", "refusal": ""},
+                {"type": "refusal", "refusal": "b"}
+            ]}
+        ]);
+        assert_eq!(
+            flatten(messages, false).unwrap(),
+            json!(["plain", "", "a\nb"])
+        );
+        // A placeholder already in the text is not added again.
+        let messages = json!([{"role": "user", "content": [
+            {"type": "text", "text": "see <|image_1|> here"}, &image, &image
+        ]}]);
+        assert_eq!(
+            flatten(messages, false).unwrap(),
+            json!(["<|image_2|>\nsee <|image_1|> here"])
+        );
+        // Only a video with a non-empty URL adds an audio item.
+        let messages = json!([{"role": "user", "content": [
+            {"type": "video_url", "video_url": {"url": "y"}},
+            {"type": "video_url", "video_url": null, "uuid": "cached"},
+            {"type": "video_url", "video_url": {"url": ""}, "uuid": "cached"},
+            {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}},
+            {"type": "text", "text": "x"}
+        ]}]);
+        assert_eq!(
+            flatten(messages, true).unwrap(),
+            json!(["<video>\n<video>\n<video>\n<|audio_1|>\n<|audio_2|>\nx"])
+        );
+
+        for content in [
+            json!([{"type": "text", "text": "<|image_1|><|image_1|>"}, &image]),
+            json!([{"type": "custom", "kind": "chemistry", "fields": {}}]),
+        ] {
+            let error = flatten(json!([{"role": "user", "content": content}]), false).unwrap_err();
+            assert!(
+                matches!(
+                    error.downcast_ref::<PromptRenderError>(),
+                    Some(PromptRenderError::InvalidRequest(_))
+                ),
+                "{error}"
+            );
+        }
+    }
+
+    /// vLLM's `openai` format, including extension fields and joined `tool` text.
+    #[test]
+    fn content_format_openai_wraps_content_in_parts_like_vllm() {
+        let mut messages = json!([
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": [
+                {"type": "text", "text": "look", "source_lang_code": "en"},
+                {"type": "image_url", "image_url": {"url": "x"}, "uuid": "i", "target_lang_code": "de"},
+                {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}},
+                {"type": "custom", "kind": "chemistry", "fields": {"data_base64": "x"}}
+            ]},
+            {"role": "assistant", "content": [{"type": "refusal", "refusal": "no"}]},
+            {"role": "assistant"},
+            {"role": "tool", "tool_call_id": "1", "content": [
+                {"type": "text", "text": "a"},
+                {"type": "text", "text": "b"}
+            ]},
+            {"role": "tool", "tool_call_id": "2", "content": "done"}
+        ]);
+        wrap_msg_content_in_parts(&mut messages);
+        assert_eq!(
+            contents(&messages),
+            json!([
+                [{"type": "text", "text": "sys"}],
+                [
+                    {"type": "text", "text": "look", "source_lang_code": "en"},
+                    {"type": "image", "target_lang_code": "de"},
+                    {"type": "audio"},
+                    {"type": "custom", "kind": "chemistry"}
+                ],
+                [{"type": "text", "text": "no"}],
+                [],
+                "a\nb",
+                "done",
+            ])
+        );
+    }
+
+    /// The format reaches `render`, and `String` reads `use_audio_in_video` from the request.
+    #[test]
+    fn content_format_reaches_render_through_from_parts() {
+        let template = "{% for m in messages %}{% if m.content is string %}{{ m.content }}\
+            {% else %}{% for p in m.content %}[{{ p.type }}{% if p.text %} {{ p.text }}{% endif %}]\
+            {% endfor %}{% endif %}|{% endfor %}";
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [
+                {"role": "system", "content": "sys"},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "hi"},
+                    {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}},
+                    {"type": "video_url", "video_url": {"url": "https://example.com/v.mp4"}}
+                ]}
+            ],
+            // vLLM reads the flag with Python truthiness.
+            "mm_processor_kwargs": {"use_audio_in_video": 1}
+        }))
+        .unwrap();
+        let render = |content_format| {
+            let config: SysChatTemplate =
+                serde_json::from_value(json!({ "chat_template": template })).unwrap();
+            let crate::PromptFormatter::OAI(formatter) =
+                crate::PromptFormatter::from_parts_with_content_format(
+                    config,
+                    SysMixins::new(&[]),
+                    true,
+                    content_format,
+                )
+                .unwrap();
+            formatter.render(&request).unwrap()
+        };
+
+        assert_eq!(
+            render(ChatTemplateContentFormat::Auto),
+            "sys|[text hi][image][video]|"
+        );
+        assert_eq!(
+            render(ChatTemplateContentFormat::OpenAi),
+            "[text sys]|[text hi][image][video]|"
+        );
+        let placeholders = MediaPlaceholders {
+            image: "<image>".into(),
+            video: "<video>".into(),
+            audio: "<audio>".into(),
+        };
+        assert_eq!(
+            render(ChatTemplateContentFormat::String(placeholders)),
+            "sys|<image>\n<video>\n<audio>\nhi|"
+        );
     }
 }

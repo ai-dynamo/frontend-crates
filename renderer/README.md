@@ -7,6 +7,7 @@ It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-cont
 
 ## Features
 - **HF chat templates**: faithful `apply_chat_template` rendering, including tool-use and generation-prompt handling.
+- **vLLM content formats**: `PromptFormatter::from_parts_with_content_format` shapes message content like vLLM's `--chat-template-content-format` (`string` or `openai`) instead of probing the template.
 - **Native DeepSeek formatters**: Rust formatters for V4.1 / V4 / V3.2 families (under `deepseek`).
 - **Native Inkling formatter**: exact text, image, audio, reasoning, and tool-use framing for `inkling_mm_model` (under `inkling`). Media blocks contain only the marker token; the backend multimodal processor expands per-patch or per-frame placeholders later.
 - **Native Kimi K3 formatter**: XTML rendering with explicit trusted-control and ordinary-text segment boundaries (under `kimi_k3`).

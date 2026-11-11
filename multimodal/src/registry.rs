@@ -7,7 +7,10 @@
 //! spec (`{"family": ..., resolved processor params}`).
 
 use crate::models::deepseek_v41::{DeepseekV41GeometrySpec, DeepseekV41Processor, DeepseekV41Spec};
-use crate::models::glm5_next::{Glm5NextGeometrySpec, Glm5NextProcessor, Glm5NextSpec};
+use crate::models::glm5_next::{
+    Glm5NextGeometrySpec, Glm5NextImageProcessor, Glm5NextImageSpec, Glm5NextProcessor,
+    Glm5NextSpec,
+};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
 use crate::{MmError, Result};
 use serde_json::Value;
@@ -25,6 +28,8 @@ pub enum ProcessorSpec {
     /// Metadata-only GLM-5.3-Flash image accounting and layout; pixel
     /// processing and video are unsupported.
     Glm5Next(Glm5NextSpec),
+    /// Full GLM image pipeline, selected by `glm5_next` specs with pixel knobs.
+    Glm5NextImage(Glm5NextImageSpec),
 }
 
 // serde's internally tagged enum buffer treats arbitrary-precision decimals
@@ -37,6 +42,13 @@ impl TryFrom<Value> for ProcessorSpec {
         match value.get("family").and_then(Value::as_str) {
             Some("qwen_vl") => serde_json::from_value(value).map(Self::QwenVl),
             Some("deepseek_v41") => serde_json::from_value(value).map(Self::DeepseekV41),
+            Some("glm5_next")
+                if ["image_mean", "image_std", "resample"]
+                    .iter()
+                    .any(|key| value.get(key).is_some()) =>
+            {
+                serde_json::from_value(value).map(Self::Glm5NextImage)
+            }
             Some("glm5_next") => serde_json::from_value(value).map(Self::Glm5Next),
             _ => Err(serde::de::Error::custom(
                 "unknown or missing processor family",
@@ -56,6 +68,7 @@ pub fn build_processor(
         )?)),
         ProcessorSpec::DeepseekV41(spec) => Ok(Box::new(DeepseekV41Processor::new(spec)?)),
         ProcessorSpec::Glm5Next(spec) => Ok(Box::new(Glm5NextProcessor::new(spec)?)),
+        ProcessorSpec::Glm5NextImage(spec) => Ok(Box::new(Glm5NextImageProcessor::new(spec)?)),
     }
 }
 

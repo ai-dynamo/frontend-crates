@@ -66,6 +66,14 @@ Tool updates carry a stable `tool_index`, optional name, raw `arguments` fragmen
 
 Provisional updates do not authorize execution. The serving layer must validate tool availability, authorization, schema, and call policy.
 
+## Quote handling compatibility
+
+Shared prose scanners normally keep control markers inside balanced single quotes, double quotes, or backticks as literal text. Set `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING=1` before starting the process to disable this protection. The values `1`, `true`, `on`, and `yes` enable the option, case-insensitively; an unset variable, `0`, or any other value retains the default behavior.
+
+The setting is read on first use of the shared prose quote tracker and cached for the process. It applies to every parser using that tracker, including Unified and tool-only entry points; it cannot be selected per request or family. Parsers with their own control-token rules, such as Beam and Harmony, retain those rules.
+
+With the option enabled, a quoted reasoning closer such as `"</think>"` can end reasoning, and a quoted complete tool call can emit a tool-call event. Quotes and markers inside an actual tool argument remain argument data under that family's grammar. This option matches the first-delimiter quote policy used by stock SGLang's Qwen3 and DeepSeek-R1 reasoning parsers; it does not establish full parser parity or guarantee training/serving token round trips.
+
 ## Numeric values and Serde consumers
 
 The default build keeps `serde_json` numbers compatible with independent Serde serializers such as Pythonizer, MessagePack, and YAML. Parser argument deltas and `tool_arguments_raw()` preserve exact numeric JSON tokens, including large integers, fractions, and exponents, through the shared raw-argument representation. `UnifiedEvent.arguments` is a lossy `serde_json::Value` projection; use the raw accessor for serving exact argument text.
@@ -119,7 +127,7 @@ Reasoning families:
 | **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
 | **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair; Muse Spark additionally reserves `commentary` as visible text | No v1 implementation; v2 `unified/muse_glimmer.rs`, `unified/muse_spark.rs` | Muse Glimmer, Muse Spark |
 
-The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `qwen3` / `qwen3_coder`, `nemotron_v3` / `nemotron3`, `muse_glimmer`, `muse_spark` / `muse_spark_open`, `beam`, `kimi_k2`, `kimi_k3` / `kimi-k3`, and `gpt_oss` / `harmony`. `builtin_unified_families()` includes aliases; `canonical_unified_family()` resolves them. The separate tool-only registry is `src/tool_calling/registry.rs` and also includes MiniMax M2/M3; their presence there does not imply Unified support.
+The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `qwen3` / `qwen3_coder`, `nemotron_v3` / `nemotron3`, `muse_glimmer`, `muse_spark` / `muse_spark_open`, `beam`, `kimi_k2`, `kimi_k3` / `kimi-k3`, `mistral_4`, and `gpt_oss` / `harmony`. `builtin_unified_families()` includes aliases; `canonical_unified_family()` resolves them. The separate tool-only registry is `src/tool_calling/registry.rs` and also includes MiniMax M2/M3; their presence there does not imply Unified support.
 
 DeepSeek V4.1 uses Unified family `deepseek_v41` for its distinct reasoning and JSON-body behavior. The legacy tool-only `deepseek_v4` selector also accepts spaced V4.1 DSML tags; that compatibility is not a replacement for the Unified V4.1 factory.
 
@@ -140,6 +148,8 @@ vLLM Rust 0.22.0 source was checked at tag `v0.22.0`, commit `0b3ba88f165976e77c
 The vLLM Rust parser API is streaming-first. `push()` consumes decoded text deltas, `finish()` flushes buffered state, and `parse_complete()` is a helper over the same streaming path. There is no separate `V_rb` implementation in the conformance matrix; batch-shaped text through vLLM Rust is still `V_rs`.
 
 Dynamo duplicates the small Rust data model instead of depending on vLLM crates directly. The names and fields are aligned so an adapter stays trivial now, and so vLLM can later import Dynamo-owned parser types if it switches to frontend-crates.
+
+Hermes is available through `create_unified_parser_for_family("hermes", tools)`. Its [model template](https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B/blob/main/tokenizer_config.json) emits one JSON call object per `<tool_call>...</tool_call>` envelope. The shared scanner preserves surrounding text, optional `<think>` reasoning, literal markers in arguments, and raw JSON numbers; complete JSON bodies can recover a missing outer close. Unwrapped JSON answers remain visible text in native mode. Guided named and required choices use the shared JSON router; native arrays of call envelopes are outside this model template. Tool availability and schema authorization remain serving-layer responsibilities.
 
 ## What's In The Crate
 
@@ -232,18 +242,17 @@ Historical archives use several schemas. Preserve their implementation keys, req
 
 ## Adding A Day-0 Tool-Calling Parser
 
+New parser work targets v2 Unified APIs. V1 is being deprecated; creating a v1 parser, capturing v1 results, and enforcing v1 parity are outside this workflow. The [tool-parser-generator skill](../../.agents/skills/tool-parser-generator/SKILL.md) provides the agent's human-review checkpoints.
+
 In order:
 
-1. Read the model's tool-call output spec and its tokenizer / special-token behavior — token boundaries decide whether the parser is text- or token-native.
-2. Inspect the vLLM **Rust** parser first: `Tool`, `ToolCallDelta`, `ToolParseResult`, and `ToolParser` are the API target (Rust vs. Rust). Do not shape the parser like vLLM Python wire deltas.
-3. Inspect vLLM **Python** and **SGLang** for behavior and coverage — they are the peer references the matrix compares against.
-4. Decide the parser family id and peer parser names; add a row to `conformance/utils/src/parser_families.yaml` (`vllm_python` / `vllm_rust` / `sglang_python` / `dynamo_v2` / `preferred_input`), AND declare the family's grammar tokens in the `markers:` section of the same file (`pairs` / `singletons` / `leak`; explicit `{}` for markup-less grammars). The `↯` leak detector and the popup token coloring are derived from that declaration — skipping it makes leaks render as clean cells and every token render as a red orphan, so review the declared markers alongside the latest qualification results.
-5. Implement or extend one shared grammar owner and Unified factory using [UNIFIED_PORTING.md](UNIFIED_PORTING.md). Keep required tool-only compatibility as an event projection; do not introduce a second parser state machine.
-6. Register the Unified factory through `unified_registry!` in `src/unified/mod.rs`. If existing callers require tool-only compatibility, register its projection through `family_registry!` in `src/tool_calling/registry.rs`. Declare token-input capabilities on the API that actually accepts them.
-7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
-8. Author applicable Unified inputs and independent GOLDEN (see "Which Fixture Do I Edit?"). Inspect every registered family for shared scenarios and explain grammar or request-mode exclusions. Preserve published IDs.
-9. Run the latest parser tests against the authored requests and independent GOLDEN, and fix parser mismatches.
-10. Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), inspect the affected family over HTTP, and explain any deliberate authored contract change. Recapture affected latest snapshots; historical backfills are separate reviewed changes.
+1. Research the model's output specification, chat template, tokenizer, and special tokens. Record the source and revision. Resolve reasoning initialization, native framing, argument encoding, and finalization behavior before writing code.
+2. Inspect existing v2 grammar owners and factories in the [family mapping](#parser-families). Reuse a shared scanner and emitter where the grammar permits it. Inspect vLLM Rust, vLLM Python, and SGLang as API or behavioral references; the model specification and documented recovery policy determine expected results.
+3. Declare the conformance family and peer names in `conformance/utils/src/parser_families.yaml`, including `markers:` pairs, singletons, and leak tokens (explicit `{}` for markup-less grammars). This metadata must exist before the GOLDEN generator reads it. Inspect all `UNIFIED.*` cases across every registered family and make a best-effort applicability mapping. Author family-native inputs and independent GOLDEN through the [fixture workflow](#fixture-files-to-add). Document grammar or request-mode exclusions and preserve published IDs. For example, GPT-OSS has Harmony message boundaries and JSON arguments rather than XML parameter tags: a missing `</parameter>` test cannot transfer literally, but native boundary and JSON truncation tests still apply. A parser failure is not a reason to exclude a case.
+4. Review the GOLDEN test set before implementation. When working with an agent, pause for humans to approve inputs, settings, expected events, exclusions, and recovery decisions. Never change GOLDEN just to match a parser result; document and review the reason for a deliberate change.
+5. Implement or extend one shared v2 grammar owner and Unified factory. Add or reuse a structural-tag builder for that grammar under `src/structural_tag/builders/`, register its lookup, and test generation constraints as described below. Document any unsupported request modes and their fallback. Register through `unified_registry!` in `src/unified/mod.rs`. If a caller needs tool-only compatibility, project Unified events and register through `family_registry!` in `src/tool_calling/registry.rs`; do not introduce a second state machine. Declare token-input capabilities on the API that accepts them.
+6. Run focused and applicable shared v2 tests, including structural-tag, streaming, recovery, and performance checks below. Fixed fixtures must be sufficient; live model generation is optional.
+7. Recapture affected latest Dynamo v2 observations through the [GOLDEN and latest-capture workflow](../../conformance/README.md#prepare-golden-and-refresh-latest-dynamo-v2-observations), generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), and provide its local HTTP URL. Inspect every affected case's input, initialization, chunks, GOLDEN, and actual output. Pause for human visual review before calling the work complete. Historical backfills are separate work.
 
 ### Unified parser validation
 
@@ -255,6 +264,40 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 ```
 
 Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and observations over HTTP. Missing observations require recapturing the affected latest snapshots. Fix live mismatches or explain deliberate contract changes; never hide them with `reason:`, `unavailable:`, stale HTML, or unsupported GOLDEN edits.
+
+### Add and validate structural tags
+
+A structural-tag builder constrains model generation to the native tool-call format and supported argument schemas. It is separate from the parser that reads generated output. Structural tags are internal decoding constraints; API clients receive ordinary `message.tool_calls` rather than raw tag markup in `message.content`. Reuse a builder when its grammar matches; otherwise add one under `src/structural_tag/builders/`. Register it through the `family_registry!` entry in `src/tool_calling/registry.rs`, or `unified_only_builder` in `src/structural_tag/builders/mod.rs` for a Unified-only family. Verify `structural_tag_builder_for_family` resolves the new name and aliases. Do not add a tool-only parser solely to register a grammar.
+
+Add builder unit tests in `src/structural_tag/tests.rs` and executable grammar contracts following `tests/structural_tag_xgrammar.rs`. Build the actual registered grammar, compile it with XGrammar, test accepted and rejected streams, and pass accepted streams through the matching parser. Cover supported `auto`, `required`, named, and `none` tool choices, single/parallel calls, argument types and required fields, prompt-opened reasoning, and supported structured-response combinations. Test unsupported modes explicitly; a parser-only fixture cannot establish generation constraints. Document fallback or unsupported behavior when the grammar/backend cannot represent a request safely.
+
+From the repository root, install the pinned CPU verifier into an isolated Python environment and run the builder checks:
+
+```bash
+python3 -m venv /tmp/structural-tag-venv
+/tmp/structural-tag-venv/bin/python -m pip install --no-deps -r conformance/utils/structural-tag-requirements.in
+cargo test --locked -p dynamo-parsers-v2 --lib structural_tag
+CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python \
+  cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
+```
+
+Enroll applicable generation constraints in Unified fixtures with accepted inputs and `init.structural_tag.rejected` streams. See [Structural-tag request checks](../../conformance/README.md#structural-tag-request-checks) for fixture integration and verifier requirements. Record the actual XGrammar version. Fixed parser fixtures and CPU grammar contracts validate the library contribution without running a model; they do not qualify an inference backend's grammar compiler.
+
+Before claiming deployment support for a model/backend combination, separately test real serving requests with that model and backend. Use the [Dynamo structural-tag guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/structural-tag.md) for serving configuration, and verify the instructions against the deployed version. Check that the selected parser and builder match the model's native chat template. Inspect the finish reason, required tool-call output, and token budget. HTTP 200 or a grammar-valid prefix does not establish a completed, usable call; an empty response stopped by a length limit is not a successful tool-call test. Keep tool-call structural-tag checks separate from `response_format` JSON-schema checks, which exercise a different request path.
+
+A successful call establishes that the serving path can return a call. To claim guidance reduces errors, compare guidance off and on with the same model, runtime image, parser, prompt, schema, sampling settings, and token limit. Report both outcomes; a schema-valid call alone does not establish improvement.
+
+### Check streaming and recovery
+
+For short fixtures, test every two-chunk split point, one-character chunks, empty chunks, and mixed chunk sizes. Exercise boundaries inside markers, escaped quotes, and argument values. For token-native parsers, split valid token sequences; do not invent text-input support or invalid UTF-8 slices. Compare assembled events with whole-input parsing while preserving event order and exact raw argument text. Delta granularity may differ; emitted fragments must neither duplicate nor disappear.
+
+Inspect emissions after each advance. Decided text and tool updates should arrive incrementally; a parser that buffers the entire response can pass assembled-output comparisons and still break streaming latency. Stop midway through a marker or argument and check the documented recovery policy. Use `finish()` for truncation, cancellation, or transport EOF; reserve `finish_at_eos()` for a backend-confirmed grammar-ending EOS. Check request reuse and shared-family regressions as well.
+
+### Measure performance
+
+Passing GOLDEN does not establish that AI-generated code is efficient. Run release-build microbenchmarks on plain text, complete calls, long arguments, and malformed input, with large, tiny, and mixed chunks. Measure throughput, time to the first committed event, and allocations or peak memory where tooling permits. Record the source revision, commands, input sizes, chunk schedules, build profile, hardware, and repeated measurements. Compare before and after a shared-parser change under the same setup; for a new grammar, record a baseline without claiming equivalence to a different format.
+
+Double input lengths and inspect scaling. Repeatedly rescanning or copying a growing buffer can produce disproportionate runtime or allocation growth. Investigate that behavior rather than relying on one small successful timing. Do not invent benchmark commands or add a dependency just to satisfy this checklist; use an existing harness where available, otherwise report the minimal dependency-free probe and its limitations. Include results and any unmeasured performance risks in the handoff.
 
 ## Which Fixture Do I Edit?
 
@@ -279,7 +322,7 @@ A divergent peer block with no `reason:` renders `?` (research needed) — never
 
 For a new parser family, done means:
 
-- Rust parser unit tests and latest Dynamo fixture tests pass.
+- Focused parser and applicable shared v2 tests pass; streaming emissions and recovery are checked, and performance measurements or explicit unmeasured risks are reported.
 - Applicable Unified scenarios have family-native authored inputs and independent GOLDEN. Grammar exclusions have explicit explanations, and the family's `markers:` are declared in `parser_families.yaml`.
 - The latest report is regenerated locally and affected cases are inspected for tool-call markup leaks, undeclared tokens, and mismatches against GOLDEN. Missing recorded observations are recaptured in the same PR.
 - Case descriptions exist for every new scenario, and its stable ID is declared in the Unified taxonomy.

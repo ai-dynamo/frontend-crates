@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::TOOL_NAME_PLACEHOLDER;
-use super::builder::{ToolCallFormatBuildContext, resolve_tool_schema, resolve_tools_to_include};
+use super::builder::{
+    ToolCallFormatBuildContext, declared_tool_schema, resolve_tool_schema, resolve_tools_to_include,
+};
 use super::format::{
     ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, StructuralTag, TagFormat,
     TriggeredTagsFormat,
@@ -100,15 +102,23 @@ pub(crate) fn build_triggered_tags(
                 })
             } else {
                 Format::JsonSchema(JsonSchemaFormat {
-                    json_schema,
+                    json_schema: json_schema.clone(),
                     style: config.content_style,
                 })
             };
 
-            TagFormat {
+            let tag = TagFormat {
                 begin,
                 content: Box::new(content),
                 end: config.end_template.clone(),
+            };
+            if config.content_style == JsonSchemaStyle::QwenXml {
+                // The validator decodes standard JSON Pointers; the argument
+                // body above instead needs XGrammar's literal reference spelling.
+                let eligibility_schema = declared_tool_schema(tool, strict_schema);
+                dynamo_structural_tag::qwen_xml::with_native_empty_call(tag, &eligibility_schema)
+            } else {
+                tag
             }
         })
         .collect();

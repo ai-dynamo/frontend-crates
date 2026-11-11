@@ -22,6 +22,14 @@ allow = [
     "Zlib",
 ]
 
+# jsonschema's local-reference resolver uses this MIT No Attribution crate.
+# Keep the exception scoped to the audited package/version rather than allowing
+# MIT-0 for future dependencies globally.
+[[licenses.exceptions]]
+name = "borrow-or-share"
+version = "=0.2.4"
+allow = ["MIT-0"]
+
 [bans]
 multiple-versions = "allow"
 wildcards = "deny"

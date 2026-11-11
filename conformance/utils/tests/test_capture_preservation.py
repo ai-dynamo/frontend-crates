@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import tarfile
 import capture_sources
+import capture_stimulus
 import migrate_capture_sources
 from fixture_corpus import load_corpus, version_key
 import fixture_snapshot
@@ -26,6 +27,15 @@ from test_unified_history import _store, _write_capture
 
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_latest_unified_records_download_their_selected_complete_snapshot():
+    for row in capture_sources.current(ROOT)["captures"]:
+        if row["surface"] != "unified":
+            continue
+        snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
+        for case, record in snapshot["records"].items():
+            assert record["member"] == row["source"], (row["path"], case)
 
 
 def test_preserved_history_matches_committed_baseline(history_source):
@@ -104,7 +114,7 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             for row in current:
                 history = store.histories[row["family"], row["implementation"]]
                 selected = f"{row['implementation']}-{row['version']}"
-                snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+                snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
                 assert typed_equal({case: record["value"] for case, record in snapshot["records"].items()}, history.resolve(selected))
                 header, payload = capture_sources.read(ROOT, row["path"]).split(b"\n", 1)
                 assert json.loads(header.removeprefix(b"capture_selection: "))["payload_sha256"] == hashlib.sha256(payload).hexdigest()
@@ -112,24 +122,46 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             return
         store = unified_history.load_store(view / capture_sources.STORE)
         for row in current:
-            snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+            snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
             header, payload = capture_sources.read(ROOT, row["path"]).split(b"\n", 1)
             assert json.loads(header.removeprefix(b"capture_selection: "))["payload_sha256"] == hashlib.sha256(payload).hexdigest()
             snapshot.pop(capture_sources.SELECTION)
             family = store.families[row["family"]]
             assert set(snapshot["records"]) <= set(family.cases)
             if row["implementation"].startswith("dynamo"):
-                # Refreshed local measurements intentionally replace old parser observations.
                 for case, wrapped in snapshot["records"].items():
-                    stimulus = wrapped["value"]["stimulus"]
+                    value = wrapped["value"]
+                    metadata = value["document"].get("record_metadata", {})
+                    if "verified_recapture" in metadata:
+                        record, _document = unified_history.materialized_record(family.cases[case], value)
+                        record.update(metadata)
+                        effective = capture_stimulus.select_peer_observation(
+                            record, family.cases[case]["request"],
+                            implementation=row["implementation"], version=row["version"],
+                        )
+                        assert typed_equal(effective["capture_input"], family.cases[case]["request"])
+                        continue
+                    stimulus = value["stimulus"]
                     assert "ref" not in stimulus
                     if "inline" in stimulus:
                         assert typed_equal(stimulus["inline"], family.cases[case]["request"])
-                continue
+                # Refreshed releases can lack an older checkpoint; retained V1
+                # checkpoints additionally preserve their complete primary records.
+                retained = store.histories.get((row["family"], row["implementation"]))
+                if (row["implementation"] == "dynamo_v2" or retained is None
+                        or f"{row['implementation']}-{row['version']}" not in retained.captures):
+                    continue
             history = store.histories[row["family"], row["implementation"]]
             original = history.complete_snapshot(f"{row['implementation']}-{row['version']}", source_member=row["source"])
-            authored = yaml.safe_load(capture_sources.read(view, f"{capture_sources.STORE}/families/{row['family']}/inputs_and_golden.yaml"))
-            assert typed_equal(capture_sources.independent_snapshot(original, authored), snapshot), row["path"]
+            authored = unified_history.load_yaml(view / capture_sources.STORE / "families" / row["family"] / "inputs_and_golden.yaml")
+            expected = capture_sources.independent_snapshot(original, authored)
+            # Fresh execution receipts omit retired requests; legacy latest snapshots can retain them.
+            retired = {key for key, case in authored["cases"].items() if case.get("lifecycle", "active") == "retired"}
+            for key in retired & snapshot["records"].keys():
+                assert typed_equal(snapshot["records"][key], expected["records"][key]), (row["path"], key)
+            for document in (expected, snapshot):
+                document["records"] = {key: record for key, record in document["records"].items() if key not in retired}
+            assert typed_equal(expected, snapshot), row["path"]
 
 
 @pytest.mark.parametrize("suppressed", [False, True])
@@ -234,7 +266,7 @@ def test_current_legacy_matches_existing_resolvers(history_source, tmp_path):
     cases = 0
     for row in current:
         assert Path(row["path"]).stem == row["implementation"]
-        snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+        snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
         identity = row["surface"], row["family"], row["implementation"], row["version"]
         assert typed_equal(snapshot["documents"], expected[identity]), row["path"]
         corpus_path = capture_sources.LEGACY_CORPORA[row["surface"]]

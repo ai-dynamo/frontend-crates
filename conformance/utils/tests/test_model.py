@@ -60,9 +60,12 @@ console.log(JSON.stringify({rows: model.grammar.map(row => [row.variantKey, row.
     assert rendered["html"].count('Not applicable to missing') == 2
 
 
-def test_shared_javascript_matrix_contracts(published_viewer, tmp_path):
+def test_shared_javascript_matrix_contracts(request, source_catalog, tmp_path):
+    include_history = request.config.getoption("--include-history")
+    published_viewer = request.getfixturevalue("historical_published_viewer" if include_history else "published_viewer")
     catalog = tmp_path / "runtime-catalog.json"
     runtime = runtime_catalog(published_viewer)
+    assert runtime["capture_generation"]["mode"] == ("history" if include_history else "latest")
     catalog.write_text(json.dumps(runtime))
     transport = (published_viewer if (published_viewer / "conformance/viewer-resolved-catalog.json.gz").is_file()
                  else materialize_embedded(published_viewer, tmp_path / "transport"))

@@ -66,7 +66,6 @@ use crate::unified::{
     ArgumentFraming, GuidedChannel, GuidedChannelState, GuidedRouted, MalformedToolCallPolicy,
     ScannerUnified, ToolCallPolicy, UnifiedParser,
 };
-use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 
 const START: &str = "<|start|>";
@@ -435,7 +434,8 @@ impl BeamBoundary {
 struct OpenCall {
     tool_index: usize,
     /// The recipient's typed `properties`, resolved once per call.
-    properties: Option<Map<String, Value>>,
+    properties:
+        Option<std::collections::BTreeMap<String, crate::tool_calling::beam_body::ParameterSchema>>,
     json_keys: JsonKeys,
     /// JSON text already handed to the sink.
     emitted: String,
@@ -918,6 +918,52 @@ mod tests {
 
     fn expect(input: &str, want: Vec<UnifiedEvent>) {
         expect_with(&tools(), input, ToolCallPolicy::default(), want);
+    }
+
+    #[test]
+    fn call_markers_inside_an_open_parameter_do_not_complete_a_nested_call() {
+        let embedded = format!("<|call|>{HDR}<rfl:parameter name=\"location\">\nParis");
+        for lead in ["", "\n"] {
+            let prefix = format!("{HDR}<rfl:parameter name=\"location\">{lead}é unfinished");
+            let unfinished = format!("{prefix}{embedded}");
+            let input = format!("{unfinished}\n</rfl:parameter><|call|>");
+            let wanted = vec![call(
+                "weather",
+                json!({"location": format!("é unfinished{embedded}")}),
+            )];
+            expect(&input, wanted.clone());
+
+            let mut parser = beam_unified(&tools());
+            let mut deltas = parser.push(&prefix).unwrap();
+            assert!(deltas.iter().any(|event| matches!(event,
+                UnifiedParserEvent::ToolCall(delta) if !delta.complete && !delta.arguments.is_empty()
+            )));
+            deltas.extend(parser.push(&embedded).unwrap());
+            assert!(assemble(&deltas).is_empty());
+            assert!(deltas.iter().all(|event| !matches!(event,
+                UnifiedParserEvent::ToolCall(delta) if delta.complete
+            )));
+            deltas.extend(parser.push("\n</rfl:parameter><|call|>").unwrap());
+            deltas.extend(parser.finish().unwrap());
+            let completed: Vec<_> = deltas
+                .iter()
+                .filter_map(|event| match event {
+                    UnifiedParserEvent::ToolCall(delta) if delta.complete => Some(delta.tool_index),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(completed, vec![0]);
+            assert_eq!(assemble(&deltas), wanted);
+
+            expect(&unfinished, vec![]);
+            expect(
+                &format!("{prefix}\n</rfl:parameter>{embedded}\n</rfl:parameter><|call|>"),
+                vec![
+                    call("weather", json!({"location": "é unfinished"})),
+                    call("weather", json!({"location": "Paris"})),
+                ],
+            );
+        }
     }
 
     fn reasoning(t: &str) -> UnifiedEvent {

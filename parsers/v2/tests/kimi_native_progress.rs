@@ -538,7 +538,22 @@ fn compact_native_inputs_match_unified_at_every_utf8_split() {
                 assert_eq!(left, right, "{family} split={split}");
                 legacy_output.append(left);
                 unified_output.append(right);
-                assert_eq!(legacy.tool_call_id(0), unified.tool_call_id(0));
+                let legacy_id = legacy.tool_call_id(0);
+                let unified_id = unified.tool_call_id(0);
+                assert_eq!(legacy_id.is_some(), unified_id.is_some());
+                if family == "kimi_k2" {
+                    assert_eq!(legacy_id, unified_id);
+                } else if let (Some(left), Some(right)) = (legacy_id, unified_id) {
+                    for id in [left, right] {
+                        assert_eq!(
+                            uuid::Uuid::parse_str(id.strip_prefix("call-").unwrap())
+                                .unwrap()
+                                .get_version_num(),
+                            4
+                        );
+                    }
+                    assert_ne!(left, right);
+                }
             }
             legacy_output.append(legacy.finish().unwrap());
             unified_output.append(ToolParseResult::from_deltas(

@@ -37,8 +37,8 @@ per request:                        │
 image sources, caps ───────────────►│  fetch::fetch_bytes (stub)  ─► raw bytes
       ├─ supplied mm_hashes ───────►│  use unchanged
       ├─ bytes, no supplied hash ──►│  content_hash_bytes
-      └─ bytes ────────────────────►│  image::decode::decode_rgb
-        └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
+      └─ bytes ────────────────────►│  family.decode_image
+        └─ decoded media ──────────►│  family.process_item      (per item; the engine drives
                                     │                            the loop, optionally fanning
                                     │                            out on `execution`)
                                     │     │ ProcessedItem
@@ -158,7 +158,7 @@ decoded media or a passthrough URL.
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
-| per image | `image::decode::decode_rgb` | bytes + `DecodeLimits` → `(rgb, h, w)` (8-bit only, PIL-matching, header-checked caps); the engine wraps it as `DecodedMedia::Image` |
+| per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image` (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
@@ -187,8 +187,8 @@ for (bytes, supplied_hash) in images {                  // fetched + capped by t
         None => content_hash_bytes(&bytes),
     };
     hashes.push(hash);
-    let (rgb, height, width) = image::decode::decode_rgb(&bytes, &limits)?;
-    items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
+    let media = family.decode_image(&bytes, &limits)?;
+    items.push(family.process_item(&media)?);
 }
 let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
 let layout: TokenLayout = family.layout(&input_ids, &items)?;
@@ -327,7 +327,7 @@ Three layers, all pinned to bitwise-equality:
    unarmed (the default).
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
    committed fixtures drive the §2.2 composition (`build_processor` →
-   `decode_rgb` → `process_item` → `layout` → `apply_layout` → `positions`)
+   `decode_image` → `process_item` → `layout` → `apply_layout` → `positions`)
    and compare **every output field bitwise**, plus the resampler stage on
    its own (`resized_<i>.u8`) so a failure names the stage: both resamplers,
    both smart_resize branches, multi-image, and a tall image that crosses
@@ -391,7 +391,36 @@ python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
 The stdlib-only generator executes the pinned source's pure geometry
 functions. Fixture settings are mathematical test inputs, not model defaults.
 
-## 6. GLM-5.3-Flash image planning
+## 6. GLM-5.3-Flash images
+
+
+`Glm5NextImageProcessor` adds the full image pipeline on top of the shared
+planner. Select `ProcessorSpec::Glm5NextImage`, or pass a `glm5_next` JSON
+spec with `image_mean`, `image_std`, and `resample` (`aten_u8` or `pil`) in
+addition to the planning fields below. Supplying pixel fields requires both
+normalization arrays; an incomplete pixel spec is an error.
+PIL preprocessing requires `patch_expand_factor = 1`; other values return
+`Unsupported` because the pinned HF PIL processor ignores this knob during
+resize and would disagree with the shared metadata planner.
+
+Call `family.decode_image(bytes, &limits)` before `family.process_item`.
+The default trait method preserves Qwen's plain RGB conversion. GLM uses
+`image::decode::decode_rgb_smart`: EXIF transpose followed by alpha compositing
+onto an edge-contrasting background, matching SGLang's `smart_to_rgb` for PNG,
+WebP, GIF, and alpha-bitmask BMP. GLM then resizes the content without
+unnecessary upscaling, zero-pads to the planned canvas, normalizes and
+patchifies, expands placeholders, and emits image-only M-RoPE positions.
+Video and samples deeper than 8 bits remain unsupported.
+
+The metadata-only `Glm5NextSpec` API and `spec_from_hf_configs` keep their
+planning contract. Python-free consumers can combine that planning spec
+with explicitly resolved normalization and resampling in `Glm5NextImageSpec`.
+
+The `glm5_next_pixels` test replays the 26 Python CPU cases captured in
+[SGLang PR #46563](https://github.com/sgl-project/sglang/pull/46563), including
+both resamplers, multiple images, token overrides, EXIF, and alpha formats.
+See `tests/fixtures/glm5_next/pixels/README.md` for provenance and regeneration.
+
 
 `models::glm5_next::plan_image_grid(width, height, &spec)` returns the padded
 canvas, the `patch_size` grid (`image_grid_thw = [1, grid_h, grid_w]`), and the
@@ -473,8 +502,8 @@ What remains:
    `MmError::Unsupported`.
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
-3. **Family coverage** — GLM-5.3-Flash has metadata-only image planning
-   (§6); its pixel path and video expansion, then Kimi, are next after
+3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
+   (§6); its video expansion, then Kimi, are next after
    `models::qwen_vl`.
 
 ### Video and audio: planned layout

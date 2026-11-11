@@ -207,6 +207,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
   const raw = catalog.sources.candidates.filter((item) => item.mode === mode || (tab.id === 'tab-toolcalling-batch' && item.mode === 'batch-on-stream'));
   const unique = new Map();
   for (const source of raw) {
+    if (typeof source.version !== 'string' || !unifiedCaptureVersionPattern.test(source.version)) throw new Error(`invalid capture version: ${source.version}`);
     const version = policy.fold_patch_suffix ? source.version.replace(/\.patch\d+$/, '') : source.version;
     const identity = `${source.implementation}@${source.mode}@${version}`;
     if (!unique.has(identity)) unique.set(identity, { ...source, id: identity, version });
@@ -394,6 +395,9 @@ export function provenanceReleaseVersion(version) {
 }
 
 export function compareVersions(left, right) {
+  for (const value of [left, right]) {
+    if (String(value).includes('+')) throw new Error(`invalid capture version: ${value}`);
+  }
   if ([left, right].some((value) => !String(value).includes('-') && /\.patch\d+$/.test(value))) return compareLegacyVersions(left, right);
   const key = (value) => {
     const match = String(value).match(/^(\d+(?:\.\d+)*)(?:\.post(\d+)|-([0-9A-Za-z.-]+)|((?:a|b|rc|alpha|beta|dev)\d*))?$/);
@@ -554,7 +558,7 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
         if (events.at(-1)?.kind === kind) events.at(-1).text += text;
         else events.push({ kind, text });
       } else if (kind === 'tool_call') {
-        if (name) {
+        if (name != null) { // a name delta opens a new call, an empty name included
           events.push({ kind: 'tool_call', name, arguments: args || '', complete });
           currentTool = events.length - 1;
         } else if (currentTool !== null && args) {

@@ -189,7 +189,7 @@ def _request_stimulus(record, *, keep_finish_chunk):
 @lru_cache(maxsize=None)
 def _historical_finish_chunks(family):
     path = CONF / f"fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
-    historical = yaml.safe_load(path.read_text())
+    historical = unified_history.load_yaml(path)
     finish_chunks = {}
     for case in historical["cases"].values():
         request = case.get("request") or {}
@@ -258,7 +258,7 @@ def write_split_only_family(family):
     document = yaml.safe_load(spec_path.read_text())
     rows = _split_only_cases(family, document)
     input_header = {"family": family, "mode": MODE, "model_label": family}
-    golden_header = {"family": family, "mode": MODE, "captured_with": {"golden": "v1"}}
+    golden_header = {"family": family, "mode": MODE}
     for key, row in rows.items():
         _dump({**input_header, "cases": {key: _input_case(row, row["request"])}}, BUILD / "inputs" / family / f"{key}.yaml")
         _dump({**golden_header, "cases": {key: row["golden"]}}, BUILD / "golden" / family / f"{key}.yaml")
@@ -354,7 +354,7 @@ def main():
         )
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
-        slot("golden", fam, captured_with={"golden": "v1"})[key] = {
+        slot("golden", fam)[key] = {
             "assembled": golden_cases[fam][cid]["golden"],
         }
 
@@ -368,6 +368,11 @@ def main():
 
         if c.get("dynamo_error"):
             slot(ddir, fam)[key] = {"capture_input": request, "error": c["dynamo_error"]}
+
+        if "parser_path" in c:
+            if c["parser_path"] not in {"unified", "split"}:
+                raise ValueError("invalid Dynamo capture parser path")
+            slot(ddir, fam)[key]["parser_path"] = c["parser_path"]
 
         # peer engine overlays
         for impl in ("vllm_python", "vllm_rust", "sglang_python"):

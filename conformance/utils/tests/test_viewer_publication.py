@@ -123,6 +123,15 @@ def test_publication_rejects_outside_source_paths(tmp_path, path):
     _preserved(root, output)
 
 
+@pytest.mark.parametrize("qualifier", ["+source." + "a" * 64, "+sha.abc", "+local"])
+def test_publication_rejects_source_hashes_in_selectable_versions(tmp_path, qualifier):
+    root, output, catalog = _fixture(tmp_path)
+    catalog["sources"]["candidates"][0]["version"] += qualifier
+    _save(root, catalog)
+    error = _preserved(root, output)
+    assert "invalid Unified capture version" in error
+
+
 @pytest.mark.parametrize("fault", ["revision", "resource", "document", "projection", "manifest", "directory"])
 def test_invalid_source_cannot_overwrite_site(tmp_path, fault):
     root, output, catalog = _fixture(tmp_path)

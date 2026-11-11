@@ -70,7 +70,8 @@ body { background: var(--page-bg); color: var(--ink); }
 .comparison-matrix thead tr:nth-child(2) th { top: var(--sticky-top-row-height, 41px); font-size: 10px; font-weight: normal; }
 .comparison-ui:not(.layout-vertical) .comparison-matrix thead .matrix-case-heading { padding: 4px 0; white-space: nowrap; }
 .comparison-ui:not(.layout-vertical) .matrix-category-heading { height: 50px; padding: 0; }
-.comparison-ui:not(.layout-vertical) .matrix-category-heading button { display: block; box-sizing: border-box; width: 100%; max-height: 50px; padding: 0 1px; overflow: hidden; text-align: left; font-size: 10px; }
+/* The fixed-height heading owns sizing; its button must not widen the spanned result columns. */
+.comparison-ui:not(.layout-vertical) .matrix-category-heading button { position: absolute; inset: 0; display: block; box-sizing: border-box; width: 100%; max-height: 50px; padding: 0 1px; overflow: hidden; text-align: left; font-size: 10px; }
 .comparison-ui:not(.layout-vertical) .matrix-case-text { display: block; overflow: hidden; text-overflow: ellipsis; font-size: 8px; }
 .comparison-ui.layout-vertical .comparison-matrix thead th { vertical-align: bottom; }
 .matrix-capture-heading .tcol-model-name { max-height: 140px; overflow: hidden; text-overflow: ellipsis; }
