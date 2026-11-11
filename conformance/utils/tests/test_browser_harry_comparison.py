@@ -163,10 +163,13 @@ def test_search_axes_categories_and_numbered_share_links(published_viewer, verti
             return {alias:column.compact_prefix+'-'+column.display_number,sub:column.sub,id:column.case_id.replace(/^UNIFIED\\./,'')};
         """)
         field = search(case["alias"])
+        canonical = json.dumps(case["id"])
+        selected = counts(driver)
         assert field.get_attribute("value") == case["alias"]
-        assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [case["id"]]
+        assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [canonical]
         field.send_keys(Keys.ENTER)
-        assert field.get_attribute("value") == case["id"]
+        assert field.get_attribute("value") == canonical
+        assert counts(driver) == selected
         expected = counts(driver)
         assert expected["dynamo"]["total"] > 0
         shared_url = driver.current_url
@@ -179,11 +182,11 @@ def test_search_axes_categories_and_numbered_share_links(published_viewer, verti
         assert field.get_attribute("value") == f'beam ({case["alias"]} OR nowhere)'
         assert driver.execute_script("return arguments[0].selectionStart", field) == len("beam (") + len(case["alias"])
         field.send_keys(Keys.ENTER)
-        assert field.get_attribute("value") == f'beam ({case["id"]} OR nowhere)'
+        assert field.get_attribute("value") == f'beam ({canonical} OR nowhere)'
         driver.get(shared_url)
         _ready(driver, "tab-unified")
         assert counts(driver) == expected
-        assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == case["id"]
+        assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == canonical
         search("999-999")
         assert counts(driver)["dynamo"]["total"] == 0
         assert "not numbered" in driver.find_element("css selector", ".comparison-search-error").text
