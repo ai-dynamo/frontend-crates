@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { canonicalArguments, sameValue, isMapping, mappingEntries, getField, hasField, setField, deleteField, mergeMappings, compareText, parseJson } from './values.js';
 
-export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Disagreements',
+export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Different than GOLDEN',
   error: 'Parser errors', leak: 'Markup leaks', missing: 'Missing captures', unsupported: 'Unsupported cases',
   blocked: 'Blocked sources', expected: 'Expected errors', uncompared: 'GOLDEN unavailable'};
 
@@ -359,6 +359,12 @@ function captureIssue(cell, key) {
   if (block && typeof block.error === 'string') return 'expected';
   if (entry.leak === 1 || candidateTip?.leak) return 'leak';
   return null;
+}
+
+export function selectedCapturesDiffer(cell, keys) {
+  const entries = keys.filter(key => key !== 'golden').map(key => cell.cmp?.[key])
+    .filter(entry => entry && entry.na !== 1 && entry.sig != null);
+  return entries.length > 1 && entries.some(entry => !sameValue(entry.sig, entries[0].sig));
 }
 
 export function selectedCaptureOutcome(cell, key, reference = 'golden') {

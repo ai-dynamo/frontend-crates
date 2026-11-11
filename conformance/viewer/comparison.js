@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { escapeHtml, isApplicableCell, selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
+import { escapeHtml, isApplicableCell, selectedCaptureOutcome, selectedCapturesDiffer, captureStatusLabels as statusLabels } from './model.js';
 import { captureSegmentHtml } from './presentation.js';
 import { compileSearch, searchContext } from './search.js';
 export const verticalDefault = params => !['0', 'false'].includes(params.get('vertical') ?? params.get('transpose'));
 const html = value => escapeHtml(value ?? '');
 const leavesOf = cell => cell?.variants ? cell.variants.flatMap(leavesOf) : cell ? [cell] : [];
 const familyOf = row => row.family || row.model_label || '';
-const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
+const errorOutcomes = new Set(['error', 'leak']);
 const fittedCaseLabelColumns = new WeakMap();
 
-export const isProblemOutcome = outcome => problemOutcomes.has(outcome);
+export const isErrorOutcome = outcome => errorOutcomes.has(outcome);
 
 export function comparisonView(tab, state, matches = compileSearch(state.search, searchContext(tab))) {
   const groupLabels = new Map(tab.column_groups.map(group => [group.key, group.label]));
@@ -38,10 +38,11 @@ export function comparisonView(tab, state, matches = compileSearch(state.search,
 // Apply focus after search/categories so availability and card totals share the base view.
 export function focusComparison(view, keys, requested) {
   const matches = (entry, key, focus) => entry.leaves.some(leaf => {
+    if (focus === 'difference') return selectedCapturesDiffer(leaf, keys);
     const outcome = selectedCaptureOutcome(leaf, key);
-    return focus === 'disagreements' ? outcome === 'diverge' : isProblemOutcome(outcome);
+    return focus === 'disagreements' ? outcome === 'diverge' : isErrorOutcome(outcome);
   });
-  const available = Object.fromEntries(['disagreements', 'problems'].map(focus =>
+  const available = Object.fromEntries(['disagreements', 'difference', 'errors'].map(focus =>
     [focus, view.entries.some(entry => keys.some(key => matches(entry, key, focus)))]));
   const focus = requested === 'all' || available[requested] ? requested : 'all';
   const matching = focus === 'all' ? view.entries : view.entries.filter(entry => keys.some(key => matches(entry, key, focus)));
@@ -132,19 +133,22 @@ function countMarkup(counts) {
 export function mountComparison(panel, controller, familyNames = () => []) {
   const params = new URLSearchParams(location.search);
   const param = name => name + '_' + panel.id;
+  const requestedFocus = params.get(param('focus'));
   const state = {layout: params.get(param('layout')) === 'stacked' ? 'stacked' : 'split',
-    focus: ['disagreements','problems'].includes(params.get(param('focus'))) ? params.get(param('focus')) : 'all',
+    focus: requestedFocus === 'problems' ? 'errors'
+      : ['disagreements','difference','errors'].includes(requestedFocus) ? requestedFocus : 'all',
     search: params.get(param('search')) || '', groups: null};
   const ui = document.createElement('div'); ui.className = 'comparison-ui';
   ui.innerHTML = '<div class="comparison-toolbar"><div class="layout-control"><span class="control-label">Layout</span><div class="segmented">'
     + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
     + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented" role="group" aria-label="Focus filter">'
-    + '<button type="button" data-focus="all">All</button><button type="button" data-focus="disagreements">Disagreements</button>'
-    + '<button type="button" data-focus="problems">Problems</button></div></div>'
-    + '<details class="comparison-categories"><summary>Categories</summary><div data-category-options></div></details>'
+    + '<button type="button" data-focus="all">All</button><button type="button" data-focus="disagreements">Different than GOLDEN</button>'
+    + '<button type="button" data-focus="difference" title="Show cases where selected parsers return different outputs" hidden>Difference</button>'
+    + '<button type="button" data-focus="errors">Errors</button></div></div>'
+    + '<div class="comparison-filter-row"><details class="comparison-categories"><summary>Categories</summary><div data-category-options></div></details>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"'
     + ' title=\'Spaces require all words. Use OR, quotes, -exclusions and parentheses: beam ("guided decoding" OR TC). Scopes: parser:, col:, description:. Case numbers expand to stable names in shared URLs.\''
-    + ' aria-describedby="' + panel.id + '-search-error"><span class="comparison-search-error" id="' + panel.id + '-search-error" role="status" hidden></span></div>'
+    + ' aria-describedby="' + panel.id + '-search-error"><span class="comparison-search-error" id="' + panel.id + '-search-error" role="status" hidden></span></div></div>'
     + '<p class="comparison-notice" role="status" hidden></p><div class="comparison-matrix-scroll"></div>'
     + '<div class="comparison-legend" aria-label="Outcome colors"></div>';
   panel.appendChild(ui);
@@ -152,7 +156,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
   const viewActions = panel.querySelector('.capture-slots .tabs-right');
   if (viewActions) {
     viewActions.classList.remove('capture-slot-actions');
-    toolbar.appendChild(viewActions);
+    toolbar.querySelector('.comparison-filter-row').appendChild(viewActions);
   }
   panel.querySelector('.capture-slots').appendChild(toolbar);
   toolbar.querySelector('[data-case-search]').value = state.search;
@@ -197,6 +201,7 @@ export function mountComparison(panel, controller, familyNames = () => []) {
     const focused = focusComparison(baseView, keys, state.focus);
     if (state.focus !== focused.focus) { state.focus = focused.focus; persist(); }
     view = focused.view;
+    toolbar.querySelector('[data-focus="difference"]').hidden = keys.filter(key => key !== 'golden').length < 2;
     toolbar.querySelectorAll('[data-focus]').forEach(button => {
       button.disabled = button.dataset.focus !== 'all' && !focused.available[button.dataset.focus];
       button.setAttribute('aria-pressed', String(button.dataset.focus === state.focus));
