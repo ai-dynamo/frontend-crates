@@ -19,6 +19,7 @@ struct Request<'a> {
 #[test]
 fn typed_and_generic_content_normalization_match() {
     let array_template = "{% for m in messages %}{% for part in m.content %}{% if part.type == 'text' %}{{ part.text }}{% elif part.type == 'image' %}<image>{% endif %}{% endfor %}{% endfor %}";
+    let dual_template = "{% for m in messages %}{% if m.content is string %}{{ m.content }}{% else %}{% for p in m.content %}{{ p.text }}{% if not loop.last %} {% endif %}{% endfor %}{% endif %}{% endfor %}";
     let phi_template = "{% for m in messages %}{{ '<|' + m.role + '|>' + m.content + '<|end|>' }}{% endfor %}<|assistant|>";
     let passthrough = "{% for m in messages %}{{ m.content }}{% endfor %}";
     let mixed = json!([
@@ -29,6 +30,11 @@ fn typed_and_generic_content_normalization_match() {
     for (template, content, expected) in [
         (array_template, json!("Hello 中文"), "Hello 中文"),
         (array_template, mixed.clone(), "Before <image> after"),
+        (
+            dual_template,
+            json!([{"type": "text", "text": "part one"}, {"type": "text", "text": "part two"}]),
+            "part one part two",
+        ),
         (
             phi_template,
             mixed.clone(),
@@ -59,6 +65,7 @@ fn typed_and_generic_content_normalization_match() {
         let actual = formatter.render(&typed).unwrap();
         assert_eq!(actual, expected);
         assert_eq!(formatter.render(&generic).unwrap(), actual);
+        assert_eq!(formatter.render_prompt(&typed).unwrap().as_str(), actual);
     }
 }
 
