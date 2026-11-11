@@ -97,6 +97,7 @@ they call and how they obtain the spec:
 pub trait MmFamilyProcessor: Send + Sync {
     fn capabilities(&self) -> Capabilities; // query with supports(Modality)
     fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize>;
+    fn num_feature_tokens(&self, media: &MediaMetadata) -> Result<usize>; // num_media_tokens by default
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem>;
     fn process_items(&self, input_ids: &[i32], media: &[DecodedMedia])
         -> Result<Vec<ProcessedItem>>;                            // maps process_item by default
@@ -135,7 +136,9 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 
 `spec_from_model_dir` reads `preprocessor_config.json`, or the nested
 transformers v5 `processor_config.json` when a checkpoint ships only that
-file (GLM-5.3-Flash).
+file (GLM-5.3-Flash). A Mistral Large 4 directory resolves from
+`params.json` and `processor_config.json` to the HF `PixtralProcessor`
+pipeline; a mistral-common engine such as vLLM counts differently (§8).
 
 ### 2.1 A router (e.g. dynamo) — accounting and routing, no pixel work
 
@@ -147,9 +150,12 @@ file (GLM-5.3-Flash).
 | per trusted media part | `fetch::fetch_bytes` *(feature `fetch`, stub)* | trusted media source → raw bytes once implemented; currently returns `MmError::Unsupported` |
 | per decoded image | `content_hash_canonical_image` | shape + dtype + RGB bytes → Dynamo-compatible identity |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
-| per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count |
+| per media part | `MmFamilyProcessor::num_media_tokens` | typed lightweight metadata → the item's expanded token count: every id the item puts in the prompt, literal ids included (Kimi-K3 prints a size header around its pad run) |
+| per media part | `MmFamilyProcessor::num_feature_tokens` | typed lightweight metadata → the count of the item's feature positions, the ones that take embeddings; the same number unless the family's expansion adds literal ids |
 
-Token counts give the expanded prompt length for routing; hashes drive
+Token counts give the expanded prompt length for routing (a family that
+sizes media by the whole request needs `layout_from_metadata` for the exact
+length, §9); hashes drive
 prefix-cache-affinity routing and travel downstream as `mm_hashes`. The engine
 uses supplied hashes unchanged, whether Dynamo derived them from canonical
 decoded media or a passthrough URL.
@@ -162,7 +168,7 @@ decoded media or a passthrough URL.
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
 | per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image`, or `DecodedMedia::ImageRgba` for a family that composites alpha after its resize (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
-| per request, in place of the per-image call | `MmFamilyProcessor::process_items` | unexpanded input_ids + every `DecodedMedia` of the request → `ProcessedItem`s. The same result for most families; a family that sizes media by the whole request needs it and refuses `process_item` |
+| per request, in place of the per-image call | `MmFamilyProcessor::process_items` | unexpanded input_ids + every `DecodedMedia` of the request → `ProcessedItem`s. The same result for most families; a family that sizes media by the whole request needs it and refuses `process_item` (§7) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
 | per request, if needed | `MmFamilyProcessor::positions` | expanded length + offsets + processed items → `PositionOutput` (e.g. M-RoPE) |
@@ -293,7 +299,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | --- | --- | --- |
 | `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation |
 | `registry::processor_from_spec` | building the processor from already-resolved kwargs | selection semantics |
-| `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work |
+| `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work; for a family that sizes media by the whole request, the span of the item alone (§7) |
 | `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels, and Pillow 12.3's pass order: images taller than 100× their width shrink vertically first) |
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
@@ -308,8 +314,14 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
+| `models::nemotron_vl::NemotronVlProcessor` with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` → `[1, 3, H, W]` bfloat16 features, expanded ids, item offsets (`feature_ranges`) | **bitwise** for a prompt given as token ids, including the request budget |
+| `models::nemotron_vl::NemotronVlProcessor` with `sizing = hf` | the checkpoint's `image_processing_nemotron_h_omni.py` `_preprocess` sizes and `num_tokens` | exact tile sizes and token counts; no pixel path |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 | `image::resize::resize_rgba` | `PIL.Image.resize` on an RGBA or LA image (BICUBIC, u8) | **bitwise** against Pillow 12.3 (Pillow resizes premultiplied `RGBa` and divides back with truncation) |
+| `models::kimi_k3::KimiK3Processor::decode_image` | `PIL.Image.open(...)` and `load()`, then `convert("RGBA")` when the mode has alpha or a `transparency` entry and is not RGB, else `convert("RGB")` | no EXIF transpose. JPEG: same pixels (libjpeg-turbo on both sides). PNG, BMP, WebP, GIF: no known difference on the forms the gate accepts; the 8 forms known to differ are an error, and an unknown one would decode with other pixels (§7) |
+| `models::kimi_k3::KimiK3Processor::process_item` | the Kimi-K3 checkpoint's `KimiK3VisionProcessor.preprocess` (SGLang's CPU path) → `pixel_values`, `grid_thws` | **bitwise** against Pillow 12.3 from the decoded pixels on (resize, composite, pad, normalize, patchify); the decode has the scope of the row above |
+| `models::pixtral::PixtralProcessor::process_item` | HF `PixtralProcessor` with `PixtralImageProcessor` / `PixtralImageProcessorPil` (transformers v5.19.0), on the CPU → `pixel_values`, `image_sizes` | **bitwise**, one item per image at its own size |
+| `models::pixtral::PixtralProcessor::grid` / `layout` | HF `get_resize_output_image_size` and `replace_image_token`; SGLang's one offset run per grid row | exact sizes, ids, and per-row feature ranges |
 
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
 accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
@@ -489,11 +501,281 @@ cross-checks the planned grid against the installed HF processor's
 `image_grid_thw`. Fixture settings beyond the first group are mathematical
 test inputs, not model defaults.
 
-## 7. Roadmap
+## 7. Kimi-K3 images
+
+`KimiK3Processor` (`ProcessorSpec::KimiK3`, `{"family": "kimi_k3", ...}`) is
+the image pipeline of Kimi-K3 and Kimi-K3.1. It mirrors the checkpoint's own
+processor (`kimi_k3_vision_processing.py`, `media_utils.py` of
+`moonshotai/Kimi-K3@f831ab66` and `moonshotai/Kimi-K3.1-Pro@d9e99b07`) on
+Pillow 12.3, which SGLang runs on its CPU path. From the decoded pixels on,
+the output is bit-exact. The decode is bit-exact for JPEG, and has no known
+difference for PNG, BMP, WebP and GIF on the forms it accepts; see "What
+each claim rests on" below. Pillow before 12.2 gives other pixels for an
+image taller than 100 times its width. `spec_from_hf_configs` selects the
+family for `model_type` `kimi_k3` and `kimi_k31`, from the shipped
+`preprocessor_config.json` or from the files that `save_pretrained` writes
+(checked on transformers 5.19.0).
+
+Call `family.decode_image(bytes, &limits)` before `family.process_item`: it
+keeps alpha (`DecodedMedia::ImageRgba`), applies no EXIF transpose, and holds
+the input checks below. The output is `[grid_h * grid_w, 3, 14, 14]` patches
+with `image_grid_thw`; positions are 1-D.
+
+The expansion prints the source size as text:
+`<|media_begin|>image {W}x{H}<|media_content|>`, the pad run, `<|media_end|>`.
+The crate has no tokenizer, so the spec carries the ids of that text in
+`size_tokens`. `spec_from_hf_configs` leaves it empty: pixels,
+`num_feature_tokens` and `KimiK3Processor::plan` work, and `layout`,
+`layout_from_metadata` and `num_media_tokens` return `Unsupported`. The
+consumer builds the table with the model's tokenizer, passes it as JSON, and
+must hold the table's rule itself (see the `SizeTokens` doc); the crate
+checks only the table's shape.
+
+Three counts for one image (300x200: 96, 88, 88):
+
+- `num_media_tokens`: the whole expansion, header and end token included.
+- `num_feature_tokens`: the pad run, which takes the embeddings. Pass these
+  counts to `apply_layout`. With decoded pixels this is
+  `ProcessedItem::feature_token_count`.
+- `feature_ranges`: the position of the pad run, which SGLang calls the item
+  offset. `offsets` also cover the header and the end token.
+
+These return an error, never an approximation:
+
+- Spec: a non-null `fixed_output_tokens`, a `transparent_bg_fill_stage` that
+  is absent or not `after_resize`, a background pattern other than
+  `chessboard`, a chessboard field left to the checkpoint's default. From the
+  HF files the error is `Unsupported`.
+- Input, `Unsupported` from the decode gate. The gate reads the format and a
+  few header fields. It refuses a palette, 1-bit, L with tRNS or CMYK source,
+  or a GIF, that needs a resize (Pillow resizes these in the native mode),
+  and any format other than JPEG, PNG, GIF, WebP and BMP. It also refuses
+  the 8 forms whose decode is known to differ from Pillow:
+  1. a BMP that is not uncompressed 24-bit or 32-bit, or has a pixel offset
+     of 0;
+  2. animated WebP;
+  3. a lossy WebP where a segment's filter level is outside 0..63 and a
+     loop-filter delta then moves it (libwebp clamps after the deltas);
+  4. tRNS on 2-bit or 4-bit grayscale, and a 1-bit tRNS sample above 1;
+  5. a palette PNG whose tRNS bytes are `FF* 00 FF* 0A` (Pillow reads them as
+     one transparent entry);
+  6. a PNG with a text chunk named `interlace` before IDAT (Pillow reads the
+     keyword back as its deinterlace switch);
+  7. a GIF whose first frame has a gray-ramp local color table beside a global
+     table that is not a gray ramp (Pillow paints with the global table);
+  8. a GIF with more than one Graphic Control Extension before its first
+     image (Pillow keeps a transparent index that a later extension clears).
+- Input, `InvalidInput` from a decoder. Every other file goes to the crate's
+  shared decoders, which refuse what they cannot read: samples deeper than 8
+  bits, an OS/2 v2 BMP, a 32-bit BITFIELDS BMP with all-zero masks, a
+  lossless grayscale JPEG, and a JPEG that makes libjpeg warn. Pillow decodes
+  each of these.
+- Size: more than 2^53 patch cells, where f64 no longer plans exactly, and a
+  feature buffer that does not fit `usize`.
+
+What each claim rests on:
+
+- After the decode: the resize, composite, pad, normalize, patchify and
+  layout are bit-exact against the checkpoint's processor. The fixtures pin
+  this.
+- JPEG decode: bit-exact. The crate and Pillow both decode with
+  libjpeg-turbo.
+- PNG, BMP, WebP and GIF decode: no known difference on the forms the gate
+  accepts. The crate decodes these with Rust crates (`png`, `image`,
+  `image-webp`, `gif`) that are second implementations of the libraries
+  Pillow uses. The gate refuses each of the 8 forms known to differ, and a
+  fixture pins each refusal. Review sweeps, which are not in this repo,
+  found no other: 2,050 generated files in the last round, and 194 + 2,461
+  generated files and 3,137 files from a development host before it. A form
+  that is not known would decode with other pixels and no error.
+- In each difference found so far, the decoded size was right. So the grid,
+  the token counts and the prompt span were right, and only pixel values
+  differed.
+
+Not covered: a file that breaks its format's rules, or that carries a field
+an encoder should not write. It can decode with other pixels than Pillow's
+and no error. Known forms: a WebP whose VP8X alpha flag does not match its
+data; a WebP whose VP8L `alpha_is_used` bit, which the specification calls a
+hint, does not match its pixels; a PNG whose tRNS chunk is after IDAT,
+before PLTE, longer than PLTE, repeated, or has a non-zero high byte. The
+other direction is open too: the crate decodes some files that Pillow or
+the checkpoint rejects, such as a 32-bit BMP with masks outside Pillow's
+list or a PNG text chunk with the keyword `transparency`. The reference
+gives no pixels for them.
+
+SGLang's GPU path, the default for Kimi-K3 on a CUDA host, is a different
+implementation (float bicubic, straight alpha, a one-step f32 normalize) and
+is not mirrored here.
+
+`tests/mm_parity.rs` replays `tests/fixtures/mm_parity/kimi-k3.json`. Its
+target is SGLang's Python CPU path, which gives the same values as the
+checkpoint's own processor. The decode forms at the shipped limits are rows
+of `decode.json`. The `kimi_k3_golden` test checks what the table cannot
+hold: the prompt expansion from sizes alone, two drawn images (7300x64 and
+9000x4000) at the checkpoint's limits, the configs of both checkpoints, and
+a size sweep of the plan and the prompt span. `kimi_k3/generate.py` runs the
+table's cases and the two drawn images again on Kimi-K3.1-Pro and stops
+unless each value is the same. Regenerate or check with:
+
+```sh
+CUDA_VISIBLE_DEVICES="" python multimodal/tests/fixtures/mm_parity/generate.py \
+    --family kimi_k3 [--check] --model-dir <moonshotai/Kimi-K3 dir> \
+    --vllm-python <python> --llm-mm-harness <binary>
+CUDA_VISIBLE_DEVICES="" python multimodal/tests/fixtures/kimi_k3/generate.py \
+    [--check] <moonshotai/Kimi-K3 dir> <moonshotai/Kimi-K3.1-Pro dir>
+```
+## 8. Mistral Large 4 (Pixtral) images
+
+`models::pixtral::PixtralProcessor` (`ProcessorSpec::Pixtral`, JSON
+`"family": "pixtral"`) mirrors transformers' `PixtralProcessor` and
+`PixtralImageProcessor` (v5.19.0) on the CPU. An engine runs this pipeline
+when it serves the checkpoint with the HF tokenizer (`tokenizer.json` and
+`chat_template.jinja`), which is SGLang's default mode.
+
+- **Size.** `ratio = max(height, width) / longest_edge`. Above 1, both sides
+  are divided by the ratio and floored. Each side then rounds up to a
+  multiple of `patch_size * spatial_merge_size` (28 pixels), so a small image
+  stretches. `grid(width, height)` returns `(rows, cols)`. An image whose
+  short side floors to 0 pixels (3080x1) is `InvalidInput`: HF raises there.
+- **Pixels.** `decode_image` is the trait default (PIL `convert("RGB")`).
+  `process_item` resizes with the spec's resampler (`aten_u8`, the default,
+  or `pil`), normalizes with the rounding of that backend, and returns planar
+  `[1, 3, H, W]` f32 plus the model kwarg `image_sizes` (`[1, 2]` i64). Each
+  item keeps its own size, which equals its crop of HF's padded batch.
+- **Prompt.** The chat template writes one `[IMG]` per image. The layout
+  replaces it with `rows` rows of `cols` `[IMG]`; `[IMG_BREAK]` closes each
+  row and `[IMG_END]` the last. Only the `[IMG]` positions take embeddings:
+  `feature_ranges` holds one range per row and `offsets` the whole span.
+- **Counts.** `num_media_tokens` is the prompt span, `rows * (cols + 1)`
+  (HF's `_get_num_multimodal_tokens`, which misreads an image 1 or 3 pixels
+  high; this crate follows the processor call). `apply_layout` takes the
+  number of embeddings, `rows * cols`, not the span: in an engine
+  `ProcessedItem::feature_token_count`, in a router `num_feature_tokens`
+  (doctest on `PixtralProcessor`).
+
+`spec_from_model_dir` takes this path for a directory without `config.json`
+(the NVFP4 repo) or with one that says `mistral_large4`. The token ids and
+the geometry come from `params.json` (`vision_encoder`); mean, std and the
+knobs come from the nested `processor_config.json`. A pinned knob with
+another value, or an unknown knob, is refused. The resolved resampler is
+`aten_u8`; select `pil` in the spec JSON. `spec_from_hf_configs` refuses
+`mistral_large4`: its two files lack the `[IMG_BREAK]` and `[IMG_END]` ids.
+
+Not implemented:
+
+- mistral-common's grid rule (round, not floor) and its pixel pipeline. vLLM
+  counts and preprocesses with mistral-common; SGLang counts with its grid
+  rule under `--tokenizer-mode mistral`. The two rules give different grids
+  for some oversized images (1600x408: 14 rows here, 15 there), so a router
+  in front of such an engine must not use this family.
+- GPU resize. An engine that resizes on the GPU gets the same sizes and ids
+  as the CPU path that this crate mirrors, but not the same pixel values.
+- Samples deeper than 8 bits (PIL clips them) and a prompt with fewer `[IMG]`
+  than images: both are `InvalidInput`.
+- EXIF orientation. transformers' `load_image` applies it; this decode does
+  not, as SGLang's Pixtral path does not.
+
+The `mm_parity` test replays the 41 cases of
+`tests/fixtures/mm_parity/mistral-large-4.json` (decode forms, sizes that
+upscale or fit into the longest edge on both backends, multi-image prompts
+and refusals); its README has the regeneration commands.
+`tests/pixtral_planning.rs` checks the resolver, the 140-size sizing sweep
+and the refusals against `tests/fixtures/pixtral/geometry.json`, which
+`tests/fixtures/mm_parity/generate.py --family pixtral` writes beside the
+table from the HF processor.
+## 9. Nemotron 3.5 Super VL images
+
+`models::nemotron_vl` serves `model_type = "nemotron_h_omni"`
+(NVIDIA-Nemotron-3.5-Super-VL-120B-A12B, BF16 and NVFP4). Each image becomes
+one dynamic-resolution tile. Its `<image>` placeholder expands to `<img>`,
+one `<image>` per feature token, and `</img>`.
+
+SGLang's Python processor and the checkpoint's HF remote-code processor do
+not agree for this model. They use different size formulas and different
+resize kernels: a 1280x720 image gives 880 tokens in SGLang and 920 in HF.
+The spec field `sizing` names the reference to mirror:
+
+| `sizing` | reference | parity |
+| --- | --- | --- |
+| `sglang` | SGLang `NanoNemotronVLImageProcessor` on a prompt of token ids | **bitwise**, full pixel path: SGLang's size math and request budget, PIL bicubic on u8, the per-channel normalize table, planar `[1, 3, H, W]` bfloat16 (`TensorData::Bf16`), 1-D positions |
+| `hf` | `image_processing_nemotron_h_omni.py` in the checkpoint | exact tile sizes and token counts. `process_items` returns `Unsupported`, because the float32 antialias bicubic kernel is not mirrored. vLLM uses the same size formula but adds a text-aware request budget that this mode does not apply, so counts differ from a vLLM worker when text plus images exceed the context: for 3 x 1920x1080 at context 4096 with 10 text tokens, vLLM 0.28 gives 1344 tokens each (Dynamo's router pins it) and `hf` 2040 |
+
+`spec_from_model_dir` resolves the spec of the HF processor: `sizing = hf`,
+and `max_model_len` from the image-processor knobs. As transformers 5.19.0
+does, it takes them from the `image_processor` object of
+`processor_config.json` when that file has one, else from
+`preprocessor_config.json`. It also reads `tokenizer.json`, because the
+`<img>` and `</img>` ids are in no config file. `spec_from_hf_configs`
+returns `Unsupported` for this model type. A consumer that routes to SGLang
+sets two public fields before `build_processor`:
+`sizing = NemotronVlSizing::Sglang`, and `max_model_len` = SGLang's
+`--context-length`, or 8192 when the flag is not set (0 is refused). SGLang
+reads the geometry from `config.json`, so resolution refuses a checkpoint
+where `config.json` or a flat `preprocessor_config.json` disagrees with the
+knobs that HF loads.
+
+The tile size depends on the whole request. With `sglang` sizing, the images
+share `max_model_len` minus the text tokens; each id that is not `<image>` is
+a text token. SGLang shrinks the images for at most 10 rounds and then serves
+the last sizes. A tile can thus end below `min_num_patches`, and the prompt
+can stay longer than the context. With `hf` sizing, the patch budget of each
+image depends on the number of images in the call. As a result:
+
+- An engine calls `process_items(input_ids, media)` with the ids of the
+  request; a placeholder count that differs from the image count is
+  `InvalidInput`. `process_item` returns `Unsupported`: one image alone has
+  no request to size it by.
+- A router calls `layout_from_metadata`, which is exact for the request. The
+  `Feature` part of each segment holds the feature count of that item, and
+  `apply_layout` takes those counts. `NemotronVlProcessor::plan_images` gives
+  the same counts and the tile sizes, also with no pixel work.
+- `num_media_tokens` is the prompt span of one image alone with no text: its
+  feature tokens, which `num_feature_tokens` gives, plus the two markers (882
+  and 880 for 1280x720 with `sglang` sizing, 922 and 920 with `hf`). They
+  equal the request's numbers only when the request budget does not bind.
+- `apply_layout` returns `offsets` that span `<img>` to `</img>`. The item
+  offsets of SGLang are the `<image>` run, which is `feature_ranges`.
+
+Limits. Video, audio and SGLang's InternVL tile path (`min_num_patches = 0`)
+are `Unsupported`, and `downsample_factor` must be 2. `sglang` sizing mirrors
+SGLang's processor for a prompt of token ids. That processor also takes the
+prompt as text, which SGLang's Python chat serving sends for this model, and
+it then counts the text tokens on the prompt with `<image>` removed. The two
+counts can differ (31 ids and 30 text tokens for one two-image chat prompt),
+and when the budget binds the tiles differ too: at `--context-length 2078`
+with 2 x 1024x1024, ids give 961 tokens each and text gives 1024 each. With `hf` sizing, an
+image too thin for a tile is `InvalidInput`: there the HF processor raises
+`ZeroDivisionError` or asks torch for an empty resize. SGLang turns off
+Pillow's decompression-bomb limit for this model. The crate applies the
+`DecodeLimits` of the driver, but its PNG, WebP and BMP decoder refuses a
+decoded buffer above 512 MiB (178,956,970 RGB pixels); JPEG has no such limit.
+GIF has no allocation budget of its own: only the `DecodeLimits` of the driver
+bound the canvas that a GIF header asks for.
+
+`tests/fixtures/mm_parity/families/nemotron_vl.py` records both references
+from the config, processor and tokenizer files of the checkpoint, with the
+library versions. It runs SGLang's processor on CPU, and the HF remote-code
+processor. It needs no GPU:
+
+```sh
+python multimodal/tests/fixtures/mm_parity/generate.py --family nemotron_vl --model-dir <checkpoint dir> \
+    --vllm-python <python> --llm-mm-harness <binary> [--check]
+```
+
+`mm_parity` replays the cases of `tests/fixtures/mm_parity/nemotron-3.5-super-vl.json`
+against SGLang: the image format sweep of §6, an image already on its tile, a
+tall image, request budgets, and rejections. `nemotron_vl_planning` covers spec
+resolution, SGLang's requests from sizes alone (sizes below the minimum,
+identity, rounding ties, thin images, request budgets), the HF requests and
+digested random sweeps for both references, from
+`tests/fixtures/nemotron_vl/sizes.json`.
+
+## 10. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
-for `models::qwen_vl`. For video it decodes to frames and has the request
-arithmetic; no family turns the frames into tensors yet:
+for `models::qwen_vl`, `models::glm5_next` and `models::pixtral`. For video
+it decodes to frames and has the request arithmetic; no family turns the
+frames into tensors yet:
 
 - `video_decode` (feature `video-decode`, §2.4): MP4 / WebM / Matroska
   demuxing; H.264, HEVC, VP9 and AV1 through NVDEC, VP8 and VP9 on the CPU
@@ -517,8 +799,10 @@ What remains:
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
 3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
-   (§6); its video expansion, then Kimi, are next after
-   `models::qwen_vl`.
+   (§6), Kimi-K3 has image preprocessing (§7), Mistral Large 4 has image
+   preprocessing (§8) and Nemotron 3.5 Super VL has image preprocessing
+   with `sglang` sizing and metadata-only planning with `hf` sizing (§9);
+   GLM's video expansion is next after `models::qwen_vl`.
 
 ### Video and audio: planned layout
 
