@@ -783,10 +783,7 @@ impl HarmonyRuntime {
             return self.recover_quoted_control(output);
         }
         if let Some(completed_at) = completed_at {
-            let scalar = self
-                .call_content
-                .view()
-                .reader()
+            let scalar = std::io::BufReader::new(self.call_content.view().reader())
                 .bytes()
                 .find(|byte| !matches!(byte, Ok(b' ' | b'\t' | b'\r' | b'\n')))
                 .is_some_and(|byte| matches!(byte, Ok(b'"')));
@@ -2411,7 +2408,7 @@ mod tests {
         // Authored conformance stores text, which cannot represent these invalid token bytes.
         let encoding = harmony_encoding().unwrap();
         let incomplete = encoding.tokenizer().encode_ordinary("👨")[0];
-        assert!(encoding.tokenizer().decode_utf8(&[incomplete]).is_err());
+        assert!(encoding.tokenizer().decode_utf8([incomplete]).is_err());
         for author in [
             "assistant",
             "assistant ",
