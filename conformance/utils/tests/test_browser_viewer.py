@@ -864,7 +864,8 @@ def test_unified_controls_render_before_fixtures_and_detailed_view_stays_on_unif
         server.shutdown()
 
 
-def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historical_published_viewer):
+@pytest.mark.parametrize("label_font_size", [None, 20])
+def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historical_published_viewer, label_font_size):
     started, release = threading.Event(), threading.Event()
     server, _requests = _server(root=historical_published_viewer, gate=(started, release), gate_path=_published_capture_index(historical_published_viewer, "dynamo_v1", "5.1.3"))
     driver = _driver()
@@ -879,15 +880,20 @@ def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historic
               return {width: rect.width, height: rect.height};
             """)
 
+        if label_font_size:
+            driver.execute_script("document.querySelector('.capture-slot-selected-label').style.fontSize = arguments[0] + 'px'", label_font_size)
+
         before = first_slot_size()
         capture_select = driver.find_element("css selector", '#tab-unified [data-slot-capture="0"]')
         Select(capture_select).select_by_value("dynamo_v1@5.1.3")
         assert started.wait(20), "the selected v1 5.1.3 capture request did not start"
+        assert driver.execute_script("return document.querySelector('.capture-slot-controls').style.minHeight")
         during = first_slot_size()
         assert during["width"] > 400 and during["height"] == before["height"], {"before": before, "during": during}
 
         release.set()
         _ready(driver, "tab-unified")
+        assert driver.execute_script("return document.querySelector('.capture-slot-controls').style.minHeight") == ""
         after = first_slot_size()
         assert after["width"] == before["width"], {"before": before, "after": after}
     finally:

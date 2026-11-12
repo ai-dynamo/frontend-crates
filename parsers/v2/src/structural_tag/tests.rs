@@ -273,7 +273,7 @@ fn harmony_response_format_constrains_final_without_constraining_analysis() {
                         assert_eq!(format["end"], "");
                         assert_eq!(
                             format["content"],
-                            json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                            json!({"type":"json_schema", "json_schema":schema, "style":"json", "max_whitespace_cnt":16})
                         );
                         continue;
                     }
@@ -294,7 +294,7 @@ fn harmony_response_format_constrains_final_without_constraining_analysis() {
                     assert_eq!(final_tag["end"], "");
                     assert_eq!(
                         final_tag["content"],
-                        json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                        json!({"type":"json_schema", "json_schema":schema, "style":"json", "max_whitespace_cnt":16})
                     );
                     assert_eq!(
                         tags.len(),

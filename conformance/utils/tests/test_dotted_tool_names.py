@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from conformance.utils.tests import MODEL_CONTRACTS
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import gen_unified_golden as generator
@@ -41,10 +42,7 @@ def test_dotted_names_share_exact_oracle_and_tools(family, scenario, calls, grou
 
 
 def test_dotted_name_scope_covers_native_tool_families():
-    expected = frozenset({
-        "beam", "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss", "hermes",
-        "kimi_k2", "kimi_k3", "mistral_4", "muse_glimmer", "muse_spark", "nemotron_v3", "qwen3",
-    })
+    expected = frozenset(MODEL_CONTRACTS["nativeReviewFamilies"]["dotted"])
     assert generator.DOTTED_NAME_FAMILIES == expected
     assert generator.scenario_families("dotted_name_minimal") == expected
     for family in expected:

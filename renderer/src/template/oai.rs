@@ -97,6 +97,7 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
     ("image_url", "image"),
     ("video_url", "video"),
     ("audio_url", "audio"),
+    ("input_audio", "audio"),
 ];
 
 /// A `custom` part as the template sees it: its `kind`, never its payload.
@@ -123,12 +124,21 @@ fn convert_media_url_to_placeholder(
 fn may_be_fix_msg_content(
     mut messages: serde_json::Value,
     preserve_arrays: bool,
+    native_text_array_roles: &[&str],
+    merged_turns: &[usize],
     image_placeholder_template: Option<&str>,
 ) -> serde_json::Value {
     let Some(arr) = messages.as_array_mut() else {
         return messages;
     };
-    for msg in arr {
+    for (index, msg) in arr.iter_mut().enumerate() {
+        // Synthesized content (merged turns or injected reasoning) retains
+        // its existing normalization instead of acquiring template framing.
+        let preserve_text_array = !merged_turns.contains(&index)
+            && msg
+                .get("role")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|role| native_text_array_roles.contains(&role));
         let Some(content) = msg.get_mut("content") else {
             continue;
         };
@@ -151,12 +161,14 @@ fn may_be_fix_msg_content(
                         .iter()
                         .all(|part| part.get("type").and_then(|v| v.as_str()) == Some("text"));
                 if text_only && !preserve_arrays {
-                    let text = parts
-                        .iter()
-                        .filter_map(|part| part.get("text")?.as_str())
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    *content = serde_json::Value::String(text);
+                    if !preserve_text_array {
+                        let text = parts
+                            .iter()
+                            .filter_map(|part| part.get("text")?.as_str())
+                            .collect::<Vec<_>>()
+                            .join("\n");
+                        *content = serde_json::Value::String(text);
+                    }
                 } else if !preserve_arrays
                     // Custom markers belong to the model's array branch. Never
                     // flatten them through a built-in image-placeholder rule.
@@ -700,9 +712,14 @@ fn take_message_content(message: &mut serde_json::Value) -> serde_json::Value {
 /// Rewrites an agent-client message stream into a shape strict chat templates
 /// accept. Each rewrite is gated on the restriction the load-time probe actually
 /// found, so a template is never reshaped for a rule it does not enforce.
-fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNormalization) {
+/// Returns the final indices of turns that absorbed another turn's content.
+fn normalize_system_messages(
+    messages: &mut serde_json::Value,
+    rules: SystemNormalization,
+) -> Vec<usize> {
+    let mut merged_turns = Vec::new();
     let serde_json::Value::Array(list) = messages else {
-        return;
+        return merged_turns;
     };
     let role_is =
         |m: &serde_json::Value, r: &str| m.get("role").and_then(|v| v.as_str()) == Some(r);
@@ -716,6 +733,7 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
                 let content = take_message_content(&mut trailing);
                 append_message_content(&mut list[0], content);
             }
+            merged_turns.push(0);
         }
 
         // Demoted in place, not folded to the front: a mid-conversation reminder
@@ -736,12 +754,17 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
             if role_is(&m, "user") && coalesced.last().is_some_and(|p| role_is(p, "user")) {
                 let content = take_message_content(&mut m);
                 append_message_content(coalesced.last_mut().unwrap(), content);
+                let index = coalesced.len() - 1;
+                if merged_turns.last() != Some(&index) {
+                    merged_turns.push(index);
+                }
             } else {
                 coalesced.push(m);
             }
         }
         *list = coalesced;
     }
+    merged_turns
 }
 
 impl HfTokenizerConfigJsonFormatter {
@@ -792,6 +815,7 @@ impl HfTokenizerConfigJsonFormatter {
             template_handles_reasoning,
             template_requires_reasoning_string,
             system_normalization,
+            native_text_array_roles,
         ) = if has_tools {
             (
                 "tool_use",
@@ -799,6 +823,7 @@ impl HfTokenizerConfigJsonFormatter {
                 self.tool_use_template_handles_reasoning,
                 self.tool_use_template_requires_reasoning_string,
                 self.tool_use_system_normalization,
+                &self.tool_use_native_text_array_roles,
             )
         } else {
             (
@@ -807,6 +832,7 @@ impl HfTokenizerConfigJsonFormatter {
                 self.default_template_handles_reasoning,
                 self.default_template_requires_reasoning_string,
                 self.default_system_normalization,
+                &self.default_native_text_array_roles,
             )
         };
 
@@ -907,15 +933,42 @@ impl HfTokenizerConfigJsonFormatter {
             }
         }
 
-        if system_normalization.is_required() {
-            normalize_system_messages(&mut messages_for_template, system_normalization);
-        }
+        let mut normalized_turns = if system_normalization.is_required() {
+            normalize_system_messages(&mut messages_for_template, system_normalization)
+        } else {
+            Vec::new()
+        };
 
         match &self.content_format {
             ChatTemplateContentFormat::Auto => {
+                if !template_handles_reasoning
+                    && let Some(messages) = messages_for_template.as_array()
+                {
+                    normalized_turns.extend(messages.iter().enumerate().filter_map(
+                        |(index, message)| {
+                            if message.get("role").and_then(serde_json::Value::as_str)
+                                != Some("assistant")
+                            {
+                                return None;
+                            }
+                            let has_reasoning = match message.get("reasoning_content") {
+                                Some(serde_json::Value::String(text)) => !text.is_empty(),
+                                Some(serde_json::Value::Array(segments)) => {
+                                    segments.iter().any(|segment| {
+                                        segment.as_str().is_some_and(|text| !text.is_empty())
+                                    })
+                                }
+                                _ => false,
+                            };
+                            has_reasoning.then_some(index)
+                        },
+                    ));
+                }
                 messages_for_template = may_be_fix_msg_content(
                     messages_for_template,
                     self.requires_content_arrays,
+                    native_text_array_roles,
+                    &normalized_turns,
                     self.image_placeholder_template,
                 );
             }
@@ -2304,7 +2357,7 @@ mod tests {
             {"role": "assistant", "tool_calls": []}
         ]);
         assert_eq!(
-            may_be_fix_msg_content(messages.clone(), false, Some("")),
+            may_be_fix_msg_content(messages.clone(), false, &[], &[], Some("")),
             messages
         );
     }
@@ -3111,6 +3164,18 @@ mod tests {
     }
 
     #[test]
+    fn test_default_media_type_conversions_input_audio() {
+        let mut content_array = vec![serde_json::json!({
+            "type": "input_audio",
+            "input_audio": {"data": "AA==", "format": "wav"}
+        })];
+
+        convert_media_url_to_placeholder(&mut content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
+
+        assert_eq!(content_array, vec![serde_json::json!({"type": "audio"})]);
+    }
+
+    #[test]
     fn test_may_be_fix_tool_schema_missing_type_and_properties() {
         let json_str = r#"{
             "model": "gpt-4o",
@@ -3325,7 +3390,8 @@ mod tests {
 
         // Test array → string normalization (preserve_arrays=false for standard templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: text-only array is concatenated into a single string
         assert_eq!(
@@ -3372,7 +3438,8 @@ mod tests {
 
         // Test array → string normalization (preserve_arrays=false for standard templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: System message with string content remains unchanged
         assert_eq!(
@@ -3417,7 +3484,8 @@ mod tests {
 
         // Empty arrays should be preserved regardless of preserve_arrays setting
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: Empty arrays are preserved as-is
         assert!(messages[0]["content"].is_array());
@@ -3450,6 +3518,8 @@ mod tests {
         let messages = serde_json::to_value(may_be_fix_msg_content(
             messages_raw,
             false,
+            &[],
+            &[],
             Some("<|image_{n}|>"),
         ))
         .unwrap();
@@ -3479,7 +3549,8 @@ mod tests {
 
         // Test with preserve_arrays=false (standard templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: String content is not modified
         assert_eq!(
@@ -3511,7 +3582,8 @@ mod tests {
 
         // Mixed content should be preserved regardless of preserve_arrays setting
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: Mixed content types are preserved as array for template handling
         // image_url should be converted to image placeholder
@@ -3552,6 +3624,8 @@ mod tests {
         let messages = serde_json::to_value(may_be_fix_msg_content(
             messages_raw,
             false,
+            &[],
+            &[],
             Some("<|image_{n}|>"),
         ))
         .unwrap();
@@ -3578,9 +3652,14 @@ mod tests {
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
 
-        let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, Some("<image>")))
-                .unwrap();
+        let messages = serde_json::to_value(may_be_fix_msg_content(
+            messages_raw,
+            false,
+            &[],
+            &[],
+            Some("<image>"),
+        ))
+        .unwrap();
 
         let content = messages[0]["content"].as_str().expect("content flattened");
         assert_eq!(content, "Describe: <image>");
@@ -3608,8 +3687,14 @@ mod tests {
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
 
-        let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, Some(""))).unwrap();
+        let messages = serde_json::to_value(may_be_fix_msg_content(
+            messages_raw,
+            false,
+            &[],
+            &[],
+            Some(""),
+        ))
+        .unwrap();
 
         let content = messages[0]["content"].as_str().expect("content flattened");
         assert_eq!(
@@ -3683,7 +3768,8 @@ mod tests {
 
         // Non-text arrays should be preserved regardless of preserve_arrays setting
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Verify: Non-text content arrays are preserved, with image_url converted to image
         assert!(messages[0]["content"].is_array());
@@ -3781,7 +3867,8 @@ NORMAL MODE
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Mixed types should preserve array structure, with image_url converted to image
         assert!(messages[0]["content"].is_array());
@@ -3811,7 +3898,8 @@ NORMAL MODE
         let request: NvCreateChatCompletionRequest = serde_json::from_str(json_str).unwrap();
         let messages_raw = serde_json::to_value(request.messages()).unwrap();
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         // Unknown types mixed with text should preserve array
         assert!(messages[0]["content"].is_array());
@@ -3954,7 +4042,8 @@ NORMAL MODE
 
         // Apply content normalization with preserve_arrays=false (standard templates)
         let mut messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, false, &[], &[], None))
+                .unwrap();
 
         normalize_tool_calls_arguments_in_messages(&mut messages);
 
@@ -4083,7 +4172,8 @@ NORMAL MODE
 
         // Test with preserve_arrays=true (multimodal templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, &[], &[], None))
+                .unwrap();
 
         // Verify: String is converted to array format
         assert!(messages[0]["content"].is_array());
@@ -4114,7 +4204,8 @@ NORMAL MODE
 
         // Test with preserve_arrays=true (multimodal templates)
         let messages =
-            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, None)).unwrap();
+            serde_json::to_value(may_be_fix_msg_content(messages_raw, true, &[], &[], None))
+                .unwrap();
 
         // Verify: Array is preserved as-is
         assert!(messages[0]["content"].is_array());
@@ -4122,6 +4213,284 @@ NORMAL MODE
         assert_eq!(content_array.len(), 2);
         assert_eq!(content_array[0]["text"], "part 1");
         assert_eq!(content_array[1]["text"], "part 2");
+    }
+
+    fn text_parts(first: &str, second: &str) -> serde_json::Value {
+        json!([{"type": "text", "text": first}, {"type": "text", "text": second}])
+    }
+
+    const TEXT_PARTS_TMPL: &str = concat!(
+        "{%- for m in messages -%}<{{ m.role }}>",
+        "{%- if m.content is string -%}{{ m.content }}{%- else -%}",
+        "{%- for p in m.content -%}{{ p.text }}",
+        "{%- if not loop.last -%}{{ ARRAY_SEPARATOR }}{%- endif -%}",
+        "{%- endfor -%}{%- endif -%}</{{ m.role }}>{%- endfor -%}"
+    );
+
+    #[test]
+    fn text_part_arrays_keep_template_separators_and_framing() {
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        for separator in [" ", "", "\n", " :: "] {
+            let template = TEXT_PARTS_TMPL.replace(
+                "ARRAY_SEPARATOR",
+                &serde_json::to_string(separator).unwrap(),
+            );
+            let f = formatter_for(&template);
+            assert!(!f.requires_content_arrays);
+            assert_eq!(
+                render_shape(&f, shape.clone()).unwrap(),
+                format!("<user>part one{separator}part two</user>"),
+            );
+        }
+
+        let template = TEXT_PARTS_TMPL
+            .replace("ARRAY_SEPARATOR", "''")
+            .replace("{{ p.text }}", "<text>{{ p.text }}</text>");
+        assert_eq!(
+            render_shape(&formatter_for(&template), shape).unwrap(),
+            "<user><text>part one</text><text>part two</text></user>",
+        );
+    }
+
+    #[test]
+    fn preserved_text_arrays_do_not_fall_through_to_media_flattening() {
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        assert_eq!(
+            may_be_fix_msg_content(shape.clone(), false, &["user"], &[], Some("<image>")),
+            shape,
+        );
+    }
+
+    #[test]
+    fn text_array_support_is_selected_per_role_including_array_only_roles() {
+        let template = concat!(
+            "{%- for m in messages -%}<{{ m.role }}>",
+            "{%- if m.role == 'system' -%}{{ m.content }}",
+            "{%- elif m.role == 'assistant' and m.content is string and m.content|length > 0 -%}",
+            "{{ raise_exception('Assistant content must be an array.') }}",
+            "{%- elif m.content is string -%}{{ m.content }}{%- else -%}",
+            "{%- for p in m.content -%}{{ p.text }}",
+            "{%- if not loop.last -%}|{%- endif -%}{%- endfor -%}",
+            "{%- endif -%}</{{ m.role }}>{%- endfor -%}"
+        );
+        let f = formatter_for(template);
+        assert!(!f.requires_content_arrays);
+        assert!(f.default_native_text_array_roles.contains(&"assistant"));
+        assert!(!f.default_native_text_array_roles.contains(&"system"));
+        let parts = text_parts("part one", "part two");
+        let shape = json!([
+            {"role": "system", "content": parts},
+            {"role": "developer", "content": parts},
+            {"role": "user", "content": parts},
+            {"role": "assistant", "content": parts, "tool_calls": [{
+                "id": "c1", "type": "function", "function": {"name": "noop", "arguments": "{}"}
+            }]},
+            {"role": "tool", "tool_call_id": "c1", "content": parts},
+        ]);
+        let expected = concat!(
+            "<system>part one\npart two</system>",
+            "<developer>part one|part two</developer>",
+            "<user>part one|part two</user>",
+            "<assistant>part one|part two</assistant>",
+            "<tool>part one|part two</tool>"
+        );
+        assert_eq!(render_shape(&f, shape.clone()).unwrap(), expected);
+        assert_eq!(render_shape_with_tools(&f, shape).unwrap(), expected);
+    }
+
+    #[test]
+    fn text_array_support_is_selected_per_template_variant() {
+        let native = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' '");
+        let string =
+            "{%- for m in messages -%}<{{ m.role }}>{{ m.content }}</{{ m.role }}>{%- endfor -%}";
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        for (default, tool_use, default_text, tool_text) in [
+            (
+                native.as_str(),
+                string,
+                "part one part two",
+                "part one\npart two",
+            ),
+            (
+                string,
+                native.as_str(),
+                "part one\npart two",
+                "part one part two",
+            ),
+        ] {
+            let f = formatter_for_templates(default, tool_use);
+            assert_eq!(
+                render_shape(&f, shape.clone()).unwrap(),
+                format!("<user>{default_text}</user>"),
+            );
+            assert_eq!(
+                render_shape_with_tools(&f, shape.clone()).unwrap(),
+                format!("<user>{tool_text}</user>"),
+            );
+        }
+    }
+
+    #[test]
+    fn merged_turns_keep_their_existing_join_with_native_text_arrays() {
+        let strict = concat!(
+            "{%- set ns = namespace(prev='') -%}{%- for m in messages -%}",
+            "{%- if m.role == 'system' and not loop.first -%}",
+            "{{ raise_exception('System message must be first.') }}",
+            "{%- elif m.role == 'user' and ns.prev == 'user' -%}",
+            "{{ raise_exception('Conversation roles must alternate.') }}{%- endif -%}",
+            "<{{ m.role }}>{%- if m.content is string -%}{{ m.content }}{%- else -%}",
+            "{%- for p in m.content -%}{{ p.text }}",
+            "{%- if not loop.last -%}|{%- endif -%}{%- endfor -%}",
+            "{%- endif -%}</{{ m.role }}>{%- set ns.prev = m.role -%}{%- endfor -%}"
+        );
+        let f = formatter_for(strict);
+        assert!(f.default_system_normalization.demote_nonleading_system);
+        assert!(f.default_system_normalization.coalesce_consecutive_users);
+        let shape = json!([
+            {"role": "system", "content": text_parts("s1", "s2")},
+            {"role": "system", "content": "rules"},
+            {"role": "user", "content": text_parts("u1", "u2")},
+            {"role": "assistant", "content": "a"},
+            {"role": "user", "content": "first"},
+            {"role": "user", "content": text_parts("u3", "u4")},
+            {"role": "user", "content": text_parts("u5", "u6")},
+            {"role": "assistant", "content": "a2"},
+            {"role": "user", "content": text_parts("u7", "u8")},
+            {"role": "system", "content": text_parts("s3", "s4")},
+            {"role": "assistant", "content": "a3"},
+            {"role": "system", "content": text_parts("s5", "s6")},
+        ]);
+        let mut normalized = shape.clone();
+        assert_eq!(
+            normalize_system_messages(&mut normalized, f.default_system_normalization),
+            [0, 3, 5],
+        );
+        assert_eq!(
+            render_shape(&f, shape).unwrap(),
+            concat!(
+                "<system>s1\ns2\nrules</system>",
+                "<user>u1|u2</user><assistant>a</assistant>",
+                "<user>first\nu3\nu4\nu5\nu6</user><assistant>a2</assistant>",
+                "<user>u7\nu8\ns3\ns4</user><assistant>a3</assistant>",
+                "<user>s5|s6</user>"
+            ),
+        );
+    }
+
+    #[test]
+    fn demoted_unmerged_text_arrays_use_their_new_role() {
+        let template = concat!(
+            "{%- for m in messages -%}",
+            "{%- if m.role == 'system' and not loop.first -%}",
+            "{{ raise_exception('System message must be first.') }}{%- endif -%}",
+            "<{{ m.role }}>{%- if m.role == 'system' or m.content is string -%}",
+            "{{ m.content }}{%- else -%}{%- for p in m.content -%}{{ p.text }}",
+            "{%- if not loop.last -%}{{ ' ' }}{%- endif -%}{%- endfor -%}",
+            "{%- endif -%}</{{ m.role }}>{%- endfor -%}"
+        );
+        let f = formatter_for(template);
+        assert!(!f.default_native_text_array_roles.contains(&"system"));
+        assert!(f.default_native_text_array_roles.contains(&"user"));
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([
+                    {"role": "user", "content": "first"},
+                    {"role": "assistant", "content": "done"},
+                    {"role": "system", "content": text_parts("part one", "part two")},
+                ])
+            )
+            .unwrap(),
+            "<user>first</user><assistant>done</assistant><user>part one part two</user>",
+        );
+    }
+
+    #[test]
+    fn explicit_content_formats_override_native_text_array_detection() {
+        let template = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' '");
+        let mut f = formatter_for(&template);
+        let shape = json!([{"role": "user", "content": text_parts("part one", "part two")}]);
+        f.content_format = ChatTemplateContentFormat::String(MediaPlaceholders::default());
+        assert_eq!(
+            render_shape(&f, shape.clone()).unwrap(),
+            "<user>part one\npart two</user>",
+        );
+        f.content_format = ChatTemplateContentFormat::OpenAi;
+        assert_eq!(
+            render_shape(&f, shape).unwrap(),
+            "<user>part one part two</user>",
+        );
+    }
+
+    #[test]
+    fn injected_reasoning_keeps_existing_text_array_boundaries() {
+        let template = TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' | '");
+        for template in [
+            template.clone(),
+            template.replace("{{ p.text }}", "<text>{{ p.text }}</text>"),
+        ] {
+            let f = formatter_for(&template);
+            assert!(!f.default_template_handles_reasoning);
+            assert!(f.default_native_text_array_roles.contains(&"assistant"));
+            for (reasoning, content, expected) in [
+                (
+                    json!("r"),
+                    json!([{"type": "text", "text": "part one"}]),
+                    "<assistant><think>r</think>part one</assistant>",
+                ),
+                (
+                    json!(["", "r", ""]),
+                    text_parts("part one", "part two"),
+                    "<assistant><think>r</think>part one\npart two</assistant>",
+                ),
+                (
+                    json!(["r", "s"]),
+                    text_parts("part one", "part two"),
+                    "<assistant><think>r</think><think>s</think>part one\npart two</assistant>",
+                ),
+                (
+                    json!(" "),
+                    text_parts("part one", "part two"),
+                    "<assistant><think> </think>part one\npart two</assistant>",
+                ),
+            ] {
+                let messages = json!([{
+                    "role": "assistant", "content": content, "reasoning_content": reasoning
+                }]);
+                assert_eq!(render_shape(&f, messages.clone()).unwrap(), expected);
+                assert_eq!(render_shape_with_tools(&f, messages).unwrap(), expected);
+            }
+        }
+
+        let f = formatter_for(&template);
+        for reasoning in [json!(""), json!([]), json!(["", ""])] {
+            let messages = json!([{
+                "role": "assistant", "content": text_parts("part one", "part two"),
+                "reasoning_content": reasoning
+            }]);
+            assert_eq!(
+                render_shape(&f, messages).unwrap(),
+                "<assistant>part one | part two</assistant>",
+            );
+        }
+
+        let native_reasoning = template.replace(
+            "<{{ m.role }}>",
+            "<{{ m.role }}>{% if m.reasoning_content is string %}<native>{{ m.reasoning_content }}</native>{% endif %}",
+        );
+        let f = formatter_for(&native_reasoning);
+        assert!(f.default_template_handles_reasoning);
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([{
+                    "role": "assistant", "content": text_parts("part one", "part two"),
+                    "reasoning_content": "r"
+                }])
+            )
+            .unwrap(),
+            "<assistant><native>r</native>part one | part two</assistant>",
+        );
     }
 
     fn user() -> Msg {

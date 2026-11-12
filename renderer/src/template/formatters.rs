@@ -220,6 +220,75 @@ fn detect_content_array_usage(env: &Environment) -> bool {
     out_array.contains("template_test") && !out_string.contains("template_test")
 }
 
+/// Detects text-part rendering without assuming a separator. Adding an unused
+/// field must not change the output: printing an array or its parts (including
+/// through `tojson`) would expose that field instead of just their text.
+///
+/// This is conservative: templates that reject extra fields or produce changing
+/// output can miss detection and retain the existing string fallback.
+fn detect_native_text_array_roles(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+    arguments_string: bool,
+) -> Vec<&'static str> {
+    const FIRST: &str = "dynamo_text_array_probe_first";
+    const LAST: &str = "dynamo_text_array_probe_last";
+    let Ok(template) = env.get_template(template_name) else {
+        return Vec::new();
+    };
+    let arguments = if arguments_string {
+        json!("{}")
+    } else {
+        json!({})
+    };
+    let render = |role: &str, content: &serde_json::Value| {
+        let mut message = json!({"role": role, "content": content});
+        let user = json!({"role": "user", "content": "u"});
+        let messages = match role {
+            "user" => json!([message]),
+            "assistant" => json!([user, message, user]),
+            "tool" => {
+                message["tool_call_id"] = json!("call_probe");
+                let call = json!({"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "call_probe",
+                    "type": "function",
+                    "function": {"name": "probe", "arguments": arguments}
+                }]});
+                json!([user, call, message])
+            }
+            _ => json!([message, user]),
+        };
+        let ctx = context! {
+            messages => messages,
+            add_generation_prompt => false,
+            tools => tools,
+            bos_token => tok.bos,
+            eos_token => tok.eos,
+            unk_token => tok.unk,
+        };
+        template.render(ctx)
+    };
+    let parts = json!([{"type": "text", "text": FIRST}, {"type": "text", "text": LAST}]);
+    let mut with_metadata = parts.clone();
+    for part in with_metadata.as_array_mut().unwrap() {
+        part["__dynamo_probe_metadata"] = json!("unused");
+    }
+    ["system", "developer", "user", "assistant", "tool"]
+        .into_iter()
+        .filter(|role| {
+            let Ok(output) = render(role, &parts) else {
+                return false;
+            };
+            let (Some(first), Some(last)) = (output.find(FIRST), output.find(LAST)) else {
+                return false;
+            };
+            first < last && render(role, &with_metadata).is_ok_and(|other| other == output)
+        })
+        .collect()
+}
+
 /// Picks an image-placeholder template by sniffing the chat template source
 /// for distinctive role/end markers.
 ///
@@ -787,6 +856,20 @@ impl HfTokenizerConfigJsonFormatter {
                 &probe_tokens,
                 tool_use_template_handles_tool_calls_arguments_string,
             );
+        let default_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            default_template_handles_tool_calls_arguments_string,
+        );
+        let tool_use_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            tool_use_template_handles_tool_calls_arguments_string,
+        );
 
         // Detect each variant once so rendering can safely fall back to flat tools.
         let handles_native_tools = |name| {
@@ -807,6 +890,8 @@ impl HfTokenizerConfigJsonFormatter {
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             content_format: ChatTemplateContentFormat::Auto,
             requires_content_arrays,
+            default_native_text_array_roles,
+            tool_use_native_text_array_roles,
             exclude_tools_when_tool_choice_none,
             default_template_handles_native_tools,
             tool_use_template_handles_native_tools,
@@ -844,6 +929,77 @@ mod tests {
         let mut env = JinjaEnvironment::default().env();
         env.add_template_owned("default", src.to_string()).unwrap();
         env
+    }
+
+    #[test]
+    fn text_array_probe_rejects_containers_errors_and_incomplete_text() {
+        for body in [
+            "{{ m.content }}",
+            "{{ m.content | tojson }}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {% for p in m.content %}{{ p }}{% endfor %}{% endif %}",
+            "{{ '<user>' + m.content + '</user>' }}",
+            "{{ m.content.strip() }}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {{ m.content[0].text }}{% endif %}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {% for p in m.content %}\
+             {% if p.__dynamo_probe_metadata is defined %}{{ raise_exception('extra field') }}{% endif %}\
+             {{ p.text }}{% endfor %}{% endif %}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {% for p in m.content %}{{ p.text }}{{ p | length }}{% endfor %}{% endif %}",
+        ] {
+            let source = format!("{{% for m in messages %}}{body}{{% endfor %}}");
+            let formatter = HfTokenizerConfigJsonFormatter::new(
+                serde_json::from_value(json!({"chat_template": source})).unwrap(),
+                ContextMixins::new(&[]),
+            )
+            .unwrap();
+            assert!(
+                formatter.default_native_text_array_roles.is_empty(),
+                "{body}"
+            );
+            assert!(
+                formatter.tool_use_native_text_array_roles.is_empty(),
+                "{body}"
+            );
+        }
+    }
+
+    #[test]
+    fn text_array_probe_supplies_tokens_tools_and_tool_call_history() {
+        let body = concat!(
+            "{% for m in messages %}",
+            "{% if m.tool_calls %}",
+            "{% if m.tool_calls[0].function.arguments is string %}",
+            "{{ m.tool_calls[0].function.arguments }}",
+            "{% else %}{{ raise_exception('arguments must be strings') }}{% endif %}",
+            "{% endif %}",
+            "{% if m.role == 'tool' and (m.tool_call_id != 'call_probe' or messages[-2].tool_calls[0].id != m.tool_call_id) %}",
+            "{{ raise_exception('missing tool call') }}{% endif %}",
+            "{% if m.content is string %}{{ m.content }}{% else %}",
+            "{% for p in m.content %}{{ p.text }}{% endfor %}{% endif %}",
+            "{% endfor %}{{ bos_token + eos_token + unk_token }}",
+        );
+        let default = format!(
+            "{{% if tools is not none %}}{{{{ raise_exception('unexpected tools') }}}}{{% endif %}}{body}"
+        );
+        let tool_use = format!(
+            "{{% if tools | length != 1 or tools[0].function.name != 'probe' %}}\
+             {{{{ raise_exception('missing tools') }}}}{{% endif %}}{body}"
+        );
+        let formatter = HfTokenizerConfigJsonFormatter::new(
+            serde_json::from_value(json!({
+                "chat_template": [{"default": default}, {"tool_use": tool_use}],
+                "bos_token": "<s>", "eos_token": "</s>", "unk_token": "<unk>",
+            }))
+            .unwrap(),
+            ContextMixins::new(&[]),
+        )
+        .unwrap();
+        let roles = ["system", "developer", "user", "assistant", "tool"];
+        assert_eq!(formatter.default_native_text_array_roles, roles);
+        assert_eq!(formatter.tool_use_native_text_array_roles, roles);
     }
 
     #[test]
