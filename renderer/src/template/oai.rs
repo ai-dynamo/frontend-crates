@@ -1378,6 +1378,28 @@ mod tests {
         "{%- endfor -%}"
     );
 
+    // Reads only the first system message and renders nothing for a later one,
+    // without raising (gpt-oss and MiniMax M3 shape).
+    const SILENT_LATER_DROP_TMPL: &str = concat!(
+        "{%- if messages[0].role == 'system' -%}",
+        "<|im_start|>system\n{{ messages[0].content }}<|im_end|>\n",
+        "{%- set rest = messages[1:] -%}",
+        "{%- else -%}{%- set rest = messages -%}{%- endif -%}",
+        "{%- for m in rest -%}",
+        "{%- if m.role in ['user', 'assistant'] -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- endif -%}",
+        "{%- endfor -%}"
+    );
+    // Has no system role at all: drops the first system message too.
+    const NO_SYSTEM_TMPL: &str = concat!(
+        "{%- for m in messages -%}",
+        "{%- if m.role in ['user', 'assistant'] -%}",
+        "<|im_start|>{{ m.role }}\n{{ m.content }}<|im_end|>\n",
+        "{%- endif -%}",
+        "{%- endfor -%}"
+    );
+
     // Claude Code first-turn shape: top-level system + a mid-array system.
     fn claude_shape() -> serde_json::Value {
         json!([
@@ -1401,6 +1423,26 @@ mod tests {
         assert!(!f.tool_use_system_normalization.is_required());
         let out = render_shape(&f, claude_shape()).unwrap();
         assert!(out.contains("<|im_start|>system\nmid-conversation reminder<|im_end|>"));
+    }
+
+    #[test]
+    fn silent_later_drop_template_demotes_mid_system_in_place() {
+        let f = formatter_for(SILENT_LATER_DROP_TMPL);
+        assert!(f.default_system_normalization.demote_nonleading_system);
+        assert!(!f.default_system_normalization.coalesce_consecutive_users);
+
+        let out = render_shape(&f, claude_shape()).unwrap();
+        assert!(out.starts_with("<|im_start|>system\nYou are Claude Code.<|im_end|>"));
+        assert!(out.ends_with(concat!(
+            "<|im_start|>user\nhello<|im_end|>",
+            "<|im_start|>user\nmid-conversation reminder<|im_end|>"
+        )));
+    }
+
+    #[test]
+    fn template_without_system_role_is_not_flagged() {
+        let f = formatter_for(NO_SYSTEM_TMPL);
+        assert!(!f.default_system_normalization.is_required());
     }
 
     #[test]
