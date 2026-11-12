@@ -946,6 +946,13 @@ tools:
       required:
       - value
       additionalProperties: false
+  tools_2acebbd998d45260:
+  - name: python
+    parameters:
+      type: object
+      properties:
+        code:
+          type: string
   tools_799032ba2fa9936f:
   - name: schema_probe
     parameters:
@@ -983,6 +990,10 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_4878f82e06d1ba60:
+  - name: python
+    parameters:
+      type: string
   tools_746b20394956becb:
   - name: schema_probe
     parameters:
@@ -2058,6 +2069,9 @@ requests:
   0da9e8f8c97739f9dc03ca27f4ea01342aca72f0d0bb3e21dc999c4865ae4224:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 42}<|call|>'
     tools: tools_b216df93b649987b
+  0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>
+    tools: tools_9db8284c68087826
   0ddb7576faadb33bc6440d8618eb5deaa5b58101239778d30b704a63fdbc304e:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}<|call|>'
     tools: tools_5d30b2f70e9f541a
@@ -2156,6 +2170,9 @@ requests:
       named_tool: null
     input: '<|call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|call|>'
     tools: tools_9db8284c68087826
+  1902013b95039b76e22fbcfa2fa86d8b97cf0eb3eee0fba8d9321b8dfddeb2d0:
+    input: <|start|>assistant<|channel|>final<|message|>{"x":"unfinished<|start|>assistant to=functions.lookup<|message|>{}<|call|>
+    tools: tools_eadda4709f8bddfd
   1983c995df57e40b13aaf9ebd66ec6413e4207dc3843ee160fe1ee6068087cb0:
     input: '<|start|>assistant<|channel|>final<|message|>Logging now: <|start|>assistant to=functions.log<|channel|>commentary <|message|>{"note":"<|start|>assistant<|channel|>analysis<|message|>secret<|end|>"}<|call|><|start|>assistant<|channel|>final<|message|> done.<|return|>'
     tools: tools_9db8284c68087826
@@ -2204,6 +2221,9 @@ requests:
     chunk_sizes:
     - 105
     finish_step: true
+  1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|> <|start|>assistant<|channel|>final<|message|>""<|return|>
+    tools: tools_9db8284c68087826
   1f1d49dae957fb3564a2b6bef2cfa219ceaeb00942478841a7e1663b67135e6b:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": null}<|call|>'
     tools: tools_b61bcb374d1c66b2
@@ -2740,6 +2760,9 @@ requests:
   46e9af26161cfc52d281804c1e0742a955517fe9ae26b971e6eba551c290f259:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "true"}<|call|>'
     tools: tools_7592cfa2edef2954
+  489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95:
+    input: <|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>
+    tools: tools_eadda4709f8bddfd
   495a251b9e90a129b08db8981cf84ef40d9b2e3fe5fe290268fed9c8b4e6261e:
     init:
       starting_state: None
@@ -2762,6 +2785,9 @@ requests:
       tool_output_mode: GuidedJson
       named_tool: null
     input: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+    tools: tools_9db8284c68087826
+  4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>
     tools: tools_9db8284c68087826
   50cbdcd340af07be9dbeb60d27629e6dc9e08f4a6faf4a9e7a79b424644e768b:
     input: '<|start|>assistant<|channel|>analysis<|message|>check<|end|><|start|>assistant to=functions.lookup<|channel|>commentary json<|message|>{"q": "weather"}<|call|><|start|>assistant<|channel|>final<|message|>found<|return|>'
@@ -3303,6 +3329,9 @@ requests:
   7e788a689da87ddf131fa3ff24ed6e4de9fa459ca1bd4377192f1112d50b1084:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_592bf92c162ae226
+  7ee153986b2107c773d3a936313a939e28de1b194b3ac05fdb0c122ffe0effce:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>""<|return|>
+    tools: tools_9db8284c68087826
   7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9:
     input: '<|start|>assistant<|channel|>commentary to=functions.set_labels <|constrain|>json<|message|>{"label": null, "note": null, "literal": "null"}<|call|>'
     tools: tools_357b7150e2dd7639
@@ -3434,6 +3463,9 @@ requests:
     - 3
     - 8
     finish_step: true
+  885a3fc00d909b57252bbfb6224eb178d66eb89dd09d7b1fd220008474dca031:
+    input: <|start|>assistant to=python<|channel|>commentary<|message|>{"code":"print(1)"}<|call|>
+    tools: tools_2acebbd998d45260
   88896768094624e4cfaf5c4d37443501987da03255f8b2fc55a27563e1cef8d3:
     input: <|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>
     tools: tools_eadda4709f8bddfd
@@ -3550,6 +3582,9 @@ requests:
   9225fe80c6c1dd9a7e800d65f865284f8c56fa51c853d8ac65f40127630833bd:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3.5}<|call|>'
     tools: tools_686a0bb91b79903e
+  926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8:
+    input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+    tools: tools_4878f82e06d1ba60
   92c8ba60c1d18b491eea53d9e6692708609712735d93beadb393d8e22764ccd9:
     init:
       starting_state: Response
@@ -4100,6 +4135,9 @@ requests:
     chunk_sizes:
     - 83
     finish_step: true
+  bc247c617879720e3c488ba8575504b5cfec7be851d2b3851f8af90f93b33a60:
+    input: <|start|>assistant<|channel|>final<|message|>"é\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>
+    tools: tools_9db8284c68087826
   bc2e12ac5f5f0358e79166dd8a040ab6bb6292d1026cc886194c2e1c396923bc:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_9d7e29c38b45febb
@@ -4246,6 +4284,9 @@ requests:
   c70b7ab39f5c880fa70e1a3b7d8b2b840c5dd2441c3c6ff7057a597b67823178:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_68095193d4321478
+  c92f8067190de68778212e506bc6750f4f8aee5a28119d24d249b90080db71e2:
+    input: <|start|>assistant to=all<|channel|>analysis<|message|>checking<|end|>
+    tools: tools_9db8284c68087826
   c9da1f2c90cbb51c01a248a3dedd6004312844d850b082ddb2bfe259fb8eb53b:
     input: <|channel|>commentary to=functions.bad<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{"path":"ok"}<|return|>
     tools: tools_1a363c00fe79c1c3
@@ -4399,6 +4440,9 @@ requests:
     - 7
     - 57
     finish_step: true
+  d436b933d3a4b2d91af899afc5fb8baed1178934ae51478130fd6bef445c804e:
+    input: <|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>
+    tools: tools_4878f82e06d1ba60
   d459b8e6d6942b72df37649fec24d7c2b478c458c392186412be71361fa3bf95:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "[1,2]"}<|call|>'
     tools: tools_1c0b6cc6a42cfbde
@@ -4846,6 +4890,11 @@ requests:
     chunk_sizes:
     - 133
     finish_step: true
+  fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00:
+    input: '<|start|>assistant<|channel|>commentary<|message|>"Looking
+
+      <|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>'
+    tools: tools_9db8284c68087826
   fd5f1a342b9e8d4df5e4ed0eca1762709cd63dd259a884e0d03fd3f5c8d1d839:
     input: <|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>
     tools: tools_9db8284c68087826
@@ -5170,6 +5219,7 @@ cases:
       arguments:
         city: null
   arg_json_null_anyof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5183,6 +5233,7 @@ cases:
       arguments:
         city: null
   arg_json_null_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5196,6 +5247,7 @@ cases:
       arguments:
         city: null
   arg_json_null_nullable:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5209,6 +5261,7 @@ cases:
       arguments:
         city: null
   arg_json_null_oneof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5235,6 +5288,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5248,6 +5302,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_enum:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5261,6 +5316,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_sibling_anyof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5274,6 +5330,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_sibling_oneof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5287,6 +5344,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_union:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5300,6 +5358,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_untyped_branch:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5324,6 +5383,7 @@ cases:
       arguments:
         city: São Paulo 東京
   schema_const_array_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5350,6 +5410,7 @@ cases:
       arguments:
         value: '[1,2]'
   schema_const_array_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5363,6 +5424,7 @@ cases:
       arguments:
         value: '[1,2]'
   schema_const_array_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5376,6 +5438,7 @@ cases:
       arguments:
         value: '[1,2]'
   schema_const_boolean_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5402,6 +5465,7 @@ cases:
       arguments:
         value: 'true'
   schema_const_boolean_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5415,6 +5479,7 @@ cases:
       arguments:
         value: 'true'
   schema_const_boolean_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5428,6 +5493,7 @@ cases:
       arguments:
         value: 'true'
   schema_const_entity_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5454,6 +5520,7 @@ cases:
       arguments:
         value: '&lt;'
   schema_const_entity_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5467,6 +5534,7 @@ cases:
       arguments:
         value: '&lt;'
   schema_const_entity_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5480,6 +5548,7 @@ cases:
       arguments:
         value: '&lt;'
   schema_const_null_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5506,6 +5575,7 @@ cases:
       arguments:
         value: 'null'
   schema_const_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5519,6 +5589,7 @@ cases:
       arguments:
         value: 'null'
   schema_const_null_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5532,6 +5603,7 @@ cases:
       arguments:
         value: 'null'
   schema_const_number_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5558,6 +5630,7 @@ cases:
       arguments:
         value: '42'
   schema_const_number_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5571,6 +5644,7 @@ cases:
       arguments:
         value: '42'
   schema_const_number_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5584,6 +5658,7 @@ cases:
       arguments:
         value: '42'
   schema_const_object_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5610,6 +5685,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_const_object_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5623,6 +5699,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_const_object_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5636,6 +5713,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_const_plain_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5662,6 +5740,7 @@ cases:
       arguments:
         value: auto
   schema_const_plain_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5675,6 +5754,7 @@ cases:
       arguments:
         value: auto
   schema_const_plain_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5688,6 +5768,7 @@ cases:
       arguments:
         value: auto
   schema_const_quoted_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5714,6 +5795,7 @@ cases:
       arguments:
         value: '"hello"'
   schema_const_quoted_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5727,6 +5809,7 @@ cases:
       arguments:
         value: '"hello"'
   schema_const_quoted_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5740,6 +5823,7 @@ cases:
       arguments:
         value: '"hello"'
   schema_const_space_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5766,6 +5850,7 @@ cases:
       arguments:
         value: '  spaced  '
   schema_const_space_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5779,6 +5864,7 @@ cases:
       arguments:
         value: '  spaced  '
   schema_const_space_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5792,6 +5878,7 @@ cases:
       arguments:
         value: '  spaced  '
   schema_const_unicode_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5818,6 +5905,7 @@ cases:
       arguments:
         value: café
   schema_const_unicode_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5831,6 +5919,7 @@ cases:
       arguments:
         value: café
   schema_const_unicode_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5938,6 +6027,7 @@ cases:
       arguments:
         value: plain
   schema_enum_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5951,6 +6041,7 @@ cases:
       arguments:
         value: 42
   schema_enum_string:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5964,6 +6055,7 @@ cases:
       arguments:
         value: '42'
   schema_escaped_ref_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6038,6 +6130,7 @@ cases:
         flag: true
         narrowed: 42
   schema_id_direct_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6051,6 +6144,7 @@ cases:
       arguments:
         value: 42
   schema_integer_const_ambiguous:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6064,6 +6158,7 @@ cases:
       arguments:
         value: '42'
   schema_intersection_anyof:
+    lifecycle: retired
     scenario: schema_intersection_anyOf
     policy:
     - I7
@@ -6078,6 +6173,7 @@ cases:
       arguments:
         value: 42
   schema_intersection_oneof:
+    lifecycle: retired
     scenario: schema_intersection_oneOf
     policy:
     - I7
@@ -6105,6 +6201,7 @@ cases:
       arguments:
         count: 42
   schema_null_union_ambiguous:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6132,6 +6229,7 @@ cases:
         const_text: 'null'
         enum_text: 'null'
   schema_nullable_string:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6145,6 +6243,7 @@ cases:
       arguments:
         value: null
   schema_object_const_union:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6158,6 +6257,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_percent_ref_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6171,6 +6271,7 @@ cases:
       arguments:
         value: '42'
   schema_ref_sibling_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6198,6 +6299,7 @@ cases:
       arguments:
         value: -7
   schema_ref_union_anyof_string:
+    lifecycle: retired
     scenario: schema_ref_union_anyOf_string
     policy:
     - I7
@@ -6212,6 +6314,7 @@ cases:
       arguments:
         value: auto
   schema_ref_union_oneof_integer:
+    lifecycle: retired
     scenario: schema_ref_union_oneOf_integer
     policy:
     - I7
@@ -6226,6 +6329,7 @@ cases:
       arguments:
         value: -7
   schema_ref_union_oneof_string:
+    lifecycle: retired
     scenario: schema_ref_union_oneOf_string
     policy:
     - I7
@@ -6240,6 +6344,7 @@ cases:
       arguments:
         value: auto
   schema_type_array_integer_null:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6253,6 +6358,7 @@ cases:
       arguments:
         value: 42
   schema_type_array_integer_null_null:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6266,6 +6372,7 @@ cases:
       arguments:
         value: null
   schema_type_array_string_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -6279,6 +6386,7 @@ cases:
       arguments:
         value: '42'
   schema_union_anyof_array_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_reverse_string
     policy:
     - I7
@@ -6293,6 +6401,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_array_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_reverse_typed
     policy:
     - I7
@@ -6309,6 +6418,7 @@ cases:
         - 1
         - 2
   schema_union_anyof_array_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_string
     policy:
     - I7
@@ -6323,6 +6433,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_array_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_typed
     policy:
     - I7
@@ -6339,6 +6450,7 @@ cases:
         - 1
         - 2
   schema_union_anyof_boolean_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_reverse_string
     policy:
     - I7
@@ -6353,6 +6465,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_boolean_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_reverse_typed
     policy:
     - I7
@@ -6367,6 +6480,7 @@ cases:
       arguments:
         value: true
   schema_union_anyof_boolean_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_string
     policy:
     - I7
@@ -6381,6 +6495,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_boolean_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_typed
     policy:
     - I7
@@ -6395,6 +6510,7 @@ cases:
       arguments:
         value: true
   schema_union_anyof_integer_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_reverse_string
     policy:
     - I7
@@ -6409,6 +6525,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_integer_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_reverse_typed
     policy:
     - I7
@@ -6423,6 +6540,7 @@ cases:
       arguments:
         value: 42
   schema_union_anyof_integer_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_string
     policy:
     - I7
@@ -6437,6 +6555,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_integer_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_typed
     policy:
     - I7
@@ -6451,6 +6570,7 @@ cases:
       arguments:
         value: 42
   schema_union_anyof_null_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_reverse_string
     policy:
     - I7
@@ -6465,6 +6585,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_null_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_reverse_typed
     policy:
     - I7
@@ -6479,6 +6600,7 @@ cases:
       arguments:
         value: null
   schema_union_anyof_null_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_string
     policy:
     - I7
@@ -6493,6 +6615,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_null_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_typed
     policy:
     - I7
@@ -6507,6 +6630,7 @@ cases:
       arguments:
         value: null
   schema_union_anyof_number_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_reverse_string
     policy:
     - I7
@@ -6521,6 +6645,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_number_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_reverse_typed
     policy:
     - I7
@@ -6535,6 +6660,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_anyof_number_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_string
     policy:
     - I7
@@ -6549,6 +6675,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_number_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_typed
     policy:
     - I7
@@ -6563,6 +6690,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_anyof_object_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_reverse_string
     policy:
     - I7
@@ -6577,6 +6705,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_object_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_reverse_typed
     policy:
     - I7
@@ -6592,6 +6721,7 @@ cases:
         value:
           x: 1
   schema_union_anyof_object_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_string
     policy:
     - I7
@@ -6606,6 +6736,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_object_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_typed
     policy:
     - I7
@@ -6621,6 +6752,7 @@ cases:
         value:
           x: 1
   schema_union_oneof_array_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_reverse_string
     policy:
     - I7
@@ -6635,6 +6767,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_array_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_reverse_typed
     policy:
     - I7
@@ -6651,6 +6784,7 @@ cases:
         - 1
         - 2
   schema_union_oneof_array_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_string
     policy:
     - I7
@@ -6665,6 +6799,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_array_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_typed
     policy:
     - I7
@@ -6681,6 +6816,7 @@ cases:
         - 1
         - 2
   schema_union_oneof_boolean_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_reverse_string
     policy:
     - I7
@@ -6695,6 +6831,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_boolean_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_reverse_typed
     policy:
     - I7
@@ -6709,6 +6846,7 @@ cases:
       arguments:
         value: true
   schema_union_oneof_boolean_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_string
     policy:
     - I7
@@ -6723,6 +6861,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_boolean_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_typed
     policy:
     - I7
@@ -6737,6 +6876,7 @@ cases:
       arguments:
         value: true
   schema_union_oneof_integer_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_reverse_string
     policy:
     - I7
@@ -6751,6 +6891,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_integer_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_reverse_typed
     policy:
     - I7
@@ -6765,6 +6906,7 @@ cases:
       arguments:
         value: 42
   schema_union_oneof_integer_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_string
     policy:
     - I7
@@ -6779,6 +6921,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_integer_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_typed
     policy:
     - I7
@@ -6793,6 +6936,7 @@ cases:
       arguments:
         value: 42
   schema_union_oneof_null_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_reverse_string
     policy:
     - I7
@@ -6807,6 +6951,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_null_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_reverse_typed
     policy:
     - I7
@@ -6821,6 +6966,7 @@ cases:
       arguments:
         value: null
   schema_union_oneof_null_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_string
     policy:
     - I7
@@ -6835,6 +6981,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_null_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_typed
     policy:
     - I7
@@ -6849,6 +6996,7 @@ cases:
       arguments:
         value: null
   schema_union_oneof_number_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_reverse_string
     policy:
     - I7
@@ -6863,6 +7011,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_number_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_reverse_typed
     policy:
     - I7
@@ -6877,6 +7026,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_oneof_number_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_string
     policy:
     - I7
@@ -6891,6 +7041,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_number_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_typed
     policy:
     - I7
@@ -6905,6 +7056,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_oneof_object_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_reverse_string
     policy:
     - I7
@@ -6919,6 +7071,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_object_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_reverse_typed
     policy:
     - I7
@@ -6934,6 +7087,7 @@ cases:
         value:
           x: 1
   schema_union_oneof_object_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_string
     policy:
     - I7
@@ -6948,6 +7102,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_object_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_typed
     policy:
     - I7
@@ -7718,6 +7873,7 @@ cases:
       arguments:
         city: Paris
   guided_json_gt_in_argument_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - I3
     description: 'Guided JSON, payload is gt_in_argument, surrounded by a stray tool CLOSE after the payload. Markers around a recoverable payload must not cost the call (`I3`). Preserves PR #424''s distinct request and chunk schedule for UNIFIED.30-guided_json_gt_in_argument_trailing_close.'
@@ -7729,6 +7885,7 @@ cases:
       arguments:
         city: a > b
   guided_json_gt_in_argument_wrapped_pr424:
+    lifecycle: retired
     policy:
     - I3
     description: 'Guided JSON, payload is gt_in_argument, surrounded by the payload wrapped in native tool markup. Markers around a recoverable payload must not cost the call (`I3`). Preserves PR #424''s distinct request and chunk schedule for UNIFIED.30-guided_json_gt_in_argument_wrapped.'
@@ -7740,6 +7897,7 @@ cases:
       arguments:
         city: a > b
   guided_json_marker_inside_argument_pr424:
+    lifecycle: retired
     policy:
     - I7
     description: 'A control marker of the family''s OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`) — re-reading it as a channel token corrupts the call the tool receives while looking like a successful dispatch. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.30-guided_json_marker_inside_argument.'
@@ -7751,6 +7909,7 @@ cases:
       arguments:
         note: <|end|>
   guided_json_native_markup_only_pr424:
+    lifecycle: retired
     policy:
     - I3
     - I6
@@ -7759,6 +7918,7 @@ cases:
     request: 645ad4c615fc16ff8fc90eade4c15fb0fa6f18fa93f145f48ae6a3801ca468d9
     golden: []
   guided_json_tool_close_after_payload_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'A native tool CLOSER follows the payload. The leading side was handled long before this one: once the payload''s opening brace latches visible-only, every later byte is appended verbatim, so a trailing marker rides into the buffer and the call is lost. Markers can BRACKET a payload, not only precede it. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.32-guided_json_tool_close_after_payload.'
@@ -7770,6 +7930,7 @@ cases:
       arguments:
         city: Paris
   guided_json_wrapped_in_tool_markup_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'The payload wrapped in a full native envelope, opener AND closer. This is the shape a template emits when guided decoding is applied INSIDE a tool block; handling only one end still loses the call. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.32-guided_json_wrapped_in_tool_markup.'
@@ -7781,6 +7942,7 @@ cases:
       arguments:
         city: Paris
   guided_json_schema_error_nameless_element_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_nameless_element_trailing_close.'
@@ -7790,6 +7952,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
   guided_json_schema_error_nameless_element_wrapped_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_nameless_element_wrapped.'
@@ -7799,6 +7962,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
   guided_json_schema_error_not_a_call_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_not_a_call, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_not_a_call_trailing_close.'
@@ -7808,6 +7972,7 @@ cases:
     - kind: text
       text: '{"unexpected": "shape"}'
   guided_json_schema_error_not_a_call_wrapped_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_not_a_call, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_not_a_call_wrapped.'
@@ -7817,6 +7982,7 @@ cases:
     - kind: text
       text: '{"unexpected": "shape"}'
   guided_json_syntax_error_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is syntax_error, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_syntax_error_trailing_close.'
@@ -7826,6 +7992,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_syntax_error_wrapped_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is syntax_error, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_syntax_error_wrapped.'
@@ -7835,6 +8002,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_bare_tool_header_recovers_inside_a_thought_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'A bare `to=NAME` header inside an OPEN thought, leading into the guided payload — the missing-terminator recovery boundary, with no framing on the header because the prompt consumed the turn''s opening framing. The contrast with the quoted cases is the point: the same bare shape is structural here and prose there, decided by scope, not by whether a header has been seen before. A reader that closes its latch on the turn''s first header demotes this one and leaks `to=NAME` into the reasoning. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_json_bare_tool_header_recovers_inside_a_thought.'
@@ -7888,6 +8056,7 @@ cases:
       arguments:
         city: Paris
   guided_json_orphan_reason_close_before_payload_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'An orphan reasoning CLOSER with nothing open, ahead of the payload. The native scanner strips a stray closer wherever it appears before an opener; the guided path must agree or the same bytes read differently by request mode (`I3`). Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_json_orphan_reason_close_before_payload.'
@@ -7955,6 +8124,7 @@ cases:
       arguments:
         city: Paris
   guided_quoted_reasoning_closer_named_pr424:
+    lifecycle: retired
     policy:
     - I7
     description: 'Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_quoted_reasoning_closer_named.'
@@ -7968,6 +8138,7 @@ cases:
       arguments:
         city: Paris
   guided_quoted_reasoning_closer_required_pr424:
+    lifecycle: retired
     policy:
     - I7
     description: 'Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_quoted_reasoning_closer_required.'
@@ -8033,6 +8204,7 @@ cases:
       arguments:
         city: Paris
   prefilled_reasoning_with_guided_json_pr424:
+    lifecycle: retired
     policy:
     - P5
     description: 'Reasoning channel is pre-filled (policy P5), stream begins inside <think> with no opener, and the model emits tool calls as guided JSON. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.40-prefilled_reasoning_with_guided_json.'
@@ -8250,6 +8422,7 @@ cases:
     - kind: text
       text: recovered
   guided_json_orphan_tool_close_before_payload_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'An orphan tool CLOSER before the payload. Paired with the opener case above: for a while the closer was stripped and the opener beside it was not, so which marker leaked depended on which one the model happened to emit. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.32-guided_json_orphan_tool_close_before_payload.'
@@ -8559,7 +8732,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 3d352e75afc03e25aba4d13708959faab9b2e432cc9b16bcfbe28da74a5edc94
     golden:
@@ -8735,6 +8908,7 @@ cases:
       name: get_weather
       arguments: '{"value":4.2e1}'
   arg_numeric_14_enum_decimal:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -8748,6 +8922,7 @@ cases:
       name: get_weather
       arguments: '{"value":42.0}'
   arg_numeric_14_enum_exponent:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -9011,6 +9186,7 @@ cases:
         value:
           s: </atem:parameter>
   arg_json_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -9024,6 +9200,7 @@ cases:
       arguments:
         city: null
   arg_string_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -9204,7 +9381,7 @@ cases:
     - I3
     historical_ids:
     - UNIFIED.10-interrupted_reasoning_then_response
-    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and following visible answer with the existing native response-header cases.
     display_id: UNIFIED.10-reason_then_content_interrupted
     request: 838acab12e6bc65283f63ade423be9ca9464452d38093d53fe14671b4d789867
     golden:
@@ -9213,7 +9390,7 @@ cases:
     - kind: text
       text: The answer is 42.
   reason_markup_in_arg_consistent:
-    description: '''Tool call contains reasoning'' — a reasoning-channel marker sits inside a QUOTED tool-arg value. This is NOT a leak: a leak is control markup surfacing in visible content or reasoning, but here the markup is a tool ARGUMENT VALUE (data bound for the function, inside the grammar''s string delimiters), so by I7 the parser preserves it byte-exact. The gemma4 native UnifiedParser confirms this golden exactly. Failure mode: a reasoning-first pipeline extracts the `<think>`/`<|channel>` from inside the arg BEFORE tool parsing, hoisting it into a spurious reasoning event and corrupting the arg to empty.'
+    description: Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.
     display_id: UNIFIED.12-reason_markup_in_arg_consistent
     request: 6fa35eb281f363e72214dc26bd47b0b43d95b94cc4b707db3743eeb438ec9259
     golden:
@@ -9222,7 +9399,7 @@ cases:
       arguments:
         note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
   reason_markup_in_arg_with_text_consistent:
-    description: 'reason_markup_in_arg (tool arg value contains reasoning markup, I7 data) WITH visible narration before and after the call. All three channels at once: leading text -> tool call whose arg holds reasoning markup -> trailing text. Golden keeps the visible text as text, the call as a call, and the markup byte-exact in the arg. A reasoning-first pipeline both corrupts the arg (extracting the embedded reasoning) and can reorder/misroute the surrounding text.'
+    description: Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.
     display_id: UNIFIED.12-reason_markup_in_arg_with_text_consistent
     request: 0a4415d75a8c5461fd5255f795baaba42ac5151cf0c1e9aef3d999a83e9a26d6
     golden:
@@ -9334,6 +9511,7 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
+    lifecycle: retired
     policy:
     - I7
     description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
@@ -9359,6 +9537,10 @@ cases:
         format: celsius
         location: San Francisco
   gpt_oss_reasoning_then_return_ending_tool_call:
+    policy:
+    - I3
+    - I5
+    - I7
     description: Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.
     display_id: UNIFIED.gpt_oss-reasoning_then_return_ending_tool_call
     request: 8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372
@@ -9374,14 +9556,12 @@ cases:
     - I3
     - I5
     - I7
-    description: Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Preserve the existing newline between visible messages.
+    description: Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.
     display_id: UNIFIED.gpt_oss-quoted_tool_header_in_final_json
     request: fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0
     golden:
     - kind: text
-      text: 'Preamble
-
-        {"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'
+      text: Preamble{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}
   gpt_oss_orphan_terminator_preserves_messages:
     policy:
     - I3
@@ -9392,9 +9572,7 @@ cases:
     request: f7ec73139e1a04a11aa6973b81122686d7deceb8ee6a4cfb5fd7dbd1cc27a3bc
     golden:
     - kind: text
-      text: 'visible
-
-        done'
+      text: visibledone
   gpt_oss_unfinished_directed_analysis:
     policy:
     - I3
@@ -9427,9 +9605,7 @@ cases:
     request: d19438fd794e75d10dd2decb1bc6b3c9d9941185c3abf2584aad3dd77eede186
     golden:
     - kind: text
-      text: 'first
-
-        second'
+      text: firstsecond
   gpt_oss_final_then_unframed_recipient_first_call:
     policy:
     - I3
@@ -9486,38 +9662,34 @@ cases:
     - I3
     - I5
     - I7
-    description: Recipientless constrained commentary JSON ends with a call action, followed by an assistant final answer. A missing recipient makes the attempted call unexecutable; suppress its arguments rather than exposing them as commentary content.
+    description: Recipientless constrained commentary JSON ends with a call action, followed by an assistant final answer. No recipient establishes a tool route, so preserve the visible JSON body and the answer without adding a separator.
     display_id: UNIFIED.gpt_oss-recipientless_json_call_then_final
     request: 02ad9e72a7470248879f8f792e31783a52aa043b42c2b4021df4e9f52b276246
     golden:
     - kind: text
-      text: Done
+      text: '{"city":"NYC"}Done'
   gpt_oss_recipientless_json_return_then_final:
     policy:
     - I3
     - I5
     - I7
-    description: Recipientless constrained commentary JSON ends with a return action, followed by an assistant final answer. Unlike a call action with no recipient, the return ends visible commentary; preserve its JSON before the final answer.
+    description: Recipientless constrained commentary JSON ends with a return action, followed by an assistant final answer. The body remains visible text with either ending; preserve its JSON before the final answer without adding a separator.
     display_id: UNIFIED.gpt_oss-recipientless_json_return_then_final
     request: d510abc734a08662cce3521108e4d394a846c33fcefa2847e4eeaf99ab0f3d65
     golden:
     - kind: text
-      text: '{"city":"NYC"}
-
-        Done'
+      text: '{"city":"NYC"}Done'
   gpt_oss_final_then_unframed_visible_tail:
     policy:
     - I3
     - I5
     - I7
-    description: A completed Harmony final message precedes bare visible text without another message header. Preserve the final message and recover the never-emitted trailing header text at EOF, separated as visible messages.
+    description: A completed Harmony final message precedes bare visible text without another message header. Preserve the final message and recover the never-emitted trailing header text at EOF, without adding a separator.
     display_id: UNIFIED.gpt_oss-final_then_unframed_visible_tail
     request: 2d8b42261cb4fae3ca55d2e0918adfb81ceb49fb2441c13e07573ee97c39545a
     golden:
     - kind: text
-      text: 'before
-
-        after'
+      text: beforeafter
   gpt_oss_recipientless_json_interrupted_by_final:
     policy:
     - I3
@@ -9528,20 +9700,18 @@ cases:
     request: d02327944df2f2c94cc6c4896748f1a883e9447dbbf9ffa3ac70323c51dc80bb
     golden:
     - kind: text
-      text: '{"x":1}
-
-        Done.'
+      text: '{"x":1}Done.'
   gpt_oss_recipientless_constrained_whitespace_call:
     policy:
     - I3
     - I5
     - I7
-    description: Recipientless commentary explicitly constrained to JSON contains only two spaces before a call action, followed by a final answer. The content type still identifies an unroutable call payload when no JSON opening byte arrives; suppress its whitespace and preserve only the final answer.
+    description: Recipientless commentary explicitly constrained to JSON contains only two spaces before a call action, followed by a final answer. Content type does not establish a recipient; preserve the two spaces and final answer as visible text.
     display_id: UNIFIED.gpt_oss-recipientless_constrained_whitespace_call
     request: 1b1ac7e2794eb3e1b815fc7a3ef16b91b3982f24e90809d4b265b59b56c7d551
     golden:
     - kind: text
-      text: Done
+      text: '  Done'
   gpt_oss_malformed_then_native_opaque_name:
     policy:
     - I3
@@ -9687,6 +9857,7 @@ cases:
       arguments:
         q: 雪
   gpt_oss_assistant_implicit_recipient_analysis:
+    lifecycle: retired
     policy:
     - I3
     - I5
@@ -9711,6 +9882,7 @@ cases:
     - kind: text
       text: Done
   gpt_oss_implicit_recipient_prelude:
+    lifecycle: retired
     policy:
     - I3
     - I5
@@ -9741,14 +9913,12 @@ cases:
     - I3
     - I5
     - I7
-    description: Recipientless commentary contains ordinary visible text without its own message ending before a framed assistant final answer. Recover the next message at the body transition and preserve both visible messages with the established newline separator.
+    description: Recipientless commentary contains ordinary visible text without its own message ending before a framed assistant final answer. Recover the next message at the body transition and preserve both visible messages without adding a separator.
     display_id: UNIFIED.gpt_oss-commentary_text_interrupted_by_final
     request: 5c419331ab856b85ca5157e8a8c3ef34e44cf74d73e976f8dd6ed90facc6d031
     golden:
     - kind: text
-      text: 'Before
-
-        Done'
+      text: BeforeDone
   gpt_oss_commentary_text_interrupted_by_user:
     policy:
     - I3
@@ -9770,10 +9940,9 @@ cases:
     request: 7878a13ae16d7b8f1288967d63171e7e9a90baa3cdd8f65926bfca1f1cb4470d
     golden:
     - kind: text
-      text: 'Before
-
-        Done'
+      text: BeforeDone
   gpt_oss_unconfirmed_header_return_at_eof:
+    lifecycle: retired
     policy:
     - I3
     - I5
@@ -9810,6 +9979,7 @@ cases:
     request: ed97fe02b65e4ca692f803b01734c5ad745ff2fa19613de996243eb18d97a039
     golden: []
   gpt_oss_analysis_text_interrupted_by_bare_final:
+    lifecycle: retired
     policy:
     - I3
     - I5
@@ -9823,6 +9993,7 @@ cases:
     - kind: text
       text: Done
   gpt_oss_commentary_text_interrupted_by_bare_final:
+    lifecycle: retired
     policy:
     - I3
     - I5
@@ -9927,3 +10098,123 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_broadcast_recipient_analysis:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Dynamo normalizes to=all like an omitted recipient, following openai-harmony 0.0.8 renderer behavior. This compatibility policy keeps the analysis body as reasoning; it is not a claim that format.md defines all.
+    display_id: UNIFIED.gpt_oss-broadcast_recipient_analysis
+    request: c92f8067190de68778212e506bc6750f4f8aee5a28119d24d249b90080db71e2
+    golden:
+    - kind: reasoning
+      text: checking
+  gpt_oss_native_builtin_recipient_json:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: 'Dynamo Native Unified projects a JSON object addressed to python as a generic tool call. This deliberately noncanonical commentary-channel case tests Dynamo''s JSON projection policy: the dictionary body does not execute its code string. Canonical builtin Python requests use analysis and raw Python code; vLLM filters builtin recipients differently.'
+    display_id: UNIFIED.gpt_oss-native_builtin_recipient_json
+    request: 885a3fc00d909b57252bbfb6224eb178d66eb89dd09d7b1fd220008474dca031
+    golden:
+    - kind: tool_call
+      name: python
+      arguments:
+        code: print(1)
+  gpt_oss_unfinished_visible_json_then_tool:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished JSON string in an assistant final message precedes a complete framed JSON tool call. At EOF preserve the emitted visible prefix and recover the later complete call; a complete quoted JSON value retains its literal controls instead.
+    display_id: UNIFIED.gpt_oss-unfinished_visible_json_then_tool
+    request: 1902013b95039b76e22fbcfa2fa86d8b97cf0eb3eee0fba8d9321b8dfddeb2d0
+    golden:
+    - kind: text
+      text: '{"x":"unfinished'
+    - kind: tool_call
+      name: lookup
+      arguments: {}
+  gpt_oss_visible_scalar_string_quoted_controls:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.
+    display_id: UNIFIED.gpt_oss-visible_scalar_string_quoted_controls
+    request: bc247c617879720e3c488ba8575504b5cfec7be851d2b3851f8af90f93b33a60
+    golden:
+    - kind: text
+      text: '"é\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'
+  gpt_oss_native_builtin_python_raw:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: 'A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony''s documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.'
+    display_id: UNIFIED.gpt_oss-native_builtin_python_raw
+    request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
+    golden:
+    - kind: tool_call
+      name: python
+      arguments: '"print(1)"'
+  gpt_oss_invalid_json_quote_prefix_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A raw newline makes a leading commentary quote an invalid JSON prefix before the ending arrives. Its quote state cannot claim subsequent message controls; retain the original newline and final text.
+    display_id: UNIFIED.gpt_oss-invalid_json_quote_prefix_then_final
+    request: fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00
+    golden:
+    - kind: text
+      text: '"Looking
+
+        He said "yes".'
+  gpt_oss_quoted_commentary_rejects_nonassistant_body:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A user message with quoted content follows an unfinished assistant commentary quote. Preserve the commentary prefix and the later assistant final; quoted user content must never enter assistant text.
+    display_id: UNIFIED.gpt_oss-quoted_commentary_rejects_nonassistant_body
+    request: 4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46
+    golden:
+    - kind: text
+      text: '"LookingDone'
+  gpt_oss_unclosed_commentary_then_empty_quoted_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An empty quoted final body follows an unfinished commentary quote with a space between the message ending and next header. Whole-input and character delivery must recover the same final bytes rather than committing a JSON prefix between the two final quotes.
+    display_id: UNIFIED.gpt_oss-unclosed_commentary_then_empty_quoted_final
+    request: 1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee
+    golden:
+    - kind: text
+      text: '"Looking ""'
+  gpt_oss_unclosed_commentary_then_quoted_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished commentary quote precedes a complete assistant final message containing its own quotes. The later quote cannot validate the earlier JSON-looking prefix; retain both visible bodies and remove the real message controls.
+    display_id: UNIFIED.gpt_oss-unclosed_commentary_then_quoted_final
+    request: 0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba
+    golden:
+    - kind: text
+      text: '"LookingHe said "yes".'
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95
+    golden:
+    - kind: text
+      text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'

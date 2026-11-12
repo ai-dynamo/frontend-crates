@@ -82,7 +82,15 @@ impl DeltaReader {
                     let mut parser = StreamableParser::new(self.encoding.clone(), None)?;
                     parser.process(self.start)?;
                     for token in tokens {
-                        parser.process(token)?;
+                        if self.stop_tokens.contains(&token) {
+                            tracing::warn!(
+                                why = "harmony_header_terminator",
+                                skipped_tokens = 1,
+                                "discarded a body terminator in a completed header"
+                            );
+                        } else {
+                            parser.process(token)?;
+                        }
                     }
                     parser.process(id)?;
                     self.state = State::Body {
@@ -105,6 +113,39 @@ impl DeltaReader {
             }
         }
         Ok(())
+    }
+
+    pub(super) fn restart_channel_header(&mut self, channel: u32) -> anyhow::Result<usize> {
+        let State::Header(tokens) = &mut self.state else {
+            return Ok(0);
+        };
+        let Some(at) = tokens.iter().position(|id| *id == channel) else {
+            return Ok(0);
+        };
+        let skipped = tokens.len();
+        let prefix = match self.encoding.tokenizer().decode_utf8(&tokens[..at]) {
+            Ok(prefix) => prefix,
+            Err(_) => {
+                tracing::warn!(
+                    why = "harmony_invalid_channel_author",
+                    skipped_tokens = skipped,
+                    "discarded an undecodable header without inferring its author"
+                );
+                tokens.clear();
+                return Ok(skipped);
+            }
+        };
+        let author = prefix.split_ascii_whitespace().next().unwrap_or("");
+        *tokens = self.encoding.tokenizer().encode_ordinary(author);
+        Ok(skipped)
+    }
+
+    pub(super) fn suppress_body(&mut self) {
+        self.state = State::Body {
+            role: None,
+            recipient: None,
+            channel: None,
+        };
     }
 
     pub(super) fn process_eos(&mut self) -> anyhow::Result<()> {

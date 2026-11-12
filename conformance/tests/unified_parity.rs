@@ -198,7 +198,18 @@ fn structural_response_case_checks_the_schema_before_parsing() {
     families.sort();
     assert_eq!(
         families,
-        ["deepseek_v4", "glm47", "gpt_oss", "muse_spark", "qwen3"]
+        [
+            "beam",
+            "deepseek_v4",
+            "deepseek_v41",
+            "glm47",
+            "gpt_oss",
+            "kimi_k2",
+            "kimi_k3",
+            "minimax_m3",
+            "muse_spark",
+            "qwen3"
+        ]
     );
 }
 
@@ -658,6 +669,7 @@ fn unified_parser_matches_the_golden_oracle() {
     );
 
     let mut failures = Vec::new();
+    let mut gpt_oss_disagreements = Vec::new();
     let mut checked = 0usize;
     for file in &files {
         for (id, case) in &file.cases {
@@ -699,6 +711,9 @@ fn unified_parser_matches_the_golden_oracle() {
                 .as_ref()
                 .is_ok_and(|events| common::json_values_equal(events, &case.golden))
             {
+                if file.family == "gpt_oss" {
+                    gpt_oss_disagreements.push(id.as_str());
+                }
                 failures.push(format!(
                     "{id}\n     input: {:?}\n    golden: {}\n   unified: {}",
                     case.input,
@@ -709,6 +724,10 @@ fn unified_parser_matches_the_golden_oracle() {
         }
     }
 
+    assert_eq!(
+        gpt_oss_disagreements,
+        ["UNIFIED.gpt_oss_native_builtin_python_raw.gpt_oss"]
+    );
     capture::report_comparison("unified-golden", checked, &failures, false);
     assert!(checked >= 30, "expected the qwen3 corpus, got {checked}");
 }
@@ -846,6 +865,227 @@ fn unified_parser_is_chunk_invariant() {
     );
 }
 
+fn assert_delivery_lifecycle(family: &str, case: &GoldenCase, id: &str) {
+    let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+    let whole = events(
+        family,
+        std::slice::from_ref(&case.input),
+        &case.init,
+        &tools,
+    );
+    assert_eq!(
+        whole,
+        Ok(case.golden.clone()),
+        "{id}: independently authored oracle"
+    );
+    let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+    for _ in 0..2 {
+        case.init.apply(&mut parser, family);
+        let mut output = parser.push(&case.input).unwrap();
+        if case
+            .golden
+            .iter()
+            .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+        {
+            assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: complete input must make call progress before finish");
+        }
+        output.extend(parser.finish().unwrap().events);
+        assert_eq!(assemble(&output), case.golden, "{id}: finish and reuse");
+        parser.reset();
+    }
+    for split in case
+        .input
+        .char_indices()
+        .map(|(at, _)| at)
+        .chain([case.input.len()])
+    {
+        let chunks = vec![
+            case.input[..split].into(),
+            String::new(),
+            case.input[split..].into(),
+        ];
+        assert_eq!(
+            events(family, &chunks, &case.init, &tools),
+            whole,
+            "{id} split={split}"
+        );
+    }
+    if family == "gpt_oss" {
+        let ids = dynamo_parsers_v2::encode_harmony(&case.input).unwrap();
+        for split in 0..=ids.len() {
+            parser.reset();
+            case.init.apply(&mut parser, family);
+            let mut output = parser.push_tokens(&ids[..split]).unwrap();
+            output.extend(parser.push_tokens(&[]).unwrap());
+            output.extend(parser.push_tokens(&ids[split..]).unwrap());
+            if case
+                .golden
+                .iter()
+                .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+            {
+                assert!(output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)), "{id}: token delivery must complete before finish");
+            }
+            output.extend(parser.finish().unwrap().events);
+            assert_eq!(assemble(&output), case.golden, "{id} token split={split}");
+        }
+    }
+    let mut characters = chunk_every(&case.input, 1);
+    characters.push(String::new());
+    assert_eq!(
+        events(family, &characters, &case.init, &tools),
+        whole,
+        "{id} characters and terminal empty push"
+    );
+}
+
+#[test]
+fn gpt_oss_delivery_repetitions_share_split_and_finish_coverage() {
+    let scenarios = [
+        "arg_json_null",
+        "arg_string_null",
+        "guided_json_gt_in_argument_trailing_close",
+        "guided_json_gt_in_argument_wrapped",
+        "guided_json_marker_inside_argument",
+        "guided_json_native_markup_only",
+        "guided_json_orphan_tool_close_before_payload",
+        "guided_json_tool_close_after_payload",
+        "guided_json_wrapped_in_tool_markup",
+        "guided_json_schema_error_nameless_element_trailing_close",
+        "guided_json_schema_error_nameless_element_wrapped",
+        "guided_json_schema_error_not_a_call_trailing_close",
+        "guided_json_schema_error_not_a_call_wrapped",
+        "guided_json_syntax_error_trailing_close",
+        "guided_json_syntax_error_wrapped",
+        "guided_json_bare_tool_header_recovers_inside_a_thought",
+        "guided_json_orphan_reason_close_before_payload",
+        "guided_quoted_reasoning_closer_named",
+        "guided_quoted_reasoning_closer_required",
+        "prefilled_reasoning_with_guided_json",
+    ];
+    let files = load_native_golden();
+    let file = files.iter().find(|file| file.family == "gpt_oss").unwrap();
+    for scenario in scenarios {
+        let id = format!("UNIFIED.{scenario}.gpt_oss");
+        let case = &file.cases[&id];
+        assert_delivery_lifecycle("gpt_oss", case, &id);
+        let whole = Ok(case.golden.clone());
+        if matches!(scenario, "arg_json_null" | "arg_string_null") {
+            let mut reference = case.tools.clone().unwrap();
+            let city = reference[0]["parameters"]["properties"]["city"].clone();
+            reference[0]["parameters"] = serde_json::json!({
+                "type": "object", "$defs": {"City": city},
+                "properties": {"city": {"$ref": "#/$defs/City"}}
+            });
+            let referenced_tools = common::unified_tools_for_schemas(Some(&reference));
+            for tool_set in [referenced_tools.as_slice(), &[]] {
+                for (label, chunks) in splittings(&case.input) {
+                    assert_eq!(
+                        events("gpt_oss", &chunks, &case.init, tool_set),
+                        whole,
+                        "{id} schema-independent {label} delivery"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn native_review_variants_share_split_and_finish_coverage() {
+    let mut checked = 0;
+    for file in load_native_golden() {
+        for scenario in [
+            "tool_body_whitespace",
+            "gpt_oss_quoted_call_header_then_visible_prose",
+        ] {
+            let id = format!("UNIFIED.{scenario}.{}", file.family);
+            if let Some(case) = file.cases.get(&id) {
+                assert_delivery_lifecycle(&file.family, case, &id);
+                checked += 1;
+            }
+        }
+    }
+    assert_eq!(checked, 20);
+}
+
+#[test]
+fn gpt_oss_long_arguments_make_progress_before_handoff() {
+    const START: &str = "<|start|>";
+    const MESSAGE: &str = "<|message|>";
+    const HANDOFF: &str = "<|call|>";
+    let long = format!("{}{}", "quote \\\" slash \\\\ é🙂 ".repeat(128), START);
+    for position in 0..=3 {
+        let mut fields = vec![
+            "true".to_string(),
+            "null".to_string(),
+            "\"short\"".to_string(),
+        ];
+        fields.insert(position, serde_json::to_string(&long).unwrap());
+        let body = format!(
+            "{{{}}}",
+            fields
+                .iter()
+                .enumerate()
+                .map(|(i, value)| format!("\"k{i}\":{value}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let pause = body.find(START).unwrap();
+        let prefix = format!(
+            "{START}assistant to=functions.lookup{MESSAGE}{}",
+            &body[..pause]
+        );
+        let expected = vec![UnifiedEvent::ToolCall {
+            name: "lookup".into(),
+            arguments: serde_json::from_str(&body).unwrap(),
+        }];
+        for tokens in [false, true] {
+            for chunk_size in [1, 17, 128] {
+                let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
+                for _ in 0..2 {
+                    parser.initialize(&[]).unwrap();
+                    let mut push = |part: &str| {
+                        let mut output = Vec::new();
+                        if tokens {
+                            for ids in dynamo_parsers_v2::encode_harmony(part)
+                                .unwrap()
+                                .chunks(chunk_size)
+                            {
+                                output.extend(parser.push_tokens(ids).unwrap());
+                            }
+                        } else {
+                            for chunk in chunk_every(part, chunk_size) {
+                                output.extend(parser.push(&chunk).unwrap());
+                            }
+                        }
+                        output
+                    };
+                    let mut output = push(&prefix);
+                    assert_eq!(
+                        dynamo_parsers_v2::tool_arguments_raw(&output)
+                            .get(&0)
+                            .map(String::as_str),
+                        Some(&body[..pause]),
+                        "position={position} tokens={tokens} chunks={chunk_size}: long-field progress"
+                    );
+                    output.extend(push(&body[pause..]));
+                    assert_eq!(
+                        dynamo_parsers_v2::tool_arguments_raw(&output).get(&0),
+                        Some(&body)
+                    );
+                    assert!(!output.iter().any(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)));
+                    output.extend(push(HANDOFF));
+                    assert_eq!(output.iter().filter(|event| matches!(event, dynamo_parsers_v2::UnifiedParserEvent::ToolCall(call) if call.complete)).count(), 1);
+                    assert_eq!(assemble(&output), expected);
+                    output.extend(parser.finish().unwrap().events);
+                    assert_eq!(assemble(&output), expected);
+                    parser.reset();
+                }
+            }
+        }
+    }
+}
+
 #[test]
 fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
     let reference_scenarios = [
@@ -878,6 +1118,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "hermes",
         "kimi_k2",
         "kimi_k3",
+        "minimax_m3",
         "mistral_4",
         "muse_glimmer",
         "muse_spark",
@@ -940,7 +1181,9 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         checked,
         native_families * reference_scenarios.len()
             + template_families * template_reference_scenarios.len()
-            + dotted_native_families.len() * dotted_scenarios.len(),
+            + dotted_native_families.len() * dotted_scenarios.len()
+            // Native Harmony's two reference repetitions use the delivery lifecycle owner.
+            - 2,
     );
 }
 

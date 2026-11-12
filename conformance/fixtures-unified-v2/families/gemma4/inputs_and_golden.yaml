@@ -1299,6 +1299,13 @@ tools:
           type: string
       required:
       - x
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_c887a73c6fbd0e1d:
   - name: get_weather
     parameters:
@@ -4075,6 +4082,9 @@ requests:
     - 77
     - 0
     finish_step: true
+  9cbcfd60cfa13815f88f3cd11fd2ea2cf3ad65378aab3a0e10c731d6b0f3e1db:
+    input: '"<|tool_call>call:lookup{q:<|\"|>x<|\"|>}<tool_call|>" trailing'
+    tools: tools_81b3b17af2bd185e
   9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00:
     init:
       starting_state: None
@@ -9974,3 +9984,16 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 9cbcfd60cfa13815f88f3cd11fd2ea2cf3ad65378aab3a0e10c731d6b0f3e1db
+    golden:
+    - kind: text
+      text: '"<|tool_call>call:lookup{q:<|\"|>x<|\"|>}<tool_call|>" trailing'

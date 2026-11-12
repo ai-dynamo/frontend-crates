@@ -636,6 +636,13 @@ tools:
           enum:
           - 'null'
           - null
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_8de7a56dafcceaa4:
   - name: schema_probe
     parameters:
@@ -1049,13 +1056,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_81b3b17af2bd185e:
-  - name: lookup
-    parameters:
-      type: object
-      properties:
-        q:
-          type: string
   tools_6943558dd8046b7b:
   - name: schema_probe
     parameters:
@@ -4387,6 +4387,9 @@ requests:
     - 22
     - 7
     finish_step: true
+  4fd54360f61ed1a83035422a20f655c00cb8c1287a5a7c6040db225867a48bb0:
+    input: <|start|>assistant to=user<|message|>"<|start|>assistant to=lookup<|message|><atem:function_calls>\n<atem:invoke name=\"lookup\">\n<atem:parameter name=\"q\">x</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>" trailing<|eom|>
+    tools: tools_81b3b17af2bd185e
   5115f812712466e14f9f3109061f1b28db79b2e57454ec69dc499a8ba1247269:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -14567,3 +14570,16 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 4fd54360f61ed1a83035422a20f655c00cb8c1287a5a7c6040db225867a48bb0
+    golden:
+    - kind: text
+      text: '"<|start|>assistant to=lookup<|message|><atem:function_calls>\n<atem:invoke name=\"lookup\">\n<atem:parameter name=\"q\">x</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>" trailing'

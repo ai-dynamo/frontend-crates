@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
-import { comparisonView, focusComparison, captureCounts, isProblemOutcome, verticalDefault } from './comparison.js';
+import { selectedCaptureOutcome, selectedCapturesDiffer, captureStatusLabels as statusLabels } from './model.js';
+import { comparisonView, focusComparison, captureCounts, isErrorOutcome, verticalDefault } from './comparison.js';
 import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
@@ -36,7 +36,7 @@ test('Boolean cross-axis union counts each applicable leaf once including folded
     {sub: 'tc', label: 'TC', group_key: 'core'},
     {sub: 'other', label: 'Other', group_key: 'core'},
   ], rows: ['beam','glm47'].map(family => ({family, cells: {fold: {variants: [a,b]}, tc: a, other: b}}))};
-  for (const focus of ['all', 'disagreements', 'problems']) {
+  for (const focus of ['all', 'disagreements', 'errors']) {
     const view = comparisonView(folded, {...state, focus, search: 'beam OR TC'});
     assert.equal(captureCounts(view, 'd').total, 3);
     assert.equal(captureCounts(view, 'd').leak, 1);
@@ -67,12 +67,12 @@ test('each status is counted separately without scores', () => {
   assert.equal(Object.hasOwn(counts, 'score'), false);
   assert.equal(captureCounts({entries: []}, 'd').total, 0);
 });
-test('Problems focus includes mismatches, parser errors, and leaks only', () => {
-  for (const status of ['documented', 'diverge', 'error', 'leak']) assert.equal(isProblemOutcome(status), true, status);
-  for (const status of ['expected', 'missing', 'unsupported', 'blocked', 'uncompared', 'pass']) assert.equal(isProblemOutcome(status), false, status);
+test('Errors focus includes only parser errors and markup leaks', () => {
+  for (const status of ['error', 'leak']) assert.equal(isErrorOutcome(status), true, status);
+  for (const status of ['documented', 'diverge', 'expected', 'missing', 'unsupported', 'blocked', 'uncompared', 'pass']) assert.equal(isErrorOutcome(status), false, status);
 });
 test('filters and focus use the same applicable leaf inventory', () => {
-  assert.deepEqual(captureCounts(comparisonView(tab, {...state, focus: 'problems'}), 'd'), captureCounts(comparisonView(tab, state), 'd'));
+  assert.deepEqual(captureCounts(comparisonView(tab, {...state, focus: 'errors'}), 'd'), captureCounts(comparisonView(tab, state), 'd'));
   assert.equal(captureCounts(comparisonView(tab, {...state, search: 'Model'}), 'd').total, leaves.length);
   assert.equal(captureCounts(comparisonView(tab, {...state, search: 'description:case description:leak'}), 'd').leak, 1);
   assert.equal(captureCounts(comparisonView(tab, {...state, groups: new Set()}), 'd').total, 0);
@@ -94,52 +94,80 @@ test('folded matrix statuses preserve every leaf outcome', () => {
 });
 
 test('focus removes case, model and capture axes using only selected captures', () => {
-  const other = cell('pass', 'pass', {cmp: {golden: {sig: 1}, d: {sig: 1}, peer: {sig: 2}}});
+  const other = cell('pass', 'pass', {cmp: {golden: {sig: 1}, d: {sig: 1}, peer: {sig: 2, err: 1}}});
   const matrix = {...tab, rows: [...tab.rows, {family: 'passing', cells: Object.fromEntries(columns.map(c => [c.sub, cell(c.sub)]))}]};
   matrix.rows[1].cells.pass = other;
   const base = comparisonView(matrix, state);
-  const result = focusComparison(base, ['d', 'peer'], 'problems');
-  assert.deepEqual(result.view.columns.map(c => c.sub), ['pass', 'documented', 'diverge', 'error', 'leak']);
+  const result = focusComparison(base, ['d', 'peer'], 'errors');
+  assert.deepEqual(result.view.columns.map(c => c.sub), ['pass', 'error', 'leak']);
   assert.deepEqual(result.rowKeys.get(matrix.rows[1]), ['peer']);
   const selected = focusComparison(base, ['d'], 'disagreements');
   assert.deepEqual(selected.view.columns.map(c => c.sub), ['diverge']);
   assert.deepEqual(selected.view.rows, [matrix.rows[0]]);
   assert.deepEqual(selected.rowKeys.get(matrix.rows[0]), ['d']);
-  assert.equal(focusComparison(base, ['golden'], 'problems').focus, 'all');
-  assert.deepEqual(focusComparison(base, ['golden'], 'all').available, {disagreements: false, problems: false});
+  assert.equal(focusComparison(base, ['golden'], 'errors').focus, 'all');
+  assert.deepEqual(focusComparison(base, ['golden'], 'all').available, {disagreements: false, difference: false, errors: false});
   assert.equal(captureCounts(base, 'd').total, leaves.length * 2);
 });
 
 test('focus availability follows search and categories before filtering', () => {
   for (const search of ['pass', '__nothing__']) {
     const base = comparisonView(tab, {...state, search});
-    const result = focusComparison(base, ['d'], 'problems');
+    const result = focusComparison(base, ['d'], 'errors');
     assert.equal(result.focus, 'all');
-    assert.deepEqual(result.available, {disagreements: false, problems: false});
+    assert.deepEqual(result.available, {disagreements: false, difference: false, errors: false});
   }
   const empty = focusComparison(comparisonView(tab, {...state, groups: new Set()}), ['d'], 'disagreements');
   assert.deepEqual(empty.view.rows, []); assert.deepEqual(empty.view.columns, []);
-  const problem = focusComparison(comparisonView(tab, {...state, search: 'documented OR leak'}), ['d'], 'problems');
-  assert.deepEqual(problem.available, {disagreements: false, problems: true});
-  assert.deepEqual(problem.view.columns.map(c => c.sub), ['documented', 'leak']);
-  assert.equal(focusComparison(comparisonView(tab, state), [], 'problems').focus, 'all');
+  const problem = focusComparison(comparisonView(tab, {...state, search: 'documented OR leak'}), ['d'], 'errors');
+  assert.deepEqual(problem.available, {disagreements: false, difference: false, errors: true});
+  assert.deepEqual(problem.view.columns.map(c => c.sub), ['leak']);
+  assert.equal(focusComparison(comparisonView(tab, state), [], 'errors').focus, 'all');
 });
 
-test('category and search intersections exclude problems outside the selected slice', () => {
+test('category and search intersections exclude errors outside the selected slice', () => {
   const scoped = {...tab, column_groups: [...tab.column_groups, {key: 'other', label: 'Other'}],
     columns: tab.columns.map(column => ({...column, group_key: column.sub === 'leak' ? 'other' : 'core'}))};
   const base = comparisonView(scoped, {...state, search: 'leak OR pass'});
-  const result = focusComparison(base, ['d'], 'problems');
+  const result = focusComparison(base, ['d'], 'errors');
   assert.equal(result.focus, 'all');
   assert.deepEqual(result.view.columns.map(column => column.sub), ['pass']);
-  const included = focusComparison(comparisonView(scoped, {...state, groups: new Set(['other']), search: 'leak OR pass'}), ['d'], 'problems');
-  assert.equal(included.focus, 'problems');
+  const included = focusComparison(comparisonView(scoped, {...state, groups: new Set(['other']), search: 'leak OR pass'}), ['d'], 'errors');
+  assert.equal(included.focus, 'errors');
   assert.deepEqual(included.view.columns.map(column => column.sub), ['leak']);
 });
 
 test('focus is a single toggle and clicking All always selects the full view', () => {
   assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'all').focus, 'all');
-  assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'problems').focus, 'problems');
+  assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'errors').focus, 'errors');
   assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'disagreements').focus, 'disagreements');
   assert.equal(focusComparison(comparisonView(tab, state), ['d'], 'all').focus, 'all');
+});
+
+test('Difference compares selected parser outputs independently of GOLDEN', () => {
+  const a = cell('same_wrong', 'diverge', {cmp: {golden: {sig: 0}, d: {sig: 1}, peer: {sig: 1}, third: {sig: 2}}});
+  assert.equal(selectedCapturesDiffer(a, ['d', 'peer']), false);
+  assert.equal(selectedCapturesDiffer(a, ['d', 'peer', 'third']), true);
+  assert.equal(selectedCapturesDiffer(a, ['d', 'golden']), false);
+  assert.equal(selectedCapturesDiffer(a, ['d', 'absent']), false);
+  assert.equal(selectedCapturesDiffer({...a, cmp: {...a.cmp, peer: {sig: 2, na: 1}}}, ['d', 'peer']), false);
+  assert.equal(selectedCapturesDiffer({...a, cmp: {...a.cmp, peer: {sig: 2, err: 1}}}, ['d', 'peer']), true);
+  assert.equal(selectedCapturesDiffer({...a, cmp: {d: {sig: ['d', 'peer']}, peer: {sig: ['d', 'peer']}}}, ['d', 'peer']), false);
+  const b = cell('different', 'pass', {cmp: {golden: {sig: 0}, d: {sig: 0}, peer: {sig: 1}, third: {sig: 0}}});
+  const c = cell('missing', 'pass', {cmp: {golden: {sig: 0}, d: {sig: 0}, peer: {na: 1}}});
+  const matrix = {...tab, columns: [a,b,c].map(c => ({sub: c.sub, group_key: 'core'})),
+    rows: [{family: 'family', cells: Object.fromEntries([a,b,c].map(c => [c.sub,c]))}]};
+  const base = comparisonView(matrix, state);
+  const result = focusComparison(base, ['d', 'peer'], 'difference');
+  assert.equal(result.focus, 'difference');
+  assert.deepEqual(result.view.columns.map(c => c.sub), ['different']);
+  assert.deepEqual(result.rowKeys.get(matrix.rows[0]), ['d', 'peer']);
+  assert.equal(captureCounts(base, 'd').total, 3);
+  const triple = focusComparison(base, ['d', 'peer', 'third'], 'difference');
+  assert.deepEqual(triple.view.columns.map(c => c.sub), ['same_wrong', 'different']);
+  assert.deepEqual(triple.rowKeys.get(matrix.rows[0]), ['d', 'peer', 'third']);
+  for (const keys of [[], ['d'], ['d', 'golden']]) assert.equal(focusComparison(base, keys, 'difference').focus, 'all');
+  const folded = {...base, entries: [{...base.entries[0], leaves: [a,b]}]};
+  assert.equal(focusComparison(folded, ['d', 'peer'], 'difference').focus, 'difference');
+  assert.equal(focusComparison(comparisonView(matrix, {...state, search: 'same_wrong'}), ['d', 'peer'], 'difference').focus, 'all');
 });

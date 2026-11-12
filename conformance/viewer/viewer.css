@@ -14,7 +14,7 @@
 body { background: var(--page-bg); color: var(--ink); }
 #viewer > h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 8px; font-size: 25px; }
 .capture-slot-controls { display: grid; width: 100%; grid-template-columns: repeat(3,minmax(0,1fr)); }
-.capture-slots { display: grid; grid-template-columns: minmax(0,3fr) minmax(320px,1fr); align-items: stretch; }
+.capture-slots { display: grid; grid-template-columns: minmax(0,3fr) minmax(max-content,1fr); align-items: stretch; }
 .capture-slots > .capture-slots-notice { grid-column: 1 / -1; }
 .capture-slot { display: grid; grid-template-columns: auto minmax(0,1fr); align-content: start; padding: 14px; }
 .capture-slot-engine-trigger { color: var(--ink); }
@@ -23,6 +23,8 @@ body { background: var(--page-bg); color: var(--ink); }
 .tab-panel:not([data-load-state="ready"]) .capture-summary { visibility: hidden; }
 .engine-status-bar { display: flex; gap: 0; height: 8px; margin: 8px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-alt); }
 .engine-status-bar > i { min-width: 1px; flex-basis: 0; }
+.comparison-focused .engine-status-bar > .status-pass:only-child,
+.comparison-focused .matrix-segments:not(:has(> :not(.status-pass))) > .status-pass { opacity: .2; }
 .engine-counts { display: flex; flex-wrap: wrap; gap: 5px 12px; }
 .engine-counts > span,.comparison-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .legend-swatch { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--line); border-radius: 2px; }
@@ -36,11 +38,13 @@ body { background: var(--page-bg); color: var(--ink); }
 .status-expected { background: var(--status-expected); }
 .status-blocked { background: var(--ink-soft); }
 .status-uncompared { background: var(--panel-alt); box-shadow: inset 0 0 0 1px var(--ink-soft); }
-.comparison-toolbar { position: relative; display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start; min-width: 0; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); box-shadow: var(--card-shadow); }
-.comparison-toolbar .layout-control, .comparison-toolbar .tabs-right { align-self: flex-start; }
+.comparison-toolbar { position: relative; display: flex; flex-direction: column; align-items: stretch; align-content: flex-start; min-width: 0; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); box-shadow: var(--card-shadow); }
+.comparison-filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.comparison-filter-row .tabs-right { margin-left: 0; }
 .control-label { color: var(--ink-muted); font-size: 11px; text-transform: uppercase; }
 .layout-control, .focus-control { display: flex; align-items: center; gap: 10px; }
 .layout-control[hidden] { display: none; }
+.focus-control .segmented { flex-wrap: wrap; min-width: 0; }
 .segmented { display: inline-flex; padding: 3px; background: var(--panel-alt); border-radius: 8px; }
 .segmented button { border: 0; padding: 6px 10px; border-radius: 6px; background: transparent; color: var(--ink-muted); cursor: pointer; }
 .segmented button[aria-pressed="true"] { color: var(--ink); background: var(--panel-bg); box-shadow: var(--card-shadow); }
