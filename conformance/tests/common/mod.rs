@@ -969,6 +969,8 @@ pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
 pub struct Init {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub preserve_message_phases: bool,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub reasoning_closer_policy: String,
     #[serde(default)]
     pub starting_state: String,
     #[serde(default)]
@@ -995,6 +997,9 @@ impl Init {
             "tool_output_mode": if self.tool_output_mode.is_empty() { "Native" } else { &self.tool_output_mode },
             "named_tool": self.named_tool,
         });
+        if !self.reasoning_closer_policy.is_empty() {
+            value["reasoning_closer_policy"] = serde_json::json!(self.reasoning_closer_policy);
+        }
         if self.preserve_message_phases {
             value["preserve_message_phases"] = serde_json::json!(true);
         }
@@ -1146,7 +1151,18 @@ impl Init {
         use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
         #[cfg(not(conformance_legacy_message_phases))]
         parser.preserve_message_phases(self.preserve_message_phases);
+        #[cfg(conformance_no_reasoning_closer_policy)]
+        anyhow::ensure!(
+            self.reasoning_closer_policy.is_empty(),
+            "reasoning closer policy API unavailable"
+        );
         parser.initialize_request(UnifiedParserInit {
+            #[cfg(not(conformance_no_reasoning_closer_policy))]
+            reasoning_closer_policy: match self.reasoning_closer_policy.as_str() {
+                "" | "QuoteAware" => dynamo_parsers_v2::ReasoningCloserPolicy::QuoteAware,
+                "Structural" => dynamo_parsers_v2::ReasoningCloserPolicy::Structural,
+                other => anyhow::bail!("unknown reasoning closer policy `{other}`"),
+            },
             starting_state: self.starting_state(),
             tool_output_mode: self.output_mode(),
             invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,

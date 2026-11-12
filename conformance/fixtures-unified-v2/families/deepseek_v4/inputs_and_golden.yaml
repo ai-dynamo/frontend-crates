@@ -2228,6 +2228,191 @@ requests:
     - 15
     - 19
     finish_step: true
+  18be5572556d5ff5f46c75aac1bf4d28706bc18a3fd3687e1daf587e11e68c7b:
+    input: analysis "</think>Answer"<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      reasoning_closer_policy: Structural
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
   1b5b6f105b8b2d95e99bfb11af6ec8f001afa1d7b54eaf1d1d4c53cfb7b658c0:
     input: <｜DSML｜tool_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
     tools: tools_87f9a4e69313cc76
@@ -5648,6 +5833,40 @@ requests:
     - 15
     - 19
     finish_step: true
+  e942ef781ba2087a68fd4fc4fee8ae660d1f5bf157bc7db51363d9f09715919b:
+    input: analysis "</think>Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      reasoning_closer_policy: Structural
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
   e9c94ebb29a73ed164681e5381ac23e0513089f16ab33960839f12d5e857a2cc:
     input: <｜DSML｜tool_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
     tools: tools_6943558dd8046b7b
@@ -10343,6 +10562,32 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  structural_reasoning_cross_channel_quote:
+    description: An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.
+    policy:
+    - P5
+    display_id: UNIFIED.40-structural_reasoning_cross_channel_quote
+    request: e942ef781ba2087a68fd4fc4fee8ae660d1f5bf157bc7db51363d9f09715919b
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  structural_reasoning_cross_channel_quote_then_tool:
+    description: An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.
+    policy:
+    - P5
+    display_id: UNIFIED.40-structural_reasoning_cross_channel_quote_then_tool
+    request: 18be5572556d5ff5f46c75aac1bf4d28706bc18a3fd3687e1daf587e11e68c7b
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
     - kind: tool_call
       name: get_weather
       arguments:

@@ -2833,6 +2833,104 @@ requests:
     - 29
     - 12
     finish_step: true
+  44017eb16073cea03b2aa3c6dbb5d29e0c0a2bfc2bab96b8d21f9af58ca91f8d:
+    input: analysis "<channel|>Answer"<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      reasoning_closer_policy: Structural
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
   4872b7b85e01d931049fa9c3b0ab9508cf173de856c9b8674c498dbe204df32c:
     input: <|tool_call>call:set_labels{label:null,note:null,literal:<|"|>null<|"|>}<tool_call|>
     tools: tools_357b7150e2dd7639
@@ -3555,6 +3653,42 @@ requests:
   707ada064cccfa375e27621a5e513b9b408ee2fcb465796039ab5581689a139f:
     input: <|tool_call>call:echo{city:<|"|>Paris<|"|>,value:1.5}<tool_call|>
     tools: tools_81ef407beab6fe3e
+  71c906ecf902b4bac669985dc4a073aceb6ea5d86bb93db2d9c144d4491b8979:
+    input: analysis "<channel|>Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      reasoning_closer_policy: Structural
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
   7316ae5c24220816908ffd423ac28b010d8a02a9aba38d6d28506b300905d068:
     input: <|tool_call>call:schema_probe{value:<|"|>{"a":1}<|"|>}<tool_call|>
     tools: tools_0227aaa772b4b3da
@@ -9970,6 +10104,32 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  structural_reasoning_cross_channel_quote:
+    description: An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.
+    policy:
+    - P5
+    display_id: UNIFIED.40-structural_reasoning_cross_channel_quote
+    request: 71c906ecf902b4bac669985dc4a073aceb6ea5d86bb93db2d9c144d4491b8979
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  structural_reasoning_cross_channel_quote_then_tool:
+    description: An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.
+    policy:
+    - P5
+    display_id: UNIFIED.40-structural_reasoning_cross_channel_quote_then_tool
+    request: 44017eb16073cea03b2aa3c6dbb5d29e0c0a2bfc2bab96b8d21f9af58ca91f8d
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
     - kind: tool_call
       name: get_weather
       arguments:

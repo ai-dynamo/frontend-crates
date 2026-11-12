@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Features
+
+- Add `UnifiedParserInit::reasoning_closer_policy`. `QuoteAware` preserves the existing default; serving native marker-pair models can opt into `Structural` when a prose quote must not hide the model's reasoning terminator. Existing exhaustive initialization literals should add this field or use `..Default::default()`.
+
+### Bug fixes
+
+- Honor GLM's explicit malformed-tool `Reject` policy for incomplete native terminators and invalid delimited bodies, retaining uncommitted bytes for recovery.
+- Keep structural reasoning delimiter searches incremental across pending prose and reset their cached offsets after consumption.
+
 ## [0.10.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.3...dynamo-parsers-v2-v0.10.4) - 2026-11-11
 
 ### Bug fixes

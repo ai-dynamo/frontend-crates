@@ -67,6 +67,16 @@ NATIVE_INPUT_FAMILIES = sorted(set(FAMILIES) | set(TEMPLATE_FAMILIES))
 SHARED_FAMILIES = [f for f in FAMILIES if f != "deepseek_v41"]
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
+# Native marker-pair families; channel/message families intentionally reject
+# this request policy. qwen3_coder is the canonical alias of qwen3 in this corpus.
+STRUCTURAL_REASONING_FAMILIES = frozenset({
+    "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "hermes", "qwen3",
+    "qwen3_coder", "nemotron_v3", "minimax_m3", "kimi_k2", "mistral_4",
+})
+STRUCTURAL_REASONING_SCENARIOS = frozenset({
+    "structural_reasoning_cross_channel_quote", "structural_reasoning_cross_channel_quote_then_tool",
+})
+
 DOTTED_NAME_SCENARIOS = frozenset({
     "dotted_name_minimal",
     "dotted_name_mixed_punctuation",
@@ -5219,6 +5229,24 @@ EDGE += [
 ]
 
 
+def _add_structural_reasoning_cases(cases, fam):
+    if fam in STRUCTURAL_REASONING_FAMILIES:
+        _, closer = r_reason(fam, "\0").split("\0")
+        thought, answer = 'analysis "', 'Answer"'
+        for scenario in STRUCTURAL_REASONING_SCENARIOS:
+            wire = thought + closer + answer
+            expected = [{"kind": "reasoning", "text": thought}, {"kind": "text", "text": answer}]
+            if scenario.endswith("_then_tool"):
+                wire += r_tool(fam, "get_weather", "city", "Paris", 0)
+                expected.append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+            cases[f"UNIFIED.{scenario}.{fam}"] = {
+                "description": "An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.",
+                "policy": ["P5"], "input": wire, "input_chunks": list(wire),
+                "golden": expected, "init": {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None, "reasoning_closer_policy": "Structural"},
+                "finish_reason": "stop", "expect": {"dynamo": M, "vllm": D("UNSUPPORTED", "Explicit structural reasoning closer policy is a Dynamo request API.")},
+            }
+
+
 def build_cases(fam):
     grammar = _MANIFEST[fam].get("grammar")
     if grammar is None:
@@ -5243,6 +5271,7 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    _add_structural_reasoning_cases(cases, fam)
     if fam == "kimi_k2":
         case = cases[f"UNIFIED.tool_call_ids_unique.{fam}"]
         # K2 IDs are part of its model protocol. A valid parallel-call message
@@ -5280,6 +5309,7 @@ def _build_cases(fam):
                 key.rsplit(".", 1)[0] + "." + fam: case
                 for key, case in _build_edge_cases(grammar, OVERFLOW_SIBLING_CASES).items()
             })
+        _add_structural_reasoning_cases(cases, fam)
         return cases
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
@@ -5324,6 +5354,7 @@ def _build_cases(fam):
                 continue
             original = f"UNIFIED.{scenario}.{fam}"
             cases[f"UNIFIED.{scenario}_pr424.{fam}"] = dict(cases[original])
+    _add_structural_reasoning_cases(cases, fam)
     _preserve_historical_requests(cases, fam)
     if fam == "gpt_oss":
         _preserve_gpt_oss_historical_oracle(cases)
@@ -5565,6 +5596,8 @@ def _template_scenario_families(scenario):
     uses this same declaration to render explicit n/a cells instead of
     silently dropping them.
     """
+    if scenario in STRUCTURAL_REASONING_SCENARIOS:
+        return STRUCTURAL_REASONING_FAMILIES
     if scenario in RETIRED_SCENARIOS:
         return frozenset()
     original = scenario.removesuffix("_pr424")

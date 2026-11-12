@@ -2043,6 +2043,40 @@ requests:
   475a02788c15fe510025ce59dfed99645ba675978decf987b62ae3f6179f7ead:
     input: '[TOOL_CALLS]get_weather[ARGS]{"city": "null"}'
     tools: tools_d84ac5f342102778
+  4a1699d53296cafd714723dc75e6f74bd0da5cdd66b779782b5b69667d922d17:
+    input: analysis "[/THINK]Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      reasoning_closer_policy: Structural
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
   4b5583bded8f2e4bbd88115049620ed47a67a5f7d2659a4c725206ae4ebee6c9:
     input: '[TOOL_CALLS]f[ARGS][ARGS]{"x": "1"}[TOOL_CALLS]g[ARGS][CALL_ID]a1b2c3d4e{"y": "2"}'
     tools: tools_cbf47ccf5fd2ef00
@@ -2421,6 +2455,86 @@ requests:
   c1411f3b192662158b302d05eca23ea03b6258fe5e15ee5c398b949454905809:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "{\"x\":1}"}'
     tools: tools_f2b0f8beaa119e52
+  c2480a37cc00279c3ee54260ff594fad6e129a15d65b3a86eeb206f9e81a9fc2:
+    input: 'analysis "[/THINK]Answer"[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      reasoning_closer_policy: Structural
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
   c2ce28d43215444be342c217a79119234fea710c84580f3f31b7c0f8178a0032:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "plain"}'
     tools: tools_0af1c035b667e8b0
@@ -5818,6 +5932,32 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  structural_reasoning_cross_channel_quote:
+    description: An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.
+    policy:
+    - P5
+    display_id: UNIFIED.40-structural_reasoning_cross_channel_quote
+    request: 4a1699d53296cafd714723dc75e6f74bd0da5cdd66b779782b5b69667d922d17
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  structural_reasoning_cross_channel_quote_then_tool:
+    description: An explicit native structural closer ends prompt-prefilled reasoning even when its prose quote closes in the answer; preserve the following native tool call when present.
+    policy:
+    - P5
+    display_id: UNIFIED.40-structural_reasoning_cross_channel_quote_then_tool
+    request: c2480a37cc00279c3ee54260ff594fad6e129a15d65b3a86eeb206f9e81a9fc2
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
     - kind: tool_call
       name: get_weather
       arguments:
