@@ -428,7 +428,7 @@ where
 /// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
     create_tokenizer_from_file_with_options(file_path, Default::default())
 }
@@ -439,7 +439,7 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,
