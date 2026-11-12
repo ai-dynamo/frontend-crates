@@ -2982,6 +2982,17 @@ requests:
     - 3
     - 12
     finish_step: true
+  4559a95c901fe8042f5f2caa2abae36b22f4c0e9a65295401a20a05d7cfe3334:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: if a < b then</think>done
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 6
+    - 19
+    finish_step: true
   466628e5607d1d2ddc2ca317c4003271ddf3390a7d6c66d76682158741ebfbeb:
     input: <tool_call>capture_payload<arg_key>amount</arg_key><arg_value>21.5</arg_value><arg_key>retries</arg_key><arg_value>37</arg_value></tool_call>
     tools: tools_7b239a503c923593
@@ -3912,6 +3923,17 @@ requests:
     - 12
     - 12
     finish_step: true
+  75c0f9a7fb50562c8fdf87ff7176b86fe609d061a283804ba0e93e5ac7eccdfa:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    finish_reason: length
+    input: literal<
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 8
+    finish_step: true
   761ad9d10d543db788af954b4c13b52efba3c541b1314fa3f0d02aada8daec08:
     init:
       starting_state: None
@@ -4325,6 +4347,17 @@ requests:
     - 5
     - 12
     - 12
+    finish_step: true
+  9417aeea788b6d4b8ded75df5ee5471936cc6b5ef790e6cde4b935e0f5989c9c:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: no tool needed</think>The answer is 42.
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 15
+    - 24
     finish_step: true
   96e965db21e9dfdf19e11586becc5e3efb332028beee89229369fd9f36b1ce09:
     input: </tool_call>
@@ -5810,6 +5843,17 @@ requests:
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 76
+    finish_step: true
+  e769793d98b222fe81c3fd386c48e5a3bb0f4a0f1cc3e8e2c98897e014b3d726:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: 'weighing options</think>Here''s what I found: <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call>'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 17
+    - 113
     finish_step: true
   e7cef13b2af653b2a594af37fdda39bbcd286e2c3dd72570df66434cdd3014a9:
     input: '
@@ -10538,3 +10582,57 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  prefilled_reasoning_close_first_char_then_text:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text
+    request: 9417aeea788b6d4b8ded75df5ee5471936cc6b5ef790e6cde4b935e0f5989c9c
+    golden:
+    - kind: reasoning
+      text: no tool needed
+    - kind: text
+      text: The answer is 42.
+  prefilled_reasoning_close_first_char_then_text_then_tool:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text and native tool call.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text_then_tool
+    request: e769793d98b222fe81c3fd386c48e5a3bb0f4a0f1cc3e8e2c98897e014b3d726
+    golden:
+    - kind: reasoning
+      text: weighing options
+    - kind: text
+      text: 'Here''s what I found: '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  prefilled_reasoning_close_first_char_eof:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: EOF interrupts a single-character reasoning-close candidate. Finalization must release the held character as literal reasoning.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_eof
+    request: 75c0f9a7fb50562c8fdf87ff7176b86fe609d061a283804ba0e93e5ac7eccdfa
+    golden:
+    - kind: reasoning
+      text: literal<
+  prefilled_reasoning_close_first_char_disproved:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: The next chunk disproves a single-character reasoning-close candidate. Release it as literal reasoning, then recognize the later complete closer and visible answer.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_disproved
+    request: 4559a95c901fe8042f5f2caa2abae36b22f4c0e9a65295401a20a05d7cfe3334
+    golden:
+    - kind: reasoning
+      text: if a < b then
+    - kind: text
+      text: done

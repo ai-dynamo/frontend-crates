@@ -3133,6 +3133,17 @@ requests:
     - 1
     - 12
     finish_step: true
+  36ff7be1c5b6ae263e2180dbcefd42c398929643af5de5a21de7d7fc5dd99c91:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: 'weighing options</mm:think>Here''s what I found: ]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 17
+    - 186
+    finish_step: true
   3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d:
     init:
       starting_state: None
@@ -4679,6 +4690,17 @@ requests:
     - 11
     - 1
     - 12
+    finish_step: true
+  75c0f9a7fb50562c8fdf87ff7176b86fe609d061a283804ba0e93e5ac7eccdfa:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    finish_reason: length
+    input: literal<
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 8
     finish_step: true
   7942c36602ac57840f0660c45f459ded9cee57dd76a59e909df922095b293d76:
     input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>null]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
@@ -6551,6 +6573,17 @@ requests:
     - 1
     - 12
     finish_step: true
+  c2c9f4265e50fd4492f051a970b319ecc0a513b501960443a0fd6e6d66234566:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: if a < b then</mm:think>done
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 6
+    - 22
+    finish_step: true
   c43fb90d1b9fb31b09a149fa4ae01e56149af17029e6f6e1a7a2b1134f9c89e6:
     input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>auto]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
     tools: tools_56ea48eeba7ec14b
@@ -7925,6 +7958,17 @@ requests:
     - 11
     - 1
     - 12
+    finish_step: true
+  e3957e0d3fd4d86a5abf3ff35c7bcf6fb2ae5816a45dc0accb012e1eb4c6d232:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: no tool needed</mm:think>The answer is 42.
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 15
+    - 27
     finish_step: true
   e39b0a37b4f551f330072831df3775cd06a64a0eb9825b758f8b0b1c54fceb5e:
     input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>auto]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
@@ -12446,3 +12490,57 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  prefilled_reasoning_close_first_char_then_text:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text
+    request: e3957e0d3fd4d86a5abf3ff35c7bcf6fb2ae5816a45dc0accb012e1eb4c6d232
+    golden:
+    - kind: reasoning
+      text: no tool needed
+    - kind: text
+      text: The answer is 42.
+  prefilled_reasoning_close_first_char_then_text_then_tool:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text and native tool call.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text_then_tool
+    request: 36ff7be1c5b6ae263e2180dbcefd42c398929643af5de5a21de7d7fc5dd99c91
+    golden:
+    - kind: reasoning
+      text: weighing options
+    - kind: text
+      text: 'Here''s what I found: '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  prefilled_reasoning_close_first_char_eof:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: EOF interrupts a single-character reasoning-close candidate. Finalization must release the held character as literal reasoning.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_eof
+    request: 75c0f9a7fb50562c8fdf87ff7176b86fe609d061a283804ba0e93e5ac7eccdfa
+    golden:
+    - kind: reasoning
+      text: literal<
+  prefilled_reasoning_close_first_char_disproved:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: The next chunk disproves a single-character reasoning-close candidate. Release it as literal reasoning, then recognize the later complete closer and visible answer.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_disproved
+    request: c2c9f4265e50fd4492f051a970b319ecc0a513b501960443a0fd6e6d66234566
+    golden:
+    - kind: reasoning
+      text: if a < b then
+    - kind: text
+      text: done

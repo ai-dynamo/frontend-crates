@@ -5219,6 +5219,75 @@ EDGE += [
 ]
 
 
+def _reasoning_close_first_char_cases() -> Iterator[tuple]:
+    families = sorted(
+        family for family, declaration in _MANIFEST.items()
+        if declaration.get("reasoning_grammar") != "none"
+    )
+    for suffix, reasoning, answer, with_tool in (
+        ("then_text", "no tool needed", "The answer is 42.", False),
+        ("then_text_then_tool", "weighing options", "Here's what I found: ", True),
+    ):
+        inputs: dict[str, tuple] = {}
+        schedules: dict[str, list[str]] = {}
+        for family in families:
+            _opener, closer = r_reason(family, "\0").split("\0")
+            tail = closer[1:] + r_text(family, answer)
+            if with_tool:
+                tail += r_tool(family, "get_weather", "city", "Paris", 0)
+            chunks = [reasoning + closer[:1], tail]
+            inputs[family] = (
+                "".join(chunks),
+                D("UNSUPPORTED", "No peer capture recorded for this authored close-marker split."),
+                M,
+            )
+            schedules[family] = chunks
+        golden = [{"kind": "reasoning", "text": reasoning}, {"kind": "text", "text": answer}]
+        if with_tool:
+            golden.append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+        yield (
+            f"prefilled_reasoning_close_first_char_{suffix}",
+            "Prompt-prefilled reasoning ends with a native closer split immediately after its first character. "
+            "The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text"
+            + (" and native tool call." if with_tool else "."),
+            ["I2", "I5", "P5"], golden,
+            {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "finish_step": True, "input_chunks": schedules}, OnlyFamilies(inputs),
+        )
+    for suffix in ("eof", "disproved"):
+        inputs = {}
+        schedules = {}
+        for family in families:
+            _opener, closer = r_reason(family, "\0").split("\0")
+            if suffix == "eof":
+                chunks = ["literal" + closer[:1]]
+                golden = [{"kind": "reasoning", "text": "literal" + closer[:1]}]
+            else:
+                chunks = ["if a " + closer[:1], " b then" + closer + r_text(family, "done")]
+                golden = [{"kind": "reasoning", "text": "if a " + closer[:1] + " b then"},
+                          {"kind": "text", "text": "done"}]
+            inputs[family] = (
+                "".join(chunks),
+                D("UNSUPPORTED", "No peer capture recorded for this authored close-marker prefix."),
+                M, golden,
+            )
+            schedules[family] = chunks
+        yield (
+            f"prefilled_reasoning_close_first_char_{suffix}",
+            ("EOF interrupts a single-character reasoning-close candidate. Finalization must release the held character as literal reasoning."
+             if suffix == "eof" else
+             "The next chunk disproves a single-character reasoning-close candidate. Release it as literal reasoning, then recognize the later complete closer and visible answer."),
+            ["I2", "I5", "P5"], [],
+            {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "length" if suffix == "eof" else "stop", "finish_step": True,
+             "input_chunks": schedules}, OnlyFamilies(inputs),
+        )
+
+
+REASONING_CLOSE_FIRST_CHAR_CASES = tuple(_reasoning_close_first_char_cases())
+EDGE += REASONING_CLOSE_FIRST_CHAR_CASES
+
+
 def build_cases(fam):
     grammar = _MANIFEST[fam].get("grammar")
     if grammar is None:
@@ -5243,6 +5312,8 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    if _MANIFEST[fam].get("scenario_profile") == "native":
+        cases.update(_build_edge_cases(fam, REASONING_CLOSE_FIRST_CHAR_CASES))
     if fam == "kimi_k2":
         case = cases[f"UNIFIED.tool_call_ids_unique.{fam}"]
         # K2 IDs are part of its model protocol. A valid parallel-call message

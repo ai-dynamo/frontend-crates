@@ -1037,7 +1037,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 279 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios)
+    assert len(UNIFIED_TAX) == 279 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.REASONING_CLOSE_FIRST_CHAR_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1365,6 +1365,10 @@ def _family_value(scenario, family):
     if scenario == "guided_json_noncall_before_native_array_before_payload":
         return "{}" + _family_value("guided_json_native_parameter_array_before_payload", family)
     reason_open, reason_close, _, _ = control_tokens(family)
+    if scenario == "prefilled_reasoning_close_first_char_eof":
+        return "literal" + reason_close[:1]
+    if scenario == "prefilled_reasoning_close_first_char_disproved":
+        return "if a " + reason_close[:1] + " b then"
     marker = G._NATIVE_QUOTED_CONTROL.get(family, control_tokens(family)[2])
     if family == "beam":
         # Beam's markers are special tokens, so a quotation never keeps one literal
@@ -2398,6 +2402,29 @@ def test_harmony_recovery_oracles_reject_changed_input_or_output(scenario):
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
+    if scenario.startswith("prefilled_reasoning_close_first_char_"):
+        closer = control_tokens(family)[1]
+        chunks = case["input_chunks"]
+        assert "".join(chunks) == case["input"]
+        assert case["init"] == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
+        assert case["finish_step"] is True
+        assert chunks[0].endswith(closer[:1]) and closer not in chunks[0]
+        if scenario.endswith("_eof"):
+            assert chunks == ["literal" + closer[:1]]
+            assert case["finish_reason"] == "length"
+            assert case["golden"] == [{"kind": "reasoning", "text": chunks[0]}]
+        elif scenario.endswith("_disproved"):
+            assert len(chunks) == 2 and chunks[1].startswith(" b then" + closer)
+            assert case["golden"] == [{"kind": "reasoning", "text": "if a " + closer[:1] + " b then"},
+                                       {"kind": "text", "text": "done"}]
+        else:
+            assert len(chunks) == 2 and chunks[1].startswith(closer[1:])
+            with_tool = scenario.endswith("_then_text_then_tool")
+            expected = [{"kind": "reasoning", "text": "weighing options" if with_tool else "no tool needed"},
+                        {"kind": "text", "text": "Here's what I found: " if with_tool else "The answer is 42."}]
+            if with_tool:
+                expected.append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+            assert case["golden"] == expected
     if scenario in GPT_OSS_RECOVERY_ORACLES:
         assert family == "gpt_oss", "Harmony recovery grammar"
         expected_input, expected_events = GPT_OSS_RECOVERY_ORACLES[scenario]

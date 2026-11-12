@@ -2145,6 +2145,17 @@ requests:
   6d1c7404a35c1ff86e02d7da85ca53b61457e19f8aa9a07bac50e23ab41c6480:
     input: 'The literal "[TOOL_CALLS]" marker.[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}'
     tools: tools_cbf47ccf5fd2ef00
+  6f2762fb4a43ff2dbd0157008b856a231dce2455599d2b8be29ed01ab33e8eaa:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: no tool needed[/THINK]The answer is 42.
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 15
+    - 24
+    finish_step: true
   701e7355f90972aec058f1b684374a643b1d06df77287e6a8b8ed427db21e6dc:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": true}'
     tools: tools_49d1d4dc29b4d728
@@ -2197,6 +2208,17 @@ requests:
   80b426eb54e05ca6467c770d432856cae69523974e1a41ceea325b2c147d0585:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "café"}'
     tools: tools_94a229d519146b8d
+  80dba9c536efec07d8e1f0c7f7fe77f71fe5a128cbc382809515f018e8f11380:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: 'weighing options[/THINK]Here''s what I found: [TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 17
+    - 74
+    finish_step: true
   824ca6fbc36427fe44a14c6562882900b745c7505891aae073663a8a23906558:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "\"hello\""}'
     tools: tools_d7ee0d5304d6d110
@@ -2430,6 +2452,17 @@ requests:
   c37b83044eed2c0086d0390ef731fdf698d998aa84b5f48a224bb6b35c7387e4:
     input: '[TOOL_CALLS]inspect[ARGS]{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
     tools: tools_d37e0a92eadeb518
+  c4130dc40c5ce444116300096ed86eb1bc13c66019b3a501feedb87f01f20fee:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: if a [ b then[/THINK]done
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 6
+    - 19
+    finish_step: true
   c4bdf447e845487439fc01ffb6004174819f6a97891860f28ab36917b8936b07:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "{\"x\":1}"}'
     tools: tools_a59dec8969ac978b
@@ -2583,6 +2616,17 @@ requests:
   f1d189fb0dd8e7940e3b40b7f553919afceaadc9cddb77480350c5cc217bf48e:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": [1, 2]}'
     tools: tools_e9d7fa1fb290c04d
+  f23aeb92308e3751d2a05a9a9d6cf9e9973f04066bf9ae17f18ed951b0495861:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    finish_reason: length
+    input: literal[
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 8
+    finish_step: true
   f27d1a820095ee439168757326c78967cc255afde0c898d6efa6193e407f6a22:
     input: '[TOOL_CALLS]get_weather[ARGS]{"city": null}'
     tools: tools_711e03afbe37c425
@@ -5822,3 +5866,57 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  prefilled_reasoning_close_first_char_then_text:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text
+    request: 6f2762fb4a43ff2dbd0157008b856a231dce2455599d2b8be29ed01ab33e8eaa
+    golden:
+    - kind: reasoning
+      text: no tool needed
+    - kind: text
+      text: The answer is 42.
+  prefilled_reasoning_close_first_char_then_text_then_tool:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text and native tool call.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text_then_tool
+    request: 80dba9c536efec07d8e1f0c7f7fe77f71fe5a128cbc382809515f018e8f11380
+    golden:
+    - kind: reasoning
+      text: weighing options
+    - kind: text
+      text: 'Here''s what I found: '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  prefilled_reasoning_close_first_char_eof:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: EOF interrupts a single-character reasoning-close candidate. Finalization must release the held character as literal reasoning.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_eof
+    request: f23aeb92308e3751d2a05a9a9d6cf9e9973f04066bf9ae17f18ed951b0495861
+    golden:
+    - kind: reasoning
+      text: literal[
+  prefilled_reasoning_close_first_char_disproved:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: The next chunk disproves a single-character reasoning-close candidate. Release it as literal reasoning, then recognize the later complete closer and visible answer.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_disproved
+    request: c4130dc40c5ce444116300096ed86eb1bc13c66019b3a501feedb87f01f20fee
+    golden:
+    - kind: reasoning
+      text: if a [ b then
+    - kind: text
+      text: done

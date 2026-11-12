@@ -2096,6 +2096,17 @@ requests:
   11245492e574092c4d46be774fcdc05e2217bb923b2cbc7557dedb514ae1d6b6:
     input: <|start|>assistant user<|channel|>final SECRET
     tools: tools_9db8284c68087826
+  11e8a4197f8ff99c315cf471966ee4d82e360ccdaf64b858bfb6b670421862ef:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: 'weighing options<|end|><|start|>assistant<|channel|>final<|message|>Here''s what I found: <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 17
+    - 200
+    finish_step: true
   12a2fcdbb1b3c36a8d42251b0bacb5d212e2412ea59e55cb5fb373dbc852ec74:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "plain"}<|call|>'
     tools: tools_0af1c035b667e8b0
@@ -3264,6 +3275,17 @@ requests:
     - 4
     - 10
     finish_step: true
+  762bcaddd208f8a076f6f6fcc1a2b765037931e520f17860c4bcbd92c998422c:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: if a < b then<|end|><|start|>assistant<|channel|>final<|message|>done<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 6
+    - 73
+    finish_step: true
   77fc4cb262d456be919173f19086c4cc755d87e2db5d4b0dbadc185ed5dc7a33:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": {"x": 1}}<|call|>'
     tools: tools_2da5b5660d13bc3f
@@ -3811,6 +3833,17 @@ requests:
   a86e313d7f03c7945ca096c5ec7bf50579d13013669a6f11175821de7f32baa7:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|channel|>final<|message|>The forecast shows clear skies for the rest of the week.<|return|>'
     tools: tools_9db8284c68087826
+  aa0797b8636ad8055b525869945aa7de10bc2fdc899cede64d4839ab784952e3:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: no tool needed<|end|><|start|>assistant<|channel|>final<|message|>The answer is 42.<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 15
+    - 78
+    finish_step: true
   aa58c97a06b8e5e32b555935ac1271301c6a9bb852c35707889a9957799c7304:
     input: '<|start|>assistant<|channel|>final<|message|>Sure. <|return|><|start|>assistant<|channel|>analysis<|message|>I should check. <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>analysis<|message|> now answer<|end|><|start|>assistant<|channel|>final<|message|> Here you go.<|return|>'
     tools: tools_9db8284c68087826
@@ -4676,6 +4709,17 @@ requests:
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 57
+    - 8
+    finish_step: true
+  ed75ba243f162ed2bc306085e114c304cde9b04a5278a5670bb98b79c87872d0:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    finish_reason: length
+    input: literal<
+    tools: tools_9db8284c68087826
+    chunk_sizes:
     - 8
     finish_step: true
   ed97fe02b65e4ca692f803b01734c5ad745ff2fa19613de996243eb18d97a039:
@@ -9927,3 +9971,57 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  prefilled_reasoning_close_first_char_then_text:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text
+    request: aa0797b8636ad8055b525869945aa7de10bc2fdc899cede64d4839ab784952e3
+    golden:
+    - kind: reasoning
+      text: no tool needed
+    - kind: text
+      text: The answer is 42.
+  prefilled_reasoning_close_first_char_then_text_then_tool:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: Prompt-prefilled reasoning ends with a native closer split immediately after its first character. The held prefix must complete the boundary rather than leaking into reasoning or swallowing the following visible text and native tool call.
+    display_id: UNIFIED.40-prefilled_reasoning_close_first_char_then_text_then_tool
+    request: 11e8a4197f8ff99c315cf471966ee4d82e360ccdaf64b858bfb6b670421862ef
+    golden:
+    - kind: reasoning
+      text: weighing options
+    - kind: text
+      text: 'Here''s what I found: '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  prefilled_reasoning_close_first_char_eof:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: EOF interrupts a single-character reasoning-close candidate. Finalization must release the held character as literal reasoning.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_eof
+    request: ed75ba243f162ed2bc306085e114c304cde9b04a5278a5670bb98b79c87872d0
+    golden:
+    - kind: reasoning
+      text: literal<
+  prefilled_reasoning_close_first_char_disproved:
+    policy:
+    - I2
+    - I5
+    - P5
+    description: The next chunk disproves a single-character reasoning-close candidate. Release it as literal reasoning, then recognize the later complete closer and visible answer.
+    display_id: UNIFIED.41-prefilled_reasoning_close_first_char_disproved
+    request: 762bcaddd208f8a076f6f6fcc1a2b765037931e520f17860c4bcbd92c998422c
+    golden:
+    - kind: reasoning
+      text: if a < b then
+    - kind: text
+      text: done

@@ -1,11 +1,15 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"ef2cbc6cbc7ac58f970d97a9dbe7ada92e5266ad1f5717b51c0f7858cfbe01cf","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.1.yaml","surface":"unified","version":"0.10.1"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"91c5683e1df4166fd9551f06300297f63939dcfabafb5291ef58bf241693c6ff","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_7d8b245929660a70
+  origin: origin_3c8d3a835a0074f7
 origins:
+  origin_3c8d3a835a0074f7:
+    crate_version: 0.10.4
+    source_sha256: c8e200420e50e6ed09b2c6f528d6481ba90328474742a5aeddc603ebf757eec0
+    git_commit: 74446601b5cb87e47004087d9a945b52bd5cc5aa
   origin_7d8b245929660a70:
     crate_version: 0.10.1
     source_sha256: fd11348a91035fe3700916b5183e3bb3523beb91b8858dfbb623568dc88c311b
@@ -15,13 +19,17 @@ producers:
     captured_with:
       dynamo_v2: 0.10.1
     capture_origin: origin_7d8b245929660a70
+  producer_0732212f74733cf2:
+    captured_with:
+      dynamo_v2: 0.10.4
+    capture_origin: origin_3c8d3a835a0074f7
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.1.yaml
+  member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.4.yaml
   producer: producer_7a3ff64dd6b80342
   context: context_cdf0b3c0134ec96f
 records:
@@ -645,7 +653,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -653,7 +661,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -692,7 +700,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "4"
+          arguments: '4'
           complete: false
         - kind: tool_call
           name: null
@@ -700,7 +708,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -708,7 +716,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -747,7 +755,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -755,7 +763,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -794,7 +802,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "4"
+          arguments: '4'
           complete: false
         - kind: tool_call
           name: null
@@ -802,7 +810,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -810,7 +818,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -849,19 +857,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -869,7 +877,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -877,7 +885,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -916,7 +924,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "9"
+          arguments: '9'
           complete: false
         - kind: tool_call
           name: null
@@ -928,19 +936,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "199"
+          arguments: '199'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "254"
+          arguments: '254'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "740"
+          arguments: '740'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "993"
+          arguments: '993'
           complete: false
         - kind: tool_call
           name: null
@@ -948,7 +956,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "15"
+          arguments: '15'
           complete: false
         - kind: tool_call
           name: null
@@ -991,7 +999,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "4"
+          arguments: '4'
           complete: false
         - kind: tool_call
           name: null
@@ -999,7 +1007,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -1011,7 +1019,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -1050,11 +1058,11 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "420"
+          arguments: '420'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -1066,7 +1074,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -1105,7 +1113,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -1113,7 +1121,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -1125,7 +1133,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "400"
+          arguments: '400'
           complete: false
         - kind: tool_call
           name: null
@@ -1164,7 +1172,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "9"
+          arguments: '9'
           complete: false
         - kind: tool_call
           name: null
@@ -1176,23 +1184,23 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "199"
+          arguments: '199'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "254"
+          arguments: '254'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "740"
+          arguments: '740'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "992"
+          arguments: '992'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -1200,7 +1208,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "15"
+          arguments: '15'
           complete: false
         - kind: tool_call
           name: null
@@ -1243,19 +1251,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1263,7 +1271,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -1271,7 +1279,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -1310,7 +1318,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -1318,7 +1326,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -1357,19 +1365,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1377,7 +1385,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -1385,7 +1393,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "25"
+          arguments: '25'
           complete: false
         - kind: tool_call
           name: null
@@ -1424,19 +1432,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1444,7 +1452,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -1452,7 +1460,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -1491,19 +1499,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1511,7 +1519,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -1519,7 +1527,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -1558,7 +1566,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -1566,7 +1574,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "100"
+          arguments: '100'
           complete: false
         - kind: tool_call
           name: null
@@ -1644,19 +1652,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1664,7 +1672,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -1672,7 +1680,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -1688,7 +1696,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -1700,7 +1708,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "400"
+          arguments: '400'
           complete: false
         - kind: tool_call
           name: null
@@ -1716,19 +1724,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1736,7 +1744,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -1744,19 +1752,19 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "900"
+          arguments: '900'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "719"
+          arguments: '719'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "925"
+          arguments: '925'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "474"
+          arguments: '474'
           complete: false
         - kind: tool_call
           name: null
@@ -1764,7 +1772,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -1820,7 +1828,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -1828,7 +1836,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -1887,7 +1895,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -1899,7 +1907,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "400"
+          arguments: '400'
           complete: false
         - kind: tool_call
           name: null
@@ -1954,7 +1962,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -1962,7 +1970,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "400"
+          arguments: '400'
           complete: false
         - kind: tool_call
           name: null
@@ -2963,7 +2971,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "21"
+          arguments: '21'
           complete: false
         - kind: tool_call
           name: null
@@ -2971,7 +2979,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -2999,7 +3007,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "37"
+          arguments: '37'
           complete: false
         - kind: tool_call
           name: null
@@ -4002,7 +4010,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -4045,7 +4053,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -4061,7 +4069,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "8"
+          arguments: '8'
           complete: false
         - kind: tool_call
           name: null
@@ -4077,7 +4085,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -4101,7 +4109,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -4156,7 +4164,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -4184,7 +4192,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -4192,7 +4200,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -4256,7 +4264,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -4315,7 +4323,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -4358,7 +4366,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -4382,7 +4390,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -4390,7 +4398,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -4442,7 +4450,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -5763,7 +5771,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -8200,7 +8208,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -8412,7 +8420,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -8446,7 +8454,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -8552,11 +8560,11 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "250"
+          arguments: '250'
           complete: false
         - kind: tool_call
           name: null
-          arguments: "0"
+          arguments: '0'
           complete: false
         - kind: tool_call
           name: null
@@ -8580,7 +8588,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -9078,7 +9086,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -9112,7 +9120,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -9164,7 +9172,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -9198,7 +9206,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -9638,7 +9646,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -9672,7 +9680,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -9728,7 +9736,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -9764,7 +9772,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -9991,7 +9999,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "37"
+          arguments: '37'
           complete: false
         - kind: tool_call
           name: null
@@ -10059,7 +10067,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -10067,7 +10075,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -10114,7 +10122,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -10122,7 +10130,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -10169,7 +10177,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -10177,7 +10185,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -10224,7 +10232,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -10232,7 +10240,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -10811,7 +10819,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -10854,7 +10862,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -10897,7 +10905,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -10940,7 +10948,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -10983,7 +10991,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -11034,7 +11042,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -11089,7 +11097,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -11144,7 +11152,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -11199,7 +11207,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -11998,7 +12006,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -12010,7 +12018,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -12092,7 +12100,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12135,7 +12143,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -12217,7 +12225,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -12225,7 +12233,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -12280,7 +12288,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -12366,7 +12374,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -12409,7 +12417,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -12452,7 +12460,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12495,7 +12503,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12585,7 +12593,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12628,7 +12636,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12671,7 +12679,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12714,7 +12722,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12843,7 +12851,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -12890,7 +12898,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12933,7 +12941,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -12976,7 +12984,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "7"
+          arguments: '7'
           complete: false
         - kind: tool_call
           name: null
@@ -13062,7 +13070,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "7"
+          arguments: '7'
           complete: false
         - kind: tool_call
           name: null
@@ -13148,7 +13156,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -13230,7 +13238,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -13316,7 +13324,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -13328,7 +13336,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -13414,7 +13422,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -13426,7 +13434,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -13676,7 +13684,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -13762,7 +13770,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -14012,7 +14020,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -14020,7 +14028,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -14106,7 +14114,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -14114,7 +14122,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -14212,7 +14220,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -14310,7 +14318,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -14396,7 +14404,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -14408,7 +14416,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -14494,7 +14502,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -14506,7 +14514,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -14756,7 +14764,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -14842,7 +14850,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -15092,7 +15100,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -15100,7 +15108,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -15186,7 +15194,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "3"
+          arguments: '3'
           complete: false
         - kind: tool_call
           name: null
@@ -15194,7 +15202,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "5"
+          arguments: '5'
           complete: false
         - kind: tool_call
           name: null
@@ -15292,7 +15300,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -15390,7 +15398,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -15407,7 +15415,7 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
@@ -15416,7 +15424,7 @@ records:
       - expected: []
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
       - expected: []
       - expected: []
       - expected: []
@@ -15512,7 +15520,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -15546,7 +15554,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -15616,7 +15624,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -15652,7 +15660,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -16107,7 +16115,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -16139,7 +16147,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
         - kind: tool_call
           name: null
@@ -16284,7 +16292,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
         - kind: tool_call
           name: null
@@ -16386,7 +16394,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -16453,7 +16461,7 @@ records:
           complete: false
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
         - kind: tool_call
           name: null
@@ -16464,6 +16472,112 @@ records:
           arguments: '"}'
           complete: false
       - expected:
+        - kind: tool_call
+          name: null
+          arguments: ''
+          complete: true
+      - expected: []
+  prefilled_reasoning_close_first_char_disproved:
+    case_key: UNIFIED.41-prefilled_reasoning_close_first_char_disproved
+    producer: producer_0732212f74733cf2
+    request: 762bcaddd208f8a076f6f6fcc1a2b765037931e520f17860c4bcbd92c998422c
+    output:
+      assembled:
+      - kind: reasoning
+        text: if a < b then
+      - kind: text
+        text: done
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'if a '
+      - expected:
+        - kind: reasoning
+          text: < b then
+        - kind: text
+          text: done
+      - expected: []
+  prefilled_reasoning_close_first_char_eof:
+    case_key: UNIFIED.41-prefilled_reasoning_close_first_char_eof
+    producer: producer_0732212f74733cf2
+    request: ed75ba243f162ed2bc306085e114c304cde9b04a5278a5670bb98b79c87872d0
+    output:
+      assembled:
+      - kind: reasoning
+        text: literal<
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: literal
+      - expected:
+        - kind: reasoning
+          text: <
+  prefilled_reasoning_close_first_char_then_text:
+    case_key: UNIFIED.40-prefilled_reasoning_close_first_char_then_text
+    producer: producer_0732212f74733cf2
+    request: aa0797b8636ad8055b525869945aa7de10bc2fdc899cede64d4839ab784952e3
+    output:
+      assembled:
+      - kind: reasoning
+        text: no tool needed
+      - kind: text
+        text: The answer is 42.
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: no tool needed
+      - expected:
+        - kind: text
+          text: The answer is 42.
+      - expected: []
+  prefilled_reasoning_close_first_char_then_text_then_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_close_first_char_then_text_then_tool
+    producer: producer_0732212f74733cf2
+    request: 11e8a4197f8ff99c315cf471966ee4d82e360ccdaf64b858bfb6b670421862ef
+    output:
+      assembled:
+      - kind: reasoning
+        text: weighing options
+      - kind: text
+        text: 'Here''s what I found: '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: weighing options
+      - expected:
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: city
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '":'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: ' "'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '"}'
+          complete: false
         - kind: tool_call
           name: null
           arguments: ''

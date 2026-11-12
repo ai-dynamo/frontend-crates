@@ -1,11 +1,15 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"f7e9ee8950249afba1b61c76bee4521884f5251189bd5d66f224091e204cf366","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.1.yaml","surface":"unified","version":"0.10.1"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"999b7a8b36cb87dc8464059c77327694f3f6306a1cf3d0060832f5bea1987d30","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.4.yaml","surface":"unified","version":"0.10.4"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_7d8b245929660a70
+  origin: origin_3c8d3a835a0074f7
 origins:
+  origin_3c8d3a835a0074f7:
+    crate_version: 0.10.4
+    source_sha256: c8e200420e50e6ed09b2c6f528d6481ba90328474742a5aeddc603ebf757eec0
+    git_commit: 74446601b5cb87e47004087d9a945b52bd5cc5aa
   origin_7d8b245929660a70:
     crate_version: 0.10.1
     source_sha256: fd11348a91035fe3700916b5183e3bb3523beb91b8858dfbb623568dc88c311b
@@ -15,13 +19,17 @@ producers:
     captured_with:
       dynamo_v2: 0.10.1
     capture_origin: origin_7d8b245929660a70
+  producer_0732212f74733cf2:
+    captured_with:
+      dynamo_v2: 0.10.4
+    capture_origin: origin_3c8d3a835a0074f7
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.1.yaml
+  member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.4.yaml
   producer: producer_7a3ff64dd6b80342
   context: context_cdf0b3c0134ec96f
 records:
@@ -4469,7 +4477,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -14258,7 +14266,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -14298,7 +14306,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -14530,7 +14538,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -15418,7 +15426,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -15458,7 +15466,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -15515,7 +15523,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -15555,7 +15563,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -15869,7 +15877,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -15909,7 +15917,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -15977,7 +15985,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -16026,7 +16034,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -16910,7 +16918,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -16951,7 +16959,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -16992,7 +17000,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -17033,7 +17041,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -18226,7 +18234,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -18341,7 +18349,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -18555,7 +18563,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -18843,7 +18851,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -20717,7 +20725,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -20757,7 +20765,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -20845,7 +20853,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -20894,7 +20902,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -21459,7 +21467,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -21484,7 +21492,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -21759,5 +21767,83 @@ records:
         - kind: tool_call
           name: null
           arguments: '"}'
+          complete: true
+      - expected: []
+  prefilled_reasoning_close_first_char_disproved:
+    case_key: UNIFIED.41-prefilled_reasoning_close_first_char_disproved
+    producer: producer_0732212f74733cf2
+    request: bd3ed9b24743be7767402be1a2823e25b28545e2811de8e755ac95e64e439e76
+    output:
+      assembled:
+      - kind: reasoning
+        text: if a < b then
+      - kind: text
+        text: done
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'if a '
+      - expected:
+        - kind: reasoning
+          text: < b then
+        - kind: text
+          text: done
+      - expected: []
+  prefilled_reasoning_close_first_char_eof:
+    case_key: UNIFIED.41-prefilled_reasoning_close_first_char_eof
+    producer: producer_0732212f74733cf2
+    request: 75c0f9a7fb50562c8fdf87ff7176b86fe609d061a283804ba0e93e5ac7eccdfa
+    output:
+      assembled:
+      - kind: reasoning
+        text: literal<
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: literal
+      - expected:
+        - kind: reasoning
+          text: <
+  prefilled_reasoning_close_first_char_then_text:
+    case_key: UNIFIED.40-prefilled_reasoning_close_first_char_then_text
+    producer: producer_0732212f74733cf2
+    request: 957825526d742b2f7a4300c65835b143799ff3c73df840aadbd2a195d2b6c7c8
+    output:
+      assembled:
+      - kind: reasoning
+        text: no tool needed
+      - kind: text
+        text: The answer is 42.
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: no tool needed
+      - expected:
+        - kind: text
+          text: The answer is 42.
+      - expected: []
+  prefilled_reasoning_close_first_char_then_text_then_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_close_first_char_then_text_then_tool
+    producer: producer_0732212f74733cf2
+    request: 9757c2d91fd566d2c3a750dd2f21497681ed290ccd72661bb6d60c44ab29bee1
+    output:
+      assembled:
+      - kind: reasoning
+        text: weighing options
+      - kind: text
+        text: 'Here''s what I found: '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: weighing options
+      - expected:
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"Paris"}'
           complete: true
       - expected: []

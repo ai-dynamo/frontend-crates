@@ -350,8 +350,12 @@ UNIFIED_TAX = {
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
     "prefilled_reasoning_then_text_then_tool": (40, "3"), "prefilled_reasoning_then_text": (40, "4"),
+    "prefilled_reasoning_close_first_char_then_text": (40, "16"),
+    "prefilled_reasoning_close_first_char_then_text_then_tool": (40, "17"),
     # Group 41 — Prefilled reasoning, weird / malformed
     "prefilled_reasoning_redundant_opener": (41, "1"), "prefilled_reasoning_truncated": (41, "2"),
+    "prefilled_reasoning_close_first_char_eof": (41, "3"),
+    "prefilled_reasoning_close_first_char_disproved": (41, "4"),
     "prefilled_response_reasoning_markers_literal": (50, "4"),
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
