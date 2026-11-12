@@ -338,3 +338,23 @@ def test_lane_file_preserves_all_worker_defaults():
     assert lanes == ci_plan.LANES
     assert fixtures == ci_plan.FIXTURES
     assert len(ci_plan.plan()) == 16
+
+
+def test_comparison_browser_module_uses_sharded_viewer_lane():
+    module = f"{ci_plan.TESTS}/test_browser_harry_comparison.py"
+    for lane in ['core', 'fixtures']:
+        assert f"--ignore={module}" in ci_plan.pytest_arguments(lane)
+    assert module in ci_plan.pytest_arguments('viewer')
+    assert module not in ci_plan.pytest_arguments('native-browser')
+
+
+def test_all_browser_modules_have_explicit_noncore_ownership():
+    modules = {path.name for path in (ci_plan.ROOT / ci_plan.TESTS).glob('test_*browser*.py')}
+    routed = [argument for lane in ['browser', 'first-matrix', 'viewer', 'native-browser']
+              for argument in ci_plan.pytest_arguments(lane)
+              if argument.startswith(ci_plan.TESTS + '/test_') and '::' not in argument]
+    for module in modules:
+        path = f"{ci_plan.TESTS}/{module}"
+        for lane in ['core', 'fixtures']:
+            assert f"--ignore={path}" in ci_plan.pytest_arguments(lane), module
+        assert routed.count(path) == (2 if module == 'test_browser_smoke.py' else 1), module
