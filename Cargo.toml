@@ -43,7 +43,7 @@ derive_builder = "0.20"
 dynamo-parsers = { path = "parsers/v1", version = "11.0.11" }
 dynamo-protocols = { path = "protocols", version = "10.0.1" }
 dynamo-decisions = { path = "decisions", version = "0.1.1" }
-dynamo-renderer = { path = "renderer", version = "10.4.0" }
+dynamo-renderer = { path = "renderer", version = "10.4.1" }
 dynamo-tokenizers = { path = "tokenizers", version = "4.3.0" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.4"
