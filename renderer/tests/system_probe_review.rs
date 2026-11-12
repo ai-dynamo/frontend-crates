@@ -118,3 +118,32 @@ fn turn_numbers_do_not_hide_a_dropped_system_message() {
         "the later system content must reach a user turn in place: {rendered}"
     );
 }
+
+#[test]
+fn separator_changes_do_not_invent_system_role_support() {
+    let template = concat!(
+        "{%- for m in messages -%}",
+        "{%- if m.role in ['user', 'assistant'] -%}",
+        "{%- if not loop.first -%}{{ '\n' }}{%- endif -%}",
+        "<{{ m.role }}>{{ m.content }}</{{ m.role }}>",
+        "{%- endif -%}",
+        "{%- endfor -%}"
+    );
+    let messages = json!([
+        {"role": "system", "content": "Be helpful"},
+        {"role": "user", "content": "question"},
+        {"role": "assistant", "content": "answer"},
+        {"role": "system", "content": "Be concise"},
+        {"role": "user", "content": "next question"},
+    ]);
+    let expected = concat!(
+        "\n<user>question</user>",
+        "\n<assistant>answer</assistant>",
+        "\n<user>next question</user>"
+    );
+    let raw = minijinja::Environment::new()
+        .render_str(template, minijinja::context! { messages => &messages })
+        .unwrap();
+    assert_eq!(raw, expected);
+    assert_eq!(render(template, &messages), expected);
+}
