@@ -425,11 +425,19 @@ def display_section(scenario, families=None):
     return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
 
 
+def display_case_description(scenario):
+    group, _ = display_tax(scenario)
+    description = case_description(scenario)
+    for prefix in GROUP_DESCRIPTION_PREFIXES.get(group, ()):
+        description = description.removeprefix(prefix)
+    return description
+
+
 def display_sort_key(scenario, families=None):
     group, _ = display_tax(scenario, families)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
     section_rank = list(ARGUMENT_SECTIONS).index(argument_section((case_fold(scenario) or (scenario, ""))[0])) if group == 7 else 0
-    return group_key, section_rank, case_description(scenario), scenario
+    return group_key, section_rank, display_case_description(scenario), scenario
 
 
 DISPLAY_PREFIXES = {group: tuple(prefixes) for group, prefixes in UNIFIED_DISPLAY["prefixes"].items()}
@@ -445,7 +453,7 @@ def display_case_labels(scenarios, scenario_families=None):
         full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
         counts[compact_prefix] = counts.get(compact_prefix, 0) + 1
         labels[scenario] = {
-            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{case_description(scenario)}",
+            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{display_case_description(scenario)}",
             "compact_prefix": compact_prefix,
             "display_number": counts[compact_prefix],
         }

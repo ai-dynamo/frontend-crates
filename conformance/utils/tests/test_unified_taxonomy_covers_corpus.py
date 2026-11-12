@@ -3081,6 +3081,22 @@ def test_kimi_display_sections_match_their_applicable_family():
             assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
 
 
+def test_dsml_recovery_display_uses_family_labels_and_order():
+    scenarios = [scenario for scenario in UNIFIED_TAX if scenario.startswith("dsml_")]
+    labels = taxonomy.display_case_labels(scenarios)
+    ordered = sorted(scenarios, key=taxonomy.display_sort_key)
+    assert [labels[scenario]["display_number"] for scenario in ordered] == list(range(1, len(scenarios) + 1))
+    assert [labels[scenario]["label"] for scenario in ordered] == sorted(labels[scenario]["label"] for scenario in scenarios)
+    for scenario in scenarios:
+        assert taxonomy.display_section(scenario)[0] == "unified_gdsml"
+        assert labels[scenario]["label"] == "dsml-" + scenario.removeprefix("dsml_")
+        assert labels[scenario]["compact_prefix"] == "dsml"
+    for suffix in ["empty_call", "call"]:
+        scenario = "dsml_unterminated_parameter_then_" + suffix
+        assert numbered_id(scenario) == "UNIFIED.5-" + scenario
+        assert historical_case_label("5-" + scenario) == case_label(scenario)
+
+
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     scenarios = list(UNIFIED_TAX)
     identities = {scenario: numbered_id(scenario) for scenario in scenarios}
@@ -3094,7 +3110,7 @@ def test_display_ranks_follow_descriptions_without_changing_capture_ids():
         for scenario in members:
             sections[taxonomy.display_section(scenario)[0]].append(scenario)
         for section in sections.values():
-            assert [taxonomy.case_description(s) for s in section] == sorted(taxonomy.case_description(s) for s in section)
+            assert [taxonomy.display_case_description(s) for s in section] == sorted(taxonomy.display_case_description(s) for s in section)
     compact_prefixes = defaultdict(list)
     for scenario in sorted(scenarios, key=taxonomy.display_sort_key):
         compact_prefixes[labels[scenario]["compact_prefix"]].append(scenario)

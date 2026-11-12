@@ -842,8 +842,10 @@ unified_display:
     muse_spark: 'Single Family Test: Muse Spark message phases'
     gpt_oss: 'Single Family Test: GPT-OSS Harmony'
     beam: 'Single Family Test: Beam-specific'
-    dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
+    dsml: 'DSML: DeepSeek V4 and V4.1 framing and recovery'
   group_overrides:
+    dsml_unterminated_parameter_then_empty_call: dsml
+    dsml_unterminated_parameter_then_call: dsml
     default_reasoning_without_opener: nemotron_v3
     default_reasoning_tool_without_closer: nemotron_v3
     kimi_native_k2_count_content_chunk7: kimi_k2
