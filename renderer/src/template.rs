@@ -223,10 +223,10 @@ impl SystemNormalization {
 struct HfTokenizerConfigJsonFormatter {
     env: Environment<'static>,
     config: ChatTemplate,
-    /// The model's control-token spellings. Under a Harmony template, and where
-    /// [`ChatTemplate::with_request_control_tokens_as_text`] asks, they are
-    /// shielded in request text so only template-owned markers encode as
-    /// control tokens.
+    /// The model's control-token spellings. They are shielded in request text
+    /// so only template-owned markers encode as control tokens, unless
+    /// [`ChatTemplate::with_request_control_tokens_as_text`] turns that off
+    /// for a template without Harmony framing.
     control_markers: oai::ControlMarkers,
     mixins: Arc<ContextMixins>,
     supports_add_generation_prompt: bool,
