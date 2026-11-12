@@ -118,6 +118,17 @@ fn detect_system_normalization(
     // output must be checked too, not only whether the render fails. A template that
     // drops the first system message as well has no system role at all, and is left
     // as it is.
+    //
+    // The marker search reuses the render above, so it costs no extra render at
+    // load. On real templates it gives the right answer for every one tested:
+    // gpt-oss, Qwen3-VL, and MiniMax M3 drop the message, and Qwen3, Qwen2.5-VL,
+    // GLM-5, Kimi-Linear, and DeepSeek-R1 keep it (tests/system_messages.rs). Known
+    // limits, each pinned by an ignored test in tests/system_probe_review.rs:
+    // - content clipped so the marker does not survive is read as dropped
+    //   (`clipped_nonleading_content_keeps_supported_system_role`);
+    // - a template that renders a later system message only with a generation
+    //   prompt is read as dropping it, because the probe renders without one
+    //   (`inference_only_system_turn_keeps_supported_system_role`).
     let drops_later_system = matches!(
         &after_assistant,
         Some(Ok(out)) if out.contains(LEADING) && !out.contains(LATER)
