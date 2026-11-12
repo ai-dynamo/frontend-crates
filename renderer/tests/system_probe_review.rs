@@ -86,3 +86,35 @@ fn inference_only_system_turn_keeps_supported_system_role() {
     assert_eq!(raw, expected);
     assert_eq!(render(template, &messages), expected);
 }
+
+#[test]
+fn turn_numbers_do_not_hide_a_dropped_system_message() {
+    let template = concat!(
+        "{%- for m in messages -%}",
+        "{%- if m.role == 'system' and loop.first -%}",
+        "<system>{{ m.content }}</system>",
+        "{%- elif m.role in ['user', 'assistant'] -%}",
+        "[{{ loop.index0 }}]<{{ m.role }}>{{ m.content }}</{{ m.role }}>",
+        "{%- endif -%}",
+        "{%- endfor -%}"
+    );
+    let messages = json!([
+        {"role": "system", "content": "Be helpful"},
+        {"role": "user", "content": "question"},
+        {"role": "assistant", "content": "answer"},
+        {"role": "system", "content": "Be concise"},
+        {"role": "user", "content": "next question"},
+    ]);
+    let raw = minijinja::Environment::new()
+        .render_str(template, minijinja::context! { messages => &messages })
+        .unwrap();
+    assert!(raw.contains("<system>Be helpful</system>"));
+    assert!(!raw.contains("Be concise"));
+    assert!(raw.contains("[4]<user>next question</user>"));
+
+    let rendered = render(template, &messages);
+    assert!(
+        rendered.contains("[3]<user>Be concise</user>"),
+        "the later system content must reach a user turn in place: {rendered}"
+    );
+}
