@@ -1445,8 +1445,6 @@ mod tests {
 
     #[test]
     fn test_streaming_close_marker_split_after_lone_angle() {
-        // #446: a chunk ending in a lone `<` followed by `/think>` must still
-        // close reasoning.
         let mut parser =
             BasicReasoningParser::new("<think>".to_string(), "</think>".to_string(), false, true);
 
@@ -1506,7 +1504,6 @@ mod tests {
             (reasoning, normal)
         };
 
-        // One byte per chunk, then every two-way split.
         let bytes: Vec<&str> = (0..input.len()).map(|i| &input[i..i + 1]).collect();
         let splits = (1..input.len()).map(|i| vec![&input[..i], &input[i..]]);
         for chunks in std::iter::once(bytes).chain(splits) {
