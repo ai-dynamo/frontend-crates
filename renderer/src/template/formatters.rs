@@ -40,13 +40,14 @@ struct ProbeTokens {
 
 /// Unlike [`render_default_probe`], surfaces the error: a template's
 /// `raise_exception` is the signal that it rejects this message shape.
-fn probe_template_raises(
+/// `None` when the template does not exist.
+fn probe_template_render(
     env: &Environment,
     template_name: &str,
     messages: serde_json::Value,
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
-) -> bool {
+) -> Option<Result<String, minijinja::Error>> {
     let ctx = context! {
         messages => messages,
         add_generation_prompt => false,
@@ -55,10 +56,21 @@ fn probe_template_raises(
         eos_token => tok.eos,
         unk_token => tok.unk,
     };
-    match env.get_template(template_name) {
-        Ok(t) => t.render(&ctx).is_err(),
-        Err(_) => false,
-    }
+    let template = env.get_template(template_name).ok()?;
+    Some(template.render(&ctx))
+}
+
+fn probe_template_raises(
+    env: &Environment,
+    template_name: &str,
+    messages: serde_json::Value,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> bool {
+    matches!(
+        probe_template_render(env, template_name, messages, tools, tok),
+        Some(Err(_))
+    )
 }
 
 /// Detects which message shapes agent clients send that this template rejects,
@@ -90,12 +102,25 @@ fn detect_system_normalization(
         tools,
         tok,
     );
-    let mid_after_assistant = probe_template_raises(
+    const LEADING: &str = "dynamo-probe-leading-system";
+    const LATER: &str = "dynamo-probe-later-system";
+    let after_assistant = probe_template_render(
         env,
         template_name,
-        json!([sys("s0"), usr("u"), asst("a"), sys("s1"), usr("u2")]),
+        json!([sys(LEADING), usr("u"), asst("a"), sys(LATER), usr("u2")]),
         tools,
         tok,
+    );
+    let mid_after_assistant = matches!(after_assistant, Some(Err(_)));
+    // Some templates drop a later system message without raising: gpt-oss and
+    // MiniMax M3 read only the first one, and their message loops have no branch for
+    // a later one. The request succeeds and the model never sees the message, so the
+    // output must be checked too, not only whether the render fails. A template that
+    // drops the first system message as well has no system role at all, and is left
+    // as it is.
+    let drops_later_system = matches!(
+        &after_assistant,
+        Some(Ok(out)) if out.contains(LEADING) && !out.contains(LATER)
     );
     let consecutive_users = probe_template_raises(
         env,
@@ -105,7 +130,7 @@ fn detect_system_normalization(
         tok,
     );
     SystemNormalization {
-        demote_nonleading_system: nonleading_system || mid_after_assistant,
+        demote_nonleading_system: nonleading_system || mid_after_assistant || drops_later_system,
         coalesce_consecutive_users: consecutive_users,
     }
 }
