@@ -629,6 +629,13 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_0b60c760579099e3:
   - name: inspect
     parameters:
@@ -826,13 +833,6 @@ tools:
         flag:
           type: boolean
         text:
-          type: string
-  tools_81b3b17af2bd185e:
-  - name: lookup
-    parameters:
-      type: object
-      properties:
-        q:
           type: string
   tools_d1fedfe44119e682:
   - name: get_weather
@@ -3448,6 +3448,9 @@ requests:
     - 5
     - 7
     finish_step: true
+  394fbd326dfabc5af5ee0511681104a6d54ceab9d241660863adb4613d6b48d9:
+    input: <|open|>response<|sep|>"<|open|>tools<|sep|><|open|>call tool=\"lookup\" index=\"1\"<|sep|><|open|>argument key=\"q\" type=\"string\"<|sep|>x<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>" trailing<|close|>response<|sep|>
+    tools: tools_81b3b17af2bd185e
   396a4eb1d783857239a86bf77d68c892bd8dc7cd56903d190f4ead9c30b0f175:
     init:
       starting_state: Reasoning
@@ -5258,6 +5261,37 @@ requests:
     - 5
     - 7
     finish_step: true
+  6e4a5c4c93b9513eec600dbeea39d4f43d89df50a7b245697d0a0be586526dbc:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - Check London météo🙂 before answering; this is prose, not JSON.<|close|>think<|sep|>[]
+        - 'Check London météo🙂 before answering; this is prose, not JSON.<|close|>think<|sep|>{"location":'
+        - Check London météo🙂 before answering; this is prose, not JSON.<|close|>think<|sep|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
+        - Check London météo🙂 before answering; this is prose, not JSON.<|close|>think<|sep|>{"location":"London"}
+        - Check London météo🙂 before answering; this is prose, not JSON.<|close|>think<|sep|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+    input: Check London météo🙂 before answering; this is prose, not JSON.<|close|>think<|sep|>{"location":"London","temperature":12,"conditions":"cloudy"}
+    tools: tools_9db8284c68087826
   6edb51ea918203076d52c75c6c6792b6577ed26119285fb0a14f1ec6547c647c:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>auto<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_9d7e29c38b45febb
@@ -16971,3 +17005,28 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 394fbd326dfabc5af5ee0511681104a6d54ceab9d241660863adb4613d6b48d9
+    golden:
+    - kind: text
+      text: '"<|open|>tools<|sep|><|open|>call tool=\"lookup\" index=\"1\"<|sep|><|open|>argument key=\"q\" type=\"string\"<|sep|>x<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>" trailing'
+  structured_response_after_reasoning:
+    policy:
+    - P5
+    - I5
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    display_id: UNIFIED.36-structured_response_after_reasoning
+    request: 6e4a5c4c93b9513eec600dbeea39d4f43d89df50a7b245697d0a0be586526dbc
+    golden:
+    - kind: reasoning
+      text: Check London météo🙂 before answering; this is prose, not JSON.
+    - kind: text
+      text: '{"location":"London","temperature":12,"conditions":"cloudy"}'

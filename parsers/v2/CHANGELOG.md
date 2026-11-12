@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.4...dynamo-parsers-v2-v0.10.5) - 2026-11-11
+
+### Bug fixes
+
+- *(gpt-oss)* Preserve quoted control text in JSON strings and improve Harmony recovery.
+
+## [0.10.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.3...dynamo-parsers-v2-v0.10.4) - 2026-11-11
+
+### Bug fixes
+
+- *(parsers-v2)* Bound JSON whitespace in the Harmony final tag ([#583](https://github.com/ai-dynamo/frontend-crates/pull/583))
+
+### Documentation
+
+- Make parser creation workflow v2-first ([#584](https://github.com/ai-dynamo/frontend-crates/pull/584))
+
 ## [0.10.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.2...dynamo-parsers-v2-v0.10.3) - 2026-11-10
 
 ### Features

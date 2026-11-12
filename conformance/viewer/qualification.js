@@ -716,11 +716,11 @@ async function checkRebaseContracts(tab, reader) {
   const toolSchemas = columns.get('tool_body_whitespace').schemas;
   assert.equal(toolSchemas.length, 1);
   assert.deepEqual(toolSchemas[0].tools, [{ name: 'get_weather', parameters: { type: 'object', properties: { city: { type: 'string' } } } }]);
-  assert.deepEqual([...toolSchemas[0].families].sort(), ['kimi_k2', 'kimi_k3', 'mistral_4']);
+  assert.deepEqual([...toolSchemas[0].families].sort(), modelContracts.nativeReviewFamilies.whitespace.filter(family => family !== 'gpt_oss'));
   assert.equal(toolSchemas[0].cases, undefined, 'schema differences do not fold cases');
   assert.ok(columns.get('schema_declared_integer').schemas.length);
 
-  for (const family of ['gpt_oss', 'qwen3', 'glm47', 'deepseek_v4']) {
+  for (const family of modelContracts.nativeReviewFamilies.structured) {
     const row = tab.rows.find(row => row.family === family);
     const cell = leafCells(row).get('structured_response_after_reasoning');
     const inputs = (await reader.unifiedInputs(family)).value;
@@ -745,7 +745,7 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
     dotted_name_multiple_segments: [{ kind: 'tool_call', name: 'server.tools.weather', arguments: { location: 'Beijing' } }],
     dotted_name_shared_prefix: [{ kind: 'tool_call', name: 'server.weather', arguments: { location: 'Beijing' } }, { kind: 'tool_call', name: 'server.time', arguments: { timezone: 'Asia/Shanghai' } }],
   };
-  const families = ['beam', 'deepseek_v4', 'deepseek_v41', 'gemma4', 'glm47', 'gpt_oss', 'hermes', 'kimi_k2', 'kimi_k3', 'muse_glimmer', 'muse_spark', 'nemotron_v3', 'qwen3'];
+  const families = modelContracts.nativeReviewFamilies.dotted;
   const capturesFamily = unifiedDisplayFamilyPredicate(catalog, allUnifiedDescriptors);
   for (const family of families) {
     const row = tab.rows.find(item => item.family === family);

@@ -5324,6 +5324,37 @@ requests:
 
       </rfl:parameter><|call|>'
     tools: tools_81ef407beab6fe3e
+  997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9:
+    input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]
+        - '<|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":'
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+    tools: tools_9db8284c68087826
   999ab30618db5ea1da8591aa7238735bfe8b4cb9e9c23a907d4f57daae0d6fee:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -11737,3 +11768,15 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  structured_response_after_reasoning:
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    policy:
+    - P5
+    - I5
+    display_id: UNIFIED.36-structured_response_after_reasoning
+    request: 997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9
+    golden:
+    - kind: reasoning
+      text: Check London météo🙂 before answering; this is prose, not JSON.
+    - kind: text
+      text: '{"location":"London","temperature":12,"conditions":"cloudy"}'

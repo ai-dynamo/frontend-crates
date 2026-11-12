@@ -400,6 +400,13 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_def252fc833e1bdc:
   - name: schema_probe
     parameters:
@@ -1780,6 +1787,13 @@ tools:
       - value
       additionalProperties: false
     strict: false
+  tools_bc4305bb8be412b3:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
   tools_68ad90d828650089:
   - name: get_weather
     parameters:
@@ -1799,13 +1813,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_bc4305bb8be412b3:
-  - name: get_weather
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
   tools_d84ac5f342102778:
   - name: get_weather
     parameters:
@@ -2413,6 +2420,9 @@ requests:
     - 18
     - 22
     finish_step: true
+  2a5e420c094c329cc7eca6ef571ea7e7cb610c34ca6b07eca6d88f3f15f141e9:
+    input: '"<｜DSML｜tool_calls><｜DSML｜invoke name=\"lookup\"><｜DSML｜parameter name=\"q\" string=\"true\">x</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>" trailing'
+    tools: tools_81b3b17af2bd185e
   2a7defb75f1e13c93fe1a4892a61ed29120c18a60509c77b10bd4444575b722d:
     init:
       starting_state: Reasoning
@@ -5623,6 +5633,9 @@ requests:
     - 15
     - 19
     finish_step: true
+  e7587c0de83a726985004baf47f6181a419dc596b9d8332cd5eb9b1007767ba7:
+    input: "<｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"> \n\t{\"city\": \"Paris\"}\t \n</｜DSML｜invoke></｜DSML｜tool_calls>"
+    tools: tools_bc4305bb8be412b3
   e7888bc6d5e8e0fd8a1e263f08bf412d905bc7de6b66c01aef14f8cd036ee575:
     input: <think>A</think><｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><think>B</think><｜DSML｜tool_calls><｜DSML｜invoke name="g"><｜DSML｜parameter name="y" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
     tools: tools_cbf47ccf5fd2ef00
@@ -9484,7 +9497,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
     golden:
@@ -10347,3 +10360,31 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  tool_body_whitespace:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    request: e7587c0de83a726985004baf47f6181a419dc596b9d8332cd5eb9b1007767ba7
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 2a5e420c094c329cc7eca6ef571ea7e7cb610c34ca6b07eca6d88f3f15f141e9
+    golden:
+    - kind: text
+      text: '"<｜DSML｜tool_calls><｜DSML｜invoke name=\"lookup\"><｜DSML｜parameter name=\"q\" string=\"true\">x</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>" trailing'
