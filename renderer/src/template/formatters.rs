@@ -45,12 +45,13 @@ fn probe_template_render(
     env: &Environment,
     template_name: &str,
     messages: serde_json::Value,
+    add_generation_prompt: bool,
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
 ) -> Option<Result<String, minijinja::Error>> {
     let ctx = context! {
         messages => messages,
-        add_generation_prompt => false,
+        add_generation_prompt => add_generation_prompt,
         tools => tools,
         bos_token => tok.bos,
         eos_token => tok.eos,
@@ -68,9 +69,51 @@ fn probe_template_raises(
     tok: &ProbeTokens,
 ) -> bool {
     matches!(
-        probe_template_render(env, template_name, messages, tools, tok),
+        probe_template_render(env, template_name, messages, false, tools, tok),
         Some(Err(_))
     )
+}
+
+/// Detects a template that renders nothing for a later `system` message and
+/// raises no error, as gpt-oss and MiniMax M3 do: they read only the first system
+/// message, and their message loops have no branch for a later one. The request
+/// succeeds and the model never sees the message.
+///
+/// The check compares whole outputs instead of looking for the message text,
+/// because a template that keeps the message may still change its text: it can
+/// clip, wrap, escape, or move it. So the probe renders the conversation with and
+/// without the later message, and any difference means the template kept it. A
+/// template that renders the same output with and without the first system message
+/// too has no system role at all, and is left as it is. The probes ask for a
+/// generation prompt, as inference does, so a template that keeps the message only
+/// then is not demoted.
+fn drops_later_system(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> bool {
+    let sys = json!({"role": "system", "content": "s0"});
+    let later = json!({"role": "system", "content": "s1"});
+    let usr = |c: &str| json!({"role": "user", "content": c});
+    let asst = json!({"role": "assistant", "content": "a"});
+    let render = |messages| {
+        probe_template_render(env, template_name, messages, true, tools, tok).and_then(Result::ok)
+    };
+
+    let Some(with_later) = render(json!([sys, usr("u"), asst, later, usr("u2")])) else {
+        return false;
+    };
+    let Some(without_later) = render(json!([sys, usr("u"), asst, usr("u2")])) else {
+        return false;
+    };
+    if with_later != without_later {
+        return false;
+    }
+    match render(json!([usr("u"), asst, usr("u2")])) {
+        Some(without_system) => without_system != without_later,
+        None => true,
+    }
 }
 
 /// Detects which message shapes agent clients send that this template rejects,
@@ -102,25 +145,12 @@ fn detect_system_normalization(
         tools,
         tok,
     );
-    const LEADING: &str = "dynamo-probe-leading-system";
-    const LATER: &str = "dynamo-probe-later-system";
-    let after_assistant = probe_template_render(
+    let mid_after_assistant = probe_template_raises(
         env,
         template_name,
-        json!([sys(LEADING), usr("u"), asst("a"), sys(LATER), usr("u2")]),
+        json!([sys("s0"), usr("u"), asst("a"), sys("s1"), usr("u2")]),
         tools,
         tok,
-    );
-    let mid_after_assistant = matches!(after_assistant, Some(Err(_)));
-    // Some templates drop a later system message without raising: gpt-oss and
-    // MiniMax M3 read only the first one, and their message loops have no branch for
-    // a later one. The request succeeds and the model never sees the message, so the
-    // output must be checked too, not only whether the render fails. A template that
-    // drops the first system message as well has no system role at all, and is left
-    // as it is.
-    let drops_later_system = matches!(
-        &after_assistant,
-        Some(Ok(out)) if out.contains(LEADING) && !out.contains(LATER)
     );
     let consecutive_users = probe_template_raises(
         env,
@@ -130,7 +160,9 @@ fn detect_system_normalization(
         tok,
     );
     SystemNormalization {
-        demote_nonleading_system: nonleading_system || mid_after_assistant || drops_later_system,
+        demote_nonleading_system: nonleading_system
+            || mid_after_assistant
+            || drops_later_system(env, template_name, tools, tok),
         coalesce_consecutive_users: consecutive_users,
     }
 }
