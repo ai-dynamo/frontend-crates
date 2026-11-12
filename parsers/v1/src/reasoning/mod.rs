@@ -206,6 +206,12 @@ pub trait ReasoningParser: Send + std::fmt::Debug {
     /// like `<think>` or `</think>`. At EOF, no next chunk is coming, so the
     /// parser must flush the undecided bytes as normal or reasoning text based
     /// on its current state.
+    ///
+    /// Callers must call this once the stream ends, including when the last
+    /// chunk carries a `finish_reason` such as `length` or `stop`. Inside
+    /// reasoning, a chunk ending in any prefix of the close marker, even a
+    /// single `<` for `</think>` or `[` for `[/THINK]`, is held back, and that
+    /// text is only returned here.
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         ParserResult::default()
     }
@@ -2069,6 +2075,30 @@ mod tests {
         assert_eq!(streamed.normal_text, "");
         assert_eq!(finished.reasoning_text, "<");
         assert_eq!(finished.normal_text, "");
+    }
+
+    #[test]
+    fn test_final_chunk_ending_in_close_marker_prefix_needs_finish() {
+        for (name, input, held) in [
+            ("qwen3", "Compare a <", "<"),
+            ("mistral", "Compare a [", "["),
+        ] {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name(name);
+            parser.set_in_reasoning(true);
+
+            let streamed = parser.parse_reasoning_streaming_incremental(input, &[]);
+            assert_eq!(streamed.reasoning_text, &input[..input.len() - 1], "{name}");
+            assert_eq!(streamed.normal_text, "", "{name}");
+
+            let finished = parser.finish_reasoning_stream();
+            assert_eq!(finished.reasoning_text, held, "{name}");
+            assert_eq!(finished.normal_text, "", "{name}");
+            assert_eq!(
+                format!("{}{}", streamed.reasoning_text, finished.reasoning_text),
+                input,
+                "{name}"
+            );
+        }
     }
 
     #[test] // TOOLCALLING.fmt.3 — token-spelling differences across model variants
