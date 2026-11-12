@@ -1291,7 +1291,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.4.2"
+version = "10.4.3"
 dependencies = [
  "aho-corasick",
  "anyhow",
