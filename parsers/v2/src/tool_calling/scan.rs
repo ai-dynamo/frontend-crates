@@ -2162,6 +2162,11 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     reasoning_enabled: bool,
     /// Effective request-scoped start, separate from the family declaration.
     reasoning_forced_start: bool,
+    structural_reasoning_closer: bool,
+    reasoning_close_scanned: usize,
+    reasoning_close_found: Option<usize>,
+    #[cfg(test)]
+    reasoning_close_searched_bytes: usize,
     buffer: String,
     buffer_previous: Option<char>,
     prose: ProseControlState,
@@ -2237,6 +2242,11 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             reasoning: None,
             reasoning_enabled: false,
             reasoning_forced_start: false,
+            structural_reasoning_closer: false,
+            reasoning_close_scanned: 0,
+            reasoning_close_found: None,
+            #[cfg(test)]
+            reasoning_close_searched_bytes: 0,
             buffer: String::new(),
             buffer_previous: None,
             prose: ProseControlState::default(),
@@ -2315,6 +2325,11 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     }
 
     /// Request-scoped malformed-call and argument-framing policy. Survives `reset`.
+    pub(crate) fn supports_tool_policy(&self, policy: ToolCallPolicy) -> bool {
+        self.has_envelope()
+            || (self.spec.family == "glm47" && policy.argument_framing == Default::default())
+    }
+
     pub(crate) fn set_tool_policy(&mut self, policy: ToolCallPolicy) {
         self.policy = policy;
         self.emitter.configure(policy);
@@ -2375,6 +2390,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// either behavior. They remain separate from the tool marker lists so
     /// [`Self::set_reasoning_mode`] can make the markers literal for response
     /// starting_state without rebuilding the scanner.
+    pub(crate) fn set_reasoning_closer_policy(
+        &mut self,
+        policy: crate::unified::ReasoningCloserPolicy,
+    ) {
+        self.structural_reasoning_closer =
+            policy == crate::unified::ReasoningCloserPolicy::Structural;
+    }
+
     pub(crate) fn with_reasoning(mut self, reasoning: ReasoningSpec) -> Self {
         self.reasoning_enabled = true;
         self.in_reasoning = reasoning.forced_start;
@@ -2519,6 +2542,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
         self.finish_at_eos = false;
+        self.reasoning_close_scanned = 0;
+        self.reasoning_close_found = None;
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
         self.buffer_previous = None;
@@ -2579,6 +2604,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         }
         self.buffer_previous = self.buffer[..bytes].chars().next_back();
         self.buffer.drain(..bytes);
+        self.reasoning_close_scanned = self.reasoning_close_scanned.saturating_sub(bytes);
+        if let Some(at) = self.reasoning_close_found {
+            self.reasoning_close_found = at.checked_sub(bytes);
+            if self.reasoning_close_found.is_none() {
+                // `find` stopped at this match; its suffix has not been searched.
+                self.reasoning_close_scanned = 0;
+            }
+        }
         if let Some(boundary) = self.invoke_boundary.as_mut() {
             boundary.discard_prefix(bytes);
         }
@@ -2731,6 +2764,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
+        // Reject mode requires a real native terminator. Confirmed grammar-valid
+        // EOS remains the separate, explicit implicit-terminator contract.
+        let flush = flush
+            && (self.policy.malformed != MalformedToolCallPolicy::Reject || self.finish_at_eos);
         self.anchored_invoke = true;
         match self.invoke_boundary.as_mut() {
             Some(boundary) => {
@@ -3721,31 +3758,80 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.prose.clear();
     }
 
+    fn reject_incomplete_tool_at_eof(&self) -> anyhow::Result<()> {
+        if self.policy.malformed == MalformedToolCallPolicy::Reject {
+            return Err(anyhow::Error::new(MalformedToolCall {
+                reason: "native tool call ended before its terminator",
+            }));
+        }
+        Ok(())
+    }
+
     fn drain<S: EventSink + ?Sized>(&mut self, flush: bool, out: &mut S) -> anyhow::Result<()> {
         if let Some(env) = self.envelope {
             return self.drain_envelope(env, flush, out);
         }
         loop {
             if !self.in_block && !self.anchored_invoke && !self.special_token_markers {
+                // Scan only newly appended bytes plus delimiter overlap. A pending
+                // prose quote can retain the buffer for arbitrarily many chunks.
+                let structural_close = if let Some(reasoning) = self
+                    .reasoning
+                    .filter(|_| self.in_reasoning && self.structural_reasoning_closer)
+                {
+                    if self.reasoning_close_found.is_none() {
+                        self.reasoning_close_found = self.buffer[self.reasoning_close_scanned..]
+                            .find(reasoning.end)
+                            .map(|at| at + self.reasoning_close_scanned);
+                        #[cfg(test)]
+                        {
+                            self.reasoning_close_searched_bytes += self
+                                .reasoning_close_found
+                                .map_or(self.buffer.len(), |at| at + reasoning.end.len())
+                                .saturating_sub(self.reasoning_close_scanned);
+                        }
+                        let mut next = self.buffer.len().saturating_sub(reasoning.end.len() - 1);
+                        while !self.buffer.is_char_boundary(next) {
+                            next -= 1;
+                        }
+                        self.reasoning_close_scanned = next;
+                    }
+                    self.reasoning_close_found
+                } else {
+                    None
+                };
+                let quote_input =
+                    structural_close.map_or(self.buffer.as_str(), |end| &self.buffer[..end]);
                 let control = self.prose.classify(
-                    &self.buffer,
+                    quote_input,
                     self.spec
                         .holdback_markers
                         .iter()
                         .map(String::as_str)
                         .chain(self.reasoning.iter().flat_map(|r| [r.start, r.end])),
-                    flush,
+                    flush || structural_close.is_some(),
                     |text, at, flush| {
-                        prose_invoke_span(
+                        let span = prose_invoke_span(
                             text,
                             at,
                             flush,
                             &self.spec.invoke_start,
                             &self.spec.invoke_end,
                             self.spec.invoke_boundary_factory.clone(),
-                        )
+                        );
+                        // A boundary inside a quoted native example must not expose
+                        // its nested argument quotes or controls to the prose lexer.
+                        if structural_close.is_some() && matches!(span, ProseGrammarSpan::Pending) {
+                            ProseGrammarSpan::Owned(text.len() - at)
+                        } else {
+                            span
+                        }
                     },
                 );
+                let control = match (control, structural_close) {
+                    (ProseControl::Unmatched(_), Some(end)) => ProseControl::Literal(end),
+                    (control, _) => control,
+                };
                 let (length, waiting, unmatched) = match control {
                     ProseControl::Literal(length) => (length, false, false),
                     ProseControl::Pending(at) => (at - self.tool_separator_len_at(at), true, false),
@@ -3814,6 +3900,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
                 let Some(start) = invoke_start else {
                     if flush {
+                        self.reject_incomplete_tool_at_eof()?;
                         tracing::warn!(
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"
@@ -3869,6 +3956,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         continue;
                     }
                     if flush {
+                        self.reject_incomplete_tool_at_eof()?;
                         // Reviewer-caught regression: `invoke_end_at`
                         // returning `None` at flush does NOT always mean
                         // "genuinely incomplete, nothing left to salvage".
@@ -4120,6 +4208,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             break;
                         }
                         if flush {
+                            self.reject_incomplete_tool_at_eof()?;
                             tracing::warn!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
                                 "stream dropped incomplete bare invoke at EOF"
@@ -4261,6 +4350,44 @@ mod recovery_tests {
 mod tests {
     use super::test_support::failing_scanner;
     use super::*;
+
+    #[test]
+    fn structural_reasoning_closer_search_is_linear_for_pending_prose() {
+        for length in [4096, 16384, 65536] {
+            for chunk_size in [1, 64] {
+                let mut scanner =
+                    crate::tool_calling::glm47::glm47_scanner(&[]).with_reasoning(ReasoningSpec {
+                        start: "<think>",
+                        end: "</think>",
+                        forced_start: true,
+                        ..Default::default()
+                    });
+                scanner
+                    .set_reasoning_closer_policy(crate::unified::ReasoningCloserPolicy::Structural);
+                let input = format!(
+                    "unclosed \"<tool_call>{}</think>answer\"",
+                    "x".repeat(length)
+                );
+                for chunk in input.as_bytes().chunks(chunk_size) {
+                    scanner
+                        .push_ordered(std::str::from_utf8(chunk).unwrap())
+                        .unwrap();
+                }
+                scanner.finish_ordered().unwrap();
+                assert!(
+                    scanner.reasoning_close_searched_bytes > 0
+                        && scanner.reasoning_close_searched_bytes <= 16 * input.len(),
+                    "searched {} for {} bytes at chunk size {}",
+                    scanner.reasoning_close_searched_bytes,
+                    input.len(),
+                    chunk_size
+                );
+                scanner.reset();
+                assert_eq!(scanner.reasoning_close_scanned, 0);
+                assert_eq!(scanner.reasoning_close_found, None);
+            }
+        }
+    }
 
     #[test]
     fn open_invoke_block_end_search_is_linear() {

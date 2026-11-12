@@ -59,9 +59,14 @@ fn spec() -> WrappedBlockSpec {
 pub(crate) struct Glm47Emitter {
     config: Glm47ParserConfig,
     tools: Vec<ToolDefinition>,
+    malformed: crate::unified::MalformedToolCallPolicy,
 }
 
 impl InvokeEmitter for Glm47Emitter {
+    fn configure(&mut self, policy: crate::unified::ToolCallPolicy) {
+        self.malformed = policy.malformed;
+    }
+
     fn parse_invoke(
         &mut self,
         invoke: &str,
@@ -70,6 +75,11 @@ impl InvokeEmitter for Glm47Emitter {
         let call = match parse_glm47_invoke(invoke, &self.config, Some(&self.tools)) {
             Ok(call) => call,
             Err(error) => {
+                if self.malformed == crate::unified::MalformedToolCallPolicy::Reject {
+                    return Err(anyhow::Error::new(crate::unified::MalformedToolCall {
+                        reason: "native GLM tool body could not be parsed",
+                    }));
+                }
                 tracing::warn!(
                     why = "glm47_unparseable_invoke",
                     tool_index,
@@ -280,6 +290,7 @@ pub(crate) fn glm47_scanner(tools: &[Tool]) -> WrappedBlockScanner<Glm47Emitter>
         spec(),
         Glm47Emitter {
             config: Glm47ParserConfig::default(),
+            malformed: Default::default(),
             tools: tools.iter().map(ToolDefinition::from).collect(),
         },
     )

@@ -215,6 +215,16 @@ pub enum InvalidGuidedPayloadPolicy {
     StreamBestEffort,
 }
 
+/// Quotation policy for native marker-pair reasoning closers.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ReasoningCloserPolicy {
+    #[default]
+    QuoteAware,
+    /// A closer ends reasoning even when a prose quote has not closed.
+    /// Tool quotation and argument framing retain their native grammar.
+    Structural,
+}
+
 /// Fully resolved request-scoped parser configuration.
 ///
 /// Prompt inspection and backend request resolution happen before this value is
@@ -226,6 +236,8 @@ pub struct UnifiedParserInit {
     pub starting_state: UnifiedParserStartingState,
     pub tool_output_mode: UnifiedToolOutputMode,
     pub invalid_guided_payload: InvalidGuidedPayloadPolicy,
+    /// Native marker-pair mode only; the default preserves quoted literal closers.
+    pub reasoning_closer_policy: ReasoningCloserPolicy,
 }
 
 /// Input forms a Unified parser can consume without losing model-token data.
@@ -397,6 +409,9 @@ pub trait UnifiedParser: Send {
 
     /// Apply the one fully resolved request configuration before parsing starts.
     fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
+        if init.reasoning_closer_policy != ReasoningCloserPolicy::QuoteAware {
+            anyhow::bail!("this unified parser does not support a reasoning-closer policy");
+        }
         if init.starting_state != UnifiedParserStartingState::None {
             anyhow::bail!("this unified parser does not support prompt-prefilled channels");
         }
@@ -938,6 +953,10 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
 }
 
 impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
+    fn supports_structural_reasoning_closer(&self) -> bool {
+        self.scanner.reasoning_spec().is_some()
+    }
+
     fn preserve_special_tokens(&self) -> bool {
         self.scanner.preserve_special_tokens()
     }
@@ -973,12 +992,17 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
     }
 
     fn set_tool_policy(&mut self, policy: ToolCallPolicy) -> bool {
+        if !self.scanner.supports_tool_policy(policy) {
+            return false;
+        }
         self.scanner.set_tool_policy(policy);
-        self.scanner.has_envelope()
+        true
     }
 
     fn apply_native_init(&mut self, init: &UnifiedParserInit) -> Result<()> {
         self.scanner.reset();
+        self.scanner
+            .set_reasoning_closer_policy(init.reasoning_closer_policy);
         self.restore_native_state(init.starting_state);
         Ok(())
     }
@@ -1034,6 +1058,10 @@ pub(crate) enum GuidedPrefilledHeader {
 }
 
 pub(crate) trait NativeUnified {
+    fn supports_structural_reasoning_closer(&self) -> bool {
+        false
+    }
+
     fn checkpoint_native(&mut self) {}
 
     fn fork_native(&self) -> Result<Option<Self>>
@@ -1256,6 +1284,13 @@ impl<N: NativeUnified> GuidedRouted<N> {
         let tool_output_mode = init.tool_output_mode.clone();
         let invalid_guided_payload = init.invalid_guided_payload;
         let reasoning = self.native.guided_reasoning();
+        if init.reasoning_closer_policy == ReasoningCloserPolicy::Structural
+            && (!self.native.supports_structural_reasoning_closer()
+                || !matches!(tool_output_mode, UnifiedToolOutputMode::Native)
+                || !matches!(reasoning, Some(GuidedReasoning::Pair(_))))
+        {
+            anyhow::bail!("structural reasoning closers require native marker-pair output");
+        }
         // An EXPLICIT `Reasoning` demand that this family cannot represent must fail
         // here, before anything is mutated. Folding "cannot represent" into "off" is
         // right for the neutral `None` default but wrong for a caller that stated the

@@ -2306,6 +2306,7 @@ mod tests {
     /// Init selecting the streaming contract.
     fn stream_init(mode: UnifiedToolOutputMode) -> UnifiedParserInit {
         UnifiedParserInit {
+            reasoning_closer_policy: Default::default(),
             prompt_token_ids: Vec::new(),
             starting_state: UnifiedParserStartingState::None,
             tool_output_mode: mode,

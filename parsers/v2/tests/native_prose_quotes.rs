@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use dynamo_parsers_v2::{
-    InvalidGuidedPayloadPolicy, Tool, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-    UnifiedParserStartingState, UnifiedToolOutputMode, assemble, create_unified_parser_for_family,
+    InvalidGuidedPayloadPolicy, ReasoningCloserPolicy, Tool, UnifiedEvent, UnifiedParserExt,
+    UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+    create_unified_parser_for_family,
 };
 
 const FAMILIES: [(&str, &str, &str); 9] = [
@@ -620,4 +621,224 @@ fn response_resynchronization_respects_earlier_provisional_ownership() {
             }
         }
     }
+}
+
+// A serving stack which knows that native reasoning is open can make its
+// delimiter structural without changing the default quoted-literal contract.
+fn structural_parse(
+    input: &str,
+    state: UnifiedParserStartingState,
+    chunks: &[usize],
+) -> Vec<UnifiedEvent> {
+    let mut parser = create_unified_parser_for_family("glm47", &tools()).unwrap();
+    parser
+        .initialize_request(UnifiedParserInit {
+            starting_state: state,
+            reasoning_closer_policy: ReasoningCloserPolicy::Structural,
+            ..Default::default()
+        })
+        .unwrap();
+    let mut events = Vec::new();
+    let mut start = 0;
+    for &end in chunks {
+        events.extend(parser.push(&input[start..end]).unwrap());
+        start = end;
+    }
+    events.extend(parser.push(&input[start..]).unwrap());
+    events.extend(parser.finish().unwrap().events);
+    assemble(&events)
+}
+
+fn structural_every_split(
+    input: &str,
+    state: UnifiedParserStartingState,
+    expected: &[UnifiedEvent],
+) {
+    for at in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
+        assert_eq!(
+            structural_parse(input, state, &[at]),
+            expected,
+            "split {at}: {input:?}"
+        );
+    }
+    let chars: Vec<_> = input.char_indices().map(|(at, _)| at).collect();
+    assert_eq!(
+        structural_parse(input, state, &chars),
+        expected,
+        "character chunks"
+    );
+}
+
+#[test]
+fn structural_glm_closer_ends_a_quote_that_would_close_in_the_answer() {
+    let thought = "检查一下 \"unfinished quote and a literal <tool_call> marker ";
+    let answer = "Answer closes the quote\". ";
+    let call = native_call("glm47", "echo done");
+    let input = format!("{thought}</think>{answer}{call}");
+    structural_every_split(
+        &input,
+        UnifiedParserStartingState::Reasoning,
+        &[
+            UnifiedEvent::Reasoning {
+                text: thought.into(),
+            },
+            UnifiedEvent::Text {
+                text: answer.into(),
+            },
+            UnifiedEvent::ToolCall {
+                name: "run".into(),
+                arguments: serde_json::json!({"cmd":"echo done"}),
+            },
+        ],
+    );
+}
+
+#[test]
+fn structural_glm_closer_leaves_native_arguments_owned_by_the_tool_grammar() {
+    let value = "echo \"</think>\" and <tool_call> literal";
+    let input = native_call("glm47", value);
+    structural_every_split(
+        &input,
+        UnifiedParserStartingState::Reasoning,
+        &[UnifiedEvent::ToolCall {
+            name: "run".into(),
+            arguments: serde_json::json!({"cmd":value}),
+        }],
+    );
+}
+
+#[test]
+fn structural_glm_response_keeps_quoted_closers_literal() {
+    let input = "The literal \"</think>\" stays visible.";
+    structural_every_split(
+        input,
+        UnifiedParserStartingState::Response,
+        &[UnifiedEvent::Text { text: input.into() }],
+    );
+    every_split(
+        "glm47",
+        input,
+        UnifiedParserStartingState::Reasoning,
+        &[UnifiedEvent::Reasoning { text: input.into() }],
+    );
+}
+
+#[test]
+fn structural_glm_quoted_call_cannot_promote_nested_controls() {
+    let thought = format!(
+        "Example \"{}",
+        native_call("glm47", "echo \"</think>\" <tool_call>run")
+    );
+    let input = format!("{thought}\" visible");
+    let events = structural_parse(&input, UnifiedParserStartingState::Reasoning, &[]);
+    assert!(
+        !events
+            .iter()
+            .any(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+    );
+    structural_every_split(&input, UnifiedParserStartingState::Reasoning, &events);
+}
+
+#[test]
+fn structural_glm_search_resumes_after_an_argument_or_earlier_thought() {
+    for input in [
+        "one</think>answer<think>two \"unclosed</think>done\"".to_string(),
+        format!(
+            "{}two \"unclosed</think>done\"",
+            native_call("glm47", "echo </think>")
+        ),
+    ] {
+        let expected = structural_parse(&input, UnifiedParserStartingState::Reasoning, &[]);
+        assert!(
+            expected.iter().any(
+                |event| matches!(event, UnifiedEvent::Text { text } if text.ends_with("done\""))
+            )
+        );
+        structural_every_split(&input, UnifiedParserStartingState::Reasoning, &expected);
+    }
+}
+
+#[test]
+fn structural_policy_rejection_and_reset_preserve_default_initialization() {
+    let mut parser = create_unified_parser_for_family("glm47", &tools()).unwrap();
+    assert!(
+        parser
+            .initialize_request(UnifiedParserInit {
+                reasoning_closer_policy: ReasoningCloserPolicy::Structural,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                ..Default::default()
+            })
+            .is_err()
+    );
+    parser
+        .initialize_request(UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::Reasoning,
+            reasoning_closer_policy: ReasoningCloserPolicy::Structural,
+            ..Default::default()
+        })
+        .unwrap();
+    parser.push("unfinished \"<tool_call>").unwrap();
+    parser.reset();
+    parser
+        .initialize_request(UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::Reasoning,
+            ..Default::default()
+        })
+        .unwrap();
+    let input = "literal \"</think>\"";
+    let mut events = parser.push(input).unwrap();
+    events.extend(parser.finish().unwrap().events);
+    assert_eq!(
+        assemble(&events),
+        [UnifiedEvent::Reasoning { text: input.into() }]
+    );
+}
+
+#[test]
+fn native_reject_policy_reports_incomplete_calls_after_structural_channel_close() {
+    for gap in ["", "answer "] {
+        for tail in ["\"Paris", "Paris</arg_value>"] {
+            let mut parser = create_unified_parser_for_family("glm47", &tools()).unwrap();
+            parser
+                .initialize_request(UnifiedParserInit {
+                    starting_state: UnifiedParserStartingState::Reasoning,
+                    reasoning_closer_policy: ReasoningCloserPolicy::Structural,
+                    ..Default::default()
+                })
+                .unwrap();
+            parser
+                .set_tool_call_policy(dynamo_parsers_v2::ToolCallPolicy {
+                    malformed: dynamo_parsers_v2::MalformedToolCallPolicy::Reject,
+                    ..Default::default()
+                })
+                .unwrap();
+            let call = format!("<tool_call>run<arg_key>cmd</arg_key><arg_value>{tail}");
+            parser.push(&format!("\"</think>{gap}{call}")).unwrap();
+            let error = parser.finish().unwrap_err();
+            assert!(
+                error
+                    .downcast_ref::<dynamo_parsers_v2::MalformedToolCall>()
+                    .is_some()
+            );
+            assert_eq!(parser.reset(), call);
+        }
+    }
+}
+
+#[test]
+fn native_glm_reject_policy_reports_a_delimited_malformed_body() {
+    let mut parser = create_unified_parser_for_family("glm47", &tools()).unwrap();
+    parser
+        .set_tool_call_policy(dynamo_parsers_v2::ToolCallPolicy {
+            malformed: dynamo_parsers_v2::MalformedToolCallPolicy::Reject,
+            ..Default::default()
+        })
+        .unwrap();
+    let error = parser.push("<tool_call></tool_call>").unwrap_err();
+    assert!(
+        error
+            .downcast_ref::<dynamo_parsers_v2::MalformedToolCall>()
+            .is_some()
+    );
+    assert_eq!(parser.reset(), "<tool_call></tool_call>");
 }

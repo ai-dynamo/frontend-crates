@@ -56,6 +56,7 @@ mod tests {
         let mut parser = muse_spark_unified(&tools());
         parser
             .initialize_request(UnifiedParserInit {
+                reasoning_closer_policy: Default::default(),
                 prompt_token_ids: Vec::new(),
                 starting_state: UnifiedParserStartingState::Reasoning,
                 tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -297,6 +298,7 @@ mod tests {
         let mut parser = muse_spark_unified(&tools());
         parser
             .initialize_request(UnifiedParserInit {
+                reasoning_closer_policy: Default::default(),
                 prompt_token_ids: Vec::new(),
                 starting_state: UnifiedParserStartingState::Reasoning,
                 tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -522,6 +524,7 @@ mod tests {
         let mut parser = muse_spark_unified(&tools());
         parser
             .initialize_request(UnifiedParserInit {
+                reasoning_closer_policy: Default::default(),
                 prompt_token_ids: Vec::new(),
                 starting_state: UnifiedParserStartingState::None,
                 tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },

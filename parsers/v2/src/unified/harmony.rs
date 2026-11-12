@@ -1091,6 +1091,7 @@ impl NativeUnified for HarmonyNative {
             starting_state: init.starting_state,
             tool_output_mode: init.tool_output_mode.clone(),
             invalid_guided_payload: init.invalid_guided_payload,
+            reasoning_closer_policy: init.reasoning_closer_policy,
         };
         self.pending_token_bytes.clear();
         Ok(())
@@ -1208,6 +1209,10 @@ impl UnifiedParser for LegacyHarmonyUnified {
     }
 
     fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
+        anyhow::ensure!(
+            init.reasoning_closer_policy == super::ReasoningCloserPolicy::QuoteAware,
+            "Harmony does not support a reasoning-closer policy"
+        );
         if self.started || self.finished {
             anyhow::bail!("cannot initialize a unified parser after parsing has started");
         }

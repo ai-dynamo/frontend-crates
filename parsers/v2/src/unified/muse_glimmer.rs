@@ -485,6 +485,7 @@ mod tests {
         let mut parser = muse_glimmer_unified(&tools());
         parser
             .initialize_request(UnifiedParserInit {
+                reasoning_closer_policy: Default::default(),
                 prompt_token_ids: Vec::new(),
                 starting_state: UnifiedParserStartingState::None,
                 tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1282,6 +1283,7 @@ mod tests {
                 let mut parser = muse_glimmer_unified(&tools());
                 parser
                     .initialize_request(UnifiedParserInit {
+                        reasoning_closer_policy: Default::default(),
                         prompt_token_ids: Vec::new(),
                         starting_state: start,
                         tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1348,6 +1350,7 @@ mod tests {
             let mut parser = muse_glimmer_unified(&tools());
             parser
                 .initialize_request(UnifiedParserInit {
+                    reasoning_closer_policy: Default::default(),
                     prompt_token_ids: Vec::new(),
                     starting_state: start,
                     tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1509,6 +1512,7 @@ mod tests {
                 let mut parser = muse_glimmer_unified(&tools());
                 parser
                     .initialize_request(UnifiedParserInit {
+                        reasoning_closer_policy: Default::default(),
                         prompt_token_ids: Vec::new(),
                         starting_state: UnifiedParserStartingState::None,
                         tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1578,6 +1582,7 @@ mod tests {
                 let mut parser = muse_glimmer_unified(&tools());
                 parser
                     .initialize_request(UnifiedParserInit {
+                        reasoning_closer_policy: Default::default(),
                         prompt_token_ids: Vec::new(),
                         starting_state: UnifiedParserStartingState::None,
                         tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1655,6 +1660,7 @@ mod tests {
                 let mut parser = muse_glimmer_unified(&tools());
                 parser
                     .initialize_request(UnifiedParserInit {
+                        reasoning_closer_policy: Default::default(),
                         prompt_token_ids: Vec::new(),
                         starting_state: UnifiedParserStartingState::None,
                         tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1759,6 +1765,7 @@ mod tests {
                 let mut parser = muse_glimmer_unified(&tools());
                 parser
                     .initialize_request(UnifiedParserInit {
+                        reasoning_closer_policy: Default::default(),
                         prompt_token_ids: Vec::new(),
                         starting_state: UnifiedParserStartingState::None,
                         tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1813,6 +1820,7 @@ mod tests {
             let mut parser = muse_glimmer_unified(&tools());
             parser
                 .initialize_request(UnifiedParserInit {
+                    reasoning_closer_policy: Default::default(),
                     prompt_token_ids: Vec::new(),
                     starting_state: UnifiedParserStartingState::None,
                     tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
@@ -1944,6 +1952,7 @@ mod tests {
                 let mut parser = muse_glimmer_unified(&tools());
                 parser
                     .initialize_request(UnifiedParserInit {
+                        reasoning_closer_policy: Default::default(),
                         prompt_token_ids: Vec::new(),
                         starting_state: UnifiedParserStartingState::None,
                         tool_output_mode: UnifiedToolOutputMode::GuidedJson {
@@ -1971,6 +1980,7 @@ mod tests {
         let mut parser = muse_glimmer_unified(&tools());
         parser
             .initialize_request(UnifiedParserInit {
+                reasoning_closer_policy: Default::default(),
                 prompt_token_ids: Vec::new(),
                 starting_state: UnifiedParserStartingState::Response,
                 tool_output_mode: UnifiedToolOutputMode::GuidedJson {
