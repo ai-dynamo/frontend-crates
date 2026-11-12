@@ -147,3 +147,65 @@ fn separator_changes_do_not_invent_system_role_support() {
     assert_eq!(raw, expected);
     assert_eq!(render(template, &messages), expected);
 }
+
+#[test]
+fn inference_settings_missing_from_probe_do_not_hide_dropped_system() {
+    use dynamo_renderer::OAIChatLikeRequest;
+    use std::collections::HashMap;
+
+    struct Request {
+        messages: Value,
+        args: HashMap<String, Value>,
+    }
+
+    impl OAIChatLikeRequest for Request {
+        fn model(&self) -> String {
+            "test".to_string()
+        }
+
+        fn messages(&self) -> minijinja::Value {
+            minijinja::Value::from_serialize(&self.messages)
+        }
+
+        fn should_add_generation_prompt(&self) -> bool {
+            true
+        }
+
+        fn chat_template_args(&self) -> Option<&HashMap<String, Value>> {
+            Some(&self.args)
+        }
+    }
+
+    let template = concat!(
+        "{%- if add_generation_prompt and generation_settings is not defined -%}",
+        "{{ raise_exception('generation_settings is required for inference') }}",
+        "{%- endif -%}",
+        "{%- for m in messages -%}",
+        "{%- if loop.first or m.role != 'system' -%}",
+        "<{{ m.role }}>{{ m.content }}</{{ m.role }}>",
+        "{%- endif -%}",
+        "{%- endfor -%}",
+        "{%- if add_generation_prompt -%}",
+        "<assistant mode='{{ generation_settings.mode }}'>",
+        "{%- endif -%}"
+    );
+    let config: ChatTemplate = serde_json::from_value(json!({"chat_template": template})).unwrap();
+    let PromptFormatter::OAI(formatter) =
+        PromptFormatter::from_parts(config, ContextMixins::new(&[]), false).unwrap();
+    let request = Request {
+        messages: json!([
+            {"role": "system", "content": "Be helpful"},
+            {"role": "user", "content": "question"},
+            {"role": "assistant", "content": "answer"},
+            {"role": "system", "content": "Be concise"},
+            {"role": "user", "content": "next question"},
+        ]),
+        args: HashMap::from([("generation_settings".to_string(), json!({"mode": "chat"}))]),
+    };
+    let rendered = formatter.render(&request).unwrap();
+    assert!(rendered.ends_with("<assistant mode='chat'>"));
+    assert!(
+        rendered.contains("<user>Be concise</user>"),
+        "the configured inference request must keep the later system content: {rendered}"
+    );
+}
