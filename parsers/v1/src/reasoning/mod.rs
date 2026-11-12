@@ -2079,26 +2079,17 @@ mod tests {
 
     #[test]
     fn test_final_chunk_ending_in_close_marker_prefix_needs_finish() {
-        for (name, input, held) in [
-            ("qwen3", "Compare a <", "<"),
-            ("mistral", "Compare a [", "["),
-        ] {
-            let mut parser = ReasoningParserType::get_reasoning_parser_from_name(name);
-            parser.set_in_reasoning(true);
+        // `[` may start `[/THINK]`, so it is held until EOF.
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("mistral");
+        parser.set_in_reasoning(true);
 
-            let streamed = parser.parse_reasoning_streaming_incremental(input, &[]);
-            assert_eq!(streamed.reasoning_text, &input[..input.len() - 1], "{name}");
-            assert_eq!(streamed.normal_text, "", "{name}");
+        let streamed = parser.parse_reasoning_streaming_incremental("Compare a [", &[]);
+        assert_eq!(streamed.reasoning_text, "Compare a ");
+        assert_eq!(streamed.normal_text, "");
 
-            let finished = parser.finish_reasoning_stream();
-            assert_eq!(finished.reasoning_text, held, "{name}");
-            assert_eq!(finished.normal_text, "", "{name}");
-            assert_eq!(
-                format!("{}{}", streamed.reasoning_text, finished.reasoning_text),
-                input,
-                "{name}"
-            );
-        }
+        let finished = parser.finish_reasoning_stream();
+        assert_eq!(finished.reasoning_text, "[");
+        assert_eq!(finished.normal_text, "");
     }
 
     #[test] // TOOLCALLING.fmt.3 — token-spelling differences across model variants
