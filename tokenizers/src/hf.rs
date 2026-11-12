@@ -3,11 +3,12 @@
 
 use std::{collections::HashSet, path::Path, sync::OnceLock};
 
+use tokenizers::pre_tokenizers::{PreTokenizerWrapper, metaspace::PrependScheme};
 use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
 
 use super::{
     Encoding, Error, Result, TokenIdType, TokenizerOptions,
-    traits::{DecodeResult, Decoder, Encoder, Tokenizer},
+    traits::{DecodeResult, Decoder, Encoder, PrefixSplitRules, Tokenizer},
 };
 
 pub struct HuggingFaceTokenizer {
@@ -271,6 +272,21 @@ impl Decoder for HuggingFaceTokenizer {
     }
 }
 
+/// The Metaspace marker when it is prepended only to text at offset 0 of the input.
+fn first_word_marker(pre_tokenizer: &PreTokenizerWrapper) -> Option<char> {
+    match pre_tokenizer {
+        PreTokenizerWrapper::Metaspace(metaspace)
+            if metaspace.get_prepend_scheme() == PrependScheme::First =>
+        {
+            Some(metaspace.get_replacement())
+        }
+        PreTokenizerWrapper::Sequence(sequence) => {
+            sequence.as_ref().iter().find_map(first_word_marker)
+        }
+        _ => None,
+    }
+}
+
 impl Tokenizer for HuggingFaceTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
         if self.options.add_special_tokens {
@@ -286,6 +302,23 @@ impl Tokenizer for HuggingFaceTokenizer {
             ));
         }
         Ok(())
+    }
+
+    fn prefix_split_rules(&self) -> PrefixSplitRules {
+        let mut rules = PrefixSplitRules::default();
+        for token in self.tokenizer.get_added_tokens_decoder().into_values() {
+            if token.rstrip {
+                rules.rstrip.push(token.content.clone());
+            }
+            if token.single_word {
+                rules.single_word.push(token.content);
+            }
+        }
+        rules.first_word_marker = self
+            .tokenizer
+            .get_pre_tokenizer()
+            .and_then(first_word_marker);
+        rules
     }
 
     /// HF honors [`TokenizerOptions::add_special_tokens`] (BOS/EOS per the

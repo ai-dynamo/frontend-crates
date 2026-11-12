@@ -28,7 +28,7 @@ pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
 pub use tekken::TekkenTokenizer;
 pub use tiktoken::TikTokenTokenizer;
-pub use traits::DecodeResult;
+pub use traits::{DecodeResult, PrefixSplitRules};
 
 pub type TokenIdType = u32;
 
@@ -200,6 +200,23 @@ pub mod traits {
         ) -> Result<DecodeResult>;
     }
 
+    /// How splitting input after a special token can change this tokenizer's ids.
+    ///
+    /// The prefix cache encodes the text on each side of a split separately. These
+    /// rules let it move or skip splits so the joined ids equal an uncached encode.
+    #[derive(Clone, Debug, Default, PartialEq, Eq)]
+    pub struct PrefixSplitRules {
+        /// Special tokens whose match also consumes the whitespace after them (`rstrip`).
+        pub rstrip: Vec<String>,
+        /// Special tokens matched only between non-word characters (`single_word`).
+        pub single_word: Vec<String>,
+        /// The marker prepended to text at the very start of the input, when the
+        /// tokenizer prepends one only there (Metaspace `prepend_scheme: "first"`).
+        /// Text after a split would wrongly get it unless it starts with a space,
+        /// the marker, or a special token.
+        pub first_word_marker: Option<char>,
+    }
+
     pub trait Tokenizer: Encoder + Decoder {
         /// Validate that this tokenizer can be safely wrapped in the prefix cache.
         ///
@@ -207,6 +224,13 @@ pub mod traits {
         /// return an error explaining why the tokenizer is incompatible.
         fn validate_prefix_cache(&self) -> Result<()> {
             Err(Error::msg("tokenizer does not support prefix caching"))
+        }
+
+        /// Rules the prefix cache must follow when splitting input at special tokens.
+        ///
+        /// The default suits backends that match special tokens literally.
+        fn prefix_split_rules(&self) -> PrefixSplitRules {
+            PrefixSplitRules::default()
         }
 
         /// Apply construction-time [`TokenizerOptions`].
