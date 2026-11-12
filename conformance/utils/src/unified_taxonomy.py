@@ -347,8 +347,6 @@ UNIFIED_TAX = {
     "gpt_oss_assistant_default_channel_visible_response": ("gpt_oss", "66"),
 
 
-    "structural_reasoning_cross_channel_quote": (40, "16"),
-    "structural_reasoning_cross_channel_quote_then_tool": (40, "17"),
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
     "prefilled_reasoning_then_text_then_tool": (40, "3"), "prefilled_reasoning_then_text": (40, "4"),

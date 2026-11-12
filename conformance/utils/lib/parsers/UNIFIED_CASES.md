@@ -709,11 +709,3 @@ inside JSON strings.
 The Kimi K3 response recovery follow-ups add published indices 25-27: `kimi-typed_response_argument_literal` preserves the original typed string when later XTML argument headers are literal data; `kimi-direct_typed_response_recovery` and `kimi-direct_json_response_recovery` recover direct calls entered from Response without exposing the response header. Structural whitespace before the recovered header is consumed with the call. These require K3 nested argument/JSON channels and its Response-prefilled direct-call routing; the other registered families retain their grammar-native marker and next-message cases.
 
 Known limitation: an unterminated typed string without an argument close, followed by a framed response, remains ambiguous and can yield no events at EOF. The unfinished-string recovery described above applies to the raw-JSON channel only. The argument-header literal cases above retain their complete string payload. A string combining an apparent argument close, response header, and nested call header can still be split into spurious calls; this pre-existing nested-call ambiguity is outside those argument-header cases. A downstream Dynamo dependency update is separate from this unpublished parser fix.
-
-
-### Explicit structural reasoning closers
-
-- `UNIFIED.40-structural_reasoning_cross_channel_quote`: native prompt-prefilled Reasoning ends at its structural closer even when a prose quote closes in the following answer. Delivery is one Unicode character per chunk.
-- `UNIFIED.40-structural_reasoning_cross_channel_quote_then_tool`: the same channel handoff preserves a following complete family-native `get_weather(city=Paris)` call.
-
-Applicable families: DeepSeek V4/V4.1, Gemma4, GLM47, Hermes, Qwen3 (including its qwen3_coder alias), Nemotron V3, MiniMax M3, Kimi K2 and Mistral 4. These requests explicitly set `reasoning_closer_policy=Structural`; the default QuoteAware contract is unchanged. Mistral's special-token grammar already treated its closer structurally before this opt-in API. Beam, Kimi K3, Muse Glimmer/Spark and GPT-OSS use channel/message framing and reject this marker-pair policy. Legacy non-Unified families and peer implementations without this request API are intentionally excluded.

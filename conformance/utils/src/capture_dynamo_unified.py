@@ -95,8 +95,6 @@ def prepare(target: dict, work: Path, target_dir: Path) -> dict:
     unified = source / "src/unified/mod.rs"
     tool_traits = source / "src/tool_calling/traits.rs"
     flags = native_assembly_cfg(lib)
-    if not unified.is_file() or "pub enum ReasoningCloserPolicy" not in unified.read_text():
-        flags.append("conformance_no_reasoning_closer_policy")
     if muse_guided_json_unsupported(source):
         flags.append("conformance_muse_guided_unsupported")
     if "create_unified_parser_for_family" not in lib:
