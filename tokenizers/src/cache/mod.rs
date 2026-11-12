@@ -56,6 +56,11 @@
 //!   contiguous runs and never cached. Segments are cached only while L1 is active (a
 //!   non-empty, non-overlapping special-token set), so an empty set still disables all
 //!   caching.
+//! - A segment that allows special tokens also shares `encode`'s prefix entries, where
+//!   the backend encodes it as `encode` does its text
+//!   ([`Tokenizer::validate_segment_prefix_cache`]). A prompt's last such segment grows
+//!   with the conversation, so it is looked up by prefix only; an earlier one that misses
+//!   by its exact text continues from its longest cached prefix.
 //! - `max_memory_bytes` — token-ID payload byte budget, excluding keys and metadata.
 //!   Moka shares admission and eviction via W-TinyLFU. Deferred maintenance makes the
 //!   capacity approximate; it is not a limit on total process memory.
@@ -111,6 +116,8 @@ pub struct CachedTokenizer {
     inner: Arc<dyn Tokenizer>,
     l1: L1Cache,
     l1_enabled: bool,
+    /// Segments that allow special tokens share `encode`'s prefix entries.
+    segment_prefixes: bool,
     extend_on_hit: bool,
     /// Called once after every successful encode while L1 is active.
     token_observer: Option<CacheTokenUsageFn>,
@@ -195,10 +202,12 @@ impl CachedTokenizer {
         } else {
             Vec::new()
         };
+        let segment_prefixes = l1_enabled && inner.validate_segment_prefix_cache().is_ok();
         Ok(Self {
             inner,
             l1: make_cache(cache_tokens),
             l1_enabled,
+            segment_prefixes,
             extend_on_hit: false,
             token_observer: None,
         })
@@ -245,6 +254,41 @@ impl CachedTokenizer {
         }
     }
 
+    /// The tokens of `input` after `lookup`, which must be this input's, and how many
+    /// of them the cache held.
+    fn encode_after_lookup(
+        &self,
+        input: &str,
+        lookup: PrefixLookup,
+    ) -> Result<(Vec<TokenIdType>, usize)> {
+        let matched = match lookup {
+            PrefixLookup::Hit(matched) => matched,
+            PrefixLookup::Miss(prefix_hashes) => {
+                let ids = self.l1.populate_and_encode_with_hashes(
+                    input,
+                    prefix_hashes.into_iter(),
+                    self.inner.as_ref(),
+                )?;
+                return Ok((ids, 0));
+            }
+        };
+
+        let cached_tokens = matched.tokens.len();
+        let ids = if self.extend_on_hit {
+            self.l1
+                .extend_after_match_with_hash(input, matched, self.inner.as_ref())?
+        } else {
+            let suffix_enc = self.inner.encode(&input[matched.prefix_len..])?;
+            // Reserve once to avoid copying the cached prefix during vector growth.
+            let mut merged: Vec<TokenIdType> =
+                Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
+            merged.extend_from_slice(&matched.tokens);
+            merged.extend_from_slice(suffix_enc.token_ids());
+            merged
+        };
+        Ok((ids, cached_tokens))
+    }
+
     /// Wrapper-local hits/misses and namespace-wide entries/token bytes.
     /// Shared storage statistics scan the namespace; private caches use Moka's totals.
     /// Results can change under concurrent writes. Disabled wrappers report zeroes.
@@ -268,37 +312,9 @@ impl Encoder for CachedTokenizer {
             return self.inner.encode(input);
         }
 
-        let matched = match self.l1.lookup_prefix(input) {
-            PrefixLookup::Hit(matched) => matched,
-            PrefixLookup::Miss(prefix_hashes) => {
-                let encoding = Encoding::Sp(self.l1.populate_and_encode_with_hashes(
-                    input,
-                    prefix_hashes.into_iter(),
-                    self.inner.as_ref(),
-                )?);
-                self.observe_token_usage(0, encoding.token_ids().len());
-                return Ok(encoding);
-            }
-        };
-
-        let cached_tokens = matched.tokens.len();
-        let encoding = if self.extend_on_hit {
-            Encoding::Sp(self.l1.extend_after_match_with_hash(
-                input,
-                matched,
-                self.inner.as_ref(),
-            )?)
-        } else {
-            let suffix_enc = self.inner.encode(&input[matched.prefix_len..])?;
-            // Reserve once to avoid copying the cached prefix during vector growth.
-            let mut merged: Vec<TokenIdType> =
-                Vec::with_capacity(matched.tokens.len() + suffix_enc.token_ids().len());
-            merged.extend_from_slice(&matched.tokens);
-            merged.extend_from_slice(suffix_enc.token_ids());
-            Encoding::Sp(merged)
-        };
-        self.observe_token_usage(cached_tokens, encoding.token_ids().len());
-        Ok(encoding)
+        let (ids, cached_tokens) = self.encode_after_lookup(input, self.l1.lookup_prefix(input))?;
+        self.observe_token_usage(cached_tokens, ids.len());
+        Ok(Encoding::Sp(ids))
     }
 
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
@@ -340,14 +356,34 @@ impl Encoder for CachedTokenizer {
             }
             run_start = index + 1;
             looked_up = true;
+            let by_prefix = self.segment_prefixes && segment.allow_special;
+            if by_prefix && index + 1 == segments.len() {
+                // The prompt's last segment grows with the conversation: only a
+                // prefix of it repeats, and the whole is not worth an entry.
+                let lookup = self.l1.find_prefix(segment.text);
+                let (tokens, cached) = self.encode_after_lookup(segment.text, lookup)?;
+                hit |= cached > 0;
+                cached_tokens += cached;
+                ids.extend_from_slice(&tokens);
+                continue;
+            }
             let key = self.l1.segment_key(segment.text, segment.allow_special);
             if let Some(tokens) = self.l1.get(&key) {
                 hit = true;
                 cached_tokens += tokens.len();
                 ids.extend_from_slice(&tokens);
             } else {
-                let encoding = self.inner.encode_segments(std::slice::from_ref(segment))?;
-                let tokens: Arc<[TokenIdType]> = encoding.token_ids().into();
+                let tokens: Arc<[TokenIdType]> = if by_prefix {
+                    // It may have grown as the last segment of earlier prompts.
+                    let lookup = self.l1.find_prefix(segment.text);
+                    let (tokens, cached) = self.encode_after_lookup(segment.text, lookup)?;
+                    hit |= cached > 0;
+                    cached_tokens += cached;
+                    tokens.into()
+                } else {
+                    let encoding = self.inner.encode_segments(std::slice::from_ref(segment))?;
+                    encoding.token_ids().into()
+                };
                 ids.extend_from_slice(&tokens);
                 self.l1.insert(key, tokens);
             }
@@ -678,6 +714,137 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn fast_inner() -> Arc<dyn Tokenizer> {
+        Arc::new(crate::FastTokenizer::from_file(TINYLLAMA_PATH).expect("load TinyLlama"))
+    }
+
+    #[test]
+    fn backends_that_share_prefixes_encode_a_special_segment_like_plain_text() {
+        for tokenizer in [inner(), fast_inner()] {
+            tokenizer
+                .validate_segment_prefix_cache()
+                .expect("backend shares prefix entries with segments");
+            for text in [
+                "<s>system\nYou are helpful.</s><s>user\nHi there</s>",
+                "no special tokens here",
+                " leading space</s>",
+                "</s><s>",
+            ] {
+                assert_eq!(
+                    tokenizer
+                        .encode_segments(&[EncodeSegment::control(text)])
+                        .unwrap()
+                        .token_ids(),
+                    tokenizer.encode(text).unwrap().token_ids(),
+                    "{text:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn growing_last_segment_reuses_its_prefix_and_matches_inner() {
+        for tokenizer in [inner(), fast_inner()] {
+            for extend_on_hit in [false, true] {
+                let (cached, events) = collect_token_usage(
+                    CachedTokenizer::new(tokenizer.clone(), specials(), 1 << 20)
+                        .expect("TinyLlama must support prefix caching")
+                        .with_extend(extend_on_hit),
+                );
+                // A conversation whose first user message typed `</s>`: the text
+                // before it, the typed marker as ordinary text, and all that follows.
+                let before = "<s>system\nYou are helpful.</s><s>user\nWhat does ".repeat(8);
+                let mut after =
+                    " mean in a chat template?</s><s>assistant\nIt ends a turn.</s>".repeat(8);
+                for turn in 0..3 {
+                    after.push_str(&format!(
+                        "<s>user\nQuestion {turn}, a little longer than the last?</s><s>assistant\n"
+                    ));
+                    let segments = [
+                        EncodeSegment::control(&before),
+                        EncodeSegment::ordinary("</s>"),
+                        EncodeSegment::control(&after),
+                    ];
+                    assert_eq!(
+                        cached.encode_segments(&segments).unwrap().token_ids(),
+                        tokenizer.encode_segments(&segments).unwrap().token_ids(),
+                        "turn {turn}"
+                    );
+                    after.push_str("An answer.</s>");
+                }
+
+                let events = events.lock().unwrap();
+                assert_eq!(events[0].cached_tokens, 0);
+                // Later turns encode the new exchanges, not the conversation again.
+                for usage in &events[1..] {
+                    assert!(
+                        usage.uncached_tokens * 2 < usage.cached_tokens,
+                        "extend {extend_on_hit}: {usage:?}"
+                    );
+                }
+                let stats = cached.cache_stats();
+                assert_eq!((stats.hits, stats.misses), (2, 1));
+            }
+        }
+    }
+
+    #[test]
+    fn segment_continues_from_a_prefix_that_encode_cached() {
+        for tokenizer in [inner(), fast_inner()] {
+            let (cached, events) = collect_token_usage(
+                CachedTokenizer::new(tokenizer.clone(), specials(), 1 << 20)
+                    .expect("TinyLlama must support prefix caching"),
+            );
+            // Earlier turns were encoded whole; the new message then types `</s>`.
+            let history = "<s>system\nYou are helpful.</s><s>user\nA first question?</s>\
+                           <s>assistant\nA first answer.</s>"
+                .repeat(4);
+            cached.encode(&history).unwrap();
+            let before = format!("{history}<s>user\nWhat does ");
+            let segments = [
+                EncodeSegment::control(&before),
+                EncodeSegment::ordinary("</s>"),
+                EncodeSegment::control(" mean?</s><s>assistant\n"),
+            ];
+            assert_eq!(
+                cached.encode_segments(&segments).unwrap().token_ids(),
+                tokenizer.encode_segments(&segments).unwrap().token_ids()
+            );
+            let events = events.lock().unwrap();
+            assert!(
+                events[1].cached_tokens > events[1].uncached_tokens,
+                "{:?}",
+                events[1]
+            );
+        }
+    }
+
+    #[test]
+    fn segments_reuse_prefixes_only_where_the_backend_opts_in() {
+        // The mock encodes a segment and plain text differently, and has not opted in.
+        let inner: Arc<dyn Tokenizer> = Arc::new(SegmentTokenizer);
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(inner.clone(), vec!["<ctl>".to_string()], 4096)
+                .expect("test tokenizer supports prefix caching"),
+        );
+        let mut text = long_text("turn one <ctl> ");
+        for _ in 0..2 {
+            let segment = [EncodeSegment::control(&text)];
+            assert_eq!(
+                cached.encode_segments(&segment).unwrap().token_ids(),
+                inner.encode_segments(&segment).unwrap().token_ids()
+            );
+            text.push_str("turn two <ctl> more");
+        }
+        assert!(
+            events
+                .lock()
+                .unwrap()
+                .iter()
+                .all(|usage| usage.cached_tokens == 0)
+        );
     }
 
     #[test]

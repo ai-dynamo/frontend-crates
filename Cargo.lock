@@ -1293,11 +1293,13 @@ dependencies = [
 name = "dynamo-renderer"
 version = "10.4.1"
 dependencies = [
+ "aho-corasick",
  "anyhow",
  "chrono",
  "dynamo-protocols",
  "dynamo-tokenizers",
  "either",
+ "memchr",
  "minijinja",
  "minijinja-contrib",
  "serde",

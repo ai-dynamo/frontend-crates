@@ -61,6 +61,7 @@ image = { version = "0.25", default-features = false, features = [
 ] }
 ipnet = "2"
 matroska-demuxer = "0.8"
+memchr = "2"
 minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
