@@ -659,7 +659,7 @@ fn reasoning_quote_workload_cases_keep_current_results_at_every_split() {
             }
         }
     }
-    assert_eq!(covered.len(), 160, "#595 family/case inventory changed");
+    assert_eq!(covered.len(), 159, "#595 family/case inventory changed");
 }
 
 #[test]
@@ -777,10 +777,7 @@ fn unified_parser_matches_the_golden_oracle() {
 
     assert_eq!(
         gpt_oss_disagreements,
-        [
-            "UNIFIED.gpt_oss_native_builtin_python_raw.gpt_oss",
-            "UNIFIED.native_quoted_control_then_call_progress.gpt_oss",
-        ]
+        ["UNIFIED.gpt_oss_native_builtin_python_raw.gpt_oss"]
     );
     capture::report_comparison("unified-golden", checked, &failures, false);
     assert!(checked >= 30, "expected the qwen3 corpus, got {checked}");

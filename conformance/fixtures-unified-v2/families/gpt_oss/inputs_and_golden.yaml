@@ -5423,18 +5423,6 @@ requests:
     chunk_sizes:
     - 136
     finish_step: true
-  7f8a6e6dec57229497f730ad3c853e2dd66925ac47210d7870b92004c0f0e462:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-    input: '<|start|>assistant<|channel|>final<|message|>The literal "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>" marker is part of the explanation. <|return|><|start|>assistant<|channel|>commentary to=functions.run <|constrain|>json<|message|>{"cmd": "Paris"}<|call|>'
-    tools: tools_ac03f4607c61c9ce
-    chunk_sizes:
-    - 198
-    - 94
-    - 15
-    finish_step: true
 cases:
   tool_only:
     description: Single tool call, no reasoning. Must stay green everywhere (the existing tool suite's world).
@@ -10722,18 +10710,3 @@ cases:
       name: write_file
       arguments:
         content: <think></think>answer
-  native_quoted_control_then_call_progress:
-    policy:
-    - I2
-    - I5
-    - I7
-    description: '#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Pause after prose and before the argument value, then deliver the completed call and finish separately to distinguish pre-EOF progress from whole-response buffering.'
-    display_id: UNIFIED.8-native_quoted_control_then_call_progress
-    request: 7f8a6e6dec57229497f730ad3c853e2dd66925ac47210d7870b92004c0f0e462
-    golden:
-    - kind: text
-      text: 'The literal "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>" marker is part of the explanation. '
-    - kind: tool_call
-      name: run
-      arguments:
-        cmd: Paris

@@ -2599,6 +2599,7 @@ HARMONY_INAPPLICABLE_EDGE_CASES = {
     "native_single_quote_contraction_reasoning",
     "native_quoted_incomplete_header",
     "native_quoted_control_then_call",
+    "native_quoted_control_then_call_progress",
     # Harmony has one call terminator, not distinct tool-open and tool-close tokens.
     "guided_json_tool_open_before_payload",
     # These literal specimens rely on separate invoke or parameter brackets.

@@ -1,4 +1,4 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e66044ea5c6ff161d8a38d98c33208d7582fe1f36eacf33b5d2973a8816a9b43","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"902a831ed7e6ea1307bf4294ee1e37c4dd44b72fd31df36a174e170ca0826490","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -11569,22 +11569,6 @@ records:
       - expected:
         - kind: text
           text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'
-      - expected: []
-  native_quoted_control_then_call_progress:
-    case_key: UNIFIED.8-native_quoted_control_then_call_progress
-    producer: producer_72c2f142b0f7c1d0
-    context: context_d9dd77becedcd121
-    request: 7f8a6e6dec57229497f730ad3c853e2dd66925ac47210d7870b92004c0f0e462
-    output:
-      assembled:
-      - kind: text
-        text: The literal "
-      chunks:
-      - expected:
-        - kind: text
-          text: The literal "
-      - expected: []
-      - expected: []
       - expected: []
   reason_markup_in_arg_empty_span_then_text:
     case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text

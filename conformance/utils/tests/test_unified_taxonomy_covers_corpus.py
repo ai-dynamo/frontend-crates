@@ -3368,10 +3368,13 @@ def test_issue595_published_progress_input_has_a_real_call_after_the_quoted_head
     assert "Paris" not in case["input_chunks"][1]
     assert case["input_chunks"][2].startswith("Paris")
     assert case["finish_step"] is True
-    harmony = build_cases("gpt_oss")["UNIFIED.native_quoted_control_then_call_progress.gpt_oss"]
-    assert _native_input_calls("gpt_oss", harmony["input"], harmony["tools"]) == [
-        {"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}},
-    ]
+
+
+@pytest.mark.parametrize("family", ["beam", "mistral_4", "gpt_oss"])
+def test_issue595_literal_control_progress_excludes_structural_token_grammars(family):
+    scenario = "native_quoted_control_then_call_progress"
+    assert f"UNIFIED.{scenario}.{family}" not in build_cases(family)
+    assert family not in G.scenario_families(scenario)
 
 
 @pytest.mark.parametrize("family", sorted(G.ISSUE595_FAMILIES))
