@@ -709,6 +709,66 @@ fn take_message_content(message: &mut serde_json::Value) -> serde_json::Value {
         .unwrap_or(serde_json::Value::Null)
 }
 
+/// Apply the native-vLLM instruction fallback only in the render copy. Keep
+/// system/developer instructions together so a later shape rewrite cannot
+/// demote a converted instruction to `user`.
+fn normalize_developer_messages(messages: &mut serde_json::Value) -> Result<()> {
+    let Some(list) = messages.as_array_mut() else {
+        return Ok(());
+    };
+    if !list.iter().any(|m| m["role"] == "developer") {
+        return Ok(());
+    }
+    for message in list.iter_mut() {
+        if message["role"] == "developer" {
+            message["role"] = json!("system");
+        }
+    }
+    // One leading instruction needs no consolidation or content reshaping.
+    if !list.iter().skip(1).any(|m| m["role"] == "system") {
+        return Ok(());
+    }
+    let mut instructions = Vec::new();
+    let mut turns = Vec::with_capacity(list.len());
+    for message in list.drain(..) {
+        if message["role"] != "system" {
+            turns.push(message);
+            continue;
+        }
+        let text = match &message["content"] {
+            serde_json::Value::String(text) => text.clone(),
+            serde_json::Value::Array(parts) => parts
+                .iter()
+                .map(|part| {
+                    part.as_str()
+                        .or_else(|| {
+                            (part["type"] == "text")
+                                .then(|| part["text"].as_str())
+                                .flatten()
+                        })
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("Instruction content must contain text parts")
+                        })
+                })
+                .collect::<Result<Vec<_>>>()?
+                .join("\n"),
+            serde_json::Value::Null => String::new(),
+            _ => anyhow::bail!("Instruction content must be text"),
+        };
+        if !text.is_empty() {
+            instructions.push(text);
+        }
+    }
+    if !instructions.is_empty() {
+        turns.insert(
+            0,
+            json!({"role": "system", "content": instructions.join("\n\n")}),
+        );
+    }
+    *list = turns;
+    Ok(())
+}
+
 /// Rewrites an agent-client message stream into a shape strict chat templates
 /// accept. Each rewrite is gated on the restriction the load-time probe actually
 /// found, so a template is never reshaped for a rule it does not enforce.
@@ -933,6 +993,9 @@ impl HfTokenizerConfigJsonFormatter {
             }
         }
 
+        if system_normalization.fallback_developer {
+            normalize_developer_messages(&mut messages_for_template)?;
+        }
         let mut normalized_turns = if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization)
         } else {
@@ -2503,6 +2566,214 @@ mod tests {
         "{%- endfor -%}"
     );
 
+    // Models that accept system/user/assistant but reject unfamiliar roles.
+    const NO_DEVELOPER_TMPL: &str = concat!(
+        "{%- for m in messages -%}",
+        "{%- if m.role not in ['system', 'user', 'assistant', 'tool'] -%}",
+        "{{ raise_exception('Unexpected message role.') }}",
+        "{%- endif -%}",
+        "{{ m.role }}[{{ m.content }}]",
+        "{%- endfor -%}"
+    );
+
+    #[test]
+    fn developer_fallback_renders_rejected_role_as_system() {
+        let f = formatter_for(NO_DEVELOPER_TMPL);
+        let messages = json!([
+            {"role": "developer", "content": "Follow instructions."},
+            {"role": "user", "content": "Reply 42."}
+        ]);
+        let req: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": messages
+        }))
+        .unwrap();
+        let original = serde_json::to_value(&req).unwrap();
+        assert_eq!(
+            f.render(&req).unwrap(),
+            "system[Follow instructions.]user[Reply 42.]"
+        );
+        assert_eq!(serde_json::to_value(&req).unwrap(), original);
+    }
+
+    #[test]
+    fn developer_fallback_preserves_native_user_text_arrays() {
+        let template = format!(
+            "{{% for m in messages %}}{{% if m.role == 'developer' %}}{{{{ raise_exception('Unexpected message role.') }}}}{{% endif %}}{{% endfor %}}{}",
+            TEXT_PARTS_TMPL.replace("ARRAY_SEPARATOR", "' | '")
+        );
+        let formatter = formatter_for(&template);
+        for (instructions, system_text) in [
+            (json!([{"role": "developer", "content": "rules"}]), "rules"),
+            (
+                json!([
+                    {"role": "system", "content": text_parts("s1", "s2")},
+                    {"role": "developer", "content": text_parts("d1", "d2")}
+                ]),
+                "s1\ns2\n\nd1\nd2",
+            ),
+        ] {
+            let mut messages = instructions.as_array().unwrap().clone();
+            messages.push(json!({"role": "user", "content": text_parts("u1", "u2")}));
+            let expected = format!("<system>{system_text}</system><user>u1 | u2</user>");
+            assert_eq!(render_shape(&formatter, json!(messages)).unwrap(), expected);
+            assert_eq!(
+                render_shape_with_tools(&formatter, json!(messages)).unwrap(),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn developer_fallback_consolidates_instruction_text_in_original_order() {
+        let f = formatter_for(NO_DEVELOPER_TMPL);
+        let out = render_shape(&f, json!([
+            {"role": "system", "content": [{"type": "text", "text": "s0"}, {"type": "text", "text": "s1"}]},
+            {"role": "user", "content": "u"},
+            {"role": "developer", "content": [{"type": "text", "text": "d0"}, {"type": "text", "text": "d1"}]},
+            {"role": "assistant", "content": "a"},
+            {"role": "system", "content": "s2"},
+            {"role": "developer", "content": "d2"}
+        ])).unwrap();
+        assert_eq!(
+            out,
+            "system[s0\ns1\n\nd0\nd1\n\ns2\n\nd2]user[u]assistant[a]"
+        );
+    }
+
+    #[test]
+    fn developer_fallback_uses_selected_template_capability() {
+        let messages = json!([
+            {"role": "developer", "content": "d"},
+            {"role": "user", "content": "u"}
+        ]);
+        for (default, tool_use, default_fallback) in [
+            (NO_DEVELOPER_TMPL, PERMISSIVE_TMPL, true),
+            (PERMISSIVE_TMPL, NO_DEVELOPER_TMPL, false),
+        ] {
+            let f = formatter_for_templates(default, tool_use);
+            let renders: [fn(&SysFormatter, serde_json::Value) -> Result<String>; 2] =
+                [render_shape, render_shape_with_tools];
+            for (render, fallback) in renders
+                .into_iter()
+                .zip([default_fallback, !default_fallback])
+            {
+                let out = render(&f, messages.clone()).unwrap();
+                assert_eq!(out.contains("developer"), !fallback, "{out}");
+                assert!(out.contains('d'), "{out}");
+            }
+        }
+    }
+
+    #[test]
+    fn developer_fallback_preserves_supported_roles_and_existing_system_behavior() {
+        let f = formatter_for(PERMISSIVE_TMPL);
+        let out = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "s"},
+                {"role": "user", "content": "u"},
+                {"role": "developer", "content": "d"}
+            ]),
+        )
+        .unwrap();
+        assert!(out.contains("developer\nd"), "{out}");
+        let f = formatter_for(NO_DEVELOPER_TMPL);
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([
+                    {"role": "user", "content": "u"}, {"role": "system", "content": "s"}
+                ])
+            )
+            .unwrap(),
+            "user[u]system[s]"
+        );
+    }
+
+    #[test]
+    fn developer_fallback_does_not_demote_late_instructions_to_user() {
+        let template = format!("{NO_DEVELOPER_TMPL}{STRICT_LEADING_TMPL}");
+        let f = formatter_for(&template);
+        let out = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "s"},
+                {"role": "user", "content": "u"},
+                {"role": "developer", "content": "d"}
+            ]),
+        )
+        .unwrap();
+        assert!(out.starts_with("system[s\n\nd]user[u]"), "{out}");
+        assert!(!out.contains("user[d]"), "{out}");
+    }
+
+    #[test]
+    fn developer_fallback_keeps_unrelated_template_errors() {
+        let f = formatter_for(NO_DEVELOPER_TMPL);
+        assert!(
+            render_raw_shape(
+                &f,
+                json!([
+                    {"role": "developer", "content": "d"},
+                    {"role": "critic", "content": "c"}
+                ])
+            )
+            .is_err()
+        );
+        let f = formatter_for("{{ raise_exception('broken template') }}");
+        let err = render_shape(
+            &f,
+            json!([
+                {"role": "developer", "content": "d"},
+                {"role": "user", "content": "u"}
+            ]),
+        )
+        .unwrap_err();
+        assert!(err.to_string().contains("broken template"), "{err}");
+    }
+
+    #[test]
+    fn developer_fallback_supports_array_only_templates() {
+        let template = format!("{NO_DEVELOPER_TMPL}{STRICT_ARRAY_TMPL}");
+        // Use the array-only suffix without the string-rendering prefix so the
+        // formatter's normal content-array detection remains authoritative.
+        let template = template.replacen("{{ m.role }}[{{ m.content }}]", "", 1);
+        let template = template.replace(
+            "{%- if m.content is not string -%}",
+            "{%- if m.content is string -%}{{ raise_exception('Content must be an array.') }}{%- endif -%}{%- if m.content is not string -%}",
+        );
+        let f = formatter_for(&template);
+        assert!(f.requires_content_arrays);
+        let out = render_shape(
+            &f,
+            json!([
+                {"role": "system", "content": "s"},
+                {"role": "user", "content": "u"},
+                {"role": "developer", "content": [{"type": "text", "text": "d"}]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            out,
+            "<|im_start|>systems\n\nd<|im_end|><|im_start|>useru<|im_end|>"
+        );
+    }
+
+    #[test]
+    fn developer_fallback_rejects_nontext_instructions_without_dropping_them() {
+        let f = formatter_for(NO_DEVELOPER_TMPL);
+        let err = render_raw_shape(&f, json!([
+            {"role": "system", "content": "s"},
+            {"role": "developer", "content": [{"type": "image_url", "image_url": {"url": "invalid"}}]},
+            {"role": "user", "content": "u"}
+        ])).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("Instruction content must contain text parts"),
+            "{err}"
+        );
+    }
+
     // Claude Code first-turn shape: top-level system + a mid-array system.
     fn claude_shape() -> serde_json::Value {
         json!([
@@ -2514,6 +2785,7 @@ mod tests {
 
     fn all_restrictions() -> SystemNormalization {
         SystemNormalization {
+            fallback_developer: false,
             demote_nonleading_system: true,
             coalesce_consecutive_users: true,
         }
@@ -2713,6 +2985,7 @@ mod tests {
         normalize_system_messages(
             &mut demote_only,
             SystemNormalization {
+                fallback_developer: false,
                 demote_nonleading_system: true,
                 coalesce_consecutive_users: false,
             },
@@ -2730,6 +3003,7 @@ mod tests {
         normalize_system_messages(
             &mut coalesce_only,
             SystemNormalization {
+                fallback_developer: false,
                 demote_nonleading_system: false,
                 coalesce_consecutive_users: true,
             },
