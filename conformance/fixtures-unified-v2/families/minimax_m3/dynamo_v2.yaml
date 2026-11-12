@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"53dd68ebe9b74dc8b7f3f273df98bcc06d96b98de85857eb680b4a8230980681","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e29609008938afe406cc2468b101334aa72045772ef2515604e074e5eba8aec3","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -10,11 +10,19 @@ origins:
     crate_version: 0.10.5
     source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
     git_commit: db074b635f197d005701466bc539f3efeee878b2
+  origin_5c931b616c20bd80:
+    crate_version: 0.10.5
+    source_sha256: cfcf366e25f3f8e36ec484e6fa760b719ef14d114087561c9b9a906e18c48d99
+    git_commit: c13f8a04559783a38d579c63a02d2dcaa089e4e8
 producers:
   producer_638222ade9786bb4:
     captured_with:
       dynamo_v2: 0.10.5
     capture_origin: origin_49bba05eefe0a46c
+  producer_72c2f142b0f7c1d0:
+    captured_with:
+      dynamo_v2: 0.10.5
+    capture_origin: origin_5c931b616c20bd80
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -128,6 +136,11 @@ contexts:
             - conditions
             type: object
         tool_output_mode: Native
+  context_c96b386b4c164d0a:
+    family: minimax_m3
+    mode: unified
+    record_metadata:
+      parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.5.yaml
   producer: producer_638222ade9786bb4
@@ -11812,4 +11825,224 @@ records:
           complete: true
           kind: tool_call
           name: server.time
+      - expected: []
+  decade_apostrophe_before_reasoning_closer:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 752f7cdb54e9fd164bb095c0ed984f33a87de7fd8c5bf6c8e718323b3fbf2b6c
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''90s</mm:think>''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''90s</mm:think>''Answer'
+      - expected:
+        - kind: reasoning
+          text: ''''
+  inch_mark_before_reasoning_closer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: db1b37986abfb52a20fb4c92f8aeeece818a2e28a4149223bc82f0b3d48c3e8b
+    output:
+      assembled:
+      - kind: reasoning
+        text: 27"</mm:think>"Answer"
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 27"</mm:think>"Answer"
+      - expected: []
+  mixed_quotes_before_reasoning_closer:
+    case_key: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 9294f9b421e448761b75b57fb3fde4f4eb0b8452ad685d7e631eec33ea1221c4
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'f''" OR x -- ''
+
+          </mm:think>"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'f''" OR x -- ''
+
+            </mm:think>"Answer"'
+      - expected: []
+  native_quoted_control_then_call_progress:
+    case_key: UNIFIED.8-native_quoted_control_then_call_progress
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 9864170d31d3dfcb51eabe65b222c93d1241d0786b72d67072b32bc6d593d6b2
+    output:
+      assembled:
+      - kind: text
+        text: 'The literal "]<]minimax[>[<tool_call>" marker is part of the explanation. '
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: 'The literal "]<]minimax[>[<tool_call>" marker is part of the explanation. '
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris"}
+          complete: true
+      - expected: []
+  native_quoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 7050c49fb99a166c9670de6823f87b1789583f21ce501dce704bffe3f78083d0
+    output:
+      assembled:
+      - kind: reasoning
+        text: The special "</mm:think>" marker is used to delineate parser paths
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: The special "</mm:think>" marker is used to delineate parser paths
+      - expected: []
+  native_quoted_reasoning_closer_then_answer:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 6eba1fd7debc95f85aff19896bd3456c2614eab249e44fa16bae145d4b71ee0e
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''</mm:think>'''
+      - kind: text
+        text: Answer
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''</mm:think>'''
+        - kind: text
+          text: Answer
+      - expected: []
+  native_reasoning_closer_in_quoted_sentence:
+    case_key: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: c9f62c178ea9b74d76b8a4188e11abe8fce4a335a51488ee2e2e067c7f92816a
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"The special </mm:think> marker ..."'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"The special </mm:think> marker ..."'
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 0915606ef97d963dfa8ac6ce130068aa2971edb5a52d9c134e039a8151d6353f
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'The special '
+      - kind: text
+        text: ' marker is used to delineate parser paths'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'The special '
+        - kind: text
+          text: ' marker is used to delineate parser paths'
+      - expected: []
+  quoted_name_possessive_inline_closer:
+    case_key: UNIFIED.40-quoted_name_possessive_inline_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: d870312b1e1624e3ae5442373143fc1ca4f573b26f714bafd7f9d6c8b1dc32cd
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name`''s path.'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name`''s path.'
+        - kind: text
+          text: '''Answer'
+      - expected:
+        - kind: text
+          text: ''''
+  reason_markup_in_arg_empty_span_then_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 08dcbee9d11e7429e6ff68d8d166e55a4c4d6b668b5c670d6fc7f6f8e4b90137
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"content":"<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"content":"<think></think>answer"}'
+          complete: true
+      - expected: []
+  sql_fragment_before_reasoning_closer:
+    case_key: UNIFIED.40-sql_fragment_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 17e5da11bab623994dd4161149904ab542f89dbf517b1674a7a3f3bfbada64c5
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''1''=''1</mm:think>''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''1''=''1</mm:think>''Answer'
+      - expected:
+        - kind: reasoning
+          text: ''''
+  unclosed_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 4fdb2a9816dac94260c038b246bc28cc82ae12bcfbcd8acf02b8bbf587639214
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name</mm:think>`Answer`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name</mm:think>`Answer`'
+      - expected: []
+  unclosed_command_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_c96b386b4c164d0a
+    request: 223384616e69ba5c6809aa7276eeda59b7bc653e0476065b218e4971540a0a5d
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`pytest -x</mm:think>Run `pytest`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`pytest -x</mm:think>Run `pytest`'
       - expected: []

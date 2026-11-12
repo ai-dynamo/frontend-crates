@@ -1,4 +1,4 @@
-capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"1d400eff1395d7fd19247903e75735daede9796e59a4d8d04bbc48ee49163484","source":"conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e201df871159a7048c8031a58054f06996cfd7e55bddf3c0a09d49fb7b3db8c4","source":"conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -10,11 +10,19 @@ origins:
     crate_version: 0.10.5
     source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
     git_commit: db074b635f197d005701466bc539f3efeee878b2
+  origin_5c931b616c20bd80:
+    crate_version: 0.10.5
+    source_sha256: cfcf366e25f3f8e36ec484e6fa760b719ef14d114087561c9b9a906e18c48d99
+    git_commit: c13f8a04559783a38d579c63a02d2dcaa089e4e8
 producers:
   producer_638222ade9786bb4:
     captured_with:
       dynamo_v2: 0.10.5
     capture_origin: origin_49bba05eefe0a46c
+  producer_72c2f142b0f7c1d0:
+    captured_with:
+      dynamo_v2: 0.10.5
+    capture_origin: origin_5c931b616c20bd80
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -96,6 +104,11 @@ contexts:
         named_tool: get_weather
         starting_state: Response
         tool_output_mode: GuidedJson
+  context_f74dc15d2442d5c1:
+    family: muse_glimmer
+    mode: unified
+    record_metadata:
+      parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.10.5.yaml
   producer: producer_638222ade9786bb4
@@ -9471,3 +9484,213 @@ records:
       - expected:
         - kind: text
           text: <|start|>assistant to=lookup<|message|><atem:function_calls>\n<atem:invoke name=\"lookup\">\n<atem:parameter name=\"q\">x</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>" trailing
+  decade_apostrophe_before_reasoning_closer:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: 9be57db3cfcb479f7bbeddbbdfc569298b8385f4d0e9cc009fed385b6f168027
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer'''
+      - expected: []
+  inch_mark_before_reasoning_closer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: df00cbf06ed7257c16c70662971457748d10db304fd4f16a667701b012b096b8
+    output:
+      assembled:
+      - kind: reasoning
+        text: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"
+      - expected: []
+  mixed_quotes_before_reasoning_closer:
+    case_key: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: 83dd9816a16591a61cf6a0c465bc17ce239031d442e013f4e9ae7d8168be948a
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'f''" OR x -- ''
+
+          <|eom|><|start|>assistant to=user<|message|>"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'f''" OR x -- ''
+
+            <|eom|><|start|>assistant to=user<|message|>"Answer"'
+      - expected: []
+  native_quoted_control_then_call_progress:
+    case_key: UNIFIED.8-native_quoted_control_then_call_progress
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: 6c4c4b90d63a48a0311221cc632702bd3212609d7508481c58a92017896bdcc7
+    output:
+      assembled:
+      - kind: text
+        text: 'The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation. '
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: 'The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation. '
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"Paris"}'
+          complete: true
+      - expected: []
+  native_quoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: c4764b364c9fe9a775b96ae6b5adf602fcf1262a58af240f3a673c4ad6dce2ed
+    output:
+      assembled:
+      - kind: reasoning
+        text: The special "<|eom|>" marker is used to delineate parser paths
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: The special "<|eom|>" marker is used to delineate parser paths
+      - expected: []
+  native_quoted_reasoning_closer_then_answer:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: ebb22f5933d2ffeebd8290dd64ef3997a4263c45ebba36e8a997e0eb2ad716e2
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''<|eom|>'''
+      - kind: text
+        text: Answer
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''<|eom|>'''
+        - kind: text
+          text: Answer
+      - expected: []
+  native_reasoning_closer_in_quoted_sentence:
+    case_key: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: 57c6a3ab1a3e2d4f7c010323859763007a8770d3dc1f30a8f1b0110214ea70e2
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"The special <|eom|> marker ..."'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"The special <|eom|> marker ..."'
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: c1268bac48b57eb6a85da44737b0ab5f3ccdd7ab85f4a5f117235d2eb82d8605
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'The special '
+      - kind: text
+        text: ' marker is used to delineate parser paths'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'The special '
+        - kind: text
+          text: ' marker is used to delineate parser paths'
+      - expected: []
+  quoted_name_possessive_inline_closer:
+    case_key: UNIFIED.40-quoted_name_possessive_inline_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: f146723657a8704d7153154527878b0404eb9437967e6408933152a58c935842
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name`''s path.'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name`''s path.'
+        - kind: text
+          text: '''Answer'''
+      - expected: []
+  reason_markup_in_arg_empty_span_then_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: 5dbe8ad45188a102b71666c42eaa136e8aebd2a3fb4e302dedcf0e09fa5639e4
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"content":"<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"content":"<think></think>answer"}'
+          complete: true
+      - expected: []
+  sql_fragment_before_reasoning_closer:
+    case_key: UNIFIED.40-sql_fragment_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: d02831b18101d50c954bd7c2180d9af4f30c1a45b7ab66c6480b584e5c0bf490
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''1''=''1<|eom|><|start|>assistant to=user<|message|>''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''1''=''1<|eom|><|start|>assistant to=user<|message|>''Answer'''
+      - expected: []
+  unclosed_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: d3c8a58bfe0cd8eb26c85c23a878fe60b075e6405676da78a5cc24663c6f1912
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`'
+      - expected: []
+  unclosed_command_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_f74dc15d2442d5c1
+    request: 0d2f49b4b96fa81e2970ee9477e7af68ba489acbb28816a844b74e3b69f93483
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`'
+      - expected: []

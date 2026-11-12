@@ -1,28 +1,28 @@
-capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"beam","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"beam","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v4","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v4","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v4","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v4","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"deepseek_v4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"deepseek_v41","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v41","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v41","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v41","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"deepseek_v41","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"gemma4","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"gemma4","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"gemma4","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"gemma4","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"gemma4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"gemma4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"glm47","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"glm47","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"glm47","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"gpt_oss","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"gpt_oss","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"gpt_oss","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"gpt_oss","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.6.yaml","version":"11.0.6"},{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","version":"11.0.7"},{"family":"hermes","implementation":"dynamo_v1_jail","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1_jail-11.0.6.yaml","version":"11.0.6"},{"family":"hermes","implementation":"dynamo_v1_jail","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1_jail-11.0.7.yaml","version":"11.0.7"},{"family":"kimi_k2","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k2","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k2","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k2","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k2","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"kimi_k2","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"kimi_k3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"kimi_k3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"minimax_m3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"minimax_m3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"minimax_m3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml","version":"0.10.3"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"muse_glimmer","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"muse_glimmer","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"muse_glimmer","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"muse_glimmer","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"muse_glimmer","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"muse_spark","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"muse_spark","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"muse_spark","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"muse_spark","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"nemotron_v3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"nemotron_v3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"nemotron_v3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"nemotron_v3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"nemotron_v3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"nemotron_v3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_rust-0.27.1.yaml","version":"0.27.1"},{"family":"qwen3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"qwen3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"qwen3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"qwen3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"qwen3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.26.0.yaml","version":"0.26.0"}],"mode":"unified","payload_sha256":"33f6c14b5a28a853188938e25f1309d402c4f9b5c3f965eb29041d3fbd535ca4","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml","surface":"unified","version":"0.10.3"}
+capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"beam","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"beam","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"beam","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v4","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v4","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v4","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v4","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"deepseek_v4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"deepseek_v41","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v41","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"deepseek_v41","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v41","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"deepseek_v41","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"deepseek_v41","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"gemma4","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"gemma4","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"gemma4","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"gemma4","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"gemma4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"gemma4","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"glm47","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"glm47","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"glm47","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"glm47","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"glm47","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"gpt_oss","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"gpt_oss","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"gpt_oss","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"gpt_oss","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.6.yaml","version":"11.0.6"},{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","version":"11.0.7"},{"family":"hermes","implementation":"dynamo_v1_jail","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1_jail-11.0.6.yaml","version":"11.0.6"},{"family":"hermes","implementation":"dynamo_v1_jail","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1_jail-11.0.7.yaml","version":"11.0.7"},{"family":"kimi_k2","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k2","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k2","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k2","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k2","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"kimi_k2","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"kimi_k3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"kimi_k3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"kimi_k3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"kimi_k3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"minimax_m3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"minimax_m3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"minimax_m3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"minimax_m3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml","version":"0.10.3"},{"family":"muse_glimmer","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"muse_glimmer","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"muse_glimmer","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"muse_glimmer","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"muse_glimmer","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"muse_glimmer","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"muse_spark","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"muse_spark","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"muse_spark","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"muse_spark","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"nemotron_v3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"nemotron_v3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"nemotron_v3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"nemotron_v3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"nemotron_v3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"nemotron_v3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_rust-0.26.0.yaml","version":"0.26.0"},{"family":"nemotron_v3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/vllm_rust-0.27.1.yaml","version":"0.27.1"},{"family":"qwen3","implementation":"sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.23.yaml","version":"0.5.23"},{"family":"qwen3","implementation":"sglang_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/sglang_python_batch-0.5.23.yaml","version":"0.5.23"},{"family":"qwen3","implementation":"vllm_python","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.32.0.yaml","version":"0.32.0"},{"family":"qwen3","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_python_batch-0.32.0.yaml","version":"0.32.0"},{"family":"qwen3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.25.1.yaml","version":"0.25.1"},{"family":"qwen3","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.26.0.yaml","version":"0.26.0"}],"mode":"unified","payload_sha256":"0c7d0301782dea3d2501fa9ab9f1cceda5ba2cf1935e9ea84e16732ee09b83d5","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
 provenance:
-  origin: origin_232ac81a7e7c92db
   status: captured
+  origin: origin_5c931b616c20bd80
 origins:
+  origin_5c931b616c20bd80:
+    crate_version: 0.10.5
+    source_sha256: cfcf366e25f3f8e36ec484e6fa760b719ef14d114087561c9b9a906e18c48d99
+    git_commit: c13f8a04559783a38d579c63a02d2dcaa089e4e8
   origin_232ac81a7e7c92db:
     crate_version: 0.10.3
     git_commit: e62e96a6477311705df4f122881242d80f9a3dcb
     source_sha256: 80de42c86398e606a8bc331b0d0f0d7d7463efa99094e4f0b006100dac0c63e0
-  origin_20c3a8ea8bba0298:
-    crate_version: 0.10.3
-    source_sha256: 23aa81dd78137ba05f095629af5f3a8a0190d67c9c3bb9be6cfb6de9a510b04b
-    git_commit: 3befe1fd50af2390f9eb7737f3013d577a15aaf5
 producers:
   producer_dd9718a2e84ff114:
     capture_origin: origin_232ac81a7e7c92db
     captured_with:
       dynamo_v2: 0.10.3+source.80de42c86398e606a8bc331b0d0f0d7d7463efa99094e4f0b006100dac0c63e0
-  producer_df60c3d53c0419bd:
+  producer_72c2f142b0f7c1d0:
     captured_with:
-      dynamo_v2: 0.10.3
-    capture_origin: origin_20c3a8ea8bba0298
+      dynamo_v2: 0.10.5
+    capture_origin: origin_5c931b616c20bd80
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -48,17 +48,13 @@ contexts:
         starting_state: Reasoning
         tool_output_mode: Native
       parser_path: unified
-  context_74f13584522e9e6e:
+  context_0c04f3f5dabd1446:
     family: mistral_4
     mode: unified
     record_metadata:
       parser_path: unified
-      init:
-        named_tool: null
-        starting_state: None
-        tool_output_mode: Native
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.3.yaml
+  member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.5.yaml
   producer: producer_dd9718a2e84ff114
   context: context_63bbcc8b0776f125
 records:
@@ -86,6 +82,7 @@ records:
           name: g
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   arg_array_quoted_parameter_close:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
     request: 001fc1f875bc12b5e4220a2353a95e801c084498d42f39d3ce67038191ef2056
@@ -101,6 +98,7 @@ records:
           kind: tool_call
           name: record
       - expected: []
+    suppress_inherited_from: true
   arg_json_null:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null
     request: 1a545d8fe4a218186d388c1f1398872711805de51216eedd7e1e349c1899bf29
@@ -116,6 +114,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_json_null_anyof:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
     request: e4a633dc29b1363714e68220cbc909e5398d806323db98d9e0fecbe78fdabd7a
@@ -131,6 +130,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_json_null_const:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_const
     request: e58714b04b1487a459911bcef2739b0444d489104abae25ae42b93cbceaf0729
@@ -146,6 +146,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_json_null_nullable:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
     request: 6b5d7384a630589712614a0ab222be66dd692863756667bad1c304c06e05167e
@@ -161,6 +162,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_json_null_oneof:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
     request: f27d1a820095ee439168757326c78967cc255afde0c898d6efa6193e407f6a22
@@ -176,6 +178,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_json_null_ref:
     case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
     request: 3bcdeba7b9f84270a888a7787543991aeb8660a0ecc5b334d9f8e8dccca1571d
@@ -191,6 +194,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_marker_in_string:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
     request: 6cf1ce72ff38734c53bcaa7653f7098d104675d1f1967cdaa23a8af4d6dfcd78
@@ -206,6 +210,7 @@ records:
           kind: tool_call
           name: run
       - expected: []
+    suppress_inherited_from: true
   arg_null_mixed_labels:
     case_key: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
     request: 3ebb815e544d7e8ca1cd15fd10578c00a91ffb1cb9ba590ee70349c5e79e8cac
@@ -221,6 +226,7 @@ records:
           kind: tool_call
           name: set_labels
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_const_decimal:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
     request: b79049806b3af0561c1f84f1e86c829afe19b22680d514669bedd48c28c2119d
@@ -236,6 +242,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_const_exponent:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
     request: 71fd6458ab4a20f5240764a21d9e6b84eb1122430acefe779b923ecd3bbfdde8
@@ -251,6 +258,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_enum_decimal:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
     request: c0e3097695bc15245c6444a6ecc371dac09baa7b44dc0a46239a51a646e7c1c0
@@ -266,6 +274,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_enum_exponent:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
     request: cae3a8a4c19b1ce5a469f09947727a41ec0c4bb07479870a6af62e51f008bc8a
@@ -281,6 +290,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_large_decimal:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
     request: 23217880c4bd8a35f4afc9d37ebda6a628b9fde54a14b6ff34a0a47b3d42c181
@@ -296,6 +306,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_large_exponent:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
     request: a5895078df81c4f384162f244dea7d82f63363ff5f7cbbf0c3eb75f3f48beeeb
@@ -311,6 +322,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_negative:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
     request: 555fee87a1e0c719598512aacf0010c6ceebd81e0bc3f922f84356f3576ee255
@@ -326,6 +338,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_negative_exponent:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
     request: 419c056b11180d277cde78a15d6da4370c4631b86ffd40fe5341f83e83ddf9e7
@@ -341,6 +354,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_14_zero_underflow:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
     request: 68c0a1de04767a1abf00773c7c01409ba7fa7e96a210d48d633284a72b816311
@@ -356,6 +370,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_exponent:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
     request: c2edba0bd9dc3619292834937cbcb609b1931aed338e48a0038c18c13b32c31f
@@ -371,6 +386,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_negative:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
     request: 8b947869ecde5a4a67d95ca5dcd3948298d745f4cef1e88fed382276084f69e2
@@ -386,6 +402,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_ordinary:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
     request: 669ba70f1a8d8b5469fcc86399e0a9095629e4616e033fb41d3941ac4fd230ff
@@ -401,6 +418,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_quarter:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
     request: 683d86d70e71e3ebdc1bf6ee48e58ef9be684d86000963c4e85164205e281fe8
@@ -416,6 +434,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_round_down:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
     request: f5e99476d01a035713b35c99099d6848321a5b3cd03fe194a6c2f69b9e43a7d1
@@ -431,6 +450,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_round_up:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
     request: b6bfbd9a1651bb47d86069af27c03b886becf57633bf4c7c81a32de29fb895fc
@@ -446,6 +466,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_15_small:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
     request: 893038b6424929a841c8e053685c09a983005bec76115d1aca8c7ec65d3a147a
@@ -461,6 +482,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_nested_exact:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
     request: c37b83044eed2c0086d0390ef731fdf698d998aa84b5f48a224bb6b35c7387e4
@@ -476,6 +498,7 @@ records:
           kind: tool_call
           name: inspect
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_overflow_siblings_finite:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
     request: a7d1833f17bfd043ed5475da1f444fd867b2e50e96ff9e0aafb32544d4ff9327
@@ -491,6 +514,7 @@ records:
           kind: tool_call
           name: echo
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_overflow_siblings_negative:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
     request: bc81af91aac41425fa44d26fe82955324a25dbcfe31c64b9681b09c698fafbfd
@@ -506,6 +530,7 @@ records:
           kind: tool_call
           name: echo
       - expected: []
+    suppress_inherited_from: true
   arg_numeric_overflow_siblings_positive:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
     request: ef0a4880f4b6a8653ae283befdc2cc2649cd3f4728c10343a5fc3e7577b80944
@@ -521,6 +546,7 @@ records:
           kind: tool_call
           name: echo
       - expected: []
+    suppress_inherited_from: true
   arg_object_quoted_parameter_close:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
     request: 0ce35e19a2f0d6265bfc4e9aea238031b657014014ef1a9afbdec97c0154b69a
@@ -536,6 +562,7 @@ records:
           kind: tool_call
           name: record
       - expected: []
+    suppress_inherited_from: true
   arg_string_null:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null
     request: 82baf993733c21fe4ea26067aabe6658b08a3198e7f713d8a3dd84d77b5c4ea4
@@ -551,6 +578,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_const:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_const
     request: 475a02788c15fe510025ce59dfed99645ba675978decf987b62ae3f6179f7ead
@@ -566,6 +594,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_enum:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
     request: 12fb77952cbb80f62240692a75a961e3a0a09fa49e82a5d1a148a01197883fae
@@ -581,6 +610,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_ref:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
     request: 62a4749a395ca5b2469ca06310900710dc344744cb29b98d050bfe0a83bf00fb
@@ -596,6 +626,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_sibling_anyof:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
     request: d5429e01ed32c98f9e64078d532e80cbd5dd81e0779f73902ebeddfe6e3b404b
@@ -611,6 +642,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_sibling_oneof:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
     request: 2f5f29af8077db900419e78467a54d1d70aa89b99fd1da2dfcf8ab6483198778
@@ -626,6 +658,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_union:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_union
     request: 0d1a75c3432f4666f9d4563ad7d62146849f0fa2485c769e62dd1340e187e917
@@ -641,6 +674,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_string_null_untyped_branch:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
     request: cb52fed2d942e6ebd88f3e72b092ba2dd4213d202cd9459cea287beb4066df48
@@ -656,6 +690,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   arg_unicode:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_unicode
     request: 9bc7ac945655fb88a025c913a2a28b51cd1db609472a09bac4af53a4cbbd3ef5
@@ -671,6 +706,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   blank_output_without_call:
     case_key: UNIFIED.3-blank_output_without_call
     request: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
@@ -689,6 +725,7 @@ records:
 
             '
       - expected: []
+    suppress_inherited_from: true
   conditional_schema_number_types:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
     request: 55d1f507224defe0aa99410166e291ac737757641018da4b1acd670b36d79478
@@ -704,6 +741,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   content_then_reason:
     case_key: UNIFIED.11-content_then_reason
     request: 7cf9dd2b28335fb351e214993f110058feecadfa261cf00464a256ed83838deb
@@ -724,6 +762,7 @@ records:
         - kind: text
           text: The capital is Paris.
       - expected: []
+    suppress_inherited_from: true
   content_then_reason_then_tool:
     case_key: UNIFIED.11-content_then_reason_then_tool
     request: fb91d78e0e2307bc5913be6e0d3e34f4036de07f3c943908633c40a7d6f0403a
@@ -747,6 +786,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   deepseek_v41_mixed_control_text_in_string:
     case_key: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
     request: 4d7e1209b16bb1ba4f86123a5f209a462f8fc2ccd21c7012883f47ee93b49847
@@ -762,6 +802,7 @@ records:
           kind: tool_call
           name: f
       - expected: []
+    suppress_inherited_from: true
   dotted_name_minimal:
     case_key: UNIFIED.1-dotted_name_minimal
     request: 6356f9b198c839ca0e023123463713759330bbbbcacfe4457d11dea986373f41
@@ -777,6 +818,7 @@ records:
           kind: tool_call
           name: a.b
       - expected: []
+    suppress_inherited_from: true
   dotted_name_mixed_punctuation:
     case_key: UNIFIED.1-dotted_name_mixed_punctuation
     request: 111496ca8a2333a04cca0d8878d782268e44d58426bec00c78180ea625344eeb
@@ -792,6 +834,7 @@ records:
           kind: tool_call
           name: my-tool.v2
       - expected: []
+    suppress_inherited_from: true
   dotted_name_multiple_segments:
     case_key: UNIFIED.1-dotted_name_multiple_segments
     request: 021138749da124cd6e90c70468e1b366d63718dcc0036de00feabfaa2dfdcf5a
@@ -807,6 +850,7 @@ records:
           kind: tool_call
           name: server.tools.weather
       - expected: []
+    suppress_inherited_from: true
   dotted_name_shared_prefix:
     case_key: UNIFIED.2-dotted_name_shared_prefix
     request: 3385d4734b228f3b8952d6a6ced48d3ee4e1013e099af8ae76ce283cc318de43
@@ -829,6 +873,7 @@ records:
           kind: tool_call
           name: server.time
       - expected: []
+    suppress_inherited_from: true
   empty_args:
     case_key: UNIFIED.6-empty_args
     request: 21ec4e05b83d5c0c34e2b77a5429695d03e475ed0e7ff49e4b4bba9d7e6e17e3
@@ -844,6 +889,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
     request: 22198328df128b30b8bd1e5bf1de60d68e0e0dd896a045c1ff2aea41b9446ffb
@@ -859,6 +905,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
     request: b3685f5413f799182f9192f53e2d1056e932f1fe17b08b4e93ef77944a92c97e
@@ -874,6 +921,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   glm_ref_json_looking_strings:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
     request: b47d991a9e655776650668ab3a23e14e9a39f788d0174990b41db983172c89db
@@ -889,6 +937,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   glm_ref_object:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_object
     request: cc8cddf2ef5c2db964dd13e3b9353909bc6682384e2a58e11f33d34938995c63
@@ -904,6 +953,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   glm_ref_scalar_types:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
     request: 88b21ceb0d6a9af217c37ee6246b32910f10c62a0bf23a1056485d2c1ca1ff2d
@@ -919,6 +969,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   gpt_oss_control_marker_inside_argument_string:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_native_controls_in_arguments
     request: b8717da9ef59c7d99bfe267ee801615c4f2c497ab7e2319593fd7033e83df650
@@ -934,6 +985,7 @@ records:
           kind: tool_call
           name: lookup
       - expected: []
+    suppress_inherited_from: true
   gpt_oss_invalid_tool_body_then_empty_call:
     case_key: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
     request: 260514f518c37401eb6dd254ba20de2b4585bce1d29a6a489a99243af48b1713
@@ -956,6 +1008,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   gpt_oss_invalid_tool_body_then_valid_call:
     case_key: UNIFIED.5-malformed_json_then_two_valid_calls_truncated_json_then_valid_call
     request: d39d47e92f6c12a8f2a9a87a7c674cde0f6839c8e03bd571f39eb256d7bb1ad3
@@ -978,6 +1031,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   gpt_oss_multiple_unknown_and_empty_tools:
     case_key: UNIFIED.2-two_calls_empty_body_and_unoffered_names
     request: 0c4eb581c5ec83cb808efa18606ffb0e80f45e0b92e4eb32aab4beec789ba5ef
@@ -1000,6 +1054,7 @@ records:
           kind: tool_call
           name: not_offered
       - expected: []
+    suppress_inherited_from: true
   gpt_oss_quoted_message_header_literal:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_quoted_closer_and_response_header
     request: 1089bd9b99bc1d5723987c9917974a32a5e12841156961b73eb65ad1d3eb08cb
@@ -1015,6 +1070,7 @@ records:
           kind: tool_call
           name: lookup
       - expected: []
+    suppress_inherited_from: true
   interstitial_text:
     case_key: UNIFIED.11-interstitial_text
     request: 4d164ac9a8c330562ca245353dced2fc8ce2a7e868b3b2da6dd5bcc5e5362a60
@@ -1038,6 +1094,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   local_schema_id_preserves_type:
     case_key: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
     request: dffb261151f3d54cf135a25455998d1555ce7d27bd44aa150bce86841884fb34
@@ -1053,6 +1110,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-malformed_json_then_two_valid_calls
     request: b725ca6895c8504d80dc10d3188a7f1923d7fa4aca830a1554486bdc24514bb0
@@ -1082,6 +1140,7 @@ records:
           complete: true
           kind: tool_call
           name: echo
+    suppress_inherited_from: true
   mistral_brace_fallback_calls:
     case_key: UNIFIED.mistral-brace_fallback_calls
     request: 5c5925554f6d873d06f21e9ea23d99ec35ba2d74a3cf23bc6168469a3fd72d2d
@@ -1104,6 +1163,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_call_id_stripped:
     case_key: UNIFIED.mistral-call_id_stripped
     request: 5cef8eb73ae97c75a81997c2e81f9610c8b7cce51cdb2244be28e56a319e8487
@@ -1119,6 +1179,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_call_id_variants:
     case_key: UNIFIED.mistral-call_id_variants
     request: 97bf402d5622ba1fcf522c04f8f85e9c7db45d8be7d42a286dad35c06c136eb0
@@ -1148,6 +1209,7 @@ records:
           kind: tool_call
           name: run
       - expected: []
+    suppress_inherited_from: true
   mistral_call_inside_reasoning_ends_thought:
     case_key: UNIFIED.mistral-call_inside_reasoning_ends_thought
     request: 3e0b576d6f16d0196c7f7109229712fa4b6c5e05ea9321e28f4a86cb2af44896
@@ -1167,6 +1229,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_closed_string_marker_before_recovery:
     case_key: UNIFIED.mistral-closed_string_marker_before_recovery
     request: 1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5
@@ -1189,6 +1252,7 @@ records:
           complete: true
           kind: tool_call
           name: run
+    suppress_inherited_from: true
   mistral_closed_string_marker_before_truncation:
     case_key: UNIFIED.mistral-closed_string_marker_before_truncation
     request: 21880a2903be2b14901b178f19a15bb427c232c499087c8106fc9805d3e37d99
@@ -1197,6 +1261,7 @@ records:
       chunks:
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   mistral_duplicate_think_opener_stripped:
     case_key: UNIFIED.mistral-duplicate_think_opener_stripped
     request: 50f6af2e44de9bf6e28abf886ebdf661b4103df6a818cc38ec49326f815c0263
@@ -1213,6 +1278,7 @@ records:
         - kind: text
           text: c
       - expected: []
+    suppress_inherited_from: true
   mistral_empty_thoughts_emit_nothing:
     case_key: UNIFIED.mistral-empty_thoughts_emit_nothing
     request: f2bde4240db48d09a8f96b933c6c2252fecc2837fae09d4d7e4f63609796aeea
@@ -1225,6 +1291,7 @@ records:
         - kind: text
           text: Answer
       - expected: []
+    suppress_inherited_from: true
   mistral_escaped_call_in_unclosed_string:
     case_key: UNIFIED.mistral-escaped_call_in_unclosed_string
     request: 8ae9fdddb4d304efebeb1e5b19b5817362043091da700f83dc8bc5d66cbf9800
@@ -1233,6 +1300,7 @@ records:
       chunks:
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   mistral_json_escapes_and_lookalikes:
     case_key: UNIFIED.mistral-json_escapes_and_lookalikes
     request: 2c7ff36936d24c74c82945222652e163177e7f9c96ce352dac638174d9f12a66
@@ -1248,6 +1316,7 @@ records:
           kind: tool_call
           name: log
       - expected: []
+    suppress_inherited_from: true
   mistral_json_reply_after_reasoning:
     case_key: UNIFIED.mistral-json_reply_after_reasoning
     request: f14b83995bf339cb461a70642d90a6a32ce9dee6c14ef3504a65d21da8ad731f
@@ -1264,6 +1333,7 @@ records:
         - kind: text
           text: '{"location": "London", "unit": "celsius"}'
       - expected: []
+    suppress_inherited_from: true
   mistral_malformed_body_ends_at_next_call:
     case_key: UNIFIED.mistral-malformed_body_ends_at_next_call
     request: a52ef623dba16866727295c21a3da5dcd0ca92ac5729e98e843dc189b31db224
@@ -1286,6 +1356,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_many_mixed_form_calls:
     case_key: UNIFIED.mistral-many_mixed_form_calls
     request: b615f095c3c54787c95f72166f1a7b64d4220537446fc3d81c0d1e9559d5ec8e
@@ -1336,6 +1407,7 @@ records:
           kind: tool_call
           name: f
       - expected: []
+    suppress_inherited_from: true
   mistral_marker_lookalikes_stay_text:
     case_key: UNIFIED.mistral-marker_lookalikes_stay_text
     request: 63ee81fd59f7c3e17ef0311787362d6ac4ed93307ea97a976547ae2d273f59d7
@@ -1348,6 +1420,7 @@ records:
         - kind: text
           text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
       - expected: []
+    suppress_inherited_from: true
   mistral_markers_split_across_chunks:
     case_key: UNIFIED.mistral-markers_split_across_chunks
     request: 90538bfb6f395bac195ccfcba27e8b67254cd7dd309e9df50ead10f63ba70a5e
@@ -1385,6 +1458,7 @@ records:
           kind: tool_call
           name: f
       - expected: []
+    suppress_inherited_from: true
   mistral_name_before_marker:
     case_key: UNIFIED.mistral-name_before_marker
     request: cdd4e39fc15eec2cbdd5eb74bcf6a3eb787c872cd2c7e04e39a1bd2368fcb37e
@@ -1404,6 +1478,7 @@ records:
           kind: tool_call
           name: ''
       - expected: []
+    suppress_inherited_from: true
   mistral_name_without_arguments:
     case_key: UNIFIED.mistral-name_without_arguments
     request: 0a256b487e3a54b569433b4fab0c74809ebaccd708efd5f9c026196e63924b42
@@ -1419,6 +1494,7 @@ records:
           complete: true
           kind: tool_call
           name: get_weather
+    suppress_inherited_from: true
   mistral_non_object_arguments:
     case_key: UNIFIED.mistral-non_object_arguments
     request: 96c76252a3ed86c01cc5e3276ea68b0db6432143fa211b1c14e66f803d925fbe
@@ -1448,6 +1524,7 @@ records:
           complete: true
           kind: tool_call
           name: run
+    suppress_inherited_from: true
   mistral_pre_v11_array_not_a_call:
     case_key: UNIFIED.mistral-pre_v11_array_not_a_call
     request: 8e6b6d95ffa4b5a54ebfde117e2a5b815c729e329db9f4c332e433fbbd3d3083
@@ -1456,6 +1533,7 @@ records:
       chunks:
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   mistral_quoted_marker_is_structural:
     case_key: UNIFIED.mistral-quoted_marker_is_structural
     request: 851ecd1ed5a59843fc7b138297c596bf9d55f5e01084798afe7ae069b40ea655
@@ -1472,6 +1550,7 @@ records:
         - kind: text
           text: The answer is "42".
       - expected: []
+    suppress_inherited_from: true
   mistral_quoted_tool_marker_in_answer:
     case_key: UNIFIED.mistral-quoted_tool_marker_in_answer
     request: 563710ab1442644a2425029f8d96a5196772ba2e19ed1deaf4c84578aa64441c
@@ -1484,6 +1563,7 @@ records:
         - kind: text
           text: The literal "
       - expected: []
+    suppress_inherited_from: true
   mistral_quoted_tool_marker_then_call:
     case_key: UNIFIED.mistral-quoted_tool_marker_then_call
     request: 6d1c7404a35c1ff86e02d7da85ca53b61457e19f8aa9a07bac50e23ab41c6480
@@ -1503,6 +1583,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_reasoning_after_call_dropped:
     case_key: UNIFIED.mistral-reasoning_after_call_dropped
     request: 265073f6d949aece98b7b2c161be19ae36455299b90651e918a47fe346906397
@@ -1518,6 +1599,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_reasoning_between_calls_dropped:
     case_key: UNIFIED.mistral-reasoning_between_calls_dropped
     request: 708fb3a4933a16d4c248b1b50d429e05852528a67e3c6e9813f8197548b768dc
@@ -1544,6 +1626,7 @@ records:
           kind: tool_call
           name: g
       - expected: []
+    suppress_inherited_from: true
   mistral_reasoning_trailing_whitespace_stripped:
     case_key: UNIFIED.mistral-reasoning_trailing_whitespace_stripped
     request: e41417836403c7bbaec28fd533b0ee43e0ae20925ebae5b2df62e285e3902611
@@ -1560,6 +1643,7 @@ records:
         - kind: text
           text: The answer is 42.
       - expected: []
+    suppress_inherited_from: true
   mistral_stray_separator_after_args:
     case_key: UNIFIED.mistral-stray_separator_after_args
     request: 4b5583bded8f2e4bbd88115049620ed47a67a5f7d2659a4c725206ae4ebee6c9
@@ -1582,6 +1666,7 @@ records:
           kind: tool_call
           name: g
       - expected: []
+    suppress_inherited_from: true
   mistral_text_after_call_dropped:
     case_key: UNIFIED.mistral-text_after_call_dropped
     request: 946e2faa1cb1f390cfd1b87a7efe179c9699910c1d6c97a48d25c06a4e14e9b2
@@ -1597,6 +1682,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_text_between_calls_dropped:
     case_key: UNIFIED.mistral-text_between_calls_dropped
     request: e0434434afaaee5e47a762cf36e7915deed2973881a3161157e7974d39247ad8
@@ -1619,6 +1705,7 @@ records:
           kind: tool_call
           name: g
       - expected: []
+    suppress_inherited_from: true
   mistral_truncated_inside_args_marker:
     case_key: UNIFIED.mistral-truncated_inside_args_marker
     request: f5d86a7ae84dd5061071fd30ac51ce944f0fea1bff36de080d30d3e249964a3a
@@ -1634,6 +1721,7 @@ records:
           kind: tool_call
           name: f
       - expected: []
+    suppress_inherited_from: true
   mistral_truncated_second_call_dropped:
     case_key: UNIFIED.mistral-truncated_second_call_dropped
     request: 6aeb2aa30ac178125e86927061672d462582ac0fe4d7b5323e4416c7a32c369a
@@ -1649,6 +1737,7 @@ records:
           kind: tool_call
           name: f
       - expected: []
+    suppress_inherited_from: true
   mistral_unclosed_string_marker_at_eof:
     case_key: UNIFIED.mistral-unclosed_string_marker_at_eof
     request: 2eb1a571fa92695b537b8f6feefac44ed52775b2325f11f1503986dca2d931d6
@@ -1657,6 +1746,7 @@ records:
       chunks:
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   mistral_whitespace_between_markers:
     case_key: UNIFIED.mistral-whitespace_between_markers
     request: 90295d1bee54ea38854dda6f00394585c936564b783b9e60358673aa50048fcb
@@ -1688,6 +1778,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   mistral_whitespace_only_arguments:
     case_key: UNIFIED.mistral-whitespace_only_arguments
     request: 83b0bb82f8181da4d4058cae5a83c87b55d977177c6a0251d4e636a9f66798af
@@ -1717,6 +1808,7 @@ records:
           kind: tool_call
           name: run
       - expected: []
+    suppress_inherited_from: true
   native_unmatched_quote_then_call:
     case_key: UNIFIED.8-native_unmatched_quote_then_call
     context: context_297b829aac4578e7
@@ -1737,6 +1829,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   not_keyword_type_complement:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
     request: 46c99d428feadf8fd92280dada373ac414226af81523a587c761fc3d33c54fa4
@@ -1752,6 +1845,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   nullable_reference_alias_literals:
     case_key: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
     request: e941ab4fedf702687d32c78eaa7212eca62fe80788b6b21311caa1ac34417ca4
@@ -1767,6 +1861,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   orphan_close_after_prose:
     case_key: UNIFIED.5-orphan_close_after_prose
     request: b9320176cb32741d53e3f13ab9d398945cf70d40aafef88cc1846c6ee3a720af
@@ -1779,6 +1874,7 @@ records:
         - kind: text
           text: 'I will check that. '
       - expected: []
+    suppress_inherited_from: true
   prefilled_reasoning_redundant_opener:
     case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
     context: context_6eabd38672be4393
@@ -1799,6 +1895,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   prefilled_reasoning_then_text:
     case_key: UNIFIED.40-prefilled_reasoning_then_text
     context: context_6eabd38672be4393
@@ -1816,6 +1913,7 @@ records:
         - kind: text
           text: The answer is 42.
       - expected: []
+    suppress_inherited_from: true
   prefilled_reasoning_then_text_then_tool:
     case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
     context: context_6eabd38672be4393
@@ -1840,6 +1938,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   prefilled_reasoning_truncated:
     case_key: UNIFIED.41-prefilled_reasoning_truncated
     context: context_6eabd38672be4393
@@ -1853,6 +1952,7 @@ records:
         - kind: reasoning
           text: analyzing data
       - expected: []
+    suppress_inherited_from: true
   prefilled_reasoning_with_tool:
     case_key: UNIFIED.40-prefilled_reasoning_with_tool
     context: context_6eabd38672be4393
@@ -1873,6 +1973,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
     context: context_297b829aac4578e7
@@ -1893,6 +1994,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   reason_markup_in_arg:
     case_key: UNIFIED.12-reason_markup_in_arg
     request: 7e63acbf3a53e99ccaa704e397bfaedefe9398f656faad184e7d8623c0d19289
@@ -1908,6 +2010,7 @@ records:
           kind: tool_call
           name: log
       - expected: []
+    suppress_inherited_from: true
   reason_only:
     case_key: UNIFIED.10-reason_only
     request: 9569759764cbf0a899361dd723bd8faad87bd37b123f5f90a019542179d345c7
@@ -1920,6 +2023,7 @@ records:
         - kind: reasoning
           text: just thinking, no answer
       - expected: []
+    suppress_inherited_from: true
   reason_then_content:
     case_key: UNIFIED.10-reason_then_content
     request: 5dcc7f289dbba6319bfbe5cf042a813ad2aa6edf79469c83a96e6be52cc44683
@@ -1936,6 +2040,7 @@ records:
         - kind: text
           text: The answer is 42.
       - expected: []
+    suppress_inherited_from: true
   reason_then_tool:
     case_key: UNIFIED.11-reason_then_tool
     request: 27868e09ae785e258ca2d234241877c7a6c961e0158a7c48f1b50df6e0bf271b
@@ -1955,6 +2060,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   reason_unterminated:
     case_key: UNIFIED.10-reason_unterminated
     request: fe0f5938593c9479fb2a805a345e6907d6c40af6862484ce0235be4f9221714a
@@ -1967,6 +2073,7 @@ records:
         - kind: reasoning
           text: thinking but stream ends
       - expected: []
+    suppress_inherited_from: true
   reference_object_recursive_and_composed_types:
     case_key: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
     request: 1b7290c46c54c0397f7ce93ceb2feb581c152a36e54f6944d1b284ac781facb7
@@ -1982,6 +2089,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   schema_const_array_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_array_allof
     request: 9d57967bdd047e576268c66cd10c2a438c03c955786a2a5f21d00aa6b260e9e7
@@ -1997,6 +2105,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_array_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_array_bare
     request: de9a9111b961ca9707b21bd2b86b8a0c7af1e3df6c3735592d69897e7ee8095c
@@ -2012,6 +2121,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_array_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_array_ref
     request: 535939f0d692e56572fcce519b0a82b299207015f381c869e1d9da145b38d5e6
@@ -2027,6 +2137,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_array_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_array_typed
     request: a4bb642f162fd054b55744add3e39ad19145387af55114c51dff14f9ff0a42bc
@@ -2042,6 +2153,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_boolean_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_allof
     request: 5f9bc55e0cd4fda57cda87f876dc39668f9b3e1725a2356af2f927af23892891
@@ -2057,6 +2169,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_boolean_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_bare
     request: a46fd3e46f55e2edf7c4a8001e0d3b6f8ce193a267d303a4c562a1f2610e917c
@@ -2072,6 +2185,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_boolean_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_ref
     request: 0d85c8dd3b4ac5dc1cf62a237b8c5e95f37d6a94de4e95357c50dc4e1227b8dd
@@ -2087,6 +2201,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_boolean_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_typed
     request: 79ccb085acb49a13d1e41dd5ad7f4bcbf6908ffe7e02ad4cffb9af1eb5dd628b
@@ -2102,6 +2217,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_entity_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_allof
     request: 1c9a70581ed9e91cc55104298fb536d40ac41160d010f99a2fb77bb351f4b15d
@@ -2117,6 +2233,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_entity_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_bare
     request: 9ef7e7edcf9acd83261bcf1abb4af3f82c89cd12157dc1f898857ba34db49680
@@ -2132,6 +2249,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_entity_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_ref
     request: e4eec659fd9a68eb14faebc9901eaca31ffa49f61552f413bcc83a33b4beb60b
@@ -2147,6 +2265,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_entity_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_typed
     request: 957e231d54cb4edfa3cebb0cbd24bb96c973317115bb632d5866257517975b32
@@ -2162,6 +2281,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_null_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_null_allof
     request: f2991eb77b04ea0d256b0034870f4a4880c2d3d3a886dafdc12e533c3a208177
@@ -2177,6 +2297,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_null_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_null_bare
     request: 006b3dbc4d06e5f5b630e1c832da130180f2bfc3f273f1a55005bfba2b3daa62
@@ -2192,6 +2313,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_null_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_null_ref
     request: f8cdf9c7866fd96baf76402c5344d8ffb6255ee1e60670e0f2d75c9586e712a0
@@ -2207,6 +2329,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_null_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_null_typed
     request: 30694105fd3d3d3fcaef3f7d59ce9ef5ceaa501bcf3a62927c57906ee0b81357
@@ -2222,6 +2345,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_number_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_number_allof
     request: 587719522ca51286fdc2781f09c870b7e1ee5d947004ffa41f8ad331774b3bd6
@@ -2237,6 +2361,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_number_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_number_bare
     request: dc92d55f4107c78af4e2c637a4eba7a44375e044a5496ec2e4da43a92a329e38
@@ -2252,6 +2377,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_number_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_number_ref
     request: 8654c41c6c4c8986ad3161ea3e1d144a4b116c0629dca9730ff823fb218773ba
@@ -2267,6 +2393,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_number_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_number_typed
     request: b8a77e52c8a6df67a0d4d3b6a3c34bd47d82c586de518a5be4bb1a7062b75334
@@ -2282,6 +2409,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_numeric_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_numeric_bare
     request: 2070d32a64a348d795b69468782ae440954eb4acd02cbfdc1aaa92452fb2f043
@@ -2297,6 +2425,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_object_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_object_allof
     request: 9763ec6905944157d2ac25736016e2e1b4a6462c7dc44139921ed20e2aa235f2
@@ -2312,6 +2441,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_object_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_object_bare
     request: c4bdf447e845487439fc01ffb6004174819f6a97891860f28ab36917b8936b07
@@ -2327,6 +2457,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_object_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_object_ref
     request: c1411f3b192662158b302d05eca23ea03b6258fe5e15ee5c398b949454905809
@@ -2342,6 +2473,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_object_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_object_typed
     request: 36cc8ba934ced52d2511f8bd435e41c056e5e0ba309e946e9a9bf3892c7077ee
@@ -2357,6 +2489,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_plain_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_allof
     request: 447987a0fdf91232007e293ad55fc992423bcd65c772333ae985fd22d43f29df
@@ -2372,6 +2505,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_plain_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_bare
     request: 902099cfa347ba606c2bba3296edb76a9b2249cf289c75881815aba7c96e12f7
@@ -2387,6 +2521,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_plain_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_ref
     request: 5563385890a0ab88a6f5af155f365981ba326e3111279d5dcd842610bc2274c5
@@ -2402,6 +2537,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_plain_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_typed
     request: d53f88aabad5d42d62eb2ad034b21bca3ed01ce8b40c74d3ad102ab7d9c9db28
@@ -2417,6 +2553,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_quoted_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_allof
     request: b5d428fb530b3969f1acf85df0109c8adf9ce81dbc2c75f7dac2e1347feb1902
@@ -2432,6 +2569,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_quoted_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_bare
     request: f2eff4d9d72e18a8f1fa7adec40a6f29e71930ccab8f272e26889c0e260cdf80
@@ -2447,6 +2585,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_quoted_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_ref
     request: 647da0c69f6bdf1721515675862ef7594c31ca35465ef7d32acf9f2d370eb0cc
@@ -2462,6 +2601,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_quoted_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_typed
     request: 99d75cb289b686800fa1d555a9c321071b417cbb864ce57ee392460fa85330e2
@@ -2477,6 +2617,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_space_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_space_allof
     request: fcb185076270ccc0151abf78976febff80b61252511e4de47b9c5d03ca46b0bc
@@ -2492,6 +2633,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_space_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_space_bare
     request: e7ea8adcabe4d2134229c5565e4dda6008a572e0908a4f69a2c11ba712057c24
@@ -2507,6 +2649,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_space_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_space_ref
     request: ad1d51190598d4c6b6a1e509c7ce572630c7e7310efc262654a73ecff27a0683
@@ -2522,6 +2665,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_space_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_space_typed
     request: 9411ce41364754909aff729471c6dd31137e7f9bd10eec3ca33a48b9f8f7aa25
@@ -2537,6 +2681,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_unicode_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_allof
     request: 19490b82d9948069285b8dd44b3bac7d2a12c02b1cfe4d792a84baced27c73bc
@@ -2552,6 +2697,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_unicode_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_bare
     request: 80b426eb54e05ca6467c770d432856cae69523974e1a41ceea325b2c147d0585
@@ -2567,6 +2713,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_unicode_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_ref
     request: 582e22fec9ae351580baa1d9e071149008a7939ec4e03f96836de7c283455870
@@ -2582,6 +2729,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_const_unicode_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_typed
     request: e548ffc4eb376dec2ee19d9b6ff3ed26ca1a3293ff7fe8f8cda9fa95994d3cbf
@@ -2597,6 +2745,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_array:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_array
     request: 79b003de9b7e6d322ce5e7506f81131f9c262a9b584405902704c787a26f8e33
@@ -2612,6 +2761,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_boolean:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_boolean
     request: e730a499f74750ac8818ae09a70c7e28ed939cff6bcbecd09c6ca406f893a9bc
@@ -2627,6 +2777,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_integer
     request: 33cd64659e4c88334fc6f20bf24a1decae95cd60ae544023de2d263f06f8ae14
@@ -2642,6 +2793,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_integer_boolean_number_order:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
     request: 7df4b9cd68a0d2378c2fdea6b7513d47ea966067acd26d909aa7916a569a0392
@@ -2657,6 +2809,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_null:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_null
     request: 3938b44a8985feba332fa4e972dcda244071996613dadbab28723e2a1849078e
@@ -2672,6 +2825,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_number:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_number
     request: 95b908d48eb4b663075fad0cb59496bfff4536d4dddaecb0b53409b764580005
@@ -2687,6 +2841,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_object:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_object
     request: 444ca3d0466d295109255c7ece004a7110d711858c1670473e35956ce2eface6
@@ -2702,6 +2857,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_declared_string:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_string
     request: c2ce28d43215444be342c217a79119234fea710c84580f3f31b7c0f8178a0032
@@ -2717,6 +2873,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_enum_const_narrowing:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
     request: 7bc9f2fef2cce0eaa2733d8bd0e1c9b41a499772ef2cd8854c2593f5853545ec
@@ -2732,6 +2889,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_enum_inferred_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
     request: e0e67e8be9be9a6d9c7b108be461323d94e5164f58518eedfe4e2adac259a615
@@ -2747,6 +2905,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_enum_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_integer
     request: ad84de56dea669eb17496999178a372e7a64c5cdb4f26fdddcc3579b3c4b6ccc
@@ -2762,6 +2921,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_enum_string:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_string
     request: a8397d4f9e5e6a7da0d7d0724d8484be54788f3bc17804e012942582af8780fe
@@ -2777,6 +2937,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_escaped_ref_const:
     case_key: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
     request: 824ca6fbc36427fe44a14c6562882900b745c7505891aae073663a8a23906558
@@ -2792,6 +2953,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_id_direct_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-id_direct_integer
     request: c53c7b4fb509b7c65de4d1986dd0e786a333c1c3c9b3923cec7a5ef4b2bb8b6d
@@ -2807,6 +2969,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_integer_const_ambiguous:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
     request: 16bed5dc7becc9aadfa388755e2ee2db95722dfb89785f05e1eb34c13271e053
@@ -2822,6 +2985,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_intersection_anyof:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
     request: be13ad87452efed727b38f61e8c4538ab594968bae6b5cece5425a64e112120b
@@ -2837,6 +3001,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_intersection_oneof:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
     request: b29d5c9376eefe81f1303722bd3604f9cd1d6aac803584153c973a8998d7486a
@@ -2852,6 +3017,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_null_union_ambiguous:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
     request: d63571c2fd939e61efd2c4a44743029d814d4e6652f1ffe4af3247b08ff2adb8
@@ -2867,6 +3033,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_nullable_string:
     case_key: UNIFIED.7-tool-argument-nullability-nullable_string
     request: 94ef1c0be1ed6455d0768fb5e2757e3911d8fe580828a2d0db7935a25347c4e7
@@ -2882,6 +3049,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_object_const_union:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
     request: 1e34ecd9bbdd16ef4487643ed22f3888438db737b77d35d85a2dfd33a607c42e
@@ -2897,6 +3065,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_percent_ref_const:
     case_key: UNIFIED.7-tool-argument-schema-references-percent_ref_const
     request: e7aac0b7a148ad5f2b494ae0bb18ba85d1faa0ca76c052f74c1c4989e1a26290
@@ -2912,6 +3081,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_ref_sibling_integer:
     case_key: UNIFIED.7-tool-argument-schema-references-ref_sibling_integer
     request: 2a900fb510e41f1230ac9ba8967079bc14c6b652599a7b5f94cc1e6072bffb72
@@ -2927,6 +3097,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_ref_union_anyof_integer:
     case_key: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_integer
     request: 9dd973eb42017e7bbe598aa623fa1c74e65d8ced2a267de4efd4132492ddd868
@@ -2942,6 +3113,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_ref_union_anyof_string:
     case_key: UNIFIED.7-tool-argument-schema-references-ref_union_anyOf_string
     request: 576ef85e138547ef9e0de805898c3e80ec66955e8a88a7903e8219408b58d831
@@ -2957,6 +3129,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_ref_union_oneof_integer:
     case_key: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_integer
     request: 2e6be7c0866666c80d82d603fcade9ce3d5cd9191fc46e89532eac1d99083162
@@ -2972,6 +3145,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_ref_union_oneof_string:
     case_key: UNIFIED.7-tool-argument-schema-references-ref_union_oneOf_string
     request: d6205124d4d8e2623858d94ddc92e79b6ebf7c5333ed99808e3ea56b11e7f23b
@@ -2987,6 +3161,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_type_array_integer_null:
     case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null
     request: 35a35c7d0a8c0a25e749f074afde9a63e766c03e8592e469c66c608b0d14b6aa
@@ -3002,6 +3177,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_type_array_integer_null_null:
     case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
     request: 8e51db1951ecaedf8f0a6c47614d2657a786d043699c956516a5cad452dbd806
@@ -3017,6 +3193,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_type_array_string_integer:
     case_key: UNIFIED.7-tool-argument-nullability-type_array_string_integer
     request: 28d37f4802026a5d05b19cf1d981dad334395de7051a59c9bb9971638b6a713f
@@ -3032,6 +3209,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_array_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_string
     request: d17c2fed1715b283c927ab32c1a3c7b96258fb30c5d4c2a99228c011f0f0b161
@@ -3047,6 +3225,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_array_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_reverse_typed
     request: d6d55ff22b4caa552d0f9a43dc48f8ea0089aca25187486806bd6feec3b8be74
@@ -3062,6 +3241,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_array_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_string
     request: 776e5b9d3b5b01e4f2c08f9af7b088839c6c2581b9ff397d7eed147019d01d61
@@ -3077,6 +3257,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_array_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_array_typed
     request: 0ae9ebfbdf9b2d84f33598c53a2078f15e3248db383baf0968e85c40bc09a57b
@@ -3092,6 +3273,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_boolean_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_string
     request: d7cdc97f5db4b6a9bd863fa34b6c952c0b3b287ed41e3f6a950f5755c83d99e6
@@ -3107,6 +3289,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_boolean_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_reverse_typed
     request: de96fa16bf0edbea1a32f26f23f7120aae3410f983d79a04953dab308fe3e1c5
@@ -3122,6 +3305,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_boolean_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_string
     request: b3dd151b20e59578d09ca34c10b0d96ef528ebc2b51289b10eacec8d826f2428
@@ -3137,6 +3321,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_boolean_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_boolean_typed
     request: 376f9ec3dd0965ed4d0a38f76ba997391ee07dedec57c8669eb9bfb2223c3b31
@@ -3152,6 +3337,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_integer_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_string
     request: d0ca9c02263ac3e58345635fa666d7bbd3477854cf7b00fbc8c5553d3c6729f8
@@ -3167,6 +3353,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_integer_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_reverse_typed
     request: 2bbad00c70d4384c848d080ee4397f858fe7857d3a110ed6a2c0621d4854ca5b
@@ -3182,6 +3369,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_integer_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_string
     request: 3fa35b13c98cf9f8a39bd56d779c997163903c23befa41fae73fc9bc0a01b596
@@ -3197,6 +3385,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_integer_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_integer_typed
     request: d06c3245d50a03992ce6345d26034a5039825514204565a922a2a1c04b3b51be
@@ -3212,6 +3401,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_null_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_string
     request: bd750bb6b1b5f14f655a42cda2f933ff9e04209ca8dd9f6e237da34b70e4b9df
@@ -3227,6 +3417,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_null_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_reverse_typed
     request: 8c0d7865f9c5879c271a2d3db9e8688414399cf2932735b72beeca6f32c00e56
@@ -3242,6 +3433,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_null_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_string
     request: 91bb25e558d8b6721dc5e09bca9f5270ba2759ca853ad57e6f242a23d41ba3d3
@@ -3257,6 +3449,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_null_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_null_typed
     request: 2dbf52cd11d3751b6cb85acf4e4b80b5036f3fdb9c1b07439a301ecf3dd2fde7
@@ -3272,6 +3465,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_number_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_string
     request: 160cbbba91c5873b78f30a4c176d6ebe13c50f46ff2f78f300355bbb8d14ef44
@@ -3287,6 +3481,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_number_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_reverse_typed
     request: 42eab8f55c4a7d00443555aa79f99ccd2d891f3acc670fd070879662383288f9
@@ -3302,6 +3497,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_number_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_string
     request: 3c368131cc2af1d7c922a996c7f9d3287dc1489346d5d0b4089a6f3759db51aa
@@ -3317,6 +3513,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_number_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_number_typed
     request: 5040b65d869be0285a906f8ed6bc9067d5aacb1f83e6c4fca880b3d6c5a29f77
@@ -3332,6 +3529,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_object_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_string
     request: e9818f6e0eb8b6ae32c0cf3adb418ab43626dd6f14128062d8a05020c4462541
@@ -3347,6 +3545,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_object_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_reverse_typed
     request: 7b83a6b76325b581d49f833ff6177bb6b7d28917308204f2e72196e661b00ade
@@ -3362,6 +3561,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_object_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_string
     request: 5a503d264c1b82debf13b8c949c754098789ec72ed11a273eb2936f72359ffc6
@@ -3377,6 +3577,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_anyof_object_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_anyOf_object_typed
     request: c071ff58b7578b518d0ead484133021256e71220e0d11f627ce1c229c50403a5
@@ -3392,6 +3593,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_array_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_string
     request: 23a7c2c99940bb47e8ed7c0bf352dfb10d40204cc879054ec99e0f63cdf2e5d3
@@ -3407,6 +3609,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_array_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_reverse_typed
     request: f1d189fb0dd8e7940e3b40b7f553919afceaadc9cddb77480350c5cc217bf48e
@@ -3422,6 +3625,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_array_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_string
     request: a0d36c8bfd6db224168b3be7c51a5fe5852c054575d5a197107be09c89dd9609
@@ -3437,6 +3641,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_array_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_array_typed
     request: ca49bd8bb595c3e490877a4439e3c1737fa24bd5a942f82f1a1d716bfe329b20
@@ -3452,6 +3657,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_boolean_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_string
     request: 931a66b30312cb5e3e94d8b7552a5e9b71fea99ad19e6038de53511671815d93
@@ -3467,6 +3673,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_boolean_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_reverse_typed
     request: 1d06765f0b9edf6607fb17a24ea511269970f695ce9fcf17890d49c61f2ade8c
@@ -3482,6 +3689,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_boolean_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_string
     request: 563ff3cde12404dfbceae626a0003d8c5fed6072bc37ea9ee1f34124459698b3
@@ -3497,6 +3705,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_boolean_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_boolean_typed
     request: 701e7355f90972aec058f1b684374a643b1d06df77287e6a8b8ed427db21e6dc
@@ -3512,6 +3721,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_integer_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_string
     request: 96df8367e2a1738fef10a59557bfbf9741d200ae51343977781a0d9f9fabbff5
@@ -3527,6 +3737,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_integer_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_reverse_typed
     request: b8530dcd20e0e3a1971115459bbf82420978ef7f4f4f19ff508986265cc30d11
@@ -3542,6 +3753,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_integer_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_string
     request: 8dad349c3d24f5a72fbc14eaeab038fd72f5f7099f12c207b9fd668fd8e4f92d
@@ -3557,6 +3769,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_integer_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_integer_typed
     request: acc2ab10dd2976cd376268c1d3986860770ecd3e8e053e06e5d87bbe1a8b24f3
@@ -3572,6 +3785,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_null_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_string
     request: e7a8689c0252c62cb5b1fabd48ed2a640175cf070eda19f40132612802699847
@@ -3587,6 +3801,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_null_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_reverse_typed
     request: ddd185e4e9adcd12c3421cc6d1b37b4ec7aa1ef3acc70328b88bf2b504d8cd09
@@ -3602,6 +3817,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_null_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_string
     request: 5047eab73e137d7eb87e0a8ebcf12661cf3d5a3131d5c4086f9ae8c9d8b503f5
@@ -3617,6 +3833,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_null_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_null_typed
     request: 6828c40a2362ef512e81ae4a73dc7d6a09be1eb32f0cba78f71673bbe6ba41f6
@@ -3632,6 +3849,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_number_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_string
     request: 741c181f698953ec3449b8dc059b3710b5badd29359af2d81d58007965465306
@@ -3647,6 +3865,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_number_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_reverse_typed
     request: ccfc781b63d6881826f54f3694738ca67a55c15bd78c8b9001d2846a89d0a5aa
@@ -3662,6 +3881,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_number_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_string
     request: edb62699024c77810d09b55170d55b2c9a225c210cbe300f77ce39c771366f36
@@ -3677,6 +3897,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_number_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_number_typed
     request: 2e169681bfb768220bcba4a362138cb0c9dd9f9b4073102be29af768af93f479
@@ -3692,6 +3913,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_object_reverse_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_string
     request: eb6ac1602f7d6d393cbf73dc986f4ac1d6511b0c8a0d4b4e10eed00aa44d36f9
@@ -3707,6 +3929,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_object_reverse_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_reverse_typed
     request: 1957678a23f99a8600cfbabaeb2870db1259823d967bbba2b375fd6801092f59
@@ -3722,6 +3945,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_object_string:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_string
     request: 9c6a9cd3b80cfc23159f4a53222353c76af5059a4a6424465f2cddcacf1f7732
@@ -3737,6 +3961,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   schema_union_oneof_object_typed:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-union_oneOf_object_typed
     request: ed553a04728cc68a10cf0cf077bc89e2534ffcfc934315fcfc53f0d07c64facc
@@ -3752,6 +3977,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   text_before_tool:
     case_key: UNIFIED.8-text_before_tool
     request: 00f7c8f0470a510ed4ed2ebb99eb8e9f4a7c9ceaf18b860aa4eb1ae7cd38d5a1
@@ -3771,6 +3997,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   text_only:
     case_key: UNIFIED.3-text_only
     request: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
@@ -3783,6 +4010,7 @@ records:
         - kind: text
           text: The answer is 42, no tools needed.
       - expected: []
+    suppress_inherited_from: true
   three_calls_partial_header:
     case_key: UNIFIED.2-three_calls_partial_header
     request: 926bf98da03f3a5211019bf88ba3535aa1f9fdcf8bae83a3dac7244e0e5e7506
@@ -3815,6 +4043,7 @@ records:
           name: h
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4-tool_block_never_closed_then_text
     request: 74a0d906131ed444a4341d0ba69046a12d0381620b2308694badff00ef485421
@@ -3823,6 +4052,7 @@ records:
       chunks:
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   tool_body_whitespace:
     case_key: UNIFIED.1-tool_only_leading_json_body_whitespace
     request: cd95add30a03bd273bf4586e50c185d92a77debab9633a6deab0cbfb1e758032
@@ -3838,6 +4068,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   tool_call_ids_unique:
     case_key: UNIFIED.2-tool_call_ids_unique
     request: 543ab4d2f2639c8565ae97b4f89fc386b5afbeae34f819d8807f49a6e7a14ec5
@@ -3860,6 +4091,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   tool_markup_only_emits_nothing:
     case_key: UNIFIED.4-tool_markup_only_emits_nothing
     request: 28ded4e9a561864ffb25eb1dcc45e837e52167487ac40d8a609f66fec85ba31b
@@ -3868,6 +4100,7 @@ records:
       chunks:
       - expected: []
       - expected: []
+    suppress_inherited_from: true
   tool_only:
     case_key: UNIFIED.1-tool_only
     request: 11f51a4723afce40da742464fea19c269863ec2aa016dca8163dfe099b83f418
@@ -3883,6 +4116,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   truncated_tool_eof:
     case_key: UNIFIED.5-truncated_tool_eof
     request: 9a19284971d3f2f3af652b22f7ef05d5cd227f52322d597f6d8df1abf91950b8
@@ -3895,6 +4129,7 @@ records:
         - kind: reasoning
           text: ok
       - expected: []
+    suppress_inherited_from: true
   two_adjacent_reason_spans:
     case_key: UNIFIED.10-two_adjacent_reason_spans
     request: a49508953c75c027ead2afd47a37ed8e5b172d95937da28dab7434b18fdd2765
@@ -3915,6 +4150,7 @@ records:
         - kind: text
           text: done
       - expected: []
+    suppress_inherited_from: true
   two_calls:
     case_key: UNIFIED.2-two_calls
     request: 9191497e624e4d96af3200d6ced61628a31ada3169f09375ce179e6377e4c01b
@@ -3937,6 +4173,7 @@ records:
           kind: tool_call
           name: g
       - expected: []
+    suppress_inherited_from: true
   two_calls_same_name:
     case_key: UNIFIED.2-two_calls_same_name
     request: f5fb682ec8cab1980aad8362df12ece39a1d2af2a1d71a6ab4150f8f3435f3b3
@@ -3959,6 +4196,7 @@ records:
           kind: tool_call
           name: get_weather
       - expected: []
+    suppress_inherited_from: true
   two_reason_spans:
     case_key: UNIFIED.10-two_reason_spans
     request: 722abb5faddaa97e142539c45b734cd038040ec26cbec1214c9dba5aee2c41ee
@@ -3983,6 +4221,7 @@ records:
         - kind: text
           text: done
       - expected: []
+    suppress_inherited_from: true
   unused_reference_graph_parameter_types:
     case_key: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
     request: f9aa9b5ebd7180f3db062076420246e1800cb7937fbc20065cad3ccaf24e98e4
@@ -3998,6 +4237,7 @@ records:
           kind: tool_call
           name: capture_payload
       - expected: []
+    suppress_inherited_from: true
   xml_string_type_double_quoted_object:
     case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
     request: b4d6e99820c6913ce60f7b3a5faea57bb64bf9b8f50ef16445da5e577f8a7729
@@ -4013,6 +4253,7 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   xml_string_type_single_quoted_object:
     case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
     request: afb1e58f65a061a1e7b0aaa7f5cbea2a0b5221f6885dec6ab06374c833292e41
@@ -4028,20 +4269,21 @@ records:
           kind: tool_call
           name: schema_probe
       - expected: []
+    suppress_inherited_from: true
   reason_markup_in_arg_empty_span_then_text:
     case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
-    producer: producer_df60c3d53c0419bd
-    context: context_74f13584522e9e6e
+    producer: producer_72c2f142b0f7c1d0
+    context: context_0c04f3f5dabd1446
     request: f9c4d57232560f62ee07029b8c46290d4d19a9a87df22598195ef9b92d52886b
     output:
       assembled:
-      - arguments: '{"content": "<think></think>answer"}'
-        kind: tool_call
+      - kind: tool_call
         name: write_file
+        arguments: '{"content": "<think></think>answer"}'
       chunks:
       - expected:
-        - arguments: '{"content": "<think></think>answer"}'
-          complete: true
-          kind: tool_call
+        - kind: tool_call
           name: write_file
+          arguments: '{"content": "<think></think>answer"}'
+          complete: true
       - expected: []

@@ -1,4 +1,4 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"6749bfb7904cfcbab12c64ebc7f3e9870eb971b2b33aa89a851f352cafaaa7de","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e66044ea5c6ff161d8a38d98c33208d7582fe1f36eacf33b5d2973a8816a9b43","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -10,11 +10,19 @@ origins:
     crate_version: 0.10.5
     source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
     git_commit: db074b635f197d005701466bc539f3efeee878b2
+  origin_5c931b616c20bd80:
+    crate_version: 0.10.5
+    source_sha256: cfcf366e25f3f8e36ec484e6fa760b719ef14d114087561c9b9a906e18c48d99
+    git_commit: c13f8a04559783a38d579c63a02d2dcaa089e4e8
 producers:
   producer_638222ade9786bb4:
     captured_with:
       dynamo_v2: 0.10.5
     capture_origin: origin_49bba05eefe0a46c
+  producer_72c2f142b0f7c1d0:
+    captured_with:
+      dynamo_v2: 0.10.5
+    capture_origin: origin_5c931b616c20bd80
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -129,6 +137,11 @@ contexts:
             - conditions
             type: object
         tool_output_mode: Native
+  context_d9dd77becedcd121:
+    family: gpt_oss
+    mode: unified
+    record_metadata:
+      parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.5.yaml
   producer: producer_638222ade9786bb4
@@ -11556,4 +11569,81 @@ records:
       - expected:
         - kind: text
           text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'
+      - expected: []
+  native_quoted_control_then_call_progress:
+    case_key: UNIFIED.8-native_quoted_control_then_call_progress
+    producer: producer_72c2f142b0f7c1d0
+    context: context_d9dd77becedcd121
+    request: 7f8a6e6dec57229497f730ad3c853e2dd66925ac47210d7870b92004c0f0e462
+    output:
+      assembled:
+      - kind: text
+        text: The literal "
+      chunks:
+      - expected:
+        - kind: text
+          text: The literal "
+      - expected: []
+      - expected: []
+      - expected: []
+  reason_markup_in_arg_empty_span_then_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    producer: producer_72c2f142b0f7c1d0
+    context: context_d9dd77becedcd121
+    request: 02151ce9888b2ed1bc321b6d95cb9c728ff245fb561e4bcee4d10f8352b11f6c
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"content": "<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: ''
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '{"'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: content
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '":'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: ' "<'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: think
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '></'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: think
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '>'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: answer
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: '"}'
+          complete: false
+        - kind: tool_call
+          name: null
+          arguments: ''
+          complete: true
       - expected: []

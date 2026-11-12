@@ -1,4 +1,4 @@
-capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"de1e36a5f3104f9a2372472b061f188b0a37bbce3f17c0ea9c18ed98e43674a3","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"ef8cb3849d4515f8f0eb654d1011dd8c2d3fe7801e3398a51463d0e10d3d1aed","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -10,11 +10,19 @@ origins:
     crate_version: 0.10.5
     source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
     git_commit: db074b635f197d005701466bc539f3efeee878b2
+  origin_5c931b616c20bd80:
+    crate_version: 0.10.5
+    source_sha256: cfcf366e25f3f8e36ec484e6fa760b719ef14d114087561c9b9a906e18c48d99
+    git_commit: c13f8a04559783a38d579c63a02d2dcaa089e4e8
 producers:
   producer_638222ade9786bb4:
     captured_with:
       dynamo_v2: 0.10.5
     capture_origin: origin_49bba05eefe0a46c
+  producer_72c2f142b0f7c1d0:
+    captured_with:
+      dynamo_v2: 0.10.5
+    capture_origin: origin_5c931b616c20bd80
 contexts:
   context_63bbcc8b0776f125:
     mode: unified
@@ -96,6 +104,11 @@ contexts:
         named_tool: get_weather
         starting_state: Response
         tool_output_mode: GuidedJson
+  context_cfeb93e46df5d166:
+    family: gemma4
+    mode: unified
+    record_metadata:
+      parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.5.yaml
   producer: producer_638222ade9786bb4
@@ -6782,3 +6795,219 @@ records:
       - expected:
         - kind: text
           text: <|tool_call>call:lookup{q:<|\"|>x<|\"|>}<tool_call|>" trailing
+  decade_apostrophe_before_reasoning_closer:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 02d5d46564457e7f2ee29f0f6daec9367f3e0bee449c6c08729cea1f212f40bf
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''90s<channel|>''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''90s<channel|>''Answer'
+      - expected:
+        - kind: reasoning
+          text: ''''
+  inch_mark_before_reasoning_closer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: dc8c502bbbfdad8e1229a618fedee53e02cfdde0562a0e54c4fb89cbb73ef8e9
+    output:
+      assembled:
+      - kind: reasoning
+        text: 27"<channel|>"Answer"
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 27"<channel|>"Answer"
+      - expected: []
+  mixed_quotes_before_reasoning_closer:
+    case_key: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 1b3b912282890ac2f9c7c23ae78502ece8e7ebd8581c830ce4a977c78318be07
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'f''" OR x -- ''
+
+          <channel|>"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'f''" OR x -- ''
+
+            <channel|>"Answer"'
+      - expected: []
+  native_quoted_control_then_call_progress:
+    case_key: UNIFIED.8-native_quoted_control_then_call_progress
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 074901216ddee43c3666521783bccb7f5b586ef3901fabc71937aee737dd12c6
+    output:
+      assembled:
+      - kind: text
+        text: 'The literal "<|tool_call>" marker is part of the explanation. '
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: 'The literal "<|tool_call>" marker is part of the explanation. '
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"Paris"}'
+          complete: true
+      - expected: []
+  native_quoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 8212cfdbe1982e110d68c359c0a6979a0db3059d0a8d9faff6eb94039eb2989f
+    output:
+      assembled:
+      - kind: reasoning
+        text: The special "<channel|>" marker is used to delineate parser paths
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: The special "<channel|>" marker is used to delineate parser paths
+      - expected: []
+  native_quoted_reasoning_closer_then_answer:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: fd7b142b968fbe1cd978fa2ebf855b0e9cc5e9a54dca8e457523479b65ad8d02
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''<channel|>'''
+      - kind: text
+        text: Answer
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''<channel|>'''
+        - kind: text
+          text: Answer
+      - expected: []
+  native_reasoning_closer_in_quoted_sentence:
+    case_key: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: f1612ecf2b7b0fd1b6b6048c10f6828f22a497e2b41711bbee88b4ee3a567eef
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"The special <channel|> marker ..."'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '"The special <channel|> marker ..."'
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 822366270f5b1a13ff9adbef081eef89698eccb38a29f7c4b94a5968c2e5a4ca
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'The special '
+      - kind: text
+        text: ' marker is used to delineate parser paths'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'The special '
+        - kind: text
+          text: ' marker is used to delineate parser paths'
+      - expected: []
+  quoted_name_possessive_inline_closer:
+    case_key: UNIFIED.40-quoted_name_possessive_inline_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: e93803828e5522f53ddb82e07b99e3770c994761a8a4e06410049f758cd9f3f8
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name`''s path.'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name`''s path.'
+        - kind: text
+          text: '''Answer'
+      - expected:
+        - kind: text
+          text: ''''
+  reason_markup_in_arg_empty_span_then_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 58615082528f67a99ebb9122f5d7248e44ce84e156fb3cd0734597f097e70b91
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"content":"<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"content":"<think></think>answer"}'
+          complete: true
+      - expected: []
+  sql_fragment_before_reasoning_closer:
+    case_key: UNIFIED.40-sql_fragment_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 224e2b3a43b6f7fb820b68f595d4d1b74bd2b947e3e30715d623cbaad6422feb
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''1''=''1<channel|>''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''1''=''1<channel|>''Answer'
+      - expected:
+        - kind: reasoning
+          text: ''''
+  unclosed_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: 3c6cf9b450b45ebcf4e5e646e22cb21dec01e3b1aef20dfaf53301f6a9bd7170
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name<channel|>`Answer`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name<channel|>`Answer`'
+      - expected: []
+  unclosed_command_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    producer: producer_72c2f142b0f7c1d0
+    context: context_cfeb93e46df5d166
+    request: d31e85b6008c0480d1a2c34df21bf90e7d26d4e047c73bca80b05ea0e1f46b99
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`pytest -x<channel|>Run `pytest`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`pytest -x<channel|>Run `pytest`'
+      - expected: []

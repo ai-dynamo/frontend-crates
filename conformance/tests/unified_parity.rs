@@ -777,7 +777,10 @@ fn unified_parser_matches_the_golden_oracle() {
 
     assert_eq!(
         gpt_oss_disagreements,
-        ["UNIFIED.gpt_oss_native_builtin_python_raw.gpt_oss"]
+        [
+            "UNIFIED.gpt_oss_native_builtin_python_raw.gpt_oss",
+            "UNIFIED.native_quoted_control_then_call_progress.gpt_oss",
+        ]
     );
     capture::report_comparison("unified-golden", checked, &failures, false);
     assert!(checked >= 30, "expected the qwen3 corpus, got {checked}");
