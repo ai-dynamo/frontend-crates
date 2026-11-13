@@ -523,6 +523,28 @@ def current_source_catalog(split_evidence):
     return root, catalog
 
 
+def test_retained_native_index_has_fragment_for_every_checkpoint(
+    historical_unified_sources: tuple[Path, list[dict]],
+    native_publisher: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, resources = historical_unified_sources
+    monkeypatch.setenv("CONFORMANCE_PUBLISHER", str(native_publisher))
+    _inventory, _documents, indexed = viewer_catalog._native_catalog_document_index(
+        root,
+        conversion_context={"dataset": "retained", "metadata": viewer_catalog._source_metadata()},
+    )
+    expected = {(row["family"], row["implementation"], row["version"])
+                for row in resources if row["kind"] == "history"}
+    actual = set()
+    for (family, implementation), rows in indexed["snapshots"].items():
+        for row in rows:
+            checkpoint = family, implementation, row["runtime_version"]
+            actual.add(checkpoint)
+            assert isinstance(row.get("fragment"), str) and row["fragment"], checkpoint
+    assert actual == expected
+
+
 def test_history_generation_pairs_latest_readers_without_ci_copy(history_source, tmp_path, monkeypatch):
     root = Path(sources.__file__).resolve().parents[3]
     output = tmp_path / "generated/viewer-catalog.json"

@@ -1,20 +1,20 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e7ba9dbfe0ec0adcfc32d243d995bc45bbb0e76fb8b6e6b706a9f249399b2dc0","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"00078eb1bf9d35409dc4dad315734f03ee0e03d93834dd0bdfe8a80ba2e985a1","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_9733f2050db356d5
+  origin: origin_6517e7493212421c
 origins:
-  origin_9733f2050db356d5:
+  origin_6517e7493212421c:
     crate_version: 0.10.7
-    source_sha256: 78fc67526969d7a8dc4f698da2e55f242764d1acddb84ec72307f744c6e878f9
-    git_commit: 9c23f4dd6892d64b980c270f22a7ba9c4f645194
+    source_sha256: 7f91c304bf0c77d4cae125e8265c2a2e8b3060024a560335538f19b789d2c88f
+    git_commit: c77b2437170c91f742b1a67a03fe20c6f5558810
 producers:
-  producer_94a5213e507c6ca6:
+  producer_a3755f6c1a551460:
     captured_with:
       dynamo_v2: 0.10.7
-    capture_origin: origin_9733f2050db356d5
+    capture_origin: origin_6517e7493212421c
 contexts:
   context_915209a5f13ef500:
     family: kimi_k2
@@ -23,7 +23,7 @@ contexts:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml
-  producer: producer_94a5213e507c6ca6
+  producer: producer_a3755f6c1a551460
   context: context_915209a5f13ef500
 records:
   dotted_name_minimal:

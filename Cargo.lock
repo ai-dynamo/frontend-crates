@@ -1220,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.12"
+version = "11.0.13"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "10.0.1"
+version = "10.0.2"
 dependencies = [
  "async-openai",
  "derive_builder",

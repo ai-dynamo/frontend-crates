@@ -1,20 +1,20 @@
-capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"2f289be889ebbe832f28ccc865aff30b6374a620b9c7c526985b08363909134f","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"06cc417ac49e8e68e385c5302e7f3917b89f3b4b3539599496b4899e10f50026","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_9733f2050db356d5
+  origin: origin_6517e7493212421c
 origins:
-  origin_9733f2050db356d5:
+  origin_6517e7493212421c:
     crate_version: 0.10.7
-    source_sha256: 78fc67526969d7a8dc4f698da2e55f242764d1acddb84ec72307f744c6e878f9
-    git_commit: 9c23f4dd6892d64b980c270f22a7ba9c4f645194
+    source_sha256: 7f91c304bf0c77d4cae125e8265c2a2e8b3060024a560335538f19b789d2c88f
+    git_commit: c77b2437170c91f742b1a67a03fe20c6f5558810
 producers:
-  producer_94a5213e507c6ca6:
+  producer_a3755f6c1a551460:
     captured_with:
       dynamo_v2: 0.10.7
-    capture_origin: origin_9733f2050db356d5
+    capture_origin: origin_6517e7493212421c
 contexts:
   context_4e12bd8c9654e6c5:
     family: muse_spark
@@ -23,7 +23,7 @@ contexts:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml
-  producer: producer_94a5213e507c6ca6
+  producer: producer_a3755f6c1a551460
   context: context_4e12bd8c9654e6c5
 records:
   dotted_name_minimal:
