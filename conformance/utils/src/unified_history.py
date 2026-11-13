@@ -445,8 +445,9 @@ class History:
 
     def iter_resolved_snapshots(self, capture_ids: set[str] | None = None, *, include_members: bool = False, view_capture_id: str | None = None):
         """Resolve checkpoints in one pass, with independently owned yielded records."""
-        if self.resolved_snapshots:
-            for current in self.ordered_capture_ids():
+        state = {}
+        for current in self.ordered_capture_ids():
+            if current in self.resolved_snapshots:
                 if capture_ids is None or current in capture_ids:
                     records = copy.deepcopy(self.resolved_snapshots[current])
                     if view_capture_id and view_capture_id != current:
@@ -460,9 +461,7 @@ class History:
                             if case_id not in suppressed:
                                 document.setdefault("inherited_from", self.captures[current]["runtime_version"])
                     yield current, records
-            return
-        state = {}
-        for current in self.ordered_capture_ids():
+                continue
             self._apply_capture(state, current)
             if capture_ids is None or current in capture_ids:
                 if include_members:
@@ -956,7 +955,27 @@ def _validate_history(
     history = History(family, implementation, captures, where, capture_paths,
                       resolved_snapshots or {}, snapshot_members or {}, snapshot_suppressed_inheritance or {})
     if history.resolved_snapshots:
-        for capture_id in history.ordered_capture_ids():
+        complete_ids = set(history.resolved_snapshots)
+        ordered_ids = history.ordered_capture_ids()
+        sparse_ids = [capture_id for capture_id in ordered_ids if capture_id not in complete_ids]
+        if sparse_ids:
+            first_complete = min(ordered_ids.index(capture_id) for capture_id in complete_ids)
+            if any(ordered_ids.index(capture_id) > first_complete for capture_id in sparse_ids):
+                raise ValueError(f"sparse snapshots follow complete snapshots in {where}/{implementation}")
+            sparse_captures = {capture_id: captures[capture_id] for capture_id in sparse_ids}
+            sparse_paths = {capture_id: capture_paths[capture_id] for capture_id in sparse_ids}
+            sparse_history = _validate_history(
+                family, implementation, sparse_captures, sparse_paths,
+                external_captures=external_captures,
+            )
+            if snapshot_callback is not None:
+                for capture_id, records in sparse_history.iter_resolved_snapshots(include_members=True):
+                    history.snapshot_members[capture_id] = sparse_history.snapshot_members[capture_id]
+                    history.snapshot_suppressed_inheritance[capture_id] = sparse_history.snapshot_suppressed_inheritance[capture_id]
+                    snapshot_callback(history, capture_id, records)
+        for capture_id in ordered_ids:
+            if capture_id not in complete_ids:
+                continue
             capture = captures[capture_id]
             for case_id, member in history.snapshot_members[capture_id].items():
                 source_name = Path(member).name.removesuffix(".yaml")
@@ -1084,8 +1103,6 @@ def _load_family(item, snapshot_callback=None, *, external_captures=None, docume
     for key, captures in sorted(grouped.items()):
         family_name, implementation = key
         snapshot_ids = set(captures) & set(resolved_snapshots)
-        if snapshot_ids and snapshot_ids != set(captures):
-            raise ValueError(f"mixed sparse and complete snapshots in {family_name}/{implementation}")
         histories[key] = _validate_history(
             family,
             implementation,
