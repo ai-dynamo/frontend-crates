@@ -4,5 +4,7 @@
 //! Image decode, bit-exact resize kernels, and reusable transform primitives.
 
 pub mod decode;
+#[cfg(test)]
+mod decode_table;
 pub mod resize;
 pub mod transforms;

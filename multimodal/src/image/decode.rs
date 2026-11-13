@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg_attr(not(test), expect(dead_code, reason = "only tests call it"))]
+mod native;
 mod smart;
 
+#[cfg_attr(not(test), expect(unused_imports, reason = "only tests call it"))]
+pub(crate) use native::decode_native;
 pub use smart::decode_rgb_smart;
 
 use crate::{MmError, Result};
