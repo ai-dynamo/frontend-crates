@@ -24,7 +24,6 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::{KimiK3ParserConfig, TerminalMarkerPolicy};
-use super::super::json::compact_json_lexically;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 pub(crate) const SEP: &str = "<|sep|>";
@@ -487,8 +486,10 @@ fn encode_argument_value(arg_type: &str, raw: &str) -> String {
         return serde_json::to_string(raw).expect("serializing a Rust string cannot fail");
     }
 
+    // Keep the model's own JSON text: renderers rebuild prompt history from
+    // these bytes, so respacing nested values here changes the next prompt.
     if serde_json::from_str::<Value>(raw).is_ok() {
-        compact_json_lexically(raw)
+        raw.trim().to_string()
     } else {
         serde_json::to_string(raw).expect("serializing a Rust string cannot fail")
     }
@@ -582,7 +583,7 @@ mod tests {
         assert_eq!(calls[0].function.name, "get_weather");
         assert_eq!(
             calls[0].function.arguments,
-            r#"{"city":"Paris","days":1.0,"rain":true,"none":null,"filters":{"b":1,"a":2},"hours":[8,20]}"#
+            r#"{"city":"Paris","days":1.0,"rain":true,"none":null,"filters":{"b": 1, "a": 2},"hours":[8, 20]}"#
         );
     }
 

@@ -2744,8 +2744,10 @@ fn encode_argument_value(arg_type: &str, raw: &str) -> String {
     if arg_type == "string" {
         return serde_json::to_string(raw).expect("serializing a Rust string cannot fail");
     }
+    // Keep the model's own JSON text: renderers rebuild prompt history from
+    // these bytes, so respacing nested values here changes the next prompt.
     if parsed_json_literal(raw).is_some() {
-        compact_json(raw)
+        raw.trim().to_string()
     } else {
         serde_json::to_string(raw).expect("serializing a Rust string cannot fail")
     }

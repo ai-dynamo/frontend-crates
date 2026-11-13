@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, Result, bail};
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use crate::{
     OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
@@ -603,28 +603,106 @@ fn python_default_json(value: &Value) -> Result<String> {
     Ok(output)
 }
 
+/// One rendered tool-call argument: its key, XTML type and value text.
+struct XtmlArgument {
+    key: String,
+    xtml_type: &'static str,
+    text: String,
+}
+
 enum NormalizedArguments {
-    Object(Map<String, Value>),
+    Arguments(Vec<XtmlArgument>),
     JsonBlock(String),
 }
 
+/// Normalizes tool-call arguments for XTML rendering, like `encoding_k3.py`.
+///
+/// A JSON object string is split one level deep and each non-string value
+/// keeps its original JSON text, so the prompt carries the bytes the client
+/// sent (`1e2`, `1.50`, `[8,20]` and integers beyond `f64` are not rewritten).
+/// Any other string, including whitespace-only or valid non-object JSON, is
+/// rendered verbatim as a raw `json` block. Object arguments have no source
+/// text and are serialized with Python's default separators.
 fn normalize_arguments(arguments: Option<&Value>) -> Result<NormalizedArguments> {
     let Some(arguments) = arguments else {
-        return Ok(NormalizedArguments::Object(Map::new()));
+        return Ok(NormalizedArguments::Arguments(Vec::new()));
     };
     match arguments {
-        Value::Null => Ok(NormalizedArguments::Object(Map::new())),
-        Value::Object(arguments) => Ok(NormalizedArguments::Object(arguments.clone())),
-        Value::String(arguments) if arguments.trim().is_empty() => {
-            Ok(NormalizedArguments::Object(Map::new()))
+        Value::Null => Ok(NormalizedArguments::Arguments(Vec::new())),
+        Value::Object(arguments) => arguments
+            .iter()
+            .map(|(key, value)| {
+                Ok(XtmlArgument {
+                    key: key.clone(),
+                    xtml_type: xtml_type(value),
+                    text: xtml_value(value)?,
+                })
+            })
+            .collect::<Result<_>>()
+            .map(NormalizedArguments::Arguments),
+        Value::String(arguments) if arguments.is_empty() => {
+            Ok(NormalizedArguments::Arguments(Vec::new()))
         }
-        Value::String(arguments) => match serde_json::from_str::<Value>(arguments) {
-            Ok(Value::Object(arguments)) => Ok(NormalizedArguments::Object(arguments)),
-            Ok(_) => bail!("Kimi K3 tool call arguments must be a JSON object"),
-            Err(_) => Ok(NormalizedArguments::JsonBlock(arguments.clone())),
-        },
+        Value::String(arguments) => Ok(parse_arguments_object(arguments).map_or_else(
+            || NormalizedArguments::JsonBlock(arguments.clone()),
+            NormalizedArguments::Arguments,
+        )),
         _ => bail!("Kimi K3 tool call arguments must be an object or JSON object string"),
     }
+}
+
+/// Splits a JSON object string into its top-level arguments.
+///
+/// Returns `None` unless the text starts with a well-formed JSON object; text
+/// after its closing brace is ignored. String values are decoded and every
+/// other value keeps its exact source text. Duplicate keys are all kept, in
+/// order.
+fn parse_arguments_object(raw: &str) -> Option<Vec<XtmlArgument>> {
+    let mut rest = raw.trim_start_matches(JSON_WHITESPACE).strip_prefix('{')?;
+    rest = rest.trim_start_matches(JSON_WHITESPACE);
+    let mut arguments = Vec::new();
+    if rest.starts_with('}') {
+        return Some(arguments);
+    }
+    loop {
+        let (key, after_key) = next_raw_json_value(rest)?;
+        let key = serde_json::from_str::<String>(key).ok()?;
+        rest = after_key
+            .trim_start_matches(JSON_WHITESPACE)
+            .strip_prefix(':')?;
+        let (value, after_value) = next_raw_json_value(rest)?;
+        let (xtml_type, text) = match value.as_bytes()[0] {
+            b'"' => ("string", serde_json::from_str::<String>(value).ok()?),
+            b'{' => ("object", value.to_string()),
+            b'[' => ("array", value.to_string()),
+            b't' | b'f' => ("boolean", value.to_string()),
+            b'n' => ("null", value.to_string()),
+            _ => ("number", value.to_string()),
+        };
+        arguments.push(XtmlArgument {
+            key,
+            xtml_type,
+            text,
+        });
+        rest = after_value.trim_start_matches(JSON_WHITESPACE);
+        match rest.chars().next()? {
+            '}' => return Some(arguments),
+            ',' => rest = rest[1..].trim_start_matches(JSON_WHITESPACE),
+            _ => return None,
+        }
+    }
+}
+
+const JSON_WHITESPACE: [char; 4] = [' ', '\t', '\n', '\r'];
+
+/// Reads one JSON value after optional whitespace, without converting it.
+///
+/// Returns the value's exact text and the input after it.
+fn next_raw_json_value(input: &str) -> Option<(&str, &str)> {
+    let mut values =
+        serde_json::Deserializer::from_str(input).into_iter::<&serde_json::value::RawValue>();
+    let value = values.next()?.ok()?.get();
+    Some((value, &input[values.byte_offset()..]))
 }
 
 /// Renders an assistant message's think channel.
@@ -751,17 +829,17 @@ fn render_assistant_segments(
                 text(segments, raw);
                 close_tag(segments, "json");
             }
-            NormalizedArguments::Object(arguments) => {
-                for (key, value) in arguments {
+            NormalizedArguments::Arguments(arguments) => {
+                for argument in arguments {
                     open_tag(
                         segments,
                         "argument",
                         [
-                            ("key".to_string(), key),
-                            ("type".to_string(), xtml_type(&value).to_string()),
+                            ("key".to_string(), argument.key),
+                            ("type".to_string(), argument.xtml_type.to_string()),
                         ],
                     );
-                    text(segments, xtml_value(&value)?);
+                    text(segments, argument.text);
                     close_tag(segments, "argument");
                 }
             }
@@ -2292,6 +2370,89 @@ mod tests {
             "{\"a\": 1, \"b\": [true, false]}",
             "<|close|>argument<|sep|>"
         )));
+    }
+
+    fn render_tool_arguments(arguments: Value) -> String {
+        let request = Request::new(json!([
+            {"role": "user", "content": "run"},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [{
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "run", "arguments": arguments}
+                }]
+            }
+        ]));
+        fmt().render(&request).unwrap()
+    }
+
+    fn argument(key: &str, xtml_type: &str, text: &str) -> String {
+        format!(
+            "<|open|>argument key=\"{key}\" type=\"{xtml_type}\"<|sep|>{text}<|close|>argument<|sep|>"
+        )
+    }
+
+    #[test]
+    fn tool_argument_strings_keep_non_string_literals() {
+        let raw = concat!(
+            r#"{"a": [8,20], "b": {"y": 1,  "x": [ 2 ]}, "c": 1.50, "d": 1e2, "#,
+            r#""e": 18446744073709551616, "f": "a\/b \u00e9", "g": "x\"y", "#,
+            r#""h": null, "i": true}"#
+        );
+
+        let rendered = render_tool_arguments(Value::String(raw.to_string()));
+
+        assert!(
+            rendered.contains(
+                &[
+                    argument("a", "array", "[8,20]"),
+                    argument("b", "object", r#"{"y": 1,  "x": [ 2 ]}"#),
+                    argument("c", "number", "1.50"),
+                    argument("d", "number", "1e2"),
+                    argument("e", "number", "18446744073709551616"),
+                    argument("f", "string", "a/b é"),
+                    argument("g", "string", "x\"y"),
+                    argument("h", "null", "null"),
+                    argument("i", "boolean", "true"),
+                ]
+                .concat()
+            )
+        );
+    }
+
+    #[test]
+    fn tool_argument_strings_keep_duplicate_keys_and_ignore_trailing_text() {
+        let rendered = render_tool_arguments(json!(r#" { "k" : 1 , "k":[2] } trailing"#));
+
+        assert!(
+            rendered
+                .contains(&[argument("k", "number", "1"), argument("k", "array", "[2]")].concat())
+        );
+    }
+
+    #[test]
+    fn tool_argument_strings_that_are_not_objects_render_as_json_blocks() {
+        for raw in ["  ", "[1, 2]", "{\"a\": }", "not json"] {
+            let rendered = render_tool_arguments(json!(raw));
+
+            assert!(
+                rendered.contains(&format!(
+                    "<|open|>json type=\"object\"<|sep|>{raw}<|close|>json<|sep|>"
+                )),
+                "{raw:?} should render verbatim in a json block: {rendered}"
+            );
+        }
+    }
+
+    #[test]
+    fn empty_tool_argument_string_renders_no_arguments() {
+        let rendered = render_tool_arguments(json!(""));
+
+        assert!(
+            rendered.contains("<|open|>call tool=\"run\" index=\"1\"<|sep|><|close|>call<|sep|>")
+        );
     }
 
     #[test]
