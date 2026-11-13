@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.6...dynamo-multimodal-v0.2.7) - 2026-11-13
+
+### Features
+
+- *(multimodal)* Add PyTorch's float32 antialias bilinear resize ([#561](https://github.com/ai-dynamo/frontend-crates/pull/561))
+
 ## [0.2.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.5...dynamo-multimodal-v0.2.6) - 2026-11-06
 
 ### Performance
