@@ -76,11 +76,11 @@ test('Google-style words, phrases, alternatives, exclusions and explicit scopes'
 
 test('numbered aliases expand atomically without damaging operators, qualifiers or quoted text', () => {
   for (const [query, expected] of [
-    ['7-17', '7-arg_numeric_14_const_decimal'],
+    ['7-17', '"7-arg_numeric_14_const_decimal"'],
     ['"7-17"', '"7-arg_numeric_14_const_decimal"'],
-    ['UNIFIED.7-17', '7-arg_numeric_14_const_decimal'],
-    ['beam (7-17 OR col:5-2)', 'beam (7-arg_numeric_14_const_decimal OR col:5-tool_no_close)'],
-    ['-7-17 AND 5-2', '-7-arg_numeric_14_const_decimal AND 5-tool_no_close'],
+    ['UNIFIED.7-17', '"7-arg_numeric_14_const_decimal"'],
+    ['beam (7-17 OR col:5-2)', 'beam ("7-arg_numeric_14_const_decimal" OR col:"5-tool_no_close")'],
+    ['-7-17 AND 5-2', '-"7-arg_numeric_14_const_decimal" AND "5-tool_no_close"'],
     ['"see 7-17"', '"see 7-17"'],
     ['parser:7-17', 'parser:7-17'],
   ]) assert.equal(compileSearch(query, context).canonicalQuery, expected);
@@ -92,6 +92,32 @@ test('numbered aliases expand atomically without damaging operators, qualifiers 
   const unknown = compileSearch('99-99', context);
   assert.equal(unknown(['99-99']), false);
   assert.equal(unknown.notices.length, 1);
+});
+
+test('numbered case descriptions support prefixes without changing alias behavior', () => {
+  for (const query of ['8-native_quoted', 'UNIFIED.8-native_quoted', 'col:8-native_quoted']) {
+    const match = compileSearch(query, context);
+    assert.equal(match(['UNIFIED.8-native_quoted_control_in_response_json_string_then_prose']), true, query);
+  }
+  const alias = compileSearch('7-17', context);
+  assert.equal(alias(['7-arg_numeric_14_const_decimal']), true);
+  assert.equal(alias(['arg_numeric_14_const_decimal_extra']), false);
+});
+
+test('canonicalized numbered aliases exclude cases sharing their full description prefix', () => {
+  const ids = ['UNIFIED.2-two_calls', 'UNIFIED.2-two_calls_same_name'];
+  const context = searchContext({rows: [], columns: ids.map((case_id, index) => ({
+    case_id, compact_prefix: '2', display_number: index + 5,
+  }))});
+  for (const query of ['2-5', 'UNIFIED.2-5', 'col:2-5', '"2-5"', '(2-5 OR missing)']) {
+    const initial = compileSearch(query, context);
+    const canonical = compileSearch(initial.canonicalQuery, context);
+    assert.deepEqual(ids.filter(id => initial([id])), [ids[0]], query);
+    assert.deepEqual(ids.filter(id => canonical([id])), [ids[0]], initial.canonicalQuery);
+    const absent = searchContext({rows: [], columns: [{case_id: ids[1], compact_prefix: '2', display_number: 1}]});
+    assert.deepEqual(ids.slice(1).filter(id => compileSearch(initial.canonicalQuery, absent)([id])), []);
+  }
+  assert.deepEqual(ids.filter(id => compileSearch('2-two_call', context)([id])), ids);
 });
 
 test('shared canonical queries survive numbering, group prefixes, ordering and family changes', () => {
@@ -112,9 +138,9 @@ test('compact family references resolve through the same numbered-case aliases',
     const tab = {columns: [{compact_prefix: prefix, display_number: 3, case_id: `UNIFIED.${stable}`, sub: 'guided_literal'}], rows: []};
     const context = searchContext(tab, ['beam', family]);
     for (const [query, canonical] of [
-      [`${prefix}-3`, stable], [`"${prefix}-3"`, `"${stable}"`],
-      [`col:UNIFIED.${prefix}-3`, `col:${stable}`],
-      [`beam (${prefix}-3 OR missing)`, `beam (${stable} OR missing)`],
+      [`${prefix}-3`, `"${stable}"`], [`"${prefix}-3"`, `"${stable}"`],
+      [`col:UNIFIED.${prefix}-3`, `col:"${stable}"`],
+      [`beam (${prefix}-3 OR missing)`, `beam ("${stable}" OR missing)`],
     ]) {
       const match = compileSearch(query, context);
       assert.equal(match.canonicalQuery, canonical, query);

@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Honor GLM's explicit malformed-tool `Reject` policy for incomplete native terminators and invalid delimited bodies, retaining uncommitted bytes for recovery.
 - Keep structural reasoning delimiter searches incremental across pending prose and reset their cached offsets after consumption.
 
+## [0.10.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.4...dynamo-parsers-v2-v0.10.5) - 2026-11-11
+
+### Bug fixes
+
+- *(gpt-oss)* Preserve quoted control text in JSON strings and improve Harmony recovery.
+
 ## [0.10.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.3...dynamo-parsers-v2-v0.10.4) - 2026-11-11
 
 ### Bug fixes

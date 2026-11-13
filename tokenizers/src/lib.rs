@@ -60,6 +60,24 @@ impl<'a> EncodeSegment<'a> {
     }
 }
 
+/// Reject an ordinary segment that encoded to a control-token id.
+///
+/// Every backend demotes control-token spellings in ordinary segments, but a
+/// base vocabulary whose merges assemble an added token's id would still let
+/// request text become a control token. Refusing the encode keeps that
+/// property independent of the vocabulary.
+pub(crate) fn reject_control_ids_in_ordinary_segment(
+    ids: &[TokenIdType],
+    control_ids: &std::collections::HashSet<TokenIdType>,
+) -> Result<()> {
+    if let Some(id) = ids.iter().find(|id| control_ids.contains(id)) {
+        return Err(Error::msg(format!(
+            "ordinary segment encoded to control-token id {id}; this tokenizer cannot keep request text out of the control vocabulary"
+        )));
+    }
+    Ok(())
+}
+
 /// Represents the type of tokenizer being used
 #[derive(Debug)]
 pub enum TokenizerType {
@@ -207,6 +225,18 @@ pub mod traits {
         /// return an error explaining why the tokenizer is incompatible.
         fn validate_prefix_cache(&self) -> Result<()> {
             Err(Error::msg("tokenizer does not support prefix caching"))
+        }
+
+        /// Validate that a segment which allows special tokens encodes to the ids
+        /// [`Encoder::encode`] gives its text, so the prefix cache can serve it.
+        ///
+        /// Implementations opt in by returning `Ok(())`, as with
+        /// [`Self::validate_prefix_cache`]. A backend whose segmented encoding cuts
+        /// the text by position, like the tiktoken reference pieces, must not.
+        fn validate_segment_prefix_cache(&self) -> Result<()> {
+            Err(Error::msg(
+                "tokenizer does not support prefix caching within a segment",
+            ))
         }
 
         /// Apply construction-time [`TokenizerOptions`].
@@ -428,7 +458,7 @@ where
 /// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
     create_tokenizer_from_file_with_options(file_path, Default::default())
 }
@@ -439,7 +469,7 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,

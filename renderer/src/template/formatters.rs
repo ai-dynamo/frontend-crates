@@ -105,9 +105,36 @@ fn detect_system_normalization(
         tok,
     );
     SystemNormalization {
+        fallback_developer: false,
         demote_nonleading_system: nonleading_system || mid_after_assistant,
         coalesce_consecutive_users: consecutive_users,
     }
+}
+
+/// Probe the representation actually used for rendering. An array-only
+/// template rejecting strings is not evidence that it rejects a message role.
+fn detect_developer_fallback(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+    requires_content_arrays: bool,
+) -> bool {
+    let content = |text: &str| {
+        if requires_content_arrays {
+            json!([{"type": "text", "text": text}])
+        } else {
+            json!(text)
+        }
+    };
+    let messages = |role: &str| {
+        json!([
+            {"role": role, "content": content("s")},
+            {"role": "user", "content": content("u")}
+        ])
+    };
+    !probe_template_raises(env, template_name, messages("system"), tools, tok)
+        && probe_template_raises(env, template_name, messages("developer"), tools, tok)
 }
 
 /// Detects whether a template renders JSON-string `tool_calls[].function.arguments`
@@ -836,10 +863,24 @@ impl HfTokenizerConfigJsonFormatter {
                 &tool_use_probe_tools,
                 &probe_tokens,
             );
-        let default_system_normalization =
+        let mut default_system_normalization =
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
-        let tool_use_system_normalization =
+        let mut tool_use_system_normalization =
             detect_system_normalization(&env, "tool_use", &tool_use_probe_tools, &probe_tokens);
+        default_system_normalization.fallback_developer = detect_developer_fallback(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+        );
+        tool_use_system_normalization.fallback_developer = detect_developer_fallback(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+        );
         let default_template_requires_reasoning_string = default_template_handles_reasoning
             && detect_reasoning_string_requirement(
                 &env,
@@ -880,9 +921,12 @@ impl HfTokenizerConfigJsonFormatter {
         let default_template_handles_native_tools = handles_native_tools("default");
         let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
 
+        let control_markers = super::oai::ControlMarkers::from_config(&config);
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
+            control_markers,
             mixins: Arc::new(mixins),
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             content_format: ChatTemplateContentFormat::Auto,

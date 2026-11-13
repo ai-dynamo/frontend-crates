@@ -718,6 +718,13 @@ tools:
           anyOf:
           - const: 'null'
           - type: integer
+  tools_bc4305bb8be412b3:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
   tools_68ad90d828650089:
   - name: get_weather
     parameters:
@@ -975,6 +982,13 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_7097557402b15d50:
   - name: schema_probe
     parameters:
@@ -1620,13 +1634,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_bc4305bb8be412b3:
-  - name: get_weather
-    parameters:
-      type: object
-      properties:
-        city:
-          type: string
   tools_eb14ad8c4a7a4413:
   - name: capture_payload
     parameters:
@@ -2375,6 +2382,13 @@ requests:
   2dbc8f6f7ea2ea7443006a66214fdb0c53dce8158b4c43a5c484885f5230b6e3:
     input: <tool_call>{"name":"get_weather","arguments":{"city":"null"}}</tool_call>
     tools: tools_d84ac5f342102778
+  2e392a6b4772b9842cbcf1a26b371e1009d2e5df543ee669c53715941a90c514:
+    input: "<tool_call> \n\t{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}\t \n</tool_call>"
+    tools: tools_bc4305bb8be412b3
+    chunk_sizes:
+    - 11
+    - 57
+    - 12
   3004dc43bb7b977ac52e0048f15cc056c60703027021242b45b1a77f48e77ddb:
     input: <tool_call>{"name":"get_weather","arguments":{"city":null}}</tool_call>
     tools: tools_68ad90d828650089
@@ -2725,6 +2739,15 @@ requests:
   4a773febe38f4b868aa113964e38af1234a8fa893445da3f04ffcdf132ce59f8:
     input: <tool_call>{"name":"get_weather","arguments":{"city":"Paris"}}</tool_call>
     tools: tools_cbf47ccf5fd2ef00
+  4a965d63eca5a3f65152de51266e36bc9021ee450fc796e681d5281df5a32995:
+    input: '"<tool_call>{\"name\":\"lookup\",\"arguments\":{\"q\":\"x\"}}</tool_call>" trailing'
+    tools: tools_81b3b17af2bd185e
+    chunk_sizes:
+    - 1
+    - 11
+    - 49
+    - 12
+    - 10
   4af0cf57621203250bdc86503932a4e2bcf827c0f766a4e50f340e4ba485e21a:
     input: '<think>Check weather.</think>
 
@@ -8567,3 +8590,31 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  tool_body_whitespace:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    request: 2e392a6b4772b9842cbcf1a26b371e1009d2e5df543ee669c53715941a90c514
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 4a965d63eca5a3f65152de51266e36bc9021ee450fc796e681d5281df5a32995
+    golden:
+    - kind: text
+      text: '"<tool_call>{\"name\":\"lookup\",\"arguments\":{\"q\":\"x\"}}</tool_call>" trailing'

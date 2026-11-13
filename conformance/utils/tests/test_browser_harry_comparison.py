@@ -4,7 +4,7 @@
 import json
 import re
 import threading
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, urlencode
 
 import pytest
 from selenium.webdriver.common.keys import Keys
@@ -12,7 +12,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index
+from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index, _published_capture
 
 
 def counts(driver):
@@ -163,10 +163,13 @@ def test_search_axes_categories_and_numbered_share_links(published_viewer, verti
             return {alias:column.compact_prefix+'-'+column.display_number,sub:column.sub,id:column.case_id.replace(/^UNIFIED\\./,'')};
         """)
         field = search(case["alias"])
+        canonical = json.dumps(case["id"])
+        selected = counts(driver)
         assert field.get_attribute("value") == case["alias"]
-        assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [case["id"]]
+        assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [canonical]
         field.send_keys(Keys.ENTER)
-        assert field.get_attribute("value") == case["id"]
+        assert field.get_attribute("value") == canonical
+        assert counts(driver) == selected
         expected = counts(driver)
         assert expected["dynamo"]["total"] > 0
         shared_url = driver.current_url
@@ -179,11 +182,11 @@ def test_search_axes_categories_and_numbered_share_links(published_viewer, verti
         assert field.get_attribute("value") == f'beam ({case["alias"]} OR nowhere)'
         assert driver.execute_script("return arguments[0].selectionStart", field) == len("beam (") + len(case["alias"])
         field.send_keys(Keys.ENTER)
-        assert field.get_attribute("value") == f'beam ({case["id"]} OR nowhere)'
+        assert field.get_attribute("value") == f'beam ({canonical} OR nowhere)'
         driver.get(shared_url)
         _ready(driver, "tab-unified")
         assert counts(driver) == expected
-        assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == case["id"]
+        assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == canonical
         search("999-999")
         assert counts(driver)["dynamo"]["total"] == 0
         assert "not numbered" in driver.find_element("css selector", ".comparison-search-error").text
@@ -638,13 +641,13 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         assert not driver.find_elements("css selector", ".legacy-report-details, [data-peer-only]")
         assert driver.execute_script("return [...document.querySelectorAll('.capture-summary [data-count]')].every(node => Number(node.textContent.trim().split(' ')[0]) > 0)")
         before = counts(driver)
-        driver.find_element("css selector", "[data-focus='problems']").click()
+        driver.find_element("css selector", "[data-focus='errors']").click()
         assert counts(driver) == before
         search = driver.find_element("css selector", "[data-case-search]")
         search.send_keys("dotted_name_minimal")
         after = counts(driver)
         assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
-        assert not driver.find_element("css selector", "[data-focus='problems']").is_enabled()
+        assert not driver.find_element("css selector", "[data-focus='errors']").is_enabled()
         assert driver.find_element("css selector", "[data-focus='all']").get_attribute('aria-pressed') == 'true'
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == "dotted_name_minimal"
         driver.find_element("css selector", "[data-theme-toggle]").click()
@@ -693,6 +696,90 @@ def test_source_sha_appears_once_on_second_line(published_viewer):
         driver.quit(); server.shutdown(); server.server_close()
 
 
+def test_errors_and_all_green_results_follow_focus(published_viewer):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        _ready(driver, "tab-unified")
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
+        _choose_engine(driver, 1, 'sglang')
+        _ready(driver, 'tab-unified')
+        mixed = driver.find_element('css selector', '.matrix-segments:has(> .status-pass):has(> :not(.status-pass)) > .status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', mixed)) == 1
+        family = driver.execute_script("""
+            const keys=window.__conformanceController.selection(document.getElementById('tab-unified')).selected;
+            const leaves=c=>c?.variants ? c.variants.flatMap(leaves) : c ? [c] : [];
+            return window.__conformanceModel.rows.find(row=>{
+                const cells=Object.values(row.cells).flatMap(leaves).filter(c=>c.applicable ?? c.status!=='na');
+                return cells.length && cells.every(c=>c.cmp?.dynamo && !c.cmp.dynamo.na && !c.cmp.dynamo.err && !c.cmp.dynamo.leak
+                    && JSON.stringify(c.cmp.dynamo.sig)===JSON.stringify(c.cmp.golden?.sig))
+                    && cells.some(c=>{const peer=c.cmp?.[keys[1]];return peer && !peer.na && JSON.stringify(peer.sig)!==JSON.stringify(c.cmp.dynamo.sig)});
+            })?.family;
+        """)
+        assert family
+        field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys('model:' + family)
+        driver.find_element('css selector', '[data-layout=stacked]').click()
+        driver.find_element('css selector', '[data-focus=difference]').click()
+        assert driver.find_element('css selector', '[data-focus=difference]').get_attribute('aria-pressed') == 'true'
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == .2
+        green = driver.find_element('css selector', '.matrix-status.status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == .2
+        driver.find_element('css selector', '[data-focus=all]').click()
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
+        green = driver.find_element('css selector', '.matrix-status.status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
+        _clear_slot(driver, 1)
+        _ready(driver, 'tab-unified')
+        field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys(Keys.CONTROL, 'a', Keys.NULL)
+        field.send_keys('model:gpt_oss AND "gpt_oss_native_builtin_python_raw"')
+        golden = driver.find_element('css selector', '[data-focus=disagreements]')
+        errors = driver.find_element('css selector', '[data-focus=errors]')
+        assert golden.is_enabled()
+        assert errors.text == 'Errors'
+        assert not errors.is_enabled()
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', errors)) < 1
+        field.send_keys(Keys.CONTROL, 'a', Keys.NULL)
+        field.send_keys('model:beam AND "tool_only"')
+        assert counts(driver)['dynamo']['pass'] == counts(driver)['dynamo']['total'] > 0
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
+        green = driver.find_element('css selector', '.matrix-segments:not(:has(> :not(.status-pass))) > .status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
+        assert not driver.find_element('css selector', '[data-focus=errors]').is_enabled()
+        assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
+        assert not driver.find_elements('css selector', '[data-focus=problems]')
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize('vertical', [False, True])
+def test_stacked_dynamo_labels_include_generation(published_viewer, vertical):
+    implementations = ['dynamo_v2', 'dynamo_v1', 'dynamo_v1_jail']
+    versions = {impl: _published_capture(published_viewer, impl)['version'] for impl in implementations}
+    query = urlencode({'tab': 'tab-unified', 'vertical': int(vertical), 'layout_tab-unified': 'stacked',
+                       'search_tab-unified': 'model:gpt_oss AND "tool_only"',
+                       'slots_tab-unified': ','.join(impl + '@' + versions[impl] for impl in implementations)})
+    expected = ['Dynamo v2 ' + versions['dynamo_v2'], 'Dynamo v1 ' + versions['dynamo_v1'],
+                'Dynamo v1 ' + versions['dynamo_v1_jail']]
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f'http://127.0.0.1:{server.server_port}/?{query}')
+        _ready(driver, 'tab-unified')
+        selector = '.matrix-capture-heading' if vertical else '.comparison-matrix tbody tr:not(.matrix-category-row) > th:first-child'
+        labels = [node.get_attribute('textContent').strip().rsplit(' / ', 1)[-1]
+                  for node in driver.find_elements('css selector', selector)]
+        assert sorted(labels) == sorted(expected)
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
 def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical, stacked):
@@ -701,6 +788,7 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified={'stacked' if stacked else 'split'}")
         _ready(driver, "tab-unified")
+        assert not driver.find_element('css selector', '[data-focus=difference]').is_displayed()
         _choose_engine(driver, 1, "sglang")
         _ready(driver, "tab-unified")
         before = counts(driver)
@@ -715,14 +803,14 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
         all_button = driver.find_element('css selector', "[data-focus='all']")
         assert all_button.tag_name == 'button'
         assert all_button.get_attribute('aria-pressed') == 'true'
-        assert len(driver.find_elements('css selector', '[data-focus]')) == 3
+        assert len(driver.find_elements('css selector', '[data-focus]')) == 4
         assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
         all_button.click()
         assert all_button.get_attribute('aria-pressed') == 'true'
-        for focus, statuses in [('disagreements', ['diverge']), ('problems', ['documented', 'diverge', 'error', 'leak'])]:
+        for focus, statuses in [('disagreements', ['diverge']), ('errors', ['error', 'leak'])]:
             expected = [cell for cell in inventory if any(status in statuses for status in cell['statuses'])]
             button = driver.find_element("css selector", f"[data-focus='{focus}']")
-            assert button.text == ('Disagreements' if focus == 'disagreements' else 'Problems')
+            assert button.text == ('Different than GOLDEN' if focus == 'disagreements' else 'Errors')
             assert button.is_enabled() == bool(expected)
             if not expected:
                 continue
@@ -749,6 +837,9 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
                     return vertical ? cells[0].every((_,i) => cells.some(row => matches(row[i])))
                         : cells.every(row => row.some(matches));
                 """, statuses, vertical)
+            if focus == 'errors':
+                driver.get(driver.current_url.replace('focus_tab-unified=errors', 'focus_tab-unified=problems'))
+                _ready(driver, 'tab-unified')
             driver.refresh()
             _ready(driver, 'tab-unified')
             assert driver.find_element('css selector', f"[data-focus='{focus}']").get_attribute('aria-pressed') == 'true'
@@ -759,11 +850,55 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
             driver.find_element('css selector', '[data-focus=all]').click()
             assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'true'
             assert len(driver.find_elements('css selector', '.matrix-cell[role=button]')) == len(inventory)
-        driver.find_element('css selector', '[data-focus=problems]').click()
+        for parser_count in [2, 3]:
+            if parser_count == 3:
+                _choose_engine(driver, 2, "vllm")
+                _ready(driver, "tab-unified")
+            difference = driver.find_element('css selector', '[data-focus=difference]')
+            assert difference.is_displayed()
+            expected = driver.execute_script("""
+                const keys = window.__conformanceController.selection(document.getElementById('tab-unified')).selected.filter(k => k !== 'golden');
+                const leaves = c => c?.variants ? c.variants.flatMap(leaves) : c ? [c] : [];
+                const differs = c => {
+                    const entries = keys.map(k => c.cmp?.[k]).filter(e => e && e.na !== 1 && e.sig != null);
+                    return entries.length > 1 && entries.some(e => JSON.stringify(e.sig) !== JSON.stringify(entries[0].sig));
+                };
+                const model = window.__conformanceModel;
+                return model.rows.flatMap(row => model.columns.filter(col => leaves(row.cells[col.sub]).some(differs))
+                    .map(col => ({family: row.family, sub: col.sub})));
+            """)
+            assert expected
+            difference.click()
+            assert difference.get_attribute('aria-pressed') == 'true'
+            visible = driver.execute_script("return {families:window.__conformanceComparison.view.rows.map(r=>r.family),cases:window.__conformanceComparison.view.columns.map(c=>c.sub)}")
+            assert set(visible['families']) == {entry['family'] for entry in expected}
+            assert set(visible['cases']) == {entry['sub'] for entry in expected}
+            assert driver.execute_script("""
+                const selected = window.__conformanceController.selection(document.getElementById('tab-unified')).selected;
+                const painted = new Set([...document.querySelectorAll('.matrix-status')].map(n=>n.dataset.capture));
+                return selected.length === arguments[0] && selected.every(key=>painted.has(key));
+            """, parser_count)
+            geometry = driver.execute_script("return ['.layout-control','.focus-control','.comparison-filter-row'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return {top:r.top,bottom:r.bottom}})")
+            assert geometry[0]['bottom'] <= geometry[1]['top']
+            assert geometry[1]['bottom'] <= geometry[2]['top']
+            driver.refresh()
+            _ready(driver, 'tab-unified')
+            assert driver.find_element('css selector', '[data-focus=difference]').get_attribute('aria-pressed') == 'true'
+            driver.find_element('css selector', '[data-focus=difference]').click()
+            assert driver.find_element('css selector', '[data-focus=all]').get_attribute('aria-pressed') == 'true'
+        driver.find_element('css selector', '[data-focus=difference]').click()
+        _clear_slot(driver, 2)
+        _clear_slot(driver, 1)
+        _ready(driver, 'tab-unified')
+        assert not driver.find_element('css selector', '[data-focus=difference]').is_displayed()
+        assert driver.find_element('css selector', '[data-focus=all]').get_attribute('aria-pressed') == 'true'
+        _choose_engine(driver, 1, 'sglang')
+        _ready(driver, 'tab-unified')
+        driver.find_element('css selector', '[data-focus=errors]').click()
         field = driver.find_element('css selector', '[data-case-search]')
         field.send_keys('__no_matching_case__')
         assert driver.find_element('css selector', '[data-focus=all]').get_attribute('aria-pressed') == 'true'
-        assert not driver.find_element('css selector', '[data-focus=problems]').is_enabled()
+        assert not driver.find_element('css selector', '[data-focus=errors]').is_enabled()
         assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
         assert not driver.find_elements('css selector', '.matrix-category-heading, .matrix-case-heading')
         assert 'focus_tab-unified' not in parse_qs(urlsplit(driver.current_url).query)
@@ -870,7 +1005,7 @@ def test_capture_cards_and_menu_share_one_row_and_notice_stays_at_bottom(publish
         notice = WebDriverWait(driver, 10).until(
             lambda d: d.find_element("css selector", ".publication-history-notice"))
         before = counts(driver)
-        for width in (2048, 1600, 1024, 480):
+        for width in (2048, 1600, 1024, 480, 390):
             driver.set_window_size(width, 1000)
             for theme in ("light", "dark"):
                 driver.execute_script("document.documentElement.dataset.theme=arguments[0]", theme)
@@ -886,7 +1021,7 @@ def test_capture_cards_and_menu_share_one_row_and_notice_stays_at_bottom(publish
                 """)
                 cards, menu = geometry["cards"], geometry["menu"]
                 assert len(cards) == 3, geometry
-                assert geometry["optionsParent"] == "comparison-toolbar", geometry
+                assert geometry["optionsParent"] == "comparison-filter-row", geometry
                 assert not geometry["overflow"], geometry
                 if width > 900:
                     assert all(abs(card["y"] - menu["y"]) <= 1 for card in cards), geometry

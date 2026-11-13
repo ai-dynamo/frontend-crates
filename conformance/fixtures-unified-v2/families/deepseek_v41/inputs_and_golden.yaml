@@ -1489,6 +1489,13 @@ tools:
         count:
           type: integer
           $id: https://example.com/count
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_89d6d7dc387a8930:
   - name: my-tool.v2
     parameters:
@@ -4644,6 +4651,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  b226f1554c998256ed2f36b3476f871663cec690dfe134e79da7b1cf1662651f:
+    input: "<｜DSML｜ calls><｜DSML｜ invoke name=\"get_weather\"> \n\t{\"city\": \"Paris\"}\t \n</｜DSML｜ invoke></｜DSML｜ calls>"
+    tools: tools_bc4305bb8be412b3
   b311e4b188604c5a69f1dbcca9a9ef8008d8ae58105ef86e458a246fa45ac697:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_141694f76bec2b1b
@@ -4825,6 +4835,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  c0e8fd28c84b7625d74b3b9dd8f9a81aa47ddfb9656458bb5f7dd08bb1958316:
+    input: '"<｜DSML｜ calls><｜DSML｜ invoke name=\"lookup\"><｜DSML｜ parameter name=\"q\" string=\"true\">x</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>" trailing'
+    tools: tools_81b3b17af2bd185e
   c12048f3969ed6802498f874c00c951ffe2f9c8fd84574d203217b327624fde5:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="my-tool.v2"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_89d6d7dc387a8930
@@ -5301,6 +5314,37 @@ requests:
     - 16
     - 15
     finish_step: true
+  df0a2dfee99580bb4bcd533ae637771fbd1c00dedb3a1807c364443058005765:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
+        - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+    input: Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy"}
+    tools: tools_9db8284c68087826
   dffb978526d2100d8534c639a4114db7f995ef9a4034bd162a89439de08e415b:
     init:
       starting_state: None
@@ -10309,3 +10353,43 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  tool_body_whitespace:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.1-tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    request: b226f1554c998256ed2f36b3476f871663cec690dfe134e79da7b1cf1662651f
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: c0e8fd28c84b7625d74b3b9dd8f9a81aa47ddfb9656458bb5f7dd08bb1958316
+    golden:
+    - kind: text
+      text: '"<｜DSML｜ calls><｜DSML｜ invoke name=\"lookup\"><｜DSML｜ parameter name=\"q\" string=\"true\">x</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>" trailing'
+  structured_response_after_reasoning:
+    policy:
+    - P5
+    - I5
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    display_id: UNIFIED.36-structured_response_after_reasoning
+    request: df0a2dfee99580bb4bcd533ae637771fbd1c00dedb3a1807c364443058005765
+    golden:
+    - kind: reasoning
+      text: Check London météo🙂 before answering; this is prose, not JSON.
+    - kind: text
+      text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
