@@ -15836,7 +15836,7 @@ cases:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 unquoted native closer ends prefilled reasoning; following prose belongs to visible text. A closed quoted name plus possessive suffix does not open a new quote.'
     display_id: UNIFIED.40-quoted_name_possessive_inline_closer
     request: f146723657a8704d7153154527878b0404eb9437967e6408933152a58c935842
     golden:
@@ -15849,87 +15849,75 @@ cases:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
     display_id: UNIFIED.40-inch_mark_before_reasoning_closer
     request: df00cbf06ed7257c16c70662971457748d10db304fd4f16a667701b012b096b8
     golden:
     - kind: reasoning
-      text: 27"
-    - kind: text
-      text: '"Answer"'
+      text: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"
   unclosed_backtick_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
     display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
     request: d3c8a58bfe0cd8eb26c85c23a878fe60b075e6405676da78a5cc24663c6f1912
     golden:
     - kind: reasoning
-      text: '`name'
-    - kind: text
-      text: '`Answer`'
+      text: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`'
   decade_apostrophe_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
     display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
     request: 9be57db3cfcb479f7bbeddbbdfc569298b8385f4d0e9cc009fed385b6f168027
     golden:
     - kind: reasoning
-      text: '''90s'
-    - kind: text
-      text: '''Answer'''
+      text: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer'''
   unclosed_command_backtick_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
     display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
     request: 0d2f49b4b96fa81e2970ee9477e7af68ba489acbb28816a844b74e3b69f93483
     golden:
     - kind: reasoning
-      text: '`pytest -x'
-    - kind: text
-      text: Run `pytest`
+      text: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`'
   sql_fragment_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
     display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
     request: d02831b18101d50c954bd7c2180d9af4f30c1a45b7ab66c6480b584e5c0bf490
     golden:
     - kind: reasoning
-      text: '''1''=''1'
-    - kind: text
-      text: '''Answer'''
+      text: '''1''=''1<|eom|><|start|>assistant to=user<|message|>''Answer'''
   mixed_quotes_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 customer workload''s desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.'
+    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
     display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
     request: 83dd9816a16591a61cf6a0c465bc17ce239031d442e013f4e9ae7d8168be948a
     golden:
     - kind: reasoning
       text: 'f''" OR x -- ''
 
-        '
-    - kind: text
-      text: '"Answer"'
+        <|eom|><|start|>assistant to=user<|message|>"Answer"'
   native_quoted_reasoning_closer_then_answer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    description: '#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.'
     display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
     request: ebb22f5933d2ffeebd8290dd64ef3997a4263c45ebba36e8a997e0eb2ad716e2
     golden:
@@ -15942,18 +15930,20 @@ cases:
     - I2
     - I5
     - P6
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    description: '#595 unquoted native closer ends prefilled reasoning; following prose belongs to visible text. A closed quoted name plus possessive suffix does not open a new quote.'
     display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
     request: c1268bac48b57eb6a85da44737b0ab5f3ccdd7ab85f4a5f117235d2eb82d8605
     golden:
     - kind: reasoning
-      text: The special <|eom|> marker is used to delineate parser paths
+      text: 'The special '
+    - kind: text
+      text: ' marker is used to delineate parser paths'
   native_quoted_reasoning_closer_in_sentence:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    description: '#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.'
     display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
     request: c4764b364c9fe9a775b96ae6b5adf602fcf1262a58af240f3a673c4ad6dce2ed
     golden:
@@ -15964,7 +15954,7 @@ cases:
     - I2
     - I5
     - P6
-    description: '#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.'
+    description: '#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.'
     display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
     request: 57c6a3ab1a3e2d4f7c010323859763007a8770d3dc1f30a8f1b0110214ea70e2
     golden:

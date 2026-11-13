@@ -639,8 +639,8 @@ fn reasoning_quote_workload_cases_keep_current_results_at_every_split() {
             }
             covered.insert((file.family.clone(), id.clone()));
             let tools = common::unified_tools_for_schemas(case.tools.as_ref());
-            // GOLDEN deliberately disagrees on ambiguous prose; splitting must
-            // preserve the independently measured current policy, including EOF.
+            // Delivery invariance is independent of GOLDEN agreement and retains
+            // the measured quote policy and EOF recovery for every split.
             let baseline = events(
                 &file.family,
                 std::slice::from_ref(&case.input),

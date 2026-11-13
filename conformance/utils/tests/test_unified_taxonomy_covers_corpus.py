@@ -1405,8 +1405,22 @@ def _family_value(scenario, family):
         return f'The literal "{marker}" marker is part of the explanation. '
     if scenario == "native_quoted_reasoning_closer_then_answer":
         return f"'{reason_close}'"
-    if scenario == "native_unquoted_reasoning_closer_in_sentence":
-        return f"The special {reason_close} marker is used to delineate parser paths"
+    quoted_workloads = {
+        "inch_mark_before_reasoning_closer": ('27"', '"Answer"'),
+        "unclosed_backtick_before_reasoning_closer": ("`name", "`Answer`"),
+        "decade_apostrophe_before_reasoning_closer": ("'90s", "'Answer'"),
+        "unclosed_command_backtick_before_reasoning_closer": ("`pytest -x", "Run `pytest`"),
+        "sql_fragment_before_reasoning_closer": ("'1'='1", "'Answer'"),
+        "mixed_quotes_before_reasoning_closer": ("f'\" OR x -- '\n", '"Answer"'),
+    }
+    if scenario in quoted_workloads:
+        before, after = quoted_workloads[scenario]
+        response_open = {
+            "kimi_k3": "<|open|>response<|sep|>",
+            "muse_glimmer": "<|start|>assistant to=user<|message|>",
+            "muse_spark": "<|start|>assistant to=user<|message|>",
+        }.get(family, "")
+        return before + reason_close + response_open + after
     if scenario == "native_quoted_reasoning_closer_in_sentence":
         return f'The special "{reason_close}" marker is used to delineate parser paths'
     if scenario == "native_reasoning_closer_in_quoted_sentence":
@@ -3329,31 +3343,59 @@ def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
             assert 'index="2"' not in case["input"]
 
 
-@pytest.mark.parametrize("scenario,before,after", [
-    ("quoted_name_possessive_inline_closer", "`name`'s path.", "'Answer'"),
-    ("inch_mark_before_reasoning_closer", '27"', '"Answer"'),
-    ("unclosed_backtick_before_reasoning_closer", "`name", "`Answer`"),
-    ("decade_apostrophe_before_reasoning_closer", "'90s", "'Answer'"),
-    ("unclosed_command_backtick_before_reasoning_closer", "`pytest -x", "Run `pytest`"),
-    ("sql_fragment_before_reasoning_closer", "'1'='1", "'Answer'"),
-    ("mixed_quotes_before_reasoning_closer", "f'\" OR x -- '\n", '"Answer"'),
+@pytest.mark.parametrize("family", sorted(G.ISSUE595_REASONING_FAMILIES))
+@pytest.mark.parametrize("scenario,before,after,quoted", [
+    ("quoted_name_possessive_inline_closer", "`name`'s path.", "'Answer'", False),
+    ("inch_mark_before_reasoning_closer", '27"', '"Answer"', True),
+    ("unclosed_backtick_before_reasoning_closer", "`name", "`Answer`", True),
+    ("decade_apostrophe_before_reasoning_closer", "'90s", "'Answer'", True),
+    ("unclosed_command_backtick_before_reasoning_closer", "`pytest -x", "Run `pytest`", True),
+    ("sql_fragment_before_reasoning_closer", "'1'='1", "'Answer'", True),
+    ("mixed_quotes_before_reasoning_closer", "f'\" OR x -- '\n", '"Answer"', True),
 ])
-def test_issue595_customer_desired_split_stays_independent(scenario, before, after):
-    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
-    assert case["input"] == before + "</think>" + after
-    assert case["golden"] == [{"kind": "reasoning", "text": before}, {"kind": "text", "text": after}]
+def test_issue595_reasoning_closer_respects_quote_ownership(family, scenario, before, after, quoted):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    closer = control_tokens(family)[1]
+    # Native terminal recovery remains structural after the completed quoted span.
+    response_open, response_close = {
+        "kimi_k3": ("<|open|>response<|sep|>", "<|close|>response<|sep|>"),
+        "muse_glimmer": ("<|start|>assistant to=user<|message|>", "<|eom|>"),
+        "muse_spark": ("<|start|>assistant to=user<|message|>", "<|eom|>"),
+    }.get(family, ("", ""))
+    literal = before + closer + response_open + after
+    assert case["input"] == literal + response_close
+    expected = ([{"kind": "reasoning", "text": literal}] if quoted else
+                [{"kind": "reasoning", "text": before}, {"kind": "text", "text": after}])
+    assert case["golden"] == expected
+    authored = next(row for row in G._issue595_cases() if row[0] == scenario)[6][family]
+    assert (authored[0], authored[3]) == (case["input"], expected)
     assert case["init"] == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
     assert case["input_chunks"] == [case["input"]]
     assert case["finish_step"] is True
 
 
+@pytest.mark.parametrize("family", sorted(G.ISSUE595_REASONING_FAMILIES))
+def test_issue595_unquoted_sentence_has_a_structural_closer(family):
+    case = build_cases(family)[f"UNIFIED.native_unquoted_reasoning_closer_in_sentence.{family}"]
+    assert case["input"] == "The special " + control_tokens(family)[1] + " marker is used to delineate parser paths"
+    assert case["golden"] == [
+        {"kind": "reasoning", "text": "The special "},
+        {"kind": "text", "text": " marker is used to delineate parser paths"},
+    ]
+    authored = next(row for row in G._issue595_cases() if row[0] == "native_unquoted_reasoning_closer_in_sentence")[6][family]
+    assert (authored[0], authored[3]) == (case["input"], case["golden"])
+    assert case["input_chunks"] == [case["input"]]
+    assert case["finish_step"] is True
+
+
+@pytest.mark.parametrize("family", sorted(G.ISSUE595_REASONING_FAMILIES))
 @pytest.mark.parametrize("scenario,literal", [
-    ("native_unquoted_reasoning_closer_in_sentence", "The special </think> marker is used to delineate parser paths"),
-    ("native_quoted_reasoning_closer_in_sentence", 'The special "</think>" marker is used to delineate parser paths'),
-    ("native_reasoning_closer_in_quoted_sentence", '"The special </think> marker ..."'),
+    ("native_quoted_reasoning_closer_in_sentence", 'The special "{closer}" marker is used to delineate parser paths'),
+    ("native_reasoning_closer_in_quoted_sentence", '"The special {closer} marker ..."'),
 ])
-def test_issue595_literal_sentences_keep_exact_quotes(scenario, literal):
-    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+def test_issue595_literal_sentences_keep_exact_quotes(family, scenario, literal):
+    literal = literal.format(closer=control_tokens(family)[1])
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     assert case["input"] == literal
     assert case["golden"] == [{"kind": "reasoning", "text": literal}]
     assert case["input_chunks"] == [literal]

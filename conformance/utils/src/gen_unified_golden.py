@@ -3907,38 +3907,51 @@ def _quoted_name_possessive_cases() -> Iterator[tuple]:
 EDGE += list(_quoted_name_possessive_cases())
 
 
-# #595 expectations express the reported workload interpretation, independently
-# of quote-aware parser observations. Token-native controls have separate policy.
+# #595 GOLDEN follows quote ownership; alternative customer policies stay in docs.
+# Token-native controls have separate semantics.
 ISSUE595_FAMILIES = frozenset(UNIFIED_FAMILIES - {"qwen3_coder"})
 ISSUE595_REASONING_FAMILIES = ISSUE595_FAMILIES - {"beam", "gpt_oss", "mistral_4"}
 ISSUE595_BOUNDARIES = (
-    ("quoted_name_possessive_inline_closer", "`name`'s path.", "'Answer'"),
-    ("inch_mark_before_reasoning_closer", '27"', '"Answer"'),
-    ("unclosed_backtick_before_reasoning_closer", "`name", "`Answer`"),
-    ("decade_apostrophe_before_reasoning_closer", "'90s", "'Answer'"),
-    ("unclosed_command_backtick_before_reasoning_closer", "`pytest -x", "Run `pytest`"),
-    ("sql_fragment_before_reasoning_closer", "'1'='1", "'Answer'"),
-    ("mixed_quotes_before_reasoning_closer", "f'\" OR x -- '\n", '"Answer"'),
+    ("quoted_name_possessive_inline_closer", "`name`'s path.", "'Answer'", False),
+    ("inch_mark_before_reasoning_closer", '27"', '"Answer"', True),
+    ("unclosed_backtick_before_reasoning_closer", "`name", "`Answer`", True),
+    ("decade_apostrophe_before_reasoning_closer", "'90s", "'Answer'", True),
+    ("unclosed_command_backtick_before_reasoning_closer", "`pytest -x", "Run `pytest`", True),
+    ("sql_fragment_before_reasoning_closer", "'1'='1", "'Answer'", True),
+    ("mixed_quotes_before_reasoning_closer", "f'\" OR x -- '\n", '"Answer"', True),
 )
 ISSUE595_LITERAL_SENTENCES = (
-    ("native_unquoted_reasoning_closer_in_sentence", "The special {closer} marker is used to delineate parser paths"),
     ("native_quoted_reasoning_closer_in_sentence", 'The special "{closer}" marker is used to delineate parser paths'),
     ("native_reasoning_closer_in_quoted_sentence", '"The special {closer} marker ..."'),
 )
 
 
 def _issue595_cases():
-    for scenario, before, after in ISSUE595_BOUNDARIES:
+    for scenario, before, after, quoted in (
+        *ISSUE595_BOUNDARIES,
+        ("native_unquoted_reasoning_closer_in_sentence", "The special ", " marker is used to delineate parser paths", False),
+    ):
         inputs, chunks = {}, {}
         for family in sorted(ISSUE595_REASONING_FAMILIES):
             closer = control_tokens(family)[1]
-            pieces = [before, closer, r_text(family, after)]
-            inputs[family] = ("".join(pieces), M, M, [
-                {"kind": "reasoning", "text": before}, {"kind": "text", "text": after},
-            ])
-            chunks[family] = ["".join(pieces)]
-        yield (scenario,
-               "#595 customer workload's desired interpretation: this native closer ends reasoning despite preceding quote-like prose. Current quote-aware observations are recorded separately; this coverage does not change the quote policy.",
+            if scenario == "native_unquoted_reasoning_closer_in_sentence":
+                response_open, response_close = "", ""
+            else:
+                response_open, response_close = r_text(family, "\x00").split("\x00")
+            literal = before + closer + response_open + after
+            raw = literal + response_close
+            # A quote completed after the closer protects it. A later unmatched
+            # quote does not revoke that span; native EOF framing still recovers.
+            golden = ([{"kind": "reasoning", "text": literal}] if quoted else
+                      [{"kind": "reasoning", "text": before}, {"kind": "text", "text": after}])
+            inputs[family] = (raw, M, M, golden)
+            chunks[family] = [raw]
+        description = (
+            "#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately."
+            if quoted else
+            "#595 unquoted native closer ends prefilled reasoning; following prose belongs to visible text. A closed quoted name plus possessive suffix does not open a new quote."
+        )
+        yield (scenario, description,
                ["I2", "I5", "P6"], [],
                {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
                {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs))
@@ -3958,7 +3971,7 @@ def _issue595_cases():
             inputs[family] = (raw, M, M, golden)
             chunks[family] = [raw]
         yield (scenario,
-               "#595 authored literal-marker protection: preserve the complete literal mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning. The unquoted sentence deliberately exposes the competing desired interpretation; no parser-policy change is implied.",
+               "#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.",
                ["I2", "I5", "P6"], [],
                {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
                {"finish_reason": "stop", "finish_step": True, "input_chunks": chunks}, OnlyFamilies(inputs))
