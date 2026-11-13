@@ -247,6 +247,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | per video, no rule | `Video::decode_sampled` | `num_frames` + limits → evenly spaced frames at source size (`sample_indices` gives the same indices for `decode`) |
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
+| per video, Qwen3-VL | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
 
 `fit` is optional: `None` keeps the selected frames at the source size;
 `FrameResize` is a fixed size, `models::qwen_vl::Qwen3VlVideoFit` the
@@ -292,6 +293,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work |
 | `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels, and Pillow 12.3's pass order: images taller than 100× their width shrink vertically first) |
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
+| `QwenVlProcessor::process_item(Video)` | `Qwen3VLVideoProcessor` with `do_sample_frames=False` (resize, normalize, last frame repeated to a whole temporal patch, patchify) | **bitwise** (transformers 5.19.0 goldens in `tests/fixtures/qwen3_vl_video`) |
+| `QwenVlProcessor::layout_with_text` / `positions_with_features` | `Qwen3VLProcessor.__call__` (`replace_video_token`, `_calculate_timestamps`) and `Qwen3VLModel.get_rope_index` | **bitwise** ids and positions when a special token precedes each video placeholder, as in Qwen's chat template (transformers 5.19.0 goldens with the model's tokenizer) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
