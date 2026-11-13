@@ -176,6 +176,10 @@ impl XmlParserConfig {
     pub(crate) fn find_marker(&self, text: &str, marker: &str) -> Option<usize> {
         if self.protect_code_examples {
             super::code_spans::find_unquoted(text, marker)
+        } else if self.tool_call_start_token == "<minimax:tool_call>"
+            && marker == self.tool_call_start_token
+        {
+            super::xml::minimax_wrapper_start(text)
         } else {
             text.find(marker)
         }

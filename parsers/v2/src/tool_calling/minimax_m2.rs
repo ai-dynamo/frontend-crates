@@ -25,10 +25,12 @@
 //! stray close that does follow is stripped by the orphan-close handling.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
-    reorder_arguments,
+    BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
+    WrappedBlockScanner, WrappedBlockSpec, reorder_arguments,
 };
-use crate::tool_calling::v1core::{ToolDefinition, XmlParserConfig, try_tool_call_parse_xml};
+use crate::tool_calling::v1core::{
+    ToolDefinition, XmlParserConfig, minimax_delimiter, try_tool_call_parse_xml,
+};
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
@@ -55,6 +57,32 @@ fn minimax_config() -> XmlParserConfig {
     }
 }
 
+struct MinimaxInvokeBoundary;
+
+impl InvokeBoundary for MinimaxInvokeBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        _flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        minimax_delimiter(candidate, FUNCTION_END).map(|position| position + FUNCTION_END.len())
+    }
+
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+
+    fn holdback(&self, _text: &str) -> usize {
+        0
+    }
+
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+}
+
 fn spec() -> WrappedBlockSpec {
     WrappedBlockSpec {
         family: "minimax_m2",
@@ -62,6 +90,9 @@ fn spec() -> WrappedBlockSpec {
         block_ends: vec![BLOCK_END.to_string()],
         invoke_start: FUNCTION_START.to_string(),
         invoke_end: FUNCTION_END.to_string(),
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(|| {
+            Box::new(MinimaxInvokeBoundary)
+        })),
         orphan_markers: vec![BLOCK_END.to_string()],
         // BLOCK_END is held back too: a lone orphan close that arrives split
         // across chunks must be retained whole so the orphan-close path (which
@@ -168,7 +199,11 @@ fn source_parameter_order(function: &str) -> Vec<String> {
         if !name.is_empty() {
             names.push(name.to_string());
         }
-        cursor = start + 1 + name_end + 1;
+        let header_end = start + 1 + name_end + 1;
+        let Some(value_end) = function[header_end..].find("</parameter>") else {
+            break;
+        };
+        cursor = header_end + value_end + "</parameter>".len();
     }
     names
 }
@@ -197,6 +232,44 @@ mod tests {
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    #[test]
+    fn literal_parameters_survive_every_utf8_split() {
+        for value in [
+            "a</invoke>b",
+            "  Montréal &amp;  ",
+            "\n  first\nsecond\n\n",
+            "a</minimax:tool_call>b",
+            "a<minimax:tool_call>b",
+            "<invoke name=\"fake\">inside",
+            "<parameter name=\"later\">literal",
+        ] {
+            for wrapped in [false, true] {
+                let invoke = format!(
+                    "<invoke name=\"get_weather\"><parameter name=\"location\">{value}</parameter><parameter name=\"later\">ok</parameter></invoke>"
+                );
+                let input = if wrapped {
+                    format!("{BLOCK_START}{invoke}{BLOCK_END}")
+                } else {
+                    invoke
+                };
+                for split in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
+                    let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+                    assert_eq!(out.normal_text, "", "split {split}, input {input}");
+                    let merged = out.coalesce_calls();
+                    assert_eq!(merged.calls.len(), 1, "split {split}, input {input}");
+                    assert_eq!(
+                        merged.calls[0].arguments,
+                        format!(
+                            "{{\"location\":{},\"later\":\"ok\"}}",
+                            serde_json::to_string(value).unwrap()
+                        ),
+                        "split {split}, input {input}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

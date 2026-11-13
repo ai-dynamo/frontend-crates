@@ -191,12 +191,7 @@ mod tests {
                 assert_eq!(output.normal_text, "before  after");
                 assert_eq!(output.calls.len(), 1);
                 assert_eq!(output.calls[0].name.as_deref(), Some("get_weather"));
-                let expected_arguments = match family {
-                    "qwen3_coder" => r#"{"location":" NYC "}"#,
-                    "minimax_m2" => r#"{"location":"NYC"}"#,
-                    _ => unreachable!(),
-                };
-                assert_eq!(output.calls[0].arguments, expected_arguments);
+                assert_eq!(output.calls[0].arguments, r#"{"location":" NYC "}"#);
                 assert!(output.calls[0].complete);
                 assert_eq!(wrapped.tool_call_id(0), unwrapped.tool_call_id(0));
             }
