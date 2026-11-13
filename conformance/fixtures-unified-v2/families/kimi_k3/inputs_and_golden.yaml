@@ -2085,6 +2085,9 @@ requests:
     - 20
     - 21
     finish_step: true
+  0c0084a7c438ee01936ed1b7cf431640519959209343536dc8f9d7d76f2a746e:
+    input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>bad<|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="f" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+    tools: tools_cbf47ccf5fd2ef00
   0c8061c358f3244f9224803a114f74a9cf37c2f409d227a7efbbd37ffe44d1c8:
     init:
       starting_state: None
@@ -4502,6 +4505,9 @@ requests:
     - 5
     - 7
     finish_step: true
+  5647aaa9e6417e61de7a31256c047f21c14e74684e32be427395fdb837e3fd2b:
+    input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>bad<|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+    tools: tools_cbf47ccf5fd2ef00
   564b08c73bd38fe5dd58d40dce18dbf2d6ceecaacf79499fcc0fa767b455bd10:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="boolean"<|sep|>true<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_def252fc833e1bdc
@@ -17030,3 +17036,26 @@ cases:
       text: Check London météo🙂 before answering; this is prose, not JSON.
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+  invoke_close_inside_open_parameter_then_call:
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
+    policy:
+    - I7
+    - P2
+    request: 5647aaa9e6417e61de7a31256c047f21c14e74684e32be427395fdb837e3fd2b
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  invoke_close_inside_open_parameter_then_empty_call:
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
+    policy:
+    - I7
+    - P2
+    request: 0c0084a7c438ee01936ed1b7cf431640519959209343536dc8f9d7d76f2a746e
+    golden:
+    - kind: tool_call
+      name: f
+      arguments: {}

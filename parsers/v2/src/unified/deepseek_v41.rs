@@ -8,7 +8,7 @@ use serde_json::Value;
 use crate::tool_calling::arguments::{
     ParsedObject, ParsedValue, parsed_json_literal, parsed_json_object,
 };
-use crate::tool_calling::dsml::BLOCK_SEPARATOR;
+use crate::tool_calling::dsml::{BLOCK_SEPARATOR, DsmlInvokeFollower};
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
     WrappedBlockScanner, WrappedBlockSpec,
@@ -122,6 +122,7 @@ struct DeepSeekV41InvocationBoundary {
     guided_prefix_scan_from: usize,
     guided_prefix_payload_at: Option<usize>,
     guided_prefix_header_end: Option<usize>,
+    following_invoke: DsmlInvokeFollower,
 }
 
 impl DeepSeekV41InvocationBoundary {
@@ -279,18 +280,71 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                     };
                 }
                 InvocationPosition::ParameterValue { start, scan_from } => {
-                    let Some(value_end) = find_from(candidate, scan_from, PARAMETER_END) else {
+                    let prefix = "</｜DSML｜";
+                    let boundary = if candidate[scan_from..].starts_with(prefix) {
+                        Some(scan_from)
+                    } else {
+                        find_from(candidate, scan_from, prefix)
+                    };
+                    let Some(at) = boundary else {
                         if flush {
                             return Self::malformed_end(candidate, start, true);
                         }
                         self.position = InvocationPosition::ParameterValue {
                             start,
-                            scan_from: next_scan_start(candidate, PARAMETER_END.len()),
+                            scan_from: next_scan_start(candidate, prefix.len()),
                         };
                         return None;
                     };
-                    self.scan_from = value_end + PARAMETER_END.len();
-                    self.position = InvocationPosition::BetweenParameters;
+                    let tail = &candidate[at..];
+                    if tail.starts_with(PARAMETER_END) {
+                        self.scan_from = at + PARAMETER_END.len();
+                        self.position = InvocationPosition::BetweenParameters;
+                        continue;
+                    }
+                    if tail.starts_with(INVOKE_END) {
+                        match self
+                            .following_invoke
+                            .follows(candidate, at, INVOKE_END, INVOKE_START)
+                        {
+                            Some(true) => {
+                                tracing::warn!(
+                                    why = "dsml_unterminated_parameter_before_invoke",
+                                    skipped_bytes = at,
+                                    "Dropped an unclosed DSML parameter before the next invocation"
+                                );
+                                return Some(at);
+                            }
+                            None if !flush => {
+                                self.position = InvocationPosition::ParameterValue {
+                                    start,
+                                    scan_from: at,
+                                };
+                                return None;
+                            }
+                            _ => {}
+                        }
+                        self.position = InvocationPosition::ParameterValue {
+                            start,
+                            scan_from: at + INVOKE_END.len(),
+                        };
+                        continue;
+                    }
+                    if !flush
+                        && [PARAMETER_END, INVOKE_END]
+                            .iter()
+                            .any(|m| m.starts_with(tail))
+                    {
+                        self.position = InvocationPosition::ParameterValue {
+                            start,
+                            scan_from: at,
+                        };
+                        return None;
+                    }
+                    self.position = InvocationPosition::ParameterValue {
+                        start,
+                        scan_from: at + prefix.len(),
+                    };
                 }
                 InvocationPosition::InvalidParameter { scan_from } => {
                     if let Some(close) = find_from(candidate, scan_from, INVOKE_END) {

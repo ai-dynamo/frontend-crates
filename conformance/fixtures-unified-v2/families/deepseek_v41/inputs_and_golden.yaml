@@ -10145,21 +10145,27 @@ cases:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
   dsml_unterminated_parameter_then_empty_call:
+    scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
-    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.'
-    display_id: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    historical_ids:
+    - UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: Discard the malformed invocation at an invoke closer followed by optional whitespace and another same-dialect invocation opener. This recovery precedence applies inside raw string parameters; isolated invoke closers and outer-block-looking text remain data. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
     request: ca1b33a058b56adbf2218580f8480958134c20fa8248789759f10bb6ffe708bd
     golden:
     - kind: tool_call
       name: f
       arguments: {}
   dsml_unterminated_parameter_then_call:
+    scenario: invoke_close_inside_open_parameter_then_call
     policy:
     - P2
     - I7
-    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call''s name and arguments.'
-    display_id: UNIFIED.5-dsml_unterminated_parameter_then_call
+    historical_ids:
+    - UNIFIED.5-dsml_unterminated_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: Discard the malformed invocation at an invoke closer followed by optional whitespace and another same-dialect invocation opener. This recovery precedence applies inside raw string parameters; isolated invoke closers and outer-block-looking text remain data. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
     request: d67b8fb3a7a01e870ef85f9370d0717234d774674f058d04fd3bfdf1ad140074
     golden:
     - kind: tool_call

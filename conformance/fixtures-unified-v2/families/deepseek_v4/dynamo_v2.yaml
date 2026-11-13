@@ -1,22 +1,22 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"f365eee750e345931c0bc3a19b54043ef3f3f503b62dd96c09bf97ea05e73921","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"cb7f0ba86149f2be160e17d211ee1618f6ff6f938c570285b414f88b015deb2e","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.6.yaml","surface":"unified","version":"0.10.6"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_49bba05eefe0a46c
+  origin: origin_853c6b7e71ada577
 origins:
-  origin_49bba05eefe0a46c:
-    crate_version: 0.10.5
-    source_sha256: caa1074d3f53e6a540ab0cb385c44fb6eeaaad05f12a8c7c5e26cc496fa35330
-    git_commit: db074b635f197d005701466bc539f3efeee878b2
+  origin_853c6b7e71ada577:
+    crate_version: 0.10.6
+    source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+    git_commit: ca722d3416907db6806c04c564942c8a6210187d
 producers:
-  producer_638222ade9786bb4:
+  producer_2861bf19c8dd0e06:
     captured_with:
-      dynamo_v2: 0.10.5
-    capture_origin: origin_49bba05eefe0a46c
+      dynamo_v2: 0.10.6
+    capture_origin: origin_853c6b7e71ada577
 contexts:
-  context_63bbcc8b0776f125:
+  context_ad96f8bce8b561d8:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -24,7 +24,18 @@ contexts:
         named_tool: null
         starting_state: None
         tool_output_mode: Native
-  context_654a6ed35c921a9e:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_6217e24c7ace7a23:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -32,7 +43,18 @@ contexts:
         named_tool: get_weather
         starting_state: None
         tool_output_mode: GuidedJson
-  context_c2159facf7fc56da:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_9776a07484254cbb:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -40,7 +62,18 @@ contexts:
         named_tool: null
         starting_state: None
         tool_output_mode: GuidedJson
-  context_3314c2726bba4fe4:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_d2de60a484dbad96:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -48,7 +81,18 @@ contexts:
         named_tool: run
         starting_state: None
         tool_output_mode: GuidedJson
-  context_3cb7a1bc83b6801d:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_f586e8bae98d442f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -56,7 +100,18 @@ contexts:
         named_tool: null
         starting_state: Reasoning
         tool_output_mode: GuidedJson
-  context_eae93e3621afb5de:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_6cf0bd2ef2d4f6bb:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -64,7 +119,18 @@ contexts:
         named_tool: null
         starting_state: Response
         tool_output_mode: GuidedJson
-  context_6eabd38672be4393:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_4025bacb9a3012db:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -72,7 +138,18 @@ contexts:
         named_tool: null
         starting_state: Reasoning
         tool_output_mode: Native
-  context_297b829aac4578e7:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_57c6323520e04641:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -80,7 +157,18 @@ contexts:
         named_tool: null
         starting_state: Response
         tool_output_mode: Native
-  context_8ec703a9359332ae:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_94a0bb2aed897fa8:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -88,7 +176,18 @@ contexts:
         named_tool: get_weather
         starting_state: Reasoning
         tool_output_mode: GuidedJson
-  context_963bad0ebeb4eec3:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_3e74091d4e8feecc:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -96,7 +195,18 @@ contexts:
         named_tool: get_weather
         starting_state: Response
         tool_output_mode: GuidedJson
-  context_d435c2d06ab5f130:
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
+  context_17dddaa0a3e44d05:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -105,11 +215,11 @@ contexts:
         starting_state: Reasoning
         structural_tag:
           rejected:
-          - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
-          - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
-          - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
-          - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
-          - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
+          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
+          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
+          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
           schema:
             additionalProperties: false
             properties:
@@ -128,10 +238,21 @@ contexts:
             - conditions
             type: object
         tool_output_mode: Native
+      dynamo_v2_capture_provenance:
+        implementation: dynamo_v2
+        version: 0.10.6
+        source_sha256: 3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        source_id: sha256:3c4481435532a7ecae74bf04198cf8f8be772cd0e879685272620dcc739fd739
+        producer_kind: unpublished
+        git_commit: ca722d3416907db6806c04c564942c8a6210187d
+        adapter_sha256: 538c9841e29c71d00100713de65d57e432a45364c2c1115a37ef5c9cc1c96a66
+        job_sha256: 0166ec0e88e723018fadaadb6c9c65c28e38e0cd3f142192427d2bfaefd20dde
+        results_sha256: c92b5cfe36dff7f39ef0aa4d2ffffec96ef19ee0f390a0079f95a09099a8f3f1
+        crate_version: 0.10.6
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.5.yaml
-  producer: producer_638222ade9786bb4
-  context: context_63bbcc8b0776f125
+  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.6.yaml
+  producer: producer_2861bf19c8dd0e06
+  context: context_ad96f8bce8b561d8
 records:
   tool_only:
     case_key: tool_only
@@ -985,7 +1106,7 @@ records:
       - expected: []
   guided_json_named_tool:
     case_key: guided_json_named_tool
-    context: context_654a6ed35c921a9e
+    context: context_6217e24c7ace7a23
     request: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
     output:
       assembled:
@@ -1001,7 +1122,7 @@ records:
       - expected: []
   guided_json_gt_in_argument_trailing_close:
     case_key: guided_json_gt_in_argument_trailing_close
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: b39ccfdbd5d46b84139f2b2b0ed2b49cdb7f2bbe5b0b2ffe8fa9bd85fecdbacc
     output:
       assembled:
@@ -1018,7 +1139,7 @@ records:
       - expected: []
   guided_json_gt_in_argument_wrapped:
     case_key: guided_json_gt_in_argument_wrapped
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 951496265c5b07fa899d813c2d79077213f08c54868b21f8ed134ee32ea9ccef
     output:
       assembled:
@@ -1036,7 +1157,7 @@ records:
       - expected: []
   guided_json_gt_in_argument_bare_opener:
     case_key: guided_json_gt_in_argument_bare_opener
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: d225c892650f3a57e93b2f6ce784319ea345919dc016db3884c4a5f04633f026
     output:
       assembled:
@@ -1053,7 +1174,7 @@ records:
       - expected: []
   retired__30_14:
     case_key: retired__30_14
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 164975491563c0f4193a6e2daf0eacbe6ca838a2424b07fab94ebaea76970ea3
     output:
       assembled:
@@ -1070,7 +1191,7 @@ records:
       - expected: []
   guided_json_required_tool:
     case_key: guided_json_required_tool
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
     output:
       assembled:
@@ -1086,7 +1207,7 @@ records:
       - expected: []
   guided_json_two_calls:
     case_key: guided_json_two_calls
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
     output:
       assembled:
@@ -1109,7 +1230,7 @@ records:
       - expected: []
   guided_json_escaped_string_args:
     case_key: guided_json_escaped_string_args
-    context: context_3314c2726bba4fe4
+    context: context_d2de60a484dbad96
     request: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
     output:
       assembled:
@@ -1125,7 +1246,7 @@ records:
       - expected: []
   guided_json_array_argument:
     case_key: guided_json_array_argument
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
     output:
       assembled:
@@ -1141,7 +1262,7 @@ records:
       - expected: []
   guided_json_after_reasoning:
     case_key: guided_json_after_reasoning
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
     output:
       assembled:
@@ -1164,7 +1285,7 @@ records:
       - expected: []
   guided_json_marker_inside_argument:
     case_key: guided_json_marker_inside_argument
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: ca789bd52e78fed52bfd5121d5635d208d5c53561d5803dd3cb0d3d5d2cf36fe
     output:
       assembled:
@@ -1182,7 +1303,7 @@ records:
       - expected: []
   guided_json_invalid_call:
     case_key: guided_json_invalid_call
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
     output:
       assembled:
@@ -1195,7 +1316,7 @@ records:
       - expected: []
   guided_json_malformed_json:
     case_key: guided_json_malformed_json
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
     output:
       assembled:
@@ -1208,7 +1329,7 @@ records:
           text: '{"name": "get_weather", "arguments": {"city": "Par'
   guided_json_partial_calls:
     case_key: guided_json_partial_calls
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
     output:
       assembled:
@@ -1221,7 +1342,7 @@ records:
       - expected: []
   retired__31_33:
     case_key: retired__31_33
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: bb42cc7ece0ebc136f9b9c8943614c0da2873bb7b303ab29a0402d9e26451cf9
     output:
       assembled:
@@ -1252,7 +1373,7 @@ records:
       - expected: []
   retired__31_38:
     case_key: retired__31_38
-    context: context_3cb7a1bc83b6801d
+    context: context_f586e8bae98d442f
     request: 275700efcb81eeab130805345da7269919388cba0319a64106fc44f268f3d750
     output:
       assembled:
@@ -1276,7 +1397,7 @@ records:
       - expected: []
   guided_json_list_with_broken_element:
     case_key: guided_json_list_with_broken_element
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
     output:
       assembled:
@@ -1289,7 +1410,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
   retired__31_40:
     case_key: retired__31_40
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 2f68764b84e866f9091457d4389e8cf8836d17e9655e406fb9c7abe570401248
     output:
       assembled:
@@ -1322,7 +1443,7 @@ records:
       - expected: []
   guided_json_tool_open_before_payload:
     case_key: guided_json_tool_open_before_payload
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 268fc94c9eccd7226445f1d75371c99e9b5fed201e064bf853224f7e06e275c2
     output:
       assembled:
@@ -1339,7 +1460,7 @@ records:
       - expected: []
   guided_json_tool_close_after_payload:
     case_key: guided_json_tool_close_after_payload
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 0b0fb5206e195ec3648f1666c964063482b485a407248ac25e305115be618f2d
     output:
       assembled:
@@ -1356,7 +1477,7 @@ records:
       - expected: []
   guided_json_wrapped_in_tool_markup:
     case_key: guided_json_wrapped_in_tool_markup
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 46e92d3f66ce031f70270026a992b1d63643d0ddc20403d25a43d15918f8c82f
     output:
       assembled:
@@ -1374,7 +1495,7 @@ records:
       - expected: []
   guided_json_orphan_tool_close_before_payload:
     case_key: guided_json_orphan_tool_close_before_payload
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 28de211431f948c151b2a5d63900e49c623ab07d2cd410b58b80548b553d6547
     output:
       assembled:
@@ -1391,7 +1512,7 @@ records:
       - expected: []
   guided_json_native_markup_only:
     case_key: guided_json_native_markup_only
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 1854b7f12c17c0eb86be906be6d0f27806082e8503b50d205c9e9280e6002d01
     output:
       assembled: []
@@ -1406,7 +1527,7 @@ records:
       - expected: []
   guided_json_syntax_error_trailing_close:
     case_key: guided_json_syntax_error_trailing_close
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 88c04b98dcb69eeb298ee91989d5cdcca5080758a4bb3546e2893d2d3b2eb058
     output:
       assembled:
@@ -1420,7 +1541,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_syntax_error_wrapped:
     case_key: guided_json_syntax_error_wrapped
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 68c0826394bb4ffd8b9fb6746ce288e848f1059e7003ccff2f6bd3d42772e51b
     output:
       assembled:
@@ -1435,7 +1556,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_syntax_error_bare_opener:
     case_key: guided_json_syntax_error_bare_opener
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 9fce802c662294b7e40d3b42f7f126874f84fae33b0c8fedd4fac359c0fe790e
     output:
       assembled:
@@ -1448,7 +1569,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city": '
   guided_json_schema_error_not_a_call_trailing_close:
     case_key: guided_json_schema_error_not_a_call_trailing_close
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: cd350ec2858172437ea707a9da68d446105e35399ec22f26604ede3e6e5c909c
     output:
       assembled:
@@ -1462,7 +1583,7 @@ records:
       - expected: []
   guided_json_schema_error_not_a_call_wrapped:
     case_key: guided_json_schema_error_not_a_call_wrapped
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: d1cdb8491ae1b8150f18b6dc671c26e32324a672a4387420577ccfde40314904
     output:
       assembled:
@@ -1477,7 +1598,7 @@ records:
       - expected: []
   guided_json_schema_error_not_a_call_bare_opener:
     case_key: guided_json_schema_error_not_a_call_bare_opener
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 2df76061d9fe631e82023ac37e307d8001c65955c59e84ad7516c18d0d999bed
     output:
       assembled:
@@ -1490,7 +1611,7 @@ records:
       - expected: []
   guided_json_schema_error_nameless_element_trailing_close:
     case_key: guided_json_schema_error_nameless_element_trailing_close
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 278f3eef275dbd3d15b00c07626b2c669a76b55b26d07bbf52a783c2ca49d4ab
     output:
       assembled:
@@ -1504,7 +1625,7 @@ records:
       - expected: []
   guided_json_schema_error_nameless_element_wrapped:
     case_key: guided_json_schema_error_nameless_element_wrapped
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 80e01110f9acd2aa4a971ac0809cd70583083db8f7c934e55afbf3d3fb071fba
     output:
       assembled:
@@ -1519,7 +1640,7 @@ records:
       - expected: []
   guided_json_schema_error_nameless_element_bare_opener:
     case_key: guided_json_schema_error_nameless_element_bare_opener
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 510e751a5f8e7c0cb79a36860ce3c0d2eb6cf3f47e9b5410a3d1c907159da90c
     output:
       assembled:
@@ -1532,7 +1653,7 @@ records:
       - expected: []
   guided_json_narrated_invoke_in_reasoning:
     case_key: guided_json_narrated_invoke_in_reasoning
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 2dd60417904da58c76a35379d7237ee1530862dbeefc7e53f48617292cf9bda2
     output:
       assembled:
@@ -1559,7 +1680,7 @@ records:
       - expected: []
   guided_json_prose_before_reasoning:
     case_key: guided_json_prose_before_reasoning
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 32d11eb6d0c1e0769679828c850e84003f92e86b092da753cf95291235054e73
     output:
       assembled:
@@ -1587,7 +1708,7 @@ records:
       - expected: []
   guided_json_orphan_reason_close_before_payload:
     case_key: guided_json_orphan_reason_close_before_payload
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: a5500df8d15d33e91db98982739fcd3dcee56713895c983c78a2a684b68cc26c
     output:
       assembled:
@@ -1604,7 +1725,7 @@ records:
       - expected: []
   guided_json_stray_prefix_before_reasoning:
     case_key: guided_json_stray_prefix_before_reasoning
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: b8dc0523c6171b1e839c10f21bbe29e8a97fb2f3c70826c5c6fa400b1957e09f
     output:
       assembled:
@@ -1627,7 +1748,7 @@ records:
       - expected: []
   guided_json_narrated_prefix_inside_reasoning:
     case_key: guided_json_narrated_prefix_inside_reasoning
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 40d48b17229abea508793543649fed42668ef04fa70b5af13eb9c0f27924be6a
     output:
       assembled:
@@ -1652,7 +1773,7 @@ records:
       - expected: []
   guided_json_unterminated_reasoning_then_wrapped_payload:
     case_key: guided_json_unterminated_reasoning_then_wrapped_payload
-    context: context_c2159facf7fc56da
+    context: context_9776a07484254cbb
     request: 8da3f9290721c5c0d0a0b30093636a8570f0d6eb40c8db828992615676985af4
     output:
       assembled:
@@ -1676,7 +1797,7 @@ records:
       - expected: []
   guided_json_bare_tool_header_recovers_inside_a_thought:
     case_key: guided_json_bare_tool_header_recovers_inside_a_thought
-    context: context_3cb7a1bc83b6801d
+    context: context_f586e8bae98d442f
     request: 164c139c4598b9a5aebcf2d2165bba5f2f80ef1b762cc97749a54de9b1910538
     output:
       assembled:
@@ -1699,7 +1820,7 @@ records:
       - expected: []
   guided_json_quoted_bare_header_in_answer:
     case_key: guided_json_quoted_bare_header_in_answer
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: 0b98d9ea003826c68b37d3ed9503a5992495030bc5bd1a15bc963b89892623d6
     output:
       assembled:
@@ -1729,7 +1850,7 @@ records:
       - expected: []
   guided_json_quoted_bare_header_after_payload:
     case_key: guided_json_quoted_bare_header_after_payload
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: 5cefeefa7f53b674cbe8044c3d95e9f5b997ce4a474aef72bd107a19fba07192
     output:
       assembled:
@@ -1775,7 +1896,7 @@ records:
       - expected: []
   prefilled_reasoning_with_tool:
     case_key: prefilled_reasoning_with_tool
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: b8399187551098931c4f65a4b8d22d7994581be07562020d8a9817b1552d90ac
     output:
       assembled:
@@ -1807,7 +1928,7 @@ records:
       - expected: []
   prefilled_reasoning_with_guided_json:
     case_key: prefilled_reasoning_with_guided_json
-    context: context_3cb7a1bc83b6801d
+    context: context_f586e8bae98d442f
     request: f8be7bfb62ba76e8388e3debc3e1558ccf2d7bf01a54c46375a8e3b86f60032e
     output:
       assembled:
@@ -1829,7 +1950,7 @@ records:
       - expected: []
   prefilled_reasoning_then_text_then_tool:
     case_key: prefilled_reasoning_then_text_then_tool
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 7232a9331297a279b04594f622221b18a831ab58dca48f1d66c680dceccedc88
     output:
       assembled:
@@ -1866,7 +1987,7 @@ records:
       - expected: []
   prefilled_reasoning_then_text:
     case_key: prefilled_reasoning_then_text
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
     output:
       assembled:
@@ -1885,7 +2006,7 @@ records:
       - expected: []
   prefilled_reasoning_redundant_opener:
     case_key: prefilled_reasoning_redundant_opener
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 2a7defb75f1e13c93fe1a4892a61ed29120c18a60509c77b10bd4444575b722d
     output:
       assembled:
@@ -1918,7 +2039,7 @@ records:
       - expected: []
   prefilled_reasoning_truncated:
     case_key: prefilled_reasoning_truncated
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: ff01fd4ef27d324ad1ee7d522b97276d14edecc20f9af92eefff8f68b9cd7883
     output:
       assembled:
@@ -1979,7 +2100,7 @@ records:
       - expected: []
   prefilled_response_reasoning_markers_literal:
     case_key: prefilled_response_reasoning_markers_literal
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: 0b1d9824f43b6e2ee803a046e2c662d190c8a5a6e9271f5d01b6ee6f552cc6f6
     output:
       assembled:
@@ -2683,7 +2804,7 @@ records:
       - expected: []
   native_quoted_control_in_reasoning:
     case_key: native_quoted_control_in_reasoning
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: cd13fe797c0e310f8325940e9ae2053e6de57817fd310b08a17805837fdfb5e4
     output:
       assembled:
@@ -2700,7 +2821,7 @@ records:
       - expected: []
   native_quoted_incomplete_header:
     case_key: native_quoted_incomplete_header
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: a5e13756a637db063cae59e60858c329b65f52a0e8a8c0650b34396bb42bd5c0
     output:
       assembled:
@@ -2719,7 +2840,7 @@ records:
           text: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">` header is part of the explanation.
   native_quoted_control_in_response:
     case_key: native_quoted_control_in_response
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: ce740c7b97681e2fe84466d5c48d43e4a791d405cbd6d0fc687a4645db770c7f
     output:
       assembled:
@@ -2736,7 +2857,7 @@ records:
       - expected: []
   native_single_quoted_word_control:
     case_key: native_single_quoted_word_control
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: eefa887d200e1f2d5a12de395526b7219b41f594070263e3c05e63084a4e5f91
     output:
       assembled:
@@ -2753,7 +2874,7 @@ records:
       - expected: []
   native_quoted_control_then_call:
     case_key: native_quoted_control_then_call
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: cd315a5698d0555dbf11752e5856d31b67c537039df4ea715621b3f89ede5e3e
     output:
       assembled:
@@ -2788,7 +2909,7 @@ records:
       - expected: []
   native_unmatched_quote_then_call:
     case_key: native_unmatched_quote_then_call
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: c507debfe3be3c599e2625ca84e55aed8319caaee67d17d223e653c9c66ecefc
     output:
       assembled:
@@ -2819,7 +2940,7 @@ records:
           name: null
   guided_quoted_reasoning_closer_named:
     case_key: guided_quoted_reasoning_closer_named
-    context: context_8ec703a9359332ae
+    context: context_94a0bb2aed897fa8
     request: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
     output:
       assembled:
@@ -2845,7 +2966,7 @@ records:
       - expected: []
   guided_quoted_reasoning_closer_required:
     case_key: guided_quoted_reasoning_closer_required
-    context: context_3cb7a1bc83b6801d
+    context: context_f586e8bae98d442f
     request: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
     output:
       assembled:
@@ -2871,7 +2992,7 @@ records:
       - expected: []
   native_single_quote_contraction_reasoning:
     case_key: native_single_quote_contraction_reasoning
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 2938b04536bb934a68dcd2e6dad6cc4e86af4613aaaf4b22d01c85fcf055364c
     output:
       assembled:
@@ -2888,7 +3009,7 @@ records:
       - expected: []
   native_single_quote_contraction_response:
     case_key: native_single_quote_contraction_response
-    context: context_297b829aac4578e7
+    context: context_57c6323520e04641
     request: 38c99362c05e6e436e53c3b9de934d4c4827edc1924f424a8c12b304a0cf67a3
     output:
       assembled:
@@ -2905,7 +3026,7 @@ records:
       - expected: []
   guided_response_quoted_control_braces_named:
     case_key: guided_response_quoted_control_braces_named
-    context: context_963bad0ebeb4eec3
+    context: context_3e74091d4e8feecc
     request: e1b753e60a4b76849fbf321fc31e4ab17d4d3d187690759206ae6c2905b01569
     output:
       assembled:
@@ -2929,7 +3050,7 @@ records:
       - expected: []
   guided_response_quoted_control_braces_required:
     case_key: guided_response_quoted_control_braces_required
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: d8f3590b617177676ed52e86922241585457be0873fbfdd0c212e49aeccfae1a
     output:
       assembled:
@@ -2953,7 +3074,7 @@ records:
       - expected: []
   guided_response_rejected_header_quote_ownership:
     case_key: guided_response_rejected_header_quote_ownership
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: 0f41122dd6f50d5a28992d64cd95bdbe60931193ab6bc9c0d315ee2cb87e4757
     output:
       assembled:
@@ -6315,7 +6436,7 @@ records:
       - expected: []
   guided_json_native_parameter_array_before_payload:
     case_key: guided_json_native_parameter_array_before_payload
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: cbf33087df8acdd7ed8c159954d030d5acc48633b7e31a1d086ac0ccf64be101
     output:
       assembled:
@@ -6352,7 +6473,7 @@ records:
       - expected: []
   guided_json_native_parameter_object_before_payload:
     case_key: guided_json_native_parameter_object_before_payload
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: ac9106e9c0a1a4b863692d5b13719608d5201d0b0b01ce69a8b3a14ed9b236ce
     output:
       assembled:
@@ -6389,7 +6510,7 @@ records:
       - expected: []
   guided_json_native_parameter_string_before_payload:
     case_key: guided_json_native_parameter_string_before_payload
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: aa229061edb756d6654d7e85a967fee7c71fdc3aef869f188a1fa0c71ceb279a
     output:
       assembled:
@@ -6426,7 +6547,7 @@ records:
       - expected: []
   guided_json_noncall_before_native_array_before_payload:
     case_key: guided_json_noncall_before_native_array_before_payload
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: 626ca596ce85b335514489bb1bc0ed76646505cabf757ce9e9b99effe153f1c0
     output:
       assembled:
@@ -6463,18 +6584,18 @@ records:
       - expected: []
   structured_response_after_reasoning:
     case_key: structured_response_after_reasoning
-    context: context_d435c2d06ab5f130
+    context: context_17dddaa0a3e44d05
     request: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
     output:
       assembled:
       - kind: reasoning
-        text: Check London météo🙂 before answering; this is prose, not JSON.
+        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: Check London météo🙂 before answering; this is prose, not JSON.
+          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - expected: []
       - expected:
         - kind: text
@@ -6482,7 +6603,7 @@ records:
       - expected: []
   guided_response_native_wrapper_whitespace_before_prose:
     case_key: guided_response_native_wrapper_whitespace_before_prose
-    context: context_eae93e3621afb5de
+    context: context_6cf0bd2ef2d4f6bb
     request: 227af3cd1cc66fa4ead0d037a84884a0420352ef8193c0f3352ef1e6c6480af6
     output:
       assembled:
@@ -7747,13 +7868,13 @@ records:
       assembled:
       - arguments: '{}'
         kind: tool_call
-        name: get_weather
+        name: f
       chunks:
       - expected:
         - arguments: ''
           complete: false
           kind: tool_call
-          name: get_weather
+          name: f
         - arguments: '{}'
           complete: true
           kind: tool_call
@@ -7764,23 +7885,23 @@ records:
     request: b06b0ec19eef6394df2973e92c46d16ce08f91b060b782ce509f195d35336e0f
     output:
       assembled:
-      - arguments: '{"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"}'
+      - arguments: '{"city":"Paris"}'
         kind: tool_call
-        name: f
+        name: get_weather
       chunks:
       - expected:
         - arguments: ''
           complete: false
           kind: tool_call
-          name: f
-        - arguments: '{"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"}'
+          name: get_weather
+        - arguments: '{"city":"Paris"}'
           complete: true
           kind: tool_call
           name: null
       - expected: []
   quoted_name_backtick_possessive_reasoning:
     case_key: quoted_name_backtick_possessive_reasoning
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
     output:
       assembled:
@@ -7815,7 +7936,7 @@ records:
       - expected: []
   quoted_name_backtick_possessive_then_call:
     case_key: quoted_name_backtick_possessive_then_call
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: a89875cd2bfe7b28be6caeba3aff07d4699c911176012f636c63139e252386d3
     output:
       assembled:
@@ -7863,7 +7984,7 @@ records:
       - expected: []
   quoted_name_backtick_possessive_guided:
     case_key: quoted_name_backtick_possessive_guided
-    context: context_3cb7a1bc83b6801d
+    context: context_f586e8bae98d442f
     request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
     output:
       assembled:
@@ -7896,7 +8017,7 @@ records:
       - expected: []
   quoted_name_backtick_nonpossessive_some:
     case_key: quoted_name_backtick_nonpossessive_some
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
     output:
       assembled:
@@ -7932,7 +8053,7 @@ records:
       - expected: []
   quoted_name_backtick_nonpossessive_s_name:
     case_key: quoted_name_backtick_nonpossessive_s_name
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
     output:
       assembled:
@@ -7968,7 +8089,7 @@ records:
       - expected: []
   quoted_name_double_quote_possessive_reasoning:
     case_key: quoted_name_double_quote_possessive_reasoning
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
     output:
       assembled:
@@ -8003,7 +8124,7 @@ records:
       - expected: []
   quoted_name_double_quote_possessive_then_call:
     case_key: quoted_name_double_quote_possessive_then_call
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 407318f9b2f9a8c231b8f9559bb4c825263dcc45f73238a8e625f6b6af2ec826
     output:
       assembled:
@@ -8051,7 +8172,7 @@ records:
       - expected: []
   quoted_name_double_quote_possessive_guided:
     case_key: quoted_name_double_quote_possessive_guided
-    context: context_3cb7a1bc83b6801d
+    context: context_f586e8bae98d442f
     request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
     output:
       assembled:
@@ -8084,7 +8205,7 @@ records:
       - expected: []
   quoted_name_double_quote_nonpossessive_some:
     case_key: quoted_name_double_quote_nonpossessive_some
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
     output:
       assembled:
@@ -8120,7 +8241,7 @@ records:
       - expected: []
   quoted_name_double_quote_nonpossessive_s_name:
     case_key: quoted_name_double_quote_nonpossessive_s_name
-    context: context_6eabd38672be4393
+    context: context_4025bacb9a3012db
     request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
     output:
       assembled:

@@ -4,7 +4,7 @@
 
 The GOLDEN event list is the authored oracle (best-effort error recovery, see
 UNIFIED_CASES.md). Scenario meaning is shared; family-specific marker values and
-the DSML missing-invoke-close contract are explicit exceptions. Native inputs use
+recovery or argument-ownership rules have explicit per-family oracles. Native inputs use
 each family's grammar, while request modes and payloads keep the same contract.
 
 The family registry supplies the golden-spec paths under the gitignored
@@ -989,45 +989,73 @@ _MIXED_CONTROL_STRINGS = {
 
 _MIXED_CONTROL_STRINGS["muse_spark"] = _MIXED_CONTROL_STRINGS["muse_glimmer"]
 
-EDGE = [
-    # Native DSML recovery counterparts to the Muse cases in PR #330.
-    ("dsml_unterminated_parameter_then_empty_call",
-     "DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.",
-     ["P2"],
-     [{"kind": "tool_call", "name": "f", "arguments": {}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({
-         family: (
-             f'<｜DSML｜{calls}><｜DSML｜{gap}invoke name="get_weather">'
-             f'<｜DSML｜{gap}parameter name="city" string="true">bad</｜DSML｜{gap}invoke>'
-             f'<｜DSML｜{gap}invoke name="f"></｜DSML｜{gap}invoke></｜DSML｜{calls}>',
-             M, M,
-         )
-         for family, gap, calls in (
-             ("deepseek_v4", "", "tool_calls"),
-             ("deepseek_v41", " ", " calls"),
-         )
-     })),
+OPEN_PARAMETER_BOUNDARY_FAMILIES = frozenset({
+    "deepseek_v4", "deepseek_v41", "muse_glimmer", "muse_spark",
+    "qwen3", "nemotron_v3", "kimi_k3", "minimax_m3",
+})
+OPEN_PARAMETER_BOUNDARY_SCENARIOS = (
+    "invoke_close_inside_open_parameter_then_call",
+    "invoke_close_inside_open_parameter_then_empty_call",
+)
 
-    ("dsml_unterminated_parameter_then_call",
-     "DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call's name and arguments.",
-     ["P2", "I7"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({
-         family: (
-             f'<｜DSML｜{calls}><｜DSML｜{gap}invoke name="f">'
-             f'<｜DSML｜{gap}parameter name="x" string="true">bad</｜DSML｜{gap}invoke>'
-             f'<｜DSML｜{gap}invoke name="get_weather">'
-             f'<｜DSML｜{gap}parameter name="city" string="true">Paris</｜DSML｜{gap}parameter>'
-             f'</｜DSML｜{gap}invoke></｜DSML｜{calls}>',
-             M, M,
-         )
-         for family, gap, calls in (
-             ("deepseek_v4", "", "tool_calls"),
-             ("deepseek_v41", " ", " calls"),
-         )
-     })),
+
+@cache
+def _open_parameter_boundary(family, empty):
+    if family in {"deepseek_v4", "deepseek_v41"}:
+        gap, calls = (" ", " calls") if family == "deepseek_v41" else ("", "tool_calls")
+        first_name, key = ("get_weather", "city") if empty else ("f", "x")
+        following = (f'<｜DSML｜{gap}invoke name="f"></｜DSML｜{gap}invoke>' if empty else
+                     f'<｜DSML｜{gap}invoke name="get_weather"><｜DSML｜{gap}parameter name="city" string="true">Paris</｜DSML｜{gap}parameter></｜DSML｜{gap}invoke>')
+        wire = (f'<｜DSML｜{calls}><｜DSML｜{gap}invoke name="{first_name}">'
+                f'<｜DSML｜{gap}parameter name="{key}" string="true">bad</｜DSML｜{gap}invoke>'
+                + following + f'</｜DSML｜{calls}>')
+        expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if empty else [
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+        policy = "Discard the malformed invocation at an invoke closer followed by optional whitespace and another same-dialect invocation opener. This recovery precedence applies inside raw string parameters; isolated invoke closers and outer-block-looking text remain data."
+    elif family in MUSE_FAMILIES:
+        first_name, key = ("get_weather", "city") if empty else ("f", "x")
+        following = ('<atem:invoke name="f"></atem:invoke>' if empty else
+                     '<atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke>')
+        wire = ('<|start|>assistant to=tools<|message|><atem:function_calls>'
+                f'<atem:invoke name="{first_name}"><atem:parameter name="{key}">bad</atem:invoke>'
+                + following + '</atem:function_calls><|eot|>')
+        expected = [] if empty else [{"kind": "tool_call", "name": "f", "arguments": {
+            "x": 'bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris'}}]
+        policy = "ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists."
+        if empty:
+            policy += " The turn emits nothing."
+    else:
+        grammar = "qwen3" if family == "nemotron_v3" else family
+        first = r_tool_arguments(grammar, "get_weather", {"city": "bad"}, 0)
+        following = r_tool_arguments(grammar, "f", {}, 1) if empty else r_tool_arguments(grammar, "get_weather", {"city": "Paris"}, 1)
+        closer = {"qwen3": "</parameter>", "kimi_k3": k3_close("argument"), "minimax_m3": "]<]minimax[>[</city>"}[grammar]
+        if grammar == "qwen3":
+            first, following = first.replace("\n", ""), following.replace("\n", "")
+        prefix = first.replace(closer, "", 1)
+        wire = prefix + following
+        if grammar == "kimi_k3":
+            expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if empty else [
+                {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+            policy = "The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call."
+        elif empty:
+            expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "bad"} if grammar == "qwen3" else {}},
+                        {"kind": "tool_call", "name": "f", "arguments": {}}]
+            policy = ("Qwen's published EOF recovery closes the value at its function fence and retains both calls." if grammar == "qwen3" else
+                      "Closed M3 invocations survive; a named parameter without its matching closing tag supplies no value. Retain both invocation names.")
+        else:
+            value = "bad" + prefix.partition("bad")[2] + following.partition(closer)[0]
+            expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
+            policy = "The later matching parameter closer completes the original raw value; intervening invocation and block markers are literal data."
+    description = ("Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by "
+                   + ("a complete parameterless invocation. " if empty else "a complete invocation with a parameter. ")
+                   + "Replay the authored chunks, then finish. Family oracle: " + policy
+                   + " Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_"
+                   + ("call" if empty else "empty_call") + " tests the other following-call shape.")
+    return wire, expected, description
+
+
+EDGE = [
+
 
     ("commentary_then_tool",
      "Muse Spark only: the reserved `commentary` recipient is visible intermediate text, then a native ATEM tool channel follows. It must not be interpreted as a tool named commentary or dropped as an unknown recipient.",
@@ -1077,33 +1105,7 @@ EDGE = [
      {"starting_state":"None","tool_output_mode":"Native","named_tool":None},
      OnlyFamilies({family: ('<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">done</atem:parameter><atem:parameter name="y">broken</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke><|eot|>', V_MUSE, M) for family in MUSE_FAMILIES})),
 
-    # ATEM parameters own nested invocation syntax. Without a closer, discard
-    # the ambiguous invocation; a later closer completes the outer value rather
-    # than proving a new executable call (PR #450 review).
-    ("muse_unterminated_parameter_then_empty_call",
-     "Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.",
-     ["P2"],
-     [],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({"muse_glimmer": (
-         '<|start|>assistant to=tools<|message|><atem:function_calls>'
-         '<atem:invoke name="get_weather"><atem:parameter name="city">bad</atem:invoke>'
-         '<atem:invoke name="f"></atem:invoke></atem:function_calls><|eot|>',
-         V_MUSE, M,
-     )})),
 
-    ("muse_unterminated_parameter_then_call",
-     "Muse: a parameter owns invocation-shaped text until its closer. Preserve the complete outer argument instead of treating the embedded declared tool as a new call.",
-     ["P2", "I7"],
-     [{"kind": "tool_call", "name": "f", "arguments": {"x": 'bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris'}}],
-     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-     OnlyFamilies({"muse_glimmer": (
-         '<|start|>assistant to=tools<|message|><atem:function_calls>'
-         '<atem:invoke name="f"><atem:parameter name="x">bad</atem:invoke>'
-         '<atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter>'
-         '</atem:invoke></atem:function_calls><|eot|>',
-         V_MUSE, M,
-     )})),
     ("gpt_oss_channel_header_variants",
      "A `redacted` channel stays withheld in reasoning, while a commentary tool recipient and final channel keep their event order.",
      ["I1", "I2", "I6"],
@@ -3015,7 +3017,7 @@ MISSING_INNER_CLOSERS = {
 }
 
 SCENARIO_SUMMARIES = {
-    "missing_inner_closers_then_valid_call": 'Native mode, default initialization: outer-close-looking bytes precede a call-shaped header while an argument is open. Deliver the whole input in one push, then finish.',
+    "missing_inner_closers_then_valid_call": 'Native mode, default initialization: outer-close-looking bytes precede a call-shaped header while an argument is open. Deliver the whole input in one push, then finish. Related: invoke_close_inside_open_parameter_then_call and invoke_close_inside_open_parameter_then_empty_call instead place the invocation closer inside the open parameter.',
 }
 
 
@@ -4842,6 +4844,20 @@ for _name, _description, _input, _golden in (*_GPT_OSS_REVIEW_CASES, *_GPT_OSS_R
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},
         {"finish_reason": "stop"}, _inputs, _tools,
     ))
+
+EDGE.extend((
+    scenario,
+    {family: _open_parameter_boundary(family, empty)[2] for family in OPEN_PARAMETER_BOUNDARY_FAMILIES},
+    ["I7", "P2"], [],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    OnlyFamilies({
+        family: (_open_parameter_boundary(family, empty)[0],
+                 D("UNSUPPORTED", "No peer capture recorded for this family-native boundary case."),
+                 M, _open_parameter_boundary(family, empty)[1])
+        for family in OPEN_PARAMETER_BOUNDARY_FAMILIES
+    }),
+) for scenario, empty in zip(OPEN_PARAMETER_BOUNDARY_SCENARIOS, (False, True)))
+
 
 _TEMPLATE_FAMILIES = tuple(FAMILIES)
 _TEMPLATE_EDGE_NAMES = frozenset(spec[0] for spec in EDGE)

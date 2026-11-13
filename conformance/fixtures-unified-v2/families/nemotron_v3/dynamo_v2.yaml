@@ -1,4 +1,4 @@
-capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"db68fadd034600441f4740d2f27b3c3cec7693b49d698565e408ed91c10e2ad6","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"17d11b7305fc363816b15543c0f8503e3c1bfc6159908dfa49e14ce34a192546","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -8725,3 +8725,44 @@ records:
       - expected:
         - kind: text
           text: <tool_call>\n<function=lookup>\n<parameter=q>\nx\n</parameter>\n</function>\n</tool_call>" trailing
+  invoke_close_inside_open_parameter_then_call:
+    case_key: invoke_close_inside_open_parameter_then_call
+    request: ec3df302fc23816190a2c57fc0ef1cd929064f31410f7a339218b4b126450a5f
+    output:
+      assembled:
+      - arguments: '{"city":"bad</function></tool_call><tool_call><function=get_weather><parameter=city>Paris"}'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"city":"bad</function></tool_call><tool_call><function=get_weather><parameter=city>Paris"}'
+          complete: true
+          kind: tool_call
+          name: get_weather
+      - expected: []
+  invoke_close_inside_open_parameter_then_empty_call:
+    case_key: invoke_close_inside_open_parameter_then_empty_call
+    request: efec1ffeaedbab6518343c1c03b8db157b018db748b01200143122f6e3fab37a
+    output:
+      assembled:
+      - arguments: '{"city":"bad"}'
+        kind: tool_call
+        name: get_weather
+      - arguments: '{}'
+        kind: tool_call
+        name: f
+      chunks:
+      - expected:
+        - arguments: '{"city":"bad'
+          complete: false
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '"}'
+          complete: true
+          kind: tool_call
+          name: null
+        - arguments: '{}'
+          complete: true
+          kind: tool_call
+          name: f

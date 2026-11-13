@@ -2386,6 +2386,9 @@ requests:
     - 1
     - 12
     finish_step: true
+  15ede8e0b1aa70a1ea7026fd9b5b65db124a1a24e2ee2afedc2c31a8732888f6:
+    input: <tool_call><function=get_weather><parameter=city>bad</function></tool_call><tool_call><function=get_weather><parameter=city>Paris</parameter></function></tool_call>
+    tools: tools_cbf47ccf5fd2ef00
   1664f49e330491a1497f5f850fa02f1db56cb96de21488bcd3278a2ff9586df1:
     input: '<tool_call>
 
@@ -7249,6 +7252,9 @@ requests:
     - 1
     - 12
     finish_step: true
+  ac37240a9d35732c4949c92f491f84e19e4947cc59089d26398614dfda23c88a:
+    input: <tool_call><function=get_weather><parameter=city>bad</function></tool_call><tool_call><function=f></function></tool_call>
+    tools: tools_cbf47ccf5fd2ef00
   ac8e0369d39da773d9fde9ef6f7ea869abfd636eba3c7093ba43e1377a617b53:
     input: '<tool_call>
 
@@ -14124,3 +14130,30 @@ cases:
     golden:
     - kind: text
       text: '"<tool_call>\n<function=lookup>\n<parameter=q>\nx\n</parameter>\n</function>\n</tool_call>" trailing'
+  invoke_close_inside_open_parameter_then_call:
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: The later matching parameter closer completes the original raw value; intervening invocation and block markers are literal data. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
+    request: 15ede8e0b1aa70a1ea7026fd9b5b65db124a1a24e2ee2afedc2c31a8732888f6
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: bad</function></tool_call><tool_call><function=get_weather><parameter=city>Paris
+  invoke_close_inside_open_parameter_then_empty_call:
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: Qwen''s published EOF recovery closes the value at its function fence and retains both calls. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
+    request: ac37240a9d35732c4949c92f491f84e19e4947cc59089d26398614dfda23c88a
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: bad
+    - kind: tool_call
+      name: f
+      arguments: {}

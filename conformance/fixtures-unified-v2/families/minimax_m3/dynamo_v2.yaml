@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"53dd68ebe9b74dc8b7f3f273df98bcc06d96b98de85857eb680b4a8230980681","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"89cecc9633b97dffeacf7aad0d707e29658faa9067fad56e35d79a5b46f4c9d7","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -11813,3 +11813,44 @@ records:
           kind: tool_call
           name: server.time
       - expected: []
+  invoke_close_inside_open_parameter_then_call:
+    case_key: invoke_close_inside_open_parameter_then_call
+    request: 5a48dbcffe3d959d53b5252d6884cf667750bbcd0b460e77185a3f4ac7a517f6
+    output:
+      assembled:
+      - arguments: '{"city":"bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">]<]minimax[>[<city>Paris"}'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"city":"bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"get_weather\">]<]minimax[>[<city>Paris"}'
+          complete: true
+          kind: tool_call
+          name: get_weather
+      - expected: []
+  invoke_close_inside_open_parameter_then_empty_call:
+    case_key: invoke_close_inside_open_parameter_then_empty_call
+    request: eedaae0e32015f33744d19c0521c9c4503d70d78e0ecbe6db45322de8d677d67
+    output:
+      assembled:
+      - arguments: '{"city":"bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"}'
+        kind: tool_call
+        name: get_weather
+      - arguments: '{}'
+        kind: tool_call
+        name: f
+      chunks:
+      - expected:
+        - arguments: '{"city":"bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+          complete: false
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '"}'
+          complete: true
+          kind: tool_call
+          name: null
+        - arguments: '{}'
+          complete: true
+          kind: tool_call
+          name: f

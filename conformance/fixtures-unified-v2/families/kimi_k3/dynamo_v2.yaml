@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"d951f7cc5e72b2321fdce9184892bcc2d2f6a7250c2ec1efb154ff1fa2f4bbf7","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"45608e67f906c5aa8da6411e280a22ba7df2f4f9e444236f81797180eacc3a9e","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -21976,4 +21976,34 @@ records:
           text: Check London météo🙂 before answering; this is prose, not JSON.
         - kind: text
           text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+      - expected: []
+  invoke_close_inside_open_parameter_then_call:
+    case_key: invoke_close_inside_open_parameter_then_call
+    request: 5647aaa9e6417e61de7a31256c047f21c14e74684e32be427395fdb837e3fd2b
+    output:
+      assembled:
+      - arguments: '{"city":"Paris"}'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"city":"Paris"}'
+          complete: true
+          kind: tool_call
+          name: get_weather
+      - expected: []
+  invoke_close_inside_open_parameter_then_empty_call:
+    case_key: invoke_close_inside_open_parameter_then_empty_call
+    request: 0c0084a7c438ee01936ed1b7cf431640519959209343536dc8f9d7d76f2a746e
+    output:
+      assembled:
+      - arguments: '{}'
+        kind: tool_call
+        name: f
+      chunks:
+      - expected:
+        - arguments: '{}'
+          complete: true
+          kind: tool_call
+          name: f
       - expected: []

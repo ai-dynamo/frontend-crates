@@ -20,7 +20,7 @@ export function comparisonView(tab, state, matches = compileSearch(state.search,
     for (const column of tab.columns) {
       if (!state.groups.has(column.group_key)) continue;
       const matching = leavesOf(row.cells[column.sub]).filter(leaf => matches(
-        [groupLabels.get(column.group_key), column.label, column.case_id, column.sub, leaf.sub, leaf.case_id],
+        [groupLabels.get(column.group_key), column.label, column.case_id, column.sub, leaf.sub, leaf.case_id, ...(column.search_aliases || [])],
         [row.family, row.model_label], [column.desc, leaf.tooltip?.description]));
       if (matching.length) { visibleRows.add(row); visibleColumns.add(column); }
       const selected = matching.filter(isApplicableCell);

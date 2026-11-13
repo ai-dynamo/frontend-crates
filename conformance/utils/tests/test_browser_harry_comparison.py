@@ -725,9 +725,15 @@ def test_errors_and_all_green_results_follow_focus(published_viewer):
         driver.find_element('css selector', '[data-focus=difference]').click()
         assert driver.find_element('css selector', '[data-focus=difference]').get_attribute('aria-pressed') == 'true'
         passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
-        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == .2
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
         green = driver.find_element('css selector', '.matrix-status.status-pass')
-        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == .2
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
+        driver.find_element('css selector', '[data-layout=split]').click()
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == .2
+        driver.find_element('css selector', '[data-layout=stacked]').click()
+        green = driver.find_element('css selector', '.matrix-status.status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
         driver.find_element('css selector', '[data-focus=all]').click()
         passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
         assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
