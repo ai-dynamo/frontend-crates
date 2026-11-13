@@ -42,6 +42,7 @@ pub mod inkling;
 pub mod kimi_k3;
 pub mod mistral;
 mod python;
+pub mod request_rules;
 mod template;
 
 pub use template::{
