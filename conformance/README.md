@@ -31,7 +31,7 @@ Keep GOLDEN independently authored and justified; do not copy an incorrect parse
 
 ### Legacy family history
 
-History generation includes the registered v1 families that have no latest native v2 capture, including Hermes, Llama 3 JSON, Qwen 2.5, Mistral, Phi-4, Jamba, and Pythonic. Their existing spec-derived Unified scenarios are captured through the published `dynamo-parsers` 11.0.6 and 11.0.7 APIs in separate direct-batch and jail-buffer histories. Select a v1 capture to display these families; latest native v2 selections retain their existing family scope. Unsupported initialization and missing parser registrations remain explicit unavailable observations. These captures do not convert a family to UnifiedParser or change the deprecated TOOLCALLING corpus.
+History generation includes the registered v1 families that have no latest native v2 capture, including Hermes, Llama 3 JSON, Qwen 2.5, Mistral, Phi-4, Jamba, and Pythonic. Their existing spec-derived Unified scenarios are captured through the published `dynamo-parsers` 11.0.7 API in separate direct-batch and jail-buffer histories. Select a v1 capture to display these families; latest native v2 selections retain their existing family scope. Unsupported initialization and missing parser registrations remain explicit unavailable observations. These captures do not convert a family to UnifiedParser or change the deprecated TOOLCALLING corpus.
 
 ### Normalized current YAML
 

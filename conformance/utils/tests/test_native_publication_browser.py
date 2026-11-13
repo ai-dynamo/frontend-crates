@@ -52,9 +52,9 @@ PAGES_PROPAGATION_SECONDS = 300.0
 
 @pytest.mark.parametrize("family", ["hermes", "llama3_json"])
 @pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
-def test_legacy_family_history_selects_both_recent_v1_releases(historical_published_viewer, family, implementation):
+def test_legacy_family_history_selects_latest_and_current_v1_releases(historical_published_viewer, family, implementation):
     versions = sorted(capture_releases(historical_published_viewer, family=family)[implementation], key=capture_release_sort_key)[-2:]
-    assert versions == ["11.0.6", "11.0.7"]
+    assert versions == ["11.0.7", "11.0.10"]
     keys = [f"{implementation}@{version}" for version in versions]
     query = urlencode({"tab": "tab-unified", "slots_tab-unified": ",".join([*keys, "none"]),
                        "search_tab-unified": f"model:{family}"})

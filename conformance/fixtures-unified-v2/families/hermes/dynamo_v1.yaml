@@ -1,4 +1,4 @@
-capture_selection: {"family":"hermes","implementation":"dynamo_v1","lineage":[{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.6.yaml","version":"11.0.6"},{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","version":"11.0.7"}],"mode":"unified","payload_sha256":"7218fcd09667e8c17e483681f040f0dc7fb8e646d4d3c20fe84724145fe4482a","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","surface":"unified","version":"11.0.7"}
+capture_selection: {"family":"hermes","implementation":"dynamo_v1","lineage":[{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","version":"11.0.7"}],"mode":"unified","payload_sha256":"7218fcd09667e8c17e483681f040f0dc7fb8e646d4d3c20fe84724145fe4482a","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","surface":"unified","version":"11.0.7"}
 document:
   mode: unified
 schema_version: 3

@@ -486,12 +486,6 @@ targets:
   source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
   reasoning_version: 9.2.8
 - implementation: dynamo_v1
-  version: 11.0.6
-  source_kind: crate
-  crate: dynamo-parsers
-  checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
-  git_commit: 5287ee787dc618cab517c0bc597cc4d7a19579f6
-- implementation: dynamo_v1
   version: 11.0.7
   source_kind: crate
   crate: dynamo-parsers
