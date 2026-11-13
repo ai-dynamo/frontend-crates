@@ -3820,7 +3820,15 @@ def _native_quoted_control_cases():
                 prose = 'He said "maybe'
             else:
                 prose = f'The literal "{marker}" marker is part of the explanation.'
-            golden = [{"kind": prefix_kind, "text": prose}]
+            # Prose quotes do not shield a native opener by default. These
+            # deliberately incomplete call specimens own and drop their body;
+            # only the text before the opener survives. The unmatched-quote
+            # specimen contains no opener until its following complete call.
+            visible = prose
+            if scenario != "native_unmatched_quote_then_call":
+                visible = ("The literal `" if scenario == "native_quoted_incomplete_header"
+                           else prose.split(marker, 1)[0])
+            golden = [{"kind": prefix_kind, "text": visible}]
             raw = prose
             if suffix_call:
                 raw += r_tool(family, "get_weather", "city", "Paris", 0)
@@ -3838,7 +3846,7 @@ def _native_quoted_control_cases():
             families[family] = (raw, M, M, golden)
         yield (
             scenario,
-            "Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.",
+            "Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.",
             ["I7", "P2"], [],
             {"starting_state": state, "tool_output_mode": "Native", "named_tool": None},
             OnlyFamilies(families),
@@ -3846,6 +3854,104 @@ def _native_quoted_control_cases():
 
 
 EDGE += list(_native_quoted_control_cases())
+
+
+DEFAULT_STRUCTURAL_QUOTE_CASES = (
+    "native_quoted_reasoning_closer_default",
+    "native_raw_string_before_reasoning_closer",
+    "native_quoted_complete_call_default",
+)
+
+# Requests stay immutable; these authored contracts intentionally change when
+# prose quotations stop shielding control markers by default.
+DEFAULT_STRUCTURAL_QUOTE_ORACLE_CORRECTIONS = frozenset({
+    "native_quoted_control_in_response", "native_quoted_control_in_reasoning",
+    "native_single_quoted_word_control", "native_single_quote_contraction_response",
+    "native_single_quote_contraction_reasoning", "native_quoted_incomplete_header",
+    "native_quoted_control_then_call",
+    "quoted_name_backtick_nonpossessive_some", "quoted_name_backtick_nonpossessive_s_name",
+    "quoted_name_double_quote_nonpossessive_some", "quoted_name_double_quote_nonpossessive_s_name",
+    "guided_quoted_reasoning_closer_named", "guided_quoted_reasoning_closer_required",
+    "guided_response_quoted_control_braces_named", "guided_response_quoted_control_braces_required",
+    "gpt_oss_quoted_call_header_then_visible_prose",
+})
+
+
+def _default_structural_quote_cases():
+    # Inspect every registered reasoning grammar, including the retained split
+    # families. A missing native implementation is missing evidence, not a
+    # reason to omit an otherwise expressible request.
+    families = sorted(
+        family for family, row in _MANIFEST.items()
+        if row.get("reasoning_grammar") != "none"
+    )
+    for scenario, reasoning, answer, description in (
+        (
+            "native_quoted_reasoning_closer_default", 'analysis "', 'Answer"',
+            "A balanced prose quote crosses the reasoning boundary. The default "
+            "structural policy ends reasoning at the first family-native closer, "
+            "before the answer closes the quote.",
+        ),
+        (
+            "native_raw_string_before_reasoning_closer",
+            r"Use re.split(r'(\s)', text). Let's final.",
+            "The code prints ['a', ' ', 'b'].",
+            "Python raw-string notation and apostrophes precede the reasoning "
+            "closer. They cannot hide the boundary or absorb the visible answer "
+            "under the default structural prose policy.",
+        ),
+    ):
+        inputs, chunks = {}, {}
+        for family in families:
+            closer = r_reason(family, "\x00").split("\x00")[1]
+            pieces = [reasoning, closer[:1], closer[1:], r_text(family, answer)]
+            inputs[family] = (
+                "".join(pieces), M, M,
+                [{"kind": "reasoning", "text": reasoning},
+                 {"kind": "text", "text": answer}],
+            )
+            chunks[family] = pieces
+        yield (
+            scenario, description, ["I2", "I5"], [],
+            {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True},
+            OnlyFamilies(inputs),
+        )
+
+
+EDGE += list(_default_structural_quote_cases())
+
+
+def _default_quoted_complete_call_case():
+    inputs, chunks = {}, {}
+    # MiniMax M2 uses the same tracker in its tool-only scanner, but has no
+    # Unified implementation. Author its request without claiming a native run.
+    for family in sorted(UNIFIED_FAMILIES | {"minimax_m2"}):
+        prefix, suffix = 'Example: "', '".'
+        pieces = [prefix, r_tool(family, "get_weather", "city", "Paris", 0), r_text(family, suffix)]
+        golden = [
+            {"kind": "text", "text": prefix},
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+        ]
+        # Mistral's JSON arguments end only at the next call. Trailing prose is
+        # argument debris, independently of the prose quote policy.
+        if family not in CLOSERLESS_CALL_FAMILIES:
+            golden.append({"kind": "text", "text": suffix})
+        inputs[family] = ("".join(pieces), M, M, golden)
+        chunks[family] = pieces
+    return (
+        "native_quoted_complete_call_default",
+        "A complete native tool call inside a prose quotation remains structural "
+        "under the default policy. Tool arguments retain their own grammar; "
+        "Mistral's closerless call owns and drops its trailing prose.",
+        ["I3", "I5", "I7"], [],
+        {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True},
+        OnlyFamilies(inputs),
+    )
+
+
+EDGE.append(_default_quoted_complete_call_case())
 
 
 def _quoted_name_possessive_cases() -> Iterator[tuple]:
@@ -3893,12 +3999,13 @@ def _quoted_name_possessive_cases() -> Iterator[tuple]:
                 tail = " marker' stays quoted."
                 reasoning = prefix + closer + tail
                 pieces = [name, "'", word, " ", closer, tail, closer, r_text(family, answer)]
-                golden = [{"kind": "reasoning", "text": reasoning}, {"kind": "text", "text": answer}]
+                golden = [{"kind": "reasoning", "text": prefix},
+                          {"kind": "text", "text": tail + answer}]
                 inputs[family] = ("".join(pieces), M, M, golden)
                 chunks[family] = pieces
             yield (
                 f"quoted_name_{span}_nonpossessive_{word}",
-                "A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.",
+                "A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.",
                 ["I5", "I7"], [],
                 {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
                 {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
@@ -3930,12 +4037,13 @@ for _named in (False, True):
         _payload = json.dumps({"city": "Paris"} if _named else {"name": "get_weather", "arguments": {"city": "Paris"}})
         _families[_family] = (
             _reasoning + _closer + _payload, M, M,
-            [{"kind": "reasoning", "text": _reasoning},
+            [{"kind": "reasoning", "text": "The literal 'doesn't "},
+             {"kind": "text", "text": " marker' stays quoted."},
              {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
         )
     EDGE.append((
         "guided_quoted_reasoning_closer_" + ("named" if _named else "required"),
-        "Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.",
+        "Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.",
         ["I7"], [],
         {"starting_state": "Reasoning", "tool_output_mode": "GuidedJson", "named_tool": "get_weather" if _named else None},
         OnlyFamilies(_families),
@@ -3946,14 +4054,21 @@ for _named in (False, True):
     for _family, _marker in _NATIVE_QUOTED_CONTROL.items():
         _prose = f'The literal "{_marker} {{ example }}" stays visible. '
         _payload = json.dumps({"city": "Paris"} if _named else {"name": "get_weather", "arguments": {"city": "Paris"}})
+        # The quoted opener is structural. A partial routed/header envelope
+        # owns the remaining bytes; simple stray tokens are stripped while
+        # ordinary prose and invalid non-call braces remain visible.
+        _prefix = ('The literal "assistant to=get_weather{ example }" stays visible. '
+                   if _family in MUSE_FAMILIES else 'The literal "{ example }" stays visible. ')
+        _golden = [{"kind": "text", "text": _prefix},
+                   {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+        if _family in {"beam", "gpt_oss", "kimi_k3"}:
+            _golden = [{"kind": "text", "text": 'The literal "'}]
         _families[_family] = (
-            _prose + _payload, M, M,
-            [{"kind": "text", "text": _prose},
-             {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+            _prose + _payload, M, M, _golden,
         )
     EDGE.append((
         "guided_response_quoted_control_braces_" + ("named" if _named else "required"),
-        "Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.",
+        "Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.",
         ["I7"], [],
         {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": "get_weather" if _named else None},
         OnlyFamilies(_families),
@@ -4489,7 +4604,7 @@ GPT_OSS_ORACLE_CORRECTIONS = frozenset(['gpt_oss_commentary_text_interrupted_by_
 
 
 _GPT_OSS_RECOVERY_CASES = (
-    ("gpt_oss_quoted_call_header_then_visible_prose", "A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.",
+    ("gpt_oss_quoted_call_header_then_visible_prose", "A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.",
      '<|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>',
      [{"kind":"text", "text":'"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'}]),
     ("gpt_oss_unclosed_commentary_then_quoted_final", "An unfinished commentary quote precedes a complete assistant final message containing its own quotes. The later quote cannot validate the earlier JSON-looking prefix; retain both visible bodies and remove the real message controls.",
@@ -4774,10 +4889,24 @@ def _native_review_variants(scenario):
             ),
         }
     if scenario == "gpt_oss_quoted_call_header_then_visible_prose":
-        # Beam and Mistral retain structural-token precedence inside quotations.
+        # JSON serialization escapes attribute/value quotation and line breaks;
+        # it does not make the surrounding visible body a tool argument. Native
+        # controls are structural by default. Reject malformed escaped headers,
+        # while complete names with malformed argument bodies retain P3's empty
+        # arguments. The valid XML forms retain their actual wire value bytes.
+        def structural_golden(family):
+            if family in {"qwen3", "glm47"}:
+                arguments = {"q": r"\nx\n" if family == "qwen3" else "x"}
+            elif family in {"gemma4", "kimi_k2"}:
+                arguments = {}
+            else:
+                return [{"kind": "text", "text": '"" trailing'}]
+            return [{"kind": "text", "text": '"'},
+                    {"kind": "tool_call", "name": "lookup", "arguments": arguments},
+                    {"kind": "text", "text": '" trailing'}]
         return {
             family: (default_response_prefix(family) + r_text(family, literal),
-                     [{"kind": "text", "text": literal}], M)
+                     structural_golden(family), M)
             for family in _NATIVE_QUOTED_CONTROL if family not in {"gpt_oss", "beam", "mistral_4"}
             for literal in [json.dumps(r_tool_arguments(family, "lookup", {"q": "x"}, 0), ensure_ascii=False) + " trailing"]
         }
@@ -4968,6 +5097,13 @@ def _registered_native_cases(fam):
     for edge in EDGE:
         init = edge[4] or {}
         mapping = _edge_case_family_policy(edge)
+        if edge[0] in DEFAULT_STRUCTURAL_QUOTE_CASES and fam in mapping:
+            authored = _build_edge_cases(fam, [edge])
+            if fam not in UNIFIED_FAMILIES:
+                for case in authored.values():
+                    case["expect"]["dynamo"] = D("UNSUPPORTED", "No native Unified parser is registered; this authored request is unmeasured by the current native v2 executor.")
+            cases.update(authored)
+            continue
         if _MANIFEST[fam].get("shared_scenarios") and fam in mapping:
             cases.update(_build_edge_cases(fam, [edge]))
             continue
@@ -5432,7 +5568,7 @@ def _preserve_historical_requests(cases, family):
         # Validation callers mutate returned cases; isolate the cached canonical record.
         # This published stimulus had a shared Paris-only oracle that violated
         # raw-value ownership and GLM recovery; retain the independent correction.
-        if scenario != "missing_inner_closers_then_valid_call" and not (
+        if scenario not in DEFAULT_STRUCTURAL_QUOTE_ORACLE_CORRECTIONS | {"missing_inner_closers_then_valid_call"} and not (
             family == "gpt_oss" and scenario in GPT_OSS_ORACLE_CORRECTIONS
         ):
             case["golden"] = deepcopy(old_case["golden"]["assembled"])

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.7] - Unreleased
+
+### Bug fixes
+
+- Treat prose quotes as ordinary text by default, so they cannot hide reasoning or tool-call markers. Set `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING=0` to restore the previous quote-aware policy. Tool argument grammar is unchanged.
+- Recover malformed Hermes, GLM, MiniMax M3, and Kimi K3 headers without losing following calls, prose, or framing ownership. Complete Kimi K2 calls before EOF when malformed arguments contain escaped prose quotes.
+- Preserve definite visible prose at EOF after incomplete native envelopes in guided output, independent of chunk boundaries.
+
 ## [0.10.6] - Unreleased
 
 ### Bug fixes

@@ -1979,6 +1979,19 @@ requests:
   2f5f29af8077db900419e78467a54d1d70aa89b99fd1da2dfcf8ab6483198778:
     input: '[TOOL_CALLS]get_weather[ARGS]{"city": "null"}'
     tools: tools_1098354780bc95a8
+  303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0:
+    input: Use re.split(r'(\s)', text). Let's final.[/THINK]The code prints ['a', ' ', 'b'].
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 7
+    - 32
+    finish_step: true
   30694105fd3d3d3fcaef3f7d59ce9ef5ceaa501bcf3a62927c57906ee0b81357:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "null"}'
     tools: tools_c7317ba7db1bcfa8
@@ -2052,6 +2065,19 @@ requests:
   4d7e1209b16bb1ba4f86123a5f209a462f8fc2ccd21c7012883f47ee93b49847:
     input: '[TOOL_CALLS]f[ARGS]{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
     tools: tools_cbf47ccf5fd2ef00
+  4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8:
+    input: analysis "[/THINK]Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 7
+    - 7
+    finish_step: true
   5040b65d869be0285a906f8ed6bc9067d5aacb1f83e6c4fca880b3d6c5a29f77:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": 3.5}'
     tools: tools_c98829c1934a2d66
@@ -2085,6 +2111,18 @@ requests:
   576ef85e138547ef9e0de805898c3e80ec66955e8a88a7903e8219408b58d831:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "auto"}'
     tools: tools_d634a43e2a693178
+  57ff22e92b982cba062e5e294ad76b68df1e8713077afad5458e379eee1f1a05:
+    input: 'Example: "[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}".'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 46
+    - 2
+    finish_step: true
   582e22fec9ae351580baa1d9e071149008a7939ec4e03f96836de7c283455870:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "café"}'
     tools: tools_d3a7035c9b3abb76
@@ -5818,6 +5856,48 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    scenario: native_quoted_reasoning_closer_default
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    policy:
+    - I2
+    - I5
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    scenario: native_raw_string_before_reasoning_closer
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    policy:
+    - I2
+    - I5
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+  UNIFIED.8-native_quoted_complete_call_default:
+    scenario: native_quoted_complete_call_default
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+    request: 57ff22e92b982cba062e5e294ad76b68df1e8713077afad5458e379eee1f1a05
+    golden:
+    - kind: text
+      text: 'Example: "'
     - kind: tool_call
       name: get_weather
       arguments:

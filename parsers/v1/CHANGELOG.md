@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.12] - Unreleased
+
+### Bug fixes
+
+- Recover a valid GLM call following malformed header text without corrupting its function name.
+- Reject malformed escaped quotation in unquoted MiniMax M3 invocation names.
+
 ## [11.0.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.10...dynamo-parsers-v11.0.11) - 2026-11-09
 
 ### Bug fixes

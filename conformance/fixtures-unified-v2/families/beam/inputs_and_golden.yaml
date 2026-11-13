@@ -3296,6 +3296,19 @@ requests:
     - 16
     - 8
     finish_step: true
+  42fcf736846d710e825dd235e3289c8940d9c048b7ae978c8aacbd45e7cace61:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: analysis "<|end|><|start|>assistant<|channel|>final<|message|>Answer"<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 6
+    - 62
+    finish_step: true
   433dc296568ed6bf2601f1ea0ee283e54202285f1957f07bab4c8706c500e2cd:
     input: '<|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
 
@@ -4693,6 +4706,22 @@ requests:
     - 16
     - 8
     finish_step: true
+  816999e18ba3eec7d8bbec9937e0c1b365152b1983d710d21bd68c7a54e209f3:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'Example: "<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>".<|return|>'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 138
+    - 57
+    finish_step: true
   81ba62e58959032750f4b2da25b54ebdb12f19910f84a8473ed3a3c75a3134f1:
     init:
       starting_state: None
@@ -5325,7 +5354,6 @@ requests:
       </rfl:parameter><|call|>'
     tools: tools_81ef407beab6fe3e
   997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9:
-    input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}
     init:
       starting_state: None
       tool_output_mode: Native
@@ -5354,6 +5382,7 @@ requests:
         - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
         - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}
         - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+    input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}
     tools: tools_9db8284c68087826
   999ab30618db5ea1da8591aa7238735bfe8b4cb9e9c23a907d4f57daae0d6fee:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -5536,6 +5565,19 @@ requests:
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 23
+    finish_step: true
+  9deb0d9318d233457f706f8084aefa9cc79f92d8779427be3039356b6f3f13b5:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Use re.split(r'(\s)', text). Let's final.<|end|><|start|>assistant<|channel|>final<|message|>The code prints ['a', ' ', 'b'].<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 6
+    - 87
     finish_step: true
   9e1a19daeaafd23e6350de1293fc705aaf869742a1213bdd216f0225280ccee6:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -8496,12 +8538,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-8
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: 0e01c0f26444bf5cc0876af3e196efd8816f592a7e728ff20e19f95270efa812
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|end|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -8511,12 +8555,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-9
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: c026bc86501596c8680536e9a4d6200d60abaff7708ea506f02727903be11103
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|end|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -8526,31 +8572,23 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.35-3
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 3cbe14bfaf981e3fee34b2983e9f37a5058ed9f3f1322308cbe8a5620c0e551e
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-    - kind: tool_call
-      name: get_weather
-      arguments:
-        city: Paris
+      text: The literal "
   guided_response_quoted_control_braces_required:
     policy:
     - I7
     historical_ids:
     - UNIFIED.35-4
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: ad7195c2008c1e9cf2a0344b74e0a8b55d7e05769b94565de81135c2a4f1556e
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-    - kind: tool_call
-      name: get_weather
-      arguments:
-        city: Paris
+      text: The literal "
   interstitial_text:
     historical_ids:
     - UNIFIED.11-5
@@ -8618,7 +8656,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-5
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: 8ddd4c75add7f9f77d183170caf043cfc2a4bae4010e2687b434bff625941256
     golden:
@@ -8630,7 +8668,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf
     golden:
@@ -8642,7 +8680,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-8
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 560e7d752f4478e521fc8ef4bbf7e6a9cf6ce33dd6f36e29495c747a4b290402
     golden:
@@ -8658,7 +8696,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-10
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: 672343531fd29fcf7564c381cd935d4354b0652a8690af477956df7437699c21
     golden:
@@ -8670,7 +8708,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 5cace03c987a90f7aa69a5f40b633e2e18204780b5d533fb7b8753666966e67a
     golden:
@@ -8682,7 +8720,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-11
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe
     golden:
@@ -8694,7 +8732,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-7
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: 344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12
     golden:
@@ -11769,10 +11807,10 @@ cases:
       arguments:
         city: Paris
   structured_response_after_reasoning:
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     policy:
     - P5
     - I5
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9
     golden:
@@ -11780,3 +11818,47 @@ cases:
       text: Check London météo🙂 before answering; this is prose, not JSON.
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    scenario: native_quoted_reasoning_closer_default
+    policy:
+    - I2
+    - I5
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 42fcf736846d710e825dd235e3289c8940d9c048b7ae978c8aacbd45e7cace61
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    scenario: native_raw_string_before_reasoning_closer
+    policy:
+    - I2
+    - I5
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 9deb0d9318d233457f706f8084aefa9cc79f92d8779427be3039356b6f3f13b5
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+  UNIFIED.8-native_quoted_complete_call_default:
+    scenario: native_quoted_complete_call_default
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+    request: 816999e18ba3eec7d8bbec9937e0c1b365152b1983d710d21bd68c7a54e209f3
+    golden:
+    - kind: text
+      text: 'Example: "'
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '".'

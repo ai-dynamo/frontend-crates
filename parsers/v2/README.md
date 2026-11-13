@@ -68,11 +68,13 @@ Provisional updates do not authorize execution. The serving layer must validate 
 
 ## Quote handling compatibility
 
-Shared prose scanners normally keep control markers inside balanced single quotes, double quotes, or backticks as literal text. Set `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING=1` before starting the process to disable this protection. The values `1`, `true`, `on`, and `yes` enable the option, case-insensitively; an unset variable, `0`, or any other value retains the default behavior.
+Shared prose scanners treat reasoning and tool-call markers as structural by default, including markers inside single quotes, double quotes, or backticks. An unset `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING` uses this default. The values `1`, `true`, `on`, and `yes` also disable prose quote interpretation, case-insensitively. To restore the previous quote-aware policy, set `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING=0` before starting the process. Every explicitly set nontruthy value, including `false`, `off`, `no`, and the empty string, retains that compatibility behavior.
 
-The setting is read on first use of the shared prose quote tracker and cached for the process. It applies to every parser using that tracker, including Unified and tool-only entry points; it cannot be selected per request or family. Parsers with their own control-token rules, such as Beam and Harmony, retain those rules.
+The setting is read on first use of the shared prose quote tracker and cached for the process. It applies to every parser using that tracker, including Unified and tool-only entry points; it cannot be selected per request or family. Native control-token rules, such as Beam and Harmony framing, remain in effect. Guided modes that use the shared prose tracker follow this setting.
 
-With the option enabled, a quoted reasoning closer such as `"</think>"` can end reasoning, and a quoted complete tool call can emit a tool-call event. Quotes and markers inside an actual tool argument remain argument data under that family's grammar. This option matches the first-delimiter quote policy used by stock SGLang's Qwen3 and DeepSeek-R1 reasoning parsers; it does not establish full parser parity or guarantee training/serving token round trips.
+Under the default policy, a quoted reasoning closer such as `"</think>"` can end reasoning, and a quoted complete tool call can emit a tool-call event. The quote characters themselves remain ordinary text. Quotes and markers inside an actual tool argument remain argument data under that family's grammar. The default matches the first-delimiter quote policy used by stock SGLang's Qwen3 and DeepSeek-R1 reasoning parsers; it does not establish full parser parity or guarantee training/serving token round trips.
+
+This setting belongs to v2 scanners. The v1 `BasicReasoningParser` already ends an open reasoning span at its closer despite surrounding prose quotes; this flag does not change v1 behavior.
 
 ## Numeric values and Serde consumers
 

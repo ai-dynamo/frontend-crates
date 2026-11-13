@@ -3497,6 +3497,19 @@ requests:
     - 28
     - 12
     finish_step: true
+  698d14481df6d62b495a0e241a523218c5763187ab944212a4748b30c5188373:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Use re.split(r'(\s)', text). Let's final.<channel|>The code prints ['a', ' ', 'b'].
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 9
+    - 32
+    finish_step: true
   699b4bacb5625075c51fd7d8988972212349d761e40ff772dc384a9f825116fc:
     input: <|tool_call>call:get_weather{value:9.0071992547409925e15}<tool_call|>
     tools: tools_be922244cdee705c
@@ -4900,6 +4913,19 @@ requests:
     - 1
     - 12
     finish_step: true
+  d9bd5a8627890efc14a150bf5a76d9a4c5c76adc1c1d9a0ba8ca83dde75087ea:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: analysis "<channel|>Answer"
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 9
+    - 7
+    finish_step: true
   dab58d9883889071a27d66c9f5b9d6a68e0f58404b3f465203c1e69ac90cbe65:
     input: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
     tools: tools_944c6af93200d6d4
@@ -5017,6 +5043,18 @@ requests:
     - 16
     - 10
     - 57
+    finish_step: true
+  e395310c67527ed2c0b20045bf086edb56df9b928cad32559a23f7bdcbabdb7c:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'Example: "<|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|>".'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 62
+    - 2
     finish_step: true
   e5174405a9b9ddc1fee875c612ce8831ed05cf9490882a9104baa3606350e568:
     input: <|tool_call>call:get_weather{value:42.0}<tool_call|>
@@ -7075,60 +7113,60 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-5
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: bc7858e169c9a0257be1faaa10e0d3bcf22341379cac2ca3be755aaa1809f29b
     golden:
     - kind: reasoning
-      text: The literal "<|tool_call>" marker is part of the explanation.
+      text: The literal "
   native_quoted_incomplete_header:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-10
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: f042ce8f86c34947487f99876e81802d36262bbb3f4173c09b78f597ea6fcb05
     golden:
     - kind: text
-      text: The literal `<|tool_call>call:get_weather{city:<|"|>` header is part of the explanation.
+      text: The literal `
   native_quoted_control_in_response:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 2045e2019bd341cdb201d694560bb6d6e7493fe39be9e2eff1613f6f9ba5fde8
     golden:
     - kind: text
-      text: The literal "<|tool_call>" marker is part of the explanation.
+      text: The literal "
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-7
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: 4961d36eac601e405dfcac5aae2d2141ba3767bed8138b8b10aaedb85268b667
     golden:
     - kind: text
-      text: The literal 'example <|tool_call> marker' is part of the explanation.
+      text: 'The literal ''example '
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-8
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: d58d94ef6a101b3b7aae905904069813a4c0d2dfd9d69ca602c53d398cb6f081
     golden:
     - kind: text
-      text: The literal "<|tool_call>" marker is part of the explanation.
+      text: The literal "
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7154,12 +7192,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-8
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: 51b5c2a871283dd5b62e0690ca1ebb90117ca8bb6d95c0252eafbffebff20426
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <channel|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7169,12 +7209,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-9
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: b348ad16ff780b42f3ca7304c79b251d2863e63d23f8d987ef24705fd1285666
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <channel|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7185,35 +7227,35 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 602b3218f624a2ec8eb3f8df773ec83d7bc1678dbc5e04a1435ec9ce0a33b00f
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|tool_call> marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-11
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 0bc6378eee6d141fdedb57ad461d745436a32d6a8dd56fbdf8211f2f66d916c8
     golden:
     - kind: text
-      text: The literal 'doesn't <|tool_call> marker' stays quoted.
+      text: 'The literal ''doesn''t '
   guided_response_quoted_control_braces_named:
     policy:
     - I7
     historical_ids:
     - UNIFIED.35-3
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 9281cf51cf6688061f08561e117b6cb15c8f69174d987ac091f30aad761928b1
     golden:
     - kind: text
-      text: 'The literal "<|tool_call> { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7223,12 +7265,12 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.35-4
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: 24c1b9fd2268b585d947594b40e6076676fe7174d142ff72150ce89b489648f2
     golden:
     - kind: text
-      text: 'The literal "<|tool_call> { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -9858,14 +9900,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_some
     request: 2f86660f0aeccca8189e14af33bd6c547647b82169ba891d14a98f8a38085715
     golden:
     - kind: reasoning
-      text: '`load_config`''some <channel|> marker'' stays quoted.'
+      text: '`load_config`''some '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -9873,14 +9915,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
     request: b1a99f91399408d492435012d6037b5c323c60b183208f6d545c44b5001bb7c7
     golden:
     - kind: reasoning
-      text: '`load_config`''s_name <channel|> marker'' stays quoted.'
+      text: '`load_config`''s_name '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -9945,14 +9987,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
     request: ff38f2175183074ee5c1adf6a1b26c85ee38b999b0b4cc3c69770ac49fc5f1a8
     golden:
     - kind: reasoning
-      text: '"load_config"''some <channel|> marker'' stays quoted.'
+      text: '"load_config"''some '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -9960,14 +10002,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
     request: 5cf16fb56556e5e93d3d5252337b0b9128d3492d43511b95530ec4f6574b94e0
     golden:
     - kind: reasoning
-      text: '"load_config"''s_name <channel|> marker'' stays quoted.'
+      text: '"load_config"''s_name '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -9991,9 +10033,58 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
-    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    description: A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: 9cbcfd60cfa13815f88f3cd11fd2ea2cf3ad65378aab3a0e10c731d6b0f3e1db
     golden:
     - kind: text
-      text: '"<|tool_call>call:lookup{q:<|\"|>x<|\"|>}<tool_call|>" trailing'
+      text: '"'
+    - kind: tool_call
+      name: lookup
+      arguments: {}
+    - kind: text
+      text: '" trailing'
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    scenario: native_quoted_reasoning_closer_default
+    policy:
+    - I2
+    - I5
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: d9bd5a8627890efc14a150bf5a76d9a4c5c76adc1c1d9a0ba8ca83dde75087ea
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    scenario: native_raw_string_before_reasoning_closer
+    policy:
+    - I2
+    - I5
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 698d14481df6d62b495a0e241a523218c5763187ab944212a4748b30c5188373
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+  UNIFIED.8-native_quoted_complete_call_default:
+    scenario: native_quoted_complete_call_default
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+    request: e395310c67527ed2c0b20045bf086edb56df9b928cad32559a23f7bdcbabdb7c
+    golden:
+    - kind: text
+      text: 'Example: "'
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '".'

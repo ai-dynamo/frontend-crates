@@ -132,7 +132,7 @@ pub(crate) fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
     }
 
     let end = value.find(char::is_whitespace).unwrap_or(value.len());
-    if end == 0 {
+    if end == 0 || value[..end].contains(['\'', '"']) {
         None
     } else {
         Some(value[..end].trim().to_string())
@@ -865,6 +865,33 @@ mod tests {
     use super::*;
     use crate::tool_calling::arguments::MAX_SCHEMA_WORK;
     use serde_json::json;
+
+    #[test]
+    fn unquoted_invoke_names_reject_escaped_quotation() {
+        for attrs in [
+            r#"name=\"lookup\""#,
+            r#"name=\'lookup\'"#,
+            r#"name=lookup"bad"#,
+            "name=lookup'bad",
+        ] {
+            assert_eq!(parse_invoke_name(attrs), None, "{attrs}");
+        }
+        for attrs in [
+            r#"name="外部.lookup-v2""#,
+            r#"name='外部.lookup-v2'"#,
+            "name=外部.lookup-v2",
+        ] {
+            assert_eq!(
+                parse_invoke_name(attrs).as_deref(),
+                Some("外部.lookup-v2"),
+                "{attrs}"
+            );
+        }
+        assert_eq!(
+            parse_invoke_name(r#"name="it's.valid""#).as_deref(),
+            Some("it's.valid")
+        );
+    }
 
     #[test]
     fn scalar_hints_preserve_explicit_and_composed_types() {
