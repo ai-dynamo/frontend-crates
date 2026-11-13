@@ -445,9 +445,11 @@ class History:
 
     def iter_resolved_snapshots(self, capture_ids: set[str] | None = None, *, include_members: bool = False, view_capture_id: str | None = None):
         """Resolve checkpoints in one pass, with independently owned yielded records."""
+        # Lazy mappings may load values in __contains__ and turn corrupt entries into misses.
+        resolved_ids = set(self.resolved_snapshots)
         state = {}
         for current in self.ordered_capture_ids():
-            if current in self.resolved_snapshots:
+            if current in resolved_ids:
                 if capture_ids is None or current in capture_ids:
                     records = copy.deepcopy(self.resolved_snapshots[current])
                     if view_capture_id and view_capture_id != current:
