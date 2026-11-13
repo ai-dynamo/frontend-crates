@@ -1,4 +1,4 @@
-capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"a6d52ee82ff85374b2e44f876e4eb2ebc880cf5b537da4a233bf231ed01b368e","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
+capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"97be66e73a3cc831fe0545fb57fc62e761122d092299583a5eac41319ee86f2c","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.5.yaml","surface":"unified","version":"0.10.5"}
 document:
   mode: unified
 schema_version: 3
@@ -8750,3 +8750,44 @@ records:
       - expected:
         - kind: text
           text: <tool_call>\n<function=lookup>\n<parameter=q>\nx\n</parameter>\n</function>\n</tool_call>" trailing
+  invoke_close_inside_open_parameter_then_call:
+    case_key: invoke_close_inside_open_parameter_then_call
+    request: 15ede8e0b1aa70a1ea7026fd9b5b65db124a1a24e2ee2afedc2c31a8732888f6
+    output:
+      assembled:
+      - arguments: '{"city":"bad</function></tool_call><tool_call><function=get_weather><parameter=city>Paris"}'
+        kind: tool_call
+        name: get_weather
+      chunks:
+      - expected:
+        - arguments: '{"city":"bad</function></tool_call><tool_call><function=get_weather><parameter=city>Paris"}'
+          complete: true
+          kind: tool_call
+          name: get_weather
+      - expected: []
+  invoke_close_inside_open_parameter_then_empty_call:
+    case_key: invoke_close_inside_open_parameter_then_empty_call
+    request: ac37240a9d35732c4949c92f491f84e19e4947cc59089d26398614dfda23c88a
+    output:
+      assembled:
+      - arguments: '{"city":"bad"}'
+        kind: tool_call
+        name: get_weather
+      - arguments: '{}'
+        kind: tool_call
+        name: f
+      chunks:
+      - expected:
+        - arguments: '{"city":"bad'
+          complete: false
+          kind: tool_call
+          name: get_weather
+      - expected:
+        - arguments: '"}'
+          complete: true
+          kind: tool_call
+          name: null
+        - arguments: '{}'
+          complete: true
+          kind: tool_call
+          name: f

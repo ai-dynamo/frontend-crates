@@ -170,6 +170,13 @@ export function rankUnifiedColumns(tab, metadata) {
   if (tab.id !== 'tab-unified') return;
   const counts = new Map();
   const labels = new Map();
+  const aliases = new Map();
+  for (const [label, owners] of Object.entries(metadata.unified_aliases?.owners || {})) {
+    for (const scenario of owners) {
+      if (!aliases.has(scenario)) aliases.set(scenario, []);
+      aliases.get(scenario).push(label);
+    }
+  }
   const columns = [...tab.columns].sort((a, b) => metadata.unified_taxonomy[a.sub].display_order - metadata.unified_taxonomy[b.sub].display_order);
   for (const column of columns) {
     const taxonomy = metadata.unified_taxonomy[column.sub];
@@ -178,7 +185,7 @@ export function rankUnifiedColumns(tab, metadata) {
     const label = taxonomy.label;
     labels.set(column.label, label);
     column.case_id = `UNIFIED.${column.label}`;
-    Object.assign(column, { label, compact_prefix: prefix, display_number: counts.get(prefix) });
+    Object.assign(column, { label, compact_prefix: prefix, display_number: counts.get(prefix), search_aliases: aliases.get(column.sub) || [] });
   }
   for (const group of tab.glossary || []) group.rows = group.rows.map(([label, description]) => [labels.get(label) || label, description]);
 }

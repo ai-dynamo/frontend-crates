@@ -65,9 +65,9 @@ UNIFIED_TAX = {
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
     "malformed_json_then_two_valid_calls": (5, "4"),
-    "dsml_unterminated_parameter_then_empty_call": (5, "dsml_empty"),
-    "dsml_unterminated_parameter_then_call": (5, "dsml_call"),
     "missing_inner_closers_then_valid_call": (5, "6"),
+    "invoke_close_inside_open_parameter_then_call": (5, "7"),
+    "invoke_close_inside_open_parameter_then_empty_call": (5, "8"),
     # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
@@ -256,8 +256,6 @@ UNIFIED_TAX = {
     "guided_json_quoted_bare_header_in_answer": (35, "1"),
     "guided_json_quoted_bare_header_after_payload": (35, "2"),
     "guided_json_quoted_bare_tool_header_in_answer": ("muse", "1"),
-    "muse_unterminated_parameter_then_empty_call": ("muse", "7"),
-    "muse_unterminated_parameter_then_call": ("muse", "8"),
     # 31-29 and 31-30 remain reserved for the historical Gemma-only cases.
     # TODO: restore 31-31 through 31-40 in the follow-up to PR #232 (deferred-cases). Completed below; FAMILY_LEGACY_CASE_LABELS preserves family-specific IDs.
     "qwen3_guided_non_ascii_header_in_truncated_reasoning": ("qwen3", "1"),
@@ -425,19 +423,11 @@ def display_section(scenario, families=None):
     return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
 
 
-def display_case_description(scenario):
-    group, _ = display_tax(scenario)
-    description = case_description(scenario)
-    for prefix in GROUP_DESCRIPTION_PREFIXES.get(group, ()):
-        description = description.removeprefix(prefix)
-    return description
-
-
 def display_sort_key(scenario, families=None):
     group, _ = display_tax(scenario, families)
     group_key = (0, group) if isinstance(group, int) else (1, str(group))
     section_rank = list(ARGUMENT_SECTIONS).index(argument_section((case_fold(scenario) or (scenario, ""))[0])) if group == 7 else 0
-    return group_key, section_rank, display_case_description(scenario), scenario
+    return group_key, section_rank, case_description(scenario), scenario
 
 
 DISPLAY_PREFIXES = {group: tuple(prefixes) for group, prefixes in UNIFIED_DISPLAY["prefixes"].items()}
@@ -453,7 +443,7 @@ def display_case_labels(scenarios, scenario_families=None):
         full_prefix, compact_prefix = DISPLAY_PREFIXES.get(group, (str(group), str(group)))
         counts[compact_prefix] = counts.get(compact_prefix, 0) + 1
         labels[scenario] = {
-            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{display_case_description(scenario)}",
+            "label": case_label(scenario) if group == 7 else f"{full_prefix}-{case_description(scenario)}",
             "compact_prefix": compact_prefix,
             "display_number": counts[compact_prefix],
         }
@@ -666,6 +656,20 @@ def numbered_id(scenario):
 # read-side bridge from their former labels to the scenario-owned current label.
 # Current inputs and goldens use ``numbered_id`` and never write these aliases.
 LEGACY_CASE_LABELS = {
+    'dsml_unterminated_parameter_then_call': 'invoke_close_inside_open_parameter_then_call',
+    'muse_unterminated_parameter_then_call': 'invoke_close_inside_open_parameter_then_call',
+    '5-dsml_unterminated_parameter_then_call': 'invoke_close_inside_open_parameter_then_call',
+    'dsml-unterminated_parameter_then_call': 'invoke_close_inside_open_parameter_then_call',
+    'muse-unterminated_parameter_then_call': 'invoke_close_inside_open_parameter_then_call',
+    'muse-8': 'invoke_close_inside_open_parameter_then_call',
+    '5-dsml_call': 'invoke_close_inside_open_parameter_then_call',
+    'dsml_unterminated_parameter_then_empty_call': 'invoke_close_inside_open_parameter_then_empty_call',
+    'muse_unterminated_parameter_then_empty_call': 'invoke_close_inside_open_parameter_then_empty_call',
+    '5-dsml_unterminated_parameter_then_empty_call': 'invoke_close_inside_open_parameter_then_empty_call',
+    'dsml-unterminated_parameter_then_empty_call': 'invoke_close_inside_open_parameter_then_empty_call',
+    'muse-unterminated_parameter_then_empty_call': 'invoke_close_inside_open_parameter_then_empty_call',
+    'muse-7': 'invoke_close_inside_open_parameter_then_empty_call',
+    '5-dsml_empty': 'invoke_close_inside_open_parameter_then_empty_call',
     "7-6": "deepseek_v41_json_invocation_body",
     "7-7": "glm47_reference_type_intersection",
     "1.a": "tool_only",

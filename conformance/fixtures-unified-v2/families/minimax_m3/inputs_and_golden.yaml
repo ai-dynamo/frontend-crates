@@ -4018,6 +4018,9 @@ requests:
     - 1
     - 12
     finish_step: true
+  5a48dbcffe3d959d53b5252d6884cf667750bbcd0b460e77185a3f4ac7a517f6:
+    input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    tools: tools_cbf47ccf5fd2ef00
   5aba49d982c1e8c71a3d7c7b0be33d88f97772ed5ecc1a16ddee5a5ecf5d158f:
     input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="schema_probe">]<]minimax[>[<value>true]<]minimax[>[</value>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
     tools: tools_d7d32f10737ac6cd
@@ -8368,6 +8371,9 @@ requests:
     - 11
     - 4
     finish_step: true
+  eedaae0e32015f33744d19c0521c9c4503d70d78e0ecbe6db45322de8d677d67:
+    input: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    tools: tools_cbf47ccf5fd2ef00
   efa524e5766b641da14414232f884164d8a406286124b20f383ffbfac2a9b2b3:
     init:
       starting_state: Reasoning
@@ -12621,3 +12627,29 @@ cases:
       name: server.time
       arguments:
         timezone: Asia/Shanghai
+  invoke_close_inside_open_parameter_then_call:
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: The later matching parameter closer completes the original raw value; intervening invocation and block markers are literal data. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
+    policy:
+    - I7
+    - P2
+    request: 5a48dbcffe3d959d53b5252d6884cf667750bbcd0b460e77185a3f4ac7a517f6
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris
+  invoke_close_inside_open_parameter_then_empty_call:
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: Closed M3 invocations survive; a named parameter without its matching closing tag supplies no value. Retain both invocation names. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
+    policy:
+    - I7
+    - P2
+    request: eedaae0e32015f33744d19c0521c9c4503d70d78e0ecbe6db45322de8d677d67
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: {}
+    - kind: tool_call
+      name: f
+      arguments: {}

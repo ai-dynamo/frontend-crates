@@ -13162,11 +13162,14 @@ cases:
       arguments:
         city: a"<|start|>"b
   muse_unterminated_parameter_then_call:
+    scenario: invoke_close_inside_open_parameter_then_call
     policy:
     - P2
     - I7
-    description: 'Muse: a parameter owns invocation-shaped text until its closer. Preserve the complete outer argument instead of treating the embedded declared tool as a new call.'
-    display_id: UNIFIED.muse-unterminated_parameter_then_call
+    historical_ids:
+    - UNIFIED.muse-unterminated_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
     request: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
     golden:
     - kind: tool_call
@@ -13174,10 +13177,13 @@ cases:
       arguments:
         x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_parameter_then_empty_call:
+    scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
-    description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
-    display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
+    historical_ids:
+    - UNIFIED.muse-unterminated_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists. The turn emits nothing. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
     request: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
     golden: []
   spark_phase_empty:

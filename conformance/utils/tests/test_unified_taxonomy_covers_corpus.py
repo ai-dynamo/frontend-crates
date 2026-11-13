@@ -216,12 +216,12 @@ def _assert_dsml_recovery_input(family, scenario, case):
 
 
 @pytest.mark.parametrize("scenario", [
-    "dsml_unterminated_parameter_then_empty_call",
-    "dsml_unterminated_parameter_then_call",
+    "invoke_close_inside_open_parameter_then_empty_call",
+    "invoke_close_inside_open_parameter_then_call",
 ])
 def test_dsml_recovery_cases_keep_a_complete_trailing_invoke(scenario):
-    assert set(G.scenario_families(scenario)) == {"deepseek_v4", "deepseek_v41"}
-    for family in G.scenario_families(scenario):
+    assert set(G.scenario_families(scenario)) == set(G.OPEN_PARAMETER_BOUNDARY_FAMILIES)
+    for family in ["deepseek_v4", "deepseek_v41"]:
         case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
         _assert_dsml_recovery_input(family, scenario, case)
 
@@ -1039,7 +1039,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios)
+    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -2457,8 +2457,8 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
         return
     if scenario.startswith("kimi_native_"):
         _assert_kimi_native_golden(scenario, case)
-    if scenario in {"dsml_unterminated_parameter_then_call", "dsml_unterminated_parameter_then_empty_call"}:
-        _assert_dsml_recovery_input(family, scenario, case)
+    if scenario in G.OPEN_PARAMETER_BOUNDARY_SCENARIOS:
+        _assert_open_parameter_boundary(family, scenario, case)
         return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
@@ -2646,7 +2646,8 @@ def _assert_cross_family_contract(corpus):
                 assert init == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
-            events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+            events = (_assert_open_parameter_boundary(family, scenario, case) if scenario in G.OPEN_PARAMETER_BOUNDARY_SCENARIOS
+                      else _assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _assert_missing_inner_closers(family, case)
                       if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
@@ -3081,20 +3082,71 @@ def test_kimi_display_sections_match_their_applicable_family():
             assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
 
 
-def test_dsml_recovery_display_uses_family_labels_and_order():
-    scenarios = [scenario for scenario in UNIFIED_TAX if scenario.startswith("dsml_")]
-    labels = taxonomy.display_case_labels(scenarios)
-    ordered = sorted(scenarios, key=taxonomy.display_sort_key)
-    assert [labels[scenario]["display_number"] for scenario in ordered] == list(range(1, len(scenarios) + 1))
-    assert [labels[scenario]["label"] for scenario in ordered] == sorted(labels[scenario]["label"] for scenario in scenarios)
-    for scenario in scenarios:
-        assert taxonomy.display_section(scenario)[0] == "unified_gdsml"
-        assert labels[scenario]["label"] == "dsml-" + scenario.removeprefix("dsml_")
-        assert labels[scenario]["compact_prefix"] == "dsml"
-    for suffix in ["empty_call", "call"]:
-        scenario = "dsml_unterminated_parameter_then_" + suffix
-        assert numbered_id(scenario) == "UNIFIED.5-" + scenario
-        assert historical_case_label("5-" + scenario) == case_label(scenario)
+def test_open_parameter_boundary_uses_shared_display_and_historical_aliases():
+    labels = taxonomy.display_case_labels(UNIFIED_TAX)
+    for scenario in G.OPEN_PARAMETER_BOUNDARY_SCENARIOS:
+        assert taxonomy.display_section(scenario)[0] == "unified_g5"
+        assert labels[scenario]["label"] == "5-" + scenario
+        assert labels[scenario]["compact_prefix"] == "5"
+        suffix = scenario.removeprefix("invoke_close_inside_open_parameter_then_")
+        for family_prefix in ["dsml", "muse"]:
+            for old in [family_prefix + "_unterminated_parameter_then_" + suffix,
+                        ("5-dsml_unterminated_parameter_then_" if family_prefix == "dsml" else "muse-unterminated_parameter_then_") + suffix]:
+                assert historical_case_label(old) == case_label(scenario)
+
+
+def _assert_open_parameter_boundary(family, scenario, case):
+    assert family in G.OPEN_PARAMETER_BOUNDARY_FAMILIES
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    empty = scenario.endswith("empty_call")
+    if family in {"deepseek_v4", "deepseek_v41"}:
+        _assert_dsml_recovery_input(family, scenario, case)
+        return
+    if family in {"muse_glimmer", "muse_spark"}:
+        parameter, closer, invocation_end = '<atem:parameter name="', '</atem:parameter>', '</atem:invoke>'
+        tool, key = ("get_weather", "city") if empty else ("f", "x")
+    elif family in {"qwen3", "nemotron_v3"}:
+        parameter, closer, invocation_end = '<parameter=', '</parameter>', '</function>'
+        tool, key = "get_weather", "city"
+    elif family == "minimax_m3":
+        parameter, closer, invocation_end = ']<]minimax[>[<city>', ']<]minimax[>[</city>', ']<]minimax[>[</invoke>'
+        tool, key = "get_weather", "city"
+    else:
+        parameter, closer, invocation_end = '<|open|>argument ', '<|close|>argument<|sep|>', '<|close|>call<|sep|>'
+        tool, key = "get_weather", "city"
+    raw = case["input"]
+    start = raw.index(parameter)
+    value_at = raw.index("bad", start)
+    invocation_at = raw.index(invocation_end, value_at)
+    parameter_at = raw.find(closer, value_at)
+    assert parameter_at < 0 or invocation_at < parameter_at, "the first parameter must remain open at the invocation fence"
+    if family == "kimi_k3":
+        expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if empty else [
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    elif empty:
+        assert parameter_at < 0
+        expected = [] if family in {"muse_glimmer", "muse_spark"} else [
+            {"kind": "tool_call", "name": tool, "arguments": {"city": "bad"} if family in {"qwen3", "nemotron_v3"} else {}},
+            {"kind": "tool_call", "name": "f", "arguments": {}}]
+    else:
+        assert parameter_at > invocation_at
+        value = raw[value_at:parameter_at]
+        assert "Paris" in value
+        expected = [{"kind": "tool_call", "name": tool, "arguments": {key: value}}]
+    assert case["golden"] == expected
+
+
+@pytest.mark.parametrize("family", sorted(G.OPEN_PARAMETER_BOUNDARY_FAMILIES))
+@pytest.mark.parametrize("scenario", G.OPEN_PARAMETER_BOUNDARY_SCENARIOS)
+def test_open_parameter_boundary_input_and_family_oracle(family, scenario):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_open_parameter_boundary(family, scenario, case)
+    changed = deepcopy(case)
+    changed["golden"] = [{"kind": "text", "text": "invented"}]
+    with pytest.raises(AssertionError):
+        _assert_open_parameter_boundary(family, scenario, changed)
+    assert "missing_inner_closers_then_valid_call" in case["description"]
+    assert "Family oracle:" in case["description"]
 
 
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():
@@ -3110,7 +3162,7 @@ def test_display_ranks_follow_descriptions_without_changing_capture_ids():
         for scenario in members:
             sections[taxonomy.display_section(scenario)[0]].append(scenario)
         for section in sections.values():
-            assert [taxonomy.display_case_description(s) for s in section] == sorted(taxonomy.display_case_description(s) for s in section)
+            assert [taxonomy.case_description(s) for s in section] == sorted(taxonomy.case_description(s) for s in section)
     compact_prefixes = defaultdict(list)
     for scenario in sorted(scenarios, key=taxonomy.display_sort_key):
         compact_prefixes[labels[scenario]["compact_prefix"]].append(scenario)
