@@ -157,14 +157,17 @@ impl CreateChatCompletionRequest {
                 custom_names.push(custom.name.clone());
             }
         }
-        // Response projection restores custom identity by name; a function cannot share it.
-        if let Some(tool) = tools.iter().find(|tool| {
-            tool.r#type != ChatCompletionToolType::Custom
-                && custom_names.contains(&tool.function.name)
-        }) {
+        // Response projection restores custom identity by name; a function cannot share it,
+        // whether declared in top-level `tools` or in a system message's dynamic `tools`.
+        if let Some(name) = tools
+            .iter()
+            .filter(|tool| tool.r#type != ChatCompletionToolType::Custom)
+            .map(|tool| tool.function.name.as_str())
+            .chain(self.dynamic_system_tools().filter_map(dynamic_tool_name))
+            .find(|name| custom_names.iter().any(|custom| custom == name))
+        {
             return Err(OpenAIError::InvalidArgument(format!(
-                "tool name '{}' is declared as both custom and function",
-                tool.function.name
+                "tool name '{name}' is declared as both custom and function"
             )));
         }
         match &self.tool_choice {
