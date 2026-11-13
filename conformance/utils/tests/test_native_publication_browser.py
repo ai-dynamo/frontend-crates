@@ -50,6 +50,45 @@ from capture_versions import capture_release_sort_key
 PAGES_PROPAGATION_SECONDS = 300.0
 
 
+@pytest.mark.parametrize("family", ["hermes", "llama3_json"])
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
+def test_legacy_family_history_selects_latest_v1_release(historical_published_viewer, family, implementation):
+    versions = sorted(capture_releases(historical_published_viewer, family=family)[implementation], key=capture_release_sort_key)
+    assert versions == ["11.0.7"]
+    keys = [f"{implementation}@{version}" for version in versions]
+    query = urlencode({"tab": "tab-unified", "slots_tab-unified": ",".join([*keys, "none"]),
+                       "search_tab-unified": f"model:{family}"})
+    server, _ = _server(root=historical_published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?{query}")
+        _ready(driver, "tab-unified")
+        for _ in range(2):
+            observed = driver.execute_script("""
+                const comparison = window.__conformanceComparison;
+                const row = comparison.view.rows.find(row => row.family === arguments[0]);
+                const key = arguments[1];
+                const missingCases = Object.entries(row.cells).flatMap(([sub, cell]) => (cell.variants || [cell])
+                    .filter(leaf => leaf.tooltip?.candidates?.find(candidate => candidate.key === key)?.block?.unavailable_code === 'missing_capture')
+                    .map(leaf => leaf.sub || sub)).sort();
+                return {families: comparison.view.rows.map(row => row.family), counts: comparison.counts, missingCases};
+            """, family, keys[0])
+            assert observed["families"] == [family]
+            for key in keys:
+                assert observed["counts"][key]["total"] > 0
+                expected_missing = ["gpt_oss_quoted_call_header_then_visible_prose", "tool_body_whitespace"] if family == "hermes" else []
+                assert observed["counts"][key]["missing"] == len(expected_missing)
+                assert observed["missingCases"] == expected_missing
+            assert [Select(driver.find_element("css selector", f'[data-slot-capture="{slot}"]')).first_selected_option.get_attribute("value")
+                    for slot in range(len(keys))] == keys
+            driver.refresh()
+            _ready(driver, "tab-unified")
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request, monkeypatch, tmp_path):
     monkeypatch.setenv("CONFORMANCE_DELIVERY_DEADLINE", str(transport.time.monotonic() + transport.HTTP_BUDGET))
     report_path = tmp_path / "delivery.json"

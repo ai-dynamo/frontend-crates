@@ -603,10 +603,11 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         Select(third).select_by_value(jail_key)
         _ready(driver, "tab-unified")
         visible_families = set(driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label)"))
-        selected_sources = {selected_identity, identity_for_key(catalog, direct_key), identity_for_key(catalog, jail_key)}
+        selected_sources = {selected_identity, legacy_choices["dynamo_v1"]["id"], legacy_choices["dynamo_v1_jail"]["id"]}
         expected_families = {family for candidate in catalog["sources"]["candidates"]
                              if f"{candidate['implementation']}@{candidate['mode']}@{candidate['version']}" in selected_sources
-                             for family in candidate.get("native_unified_families", candidate["capture_families"])}
+                             for family in (candidate["capture_families"] if candidate["implementation"].startswith("dynamo_v1")
+                                            else candidate.get("native_unified_families", candidate["capture_families"]))}
         assert visible_families == expected_families
         assert {"qwen3", "muse_glimmer", "muse_spark"} <= visible_families
         driver.execute_script("""

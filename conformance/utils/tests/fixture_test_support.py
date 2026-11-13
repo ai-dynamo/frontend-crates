@@ -232,11 +232,21 @@ def snapshot_bytes(destination, resource, decoder=None):
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def capture_releases(site):
+def capture_releases(site, family=None):
     catalog = runtime_catalog(site)
     versions = {}
+    current_latest = {}
+    for capture in catalog['capture_generation']['current']:
+        implementation = capture['implementation']
+        version = capture['version']
+        if (implementation not in current_latest
+                or capture_release_sort_key(version) > capture_release_sort_key(current_latest[implementation])):
+            current_latest[implementation] = version
     for resource in catalog['sources']['unified']:
-        if resource['kind'] == 'resolved-capture':
+        if (resource['kind'] == 'resolved-capture'
+                and (family is None or resource.get('family') == family
+                     or family in resource.get('families', []))
+                and (family is None or resource['version'] != current_latest.get(resource['implementation']))):
             versions.setdefault(resource['implementation'], set()).add(resource['version'])
     return {implementation: sorted(releases, key=capture_release_sort_key)
             for implementation, releases in versions.items()}

@@ -379,6 +379,22 @@ def test_complete_snapshot_reader_correction_and_archive_roundtrip(tmp_path, mon
     assert len(admissions) == len(set(admissions)) == 2
 
 
+def test_complete_latest_snapshot_can_follow_sparse_history(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    _write_capture(root, "0.26.0", {"text_only": _change("older")})
+    _write_capture(root, "0.27.0", {})
+    sparse = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    expected = {capture_id: sparse.resolve(capture_id) for capture_id in sparse.ordered_capture_ids()}
+    latest = root / "families/gemma4/dynamo_v2-0.27.0.yaml"
+    latest.write_text(unified_history.dump_yaml(sparse.complete_snapshot("dynamo_v2-0.27.0")), encoding="utf-8")
+
+    mixed = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+
+    assert mixed.resolve("dynamo_v2-0.26.0") == expected["dynamo_v2-0.26.0"]
+    assert mixed.resolve("dynamo_v2-0.27.0") == expected["dynamo_v2-0.27.0"]
+
+
 @pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v2"])
 def test_current_materialization_excludes_v1_only_cases_only_for_v2(tmp_path, implementation):
     root = tmp_path / "store"

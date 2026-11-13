@@ -540,6 +540,13 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             before = counts(driver)
             _choose_engine(driver, 1, "sglang")
             _ready(driver, "tab-unified")
+            compared = counts(driver)
+            for status, value in before["dynamo"].items():
+                if status not in {"total", "unsupported"}:
+                    assert compared["dynamo"][status] == value
+            added = compared["dynamo"]["total"] - before["dynamo"]["total"]
+            assert added >= 0
+            assert compared["dynamo"]["unsupported"] - before["dynamo"]["unsupported"] == added
             stacked = driver.find_element("css selector", "[data-layout='stacked']")
             assert stacked.is_displayed()
             assert stacked.text == ("Stacked columns" if vertical else "Stacked rows")
@@ -549,9 +556,10 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
                 assert headings
                 assert all("matches GOLDEN" not in heading.text and "cases" not in heading.text for heading in headings)
             driver.find_element("css selector", "[data-layout='split']").click()
-            assert counts(driver)["dynamo"] == before["dynamo"]
+            assert counts(driver) == compared
             _clear_slot(driver, 1)
             _ready(driver, "tab-unified")
+            assert counts(driver) == before
             assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
         elif correction == "categories":
             assert not driver.find_elements("css selector", ".category-chips")

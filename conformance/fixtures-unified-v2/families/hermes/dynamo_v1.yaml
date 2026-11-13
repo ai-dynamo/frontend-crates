@@ -1,4 +1,4 @@
-capture_selection: {"family":"hermes","implementation":"dynamo_v1","lineage":[{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.6.yaml","version":"11.0.6"},{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","version":"11.0.7"}],"mode":"unified","payload_sha256":"d23aa428771480e90f48efefa79111999ef67a3dfdd8234e50a75cef4d275c6b","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","surface":"unified","version":"11.0.7"}
+capture_selection: {"family":"hermes","implementation":"dynamo_v1","lineage":[{"family":"hermes","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","version":"11.0.7"}],"mode":"unified","payload_sha256":"7218fcd09667e8c17e483681f040f0dc7fb8e646d4d3c20fe84724145fe4482a","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml","surface":"unified","version":"11.0.7"}
 document:
   mode: unified
 schema_version: 3
@@ -16,16 +16,65 @@ origins:
     source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
     adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
     job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+  origin_68904e4ec77afc88:
+    crate_version: 11.0.7
+    source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+    adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+    job_sha256: 8402e2fab006617796b692ccb20b2ddebc95fbab39670687a3926217fa3ad516
 producers:
-  producer_694ff4a552676c79:
-    captured_with:
-      dynamo_v1: 11.0.7
-    capture_origin: origin_01c38ff01ca15adb
   producer_7ccfcbfa24751c05:
     captured_with:
       dynamo_v1: 11.0.7
     capture_origin: origin_d7033e5392846129
+  producer_694ff4a552676c79:
+    captured_with:
+      dynamo_v1: 11.0.7
+    capture_origin: origin_01c38ff01ca15adb
+  producer_9c63442047be607a:
+    captured_with:
+      dynamo_v1: 11.0.7
+    capture_origin: origin_68904e4ec77afc88
 contexts:
+  context_73c6b65eb976e02e:
+    mode: unified
+    record_metadata:
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_99a0911275089370:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: record
+          arguments:
+            value:
+            - é \" </atem:parameter>
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_2531778e452fa321:
     mode: unified
     record_metadata:
@@ -385,6 +434,381 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_c6f5cbd1c284fe4d:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: null
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_d594e7fa994cd97f:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: run
+          arguments:
+            cmd: git log
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_48a5c4aa239442ac:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_25b3f999b5b106d7:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: 42.0
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_4b60ad3161e6def9:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: 9007199254740994.0
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_91a5fe21fd46b27c:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: 9007199254740992.0
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_f64a3974189c0b13:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: -42.0
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_c08051273f8fa361:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: 0.0
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_9a9f2208f9c925d7:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: -9007199254740992.0
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_167087524ce4155d:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: 42.5
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_44ee1175f8910ab7:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            value: 0.1
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_fb6d8a2526faeb60:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: inspect
+          arguments:
+            nested:
+              fraction: 9007199254740992.0
+              tiny: 0.0
+            values:
+            - 9007199254740993
+            - -9007199254740993
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_18eb6c334c5b4f58:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: echo
+          arguments:
+            city: Paris
+            value: 1.5
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_95a91ef9e6cd1fdd:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: echo
+          arguments: '{"city":"Paris","value":-1E+400}'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_42902d53d794f82a:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: echo
+          arguments: '{"city":"Paris","value":1e400}'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_94f1890fb0bb513b:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: record
+          arguments:
+            value:
+              s: </atem:parameter>
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_9e440b1d84eb9443:
     mode: unified
     record_metadata:
@@ -600,6 +1024,29 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_44d9af18e6b973a6:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: 'null'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_c613a7e70326ea30:
     mode: unified
     record_metadata:
@@ -999,6 +1446,121 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_8bad63c118a4f7f7:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: Check weather.
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: Paris
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_af5d9f2b0476650f:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: Paris
+        - name: get_weather
+          arguments:
+            city: Tokyo
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_3cd88f0faa8ca0f6:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: Paris
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_81c11dab9696168d:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: Pressing it now.
+        calls:
+        - name: get_weather
+          arguments:
+            city: Paris
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_dcf75eab65ecc31b:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_1dcbfd46855d82ce:
     mode: unified
     record_metadata:
@@ -1301,6 +1863,123 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_77f5ff9dc846dc01:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: quoted
+        normal_text: ''
+        calls:
+        - name: f
+          arguments:
+            x: '  <tool_call>'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_5e63e9ff10fb7186:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: a.b
+          arguments: {}
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_c87df4cfac228b3c:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: my-tool.v2
+          arguments:
+            location: Beijing
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_0ea7648c991fe963:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: server.tools.weather
+          arguments:
+            location: Beijing
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_e550db089227231c:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: server.weather
+          arguments:
+            location: Beijing
+        - name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_0c189398edd4e719:
     mode: unified
     record_metadata:
@@ -1844,6 +2523,31 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_027fb21746d5ea1c:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: run
+          arguments: {}
+        - name: not_offered
+          arguments:
+            x: 2
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_81ad27d69b5bb6e5:
     mode: unified
     record_metadata:
@@ -2938,10 +3642,10 @@ contexts:
             city: Paris
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -2967,10 +3671,10 @@ contexts:
                 city: Paris
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -3041,11 +3745,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -3060,6 +3764,46 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_b51b11ffa6042bac:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: The literal "<tool_call>" marker is part of the explanation.
+        normal_text: ''
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_1fc24df8c396eacf:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: The literal 'doesn't <tool_call> marker' stays quoted.
+        normal_text: ''
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_b38c4cd45c723d40:
     mode: unified
     record_metadata:
@@ -3070,7 +3814,7 @@ contexts:
         - name: capture_payload
           arguments:
             count: -2500
-            text: '42'
+            text: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -3094,7 +3838,7 @@ contexts:
             - name: capture_payload
               arguments:
                 count: -2500
-                text: '42'
+                text: "42"
           capture_input:
             init:
               starting_state: None
@@ -3122,7 +3866,7 @@ contexts:
             name: capture_payload
             arguments:
               count: -2500
-              text: '42'
+              text: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -3226,6 +3970,26 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_bc3c7a0429197dd5:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: I will check that.
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_2f367fa6b4db60e9:
     mode: unified
     record_metadata:
@@ -3954,6 +4718,184 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_c3fa6ac9300ee0d2:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '`load_config`''s_name'
+        normal_text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_dfe3c6bb684516f6:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '`load_config`''some'
+        normal_text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_e94d289630cda702:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
+        normal_text: I've found the bug in `app.py`.
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_f6620cd4470115ff:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: Paris
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_7ff047e566e7838c:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '"load_config"''s_name'
+        normal_text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_75533eaba27fcb6c:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '"load_config"''some'
+        normal_text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_c48cbc0df624a0b7:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
+        normal_text: I've found the bug in `app.py`.
+        calls: []
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
+  context_7fa1909fcd9a3ceb:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments:
+            city: Paris
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
+        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
+        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_no_jail
+        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
   context_2259fcdf32520ea0:
     mode: unified
     record_metadata:
@@ -4078,10 +5020,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -4104,10 +5046,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -4174,11 +5116,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -4202,10 +5144,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -4228,10 +5170,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -4301,11 +5243,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -4867,10 +5809,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -4893,10 +5835,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -4969,11 +5911,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -4997,10 +5939,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -5023,10 +5965,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -5097,11 +6039,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -6554,7 +7496,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -6577,7 +7519,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -6592,7 +7534,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: '42'
+                    - const: "42"
                     - minLength: 0
                 required:
                 - value
@@ -6606,7 +7548,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -6630,7 +7572,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -6653,7 +7595,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -6667,7 +7609,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: '42'
+                    const: "42"
                 required:
                 - value
                 additionalProperties: false
@@ -6680,7 +7622,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -6704,7 +7646,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -6727,7 +7669,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -6747,7 +7689,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: '42'
+                    const: "42"
               strict: true
             chunks:
             - delta_text: <tool_call>
@@ -6757,7 +7699,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -6781,7 +7723,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -6804,7 +7746,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -6819,7 +7761,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: '42'
+                    const: "42"
                 required:
                 - value
                 additionalProperties: false
@@ -6832,7 +7774,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -9275,7 +10217,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -9298,7 +10240,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -9315,7 +10257,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - '42'
+                    - "42"
                 required:
                 - value
                 additionalProperties: false
@@ -9328,7 +10270,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -9504,7 +10446,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -9527,7 +10469,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -9542,7 +10484,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: '42'
+                    - const: "42"
                     - type: integer
                 required:
                 - value
@@ -9556,7 +10498,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -9963,7 +10905,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -9986,7 +10928,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -10006,7 +10948,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: '42'
+                    const: "42"
               strict: true
             chunks:
             - delta_text: <tool_call>
@@ -10016,7 +10958,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -10596,7 +11538,7 @@ contexts:
         calls:
         - name: schema_probe
           arguments:
-            value: '42'
+            value: "42"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -10619,7 +11561,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: '42'
+                value: "42"
           capture_input:
             init:
               starting_state: None
@@ -10648,7 +11590,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: '42'
+              value: "42"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -14465,10 +15407,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -14491,10 +15433,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -14557,11 +15499,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -14681,10 +15623,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -14707,10 +15649,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -14784,11 +15726,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -14913,6 +15855,32 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
+  context_be6ee8e7c857be50:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: get_weather
+          arguments: '{"city":"Paris"}'
+        - name: get_weather
+          arguments: '{"city":"Paris"}'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.7
+        source_sha256: 98c5ce3fda5f4fd4bcc5d83068098c44a91a47a6b07c366be5ed09c183108ce1
+        adapter_sha256: 79fc4d40273fef2b14b59052654583eb6c53cf85f72169a9f87d47d436ba4c8b
+        job_sha256: 8402e2fab006617796b692ccb20b2ddebc95fbab39670687a3926217fa3ad516
+        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+        cargo_lock_sha256: a601fd1ee79b4705a143b8105c36f1a0336222597867ec1d8951022d59396ef4
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_gpt_oss_no_reasoning_init
+        - conformance_no_jail
+        results_sha256: 316cb917076a224924fd432a0e529f8274fd0253b46020fad23cd21b2df0db00
+        binary_sha256: af605a2ca050535999a0c82c8e04f00e3b7b9cecf9566ff6a8c6374c92ff5fe7
   context_c8cb379e90539f78:
     mode: unified
     record_metadata:
@@ -15565,10 +16533,10 @@ contexts:
         calls:
         - name: f
           arguments:
-            x: '1'
+            x: "1"
         - name: g
           arguments:
-            y: '2'
+            y: "2"
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -15591,10 +16559,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: '1'
+                x: "1"
             - name: g
               arguments:
-                y: '2'
+                y: "2"
           capture_input:
             init:
               starting_state: None
@@ -15656,11 +16624,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: '1'
+              x: "1"
           - kind: tool_call
             name: g
             arguments:
-              y: '2'
+              y: "2"
         provenance:
           implementation: dynamo_v1
           version: 11.0.7
@@ -16020,854 +16988,16 @@ contexts:
           - conformance_no_jail
           results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
         resolution: fresh_execution
-  context_027fb21746d5ea1c:
+  context_59ba14967fec9776:
     mode: unified
     record_metadata:
       batch_final:
         reasoning_text: ''
         normal_text: ''
         calls:
-        - name: run
-          arguments: {}
-        - name: not_offered
+        - name: schema_probe
           arguments:
-            x: 2
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_d594e7fa994cd97f:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: run
-          arguments:
-            cmd: git log
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_bc3c7a0429197dd5:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: I will check that.
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_3cd88f0faa8ca0f6:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: Paris
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_73c6b65eb976e02e:
-    mode: unified
-    record_metadata:
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_77f5ff9dc846dc01:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: quoted
-        normal_text: ''
-        calls:
-        - name: f
-          arguments:
-            x: '  <tool_call>'
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_dcf75eab65ecc31b:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_c6f5cbd1c284fe4d:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: null
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_44d9af18e6b973a6:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: 'null'
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_48a5c4aa239442ac:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: set_labels
-          arguments:
-            label: null
-            note: null
-            literal: 'null'
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_94f1890fb0bb513b:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: record
-          arguments:
-            value:
-              s: </atem:parameter>
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_99a0911275089370:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: record
-          arguments:
-            value:
-            - é \" </atem:parameter>
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_25b3f999b5b106d7:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: 42.0
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_4b60ad3161e6def9:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: 9007199254740994.0
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_91a5fe21fd46b27c:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: 9007199254740992.0
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_f64a3974189c0b13:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: -42.0
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_c08051273f8fa361:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: 0.0
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_167087524ce4155d:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: 42.5
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_44ee1175f8910ab7:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: 0.1
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_9a9f2208f9c925d7:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            value: -9007199254740992.0
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_fb6d8a2526faeb60:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: inspect
-          arguments:
-            nested:
-              fraction: 9007199254740992.0
-              tiny: 0.0
-            values:
-            - 9007199254740993
-            - -9007199254740993
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_18eb6c334c5b4f58:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: echo
-          arguments:
-            city: Paris
-            value: 1.5
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_42902d53d794f82a:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: echo
-          arguments: '{"city":"Paris","value":1e400}'
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_95a91ef9e6cd1fdd:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: echo
-          arguments: '{"city":"Paris","value":-1E+400}'
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_b51b11ffa6042bac:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: The literal "<tool_call>" marker is part of the explanation.
-        normal_text: ''
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_1fc24df8c396eacf:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: The literal 'doesn't <tool_call> marker' stays quoted.
-        normal_text: ''
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_e94d289630cda702:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
-        normal_text: I've found the bug in `app.py`.
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_f6620cd4470115ff:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: Paris
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_dfe3c6bb684516f6:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '`load_config`''some'
-        normal_text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_c3fa6ac9300ee0d2:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '`load_config`''s_name'
-        normal_text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_c48cbc0df624a0b7:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
-        normal_text: I've found the bug in `app.py`.
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_7fa1909fcd9a3ceb:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: Paris
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_75533eaba27fcb6c:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '"load_config"''some'
-        normal_text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_7ff047e566e7838c:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: '"load_config"''s_name'
-        normal_text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-        calls: []
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_5e63e9ff10fb7186:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: a.b
-          arguments: {}
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_c87df4cfac228b3c:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: my-tool.v2
-          arguments:
-            location: Beijing
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_0ea7648c991fe963:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: server.tools.weather
-          arguments:
-            location: Beijing
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_e550db089227231c:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: server.weather
-          arguments:
-            location: Beijing
-        - name: server.time
-          arguments:
-            timezone: Asia/Shanghai
+            value: '{"a":1}'
       dynamo_v1_capture_provenance:
         implementation: dynamo_v1
         version: 11.0.7
@@ -16904,106 +17034,32 @@ contexts:
         - conformance_tool_api_schemas
         - conformance_no_jail
         results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_59ba14967fec9776:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: schema_probe
-          arguments:
-            value: '{"a":1}'
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_af5d9f2b0476650f:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: Paris
-        - name: get_weather
-          arguments:
-            city: Tokyo
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_81c11dab9696168d:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: ''
-        normal_text: Pressing it now.
-        calls:
-        - name: get_weather
-          arguments:
-            city: Paris
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
-  context_8bad63c118a4f7f7:
-    mode: unified
-    record_metadata:
-      batch_final:
-        reasoning_text: Check weather.
-        normal_text: ''
-        calls:
-        - name: get_weather
-          arguments:
-            city: Paris
-      dynamo_v1_capture_provenance:
-        implementation: dynamo_v1
-        version: 11.0.7
-        source_sha256: 3e3f4ecc2cdb81b6e7f838c89100928caf86670e344e5f3c07eff4de21f0fe46
-        adapter_sha256: 63fd5ff5a3b8f7ee147bb9e2b1cf29bd602806a4e6932746b132c0e0058f7cba
-        job_sha256: 42f91f00169625836f1e2da0ab97a4cebcc6674a7eb681cc7caa4228a15836a1
-        crate_checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
-        cargo_lock_sha256: 417b38d5b29564cc879592a399d4ad457f6fa904d3ea2099c14c00bb01fef26e
-        compatibility_flags:
-        - conformance_async_tool_api
-        - conformance_tool_api_schemas
-        - conformance_no_jail
-        results_sha256: acd32ec744a62429ff5bcc817807e4c49bb89b83b380963447126cf5cfcfead3
 record_defaults:
   member: conformance/fixtures-unified-v2/families/hermes/dynamo_v1-11.0.7.yaml
   producer: producer_694ff4a552676c79
   context: context_73c6b65eb976e02e
 records:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    producer: producer_7ccfcbfa24751c05
+    request: 1e83cc6205f620d8d22a3169475164f9ee2f29f13c8758c33123e9cb185f4c6b
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    producer: producer_7ccfcbfa24751c05
+    context: context_99a0911275089370
+    request: f5b82ff0e187b01e81a8ae7cbc82f754bc57b59cc68ae934bfc1110368eeea6e
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+          - é \" </atem:parameter>
+    suppress_inherited_from: true
   arg_json_null:
     case_key: arg_json_null
     context: context_2531778e452fa321
@@ -17059,6 +17115,301 @@ records:
         arguments:
           city: null
     suppress_inherited_from: true
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    producer: producer_7ccfcbfa24751c05
+    context: context_c6f5cbd1c284fe4d
+    request: d775b5e6478ede529cfda91861ff760f5740771c95095e730fe79a17bcb25718
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+    suppress_inherited_from: true
+  arg_marker_in_string:
+    case_key: arg_marker_in_string
+    producer: producer_7ccfcbfa24751c05
+    context: context_d594e7fa994cd97f
+    request: 76a323ddbdaf91f7d7a13ec01bae7c3f9ae395ca6afe44e95dcb722e98a3b1e8
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments:
+          cmd: git log
+    suppress_inherited_from: true
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    producer: producer_7ccfcbfa24751c05
+    context: context_48a5c4aa239442ac
+    request: 9e89fcc8e98098655649f671dcc5c1519d949f0e246f3814637167240525eca4
+    output:
+      assembled:
+      - kind: tool_call
+        name: set_labels
+        arguments:
+          label: null
+          note: null
+          literal: 'null'
+    suppress_inherited_from: true
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    producer: producer_7ccfcbfa24751c05
+    context: context_25b3f999b5b106d7
+    request: 83a37943771dfef7863ac45109f0ca4a82b0e51862d85f2e4ed5526ad7564f83
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 42.0
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    producer: producer_7ccfcbfa24751c05
+    context: context_25b3f999b5b106d7
+    request: f5fd24027d2412efa8aeb0c41e91768240f0a5b07e88cf8de004884a9d7b47ab
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 42.0
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    producer: producer_7ccfcbfa24751c05
+    context: context_25b3f999b5b106d7
+    request: 86fb8ed21d760aab8e46bc7353b3ac28ca81f293844e182073e1895dfd7074c1
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 42.0
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    producer: producer_7ccfcbfa24751c05
+    context: context_25b3f999b5b106d7
+    request: bb689e3205c57f4f53eb419050792241a0b9f3b5dafe8ebd90f61d1aba66d33d
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 42.0
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    producer: producer_7ccfcbfa24751c05
+    context: context_4b60ad3161e6def9
+    request: e1cd0b42e4addd3b934dbd82dd561ed7cda9969d245c8c74f4f3939163692e22
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 9007199254740994.0
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    producer: producer_7ccfcbfa24751c05
+    context: context_91a5fe21fd46b27c
+    request: b1f1c797a3fa4e688013d3ab6eb54d2e3b90a00b472ef6cb5dda0695444b54be
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 9007199254740992.0
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    producer: producer_7ccfcbfa24751c05
+    context: context_f64a3974189c0b13
+    request: 40f4cfe083da61def282c66a6fbb8c49b739215cfb9ccfaeee2bfa4222a7cd30
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: -42.0
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    producer: producer_7ccfcbfa24751c05
+    context: context_25b3f999b5b106d7
+    request: 209018c1c7d22cc593ef970ee1b0d389b6d2b1608b73eead5cf1e25428490b63
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 42.0
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    producer: producer_7ccfcbfa24751c05
+    context: context_c08051273f8fa361
+    request: a742c3e0f79df51db80b4e17922a54a36bacd866a734046c6dbe0a6d634a9f15
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 0.0
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    producer: producer_7ccfcbfa24751c05
+    context: context_91a5fe21fd46b27c
+    request: 05856afdd5019838f17d3945cf8cbc04469fdb8a7d8332dac7e509f65634962f
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 9007199254740992.0
+    suppress_inherited_from: true
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    producer: producer_7ccfcbfa24751c05
+    context: context_9a9f2208f9c925d7
+    request: 5fa9e22ecf43dede4bde2e9b7a48e6db04bcfe3b22804659f70f4fb6f6789b01
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: -9007199254740992.0
+    suppress_inherited_from: true
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    producer: producer_7ccfcbfa24751c05
+    context: context_167087524ce4155d
+    request: 62672f7824103193888f5e1a435eb6a31e7d2bda5169028162fecb89d81989a5
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 42.5
+    suppress_inherited_from: true
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    producer: producer_7ccfcbfa24751c05
+    context: context_4b60ad3161e6def9
+    request: 1f55d717b9c6d2c327b75d5e53ab6caacbec0c154526474276dc70a0d687cc14
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 9007199254740994.0
+    suppress_inherited_from: true
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    producer: producer_7ccfcbfa24751c05
+    context: context_91a5fe21fd46b27c
+    request: a23aca012790832b802bbcedf6dc9849b2a248f4bed2f5a53a7876d908673243
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 9007199254740992.0
+    suppress_inherited_from: true
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    producer: producer_7ccfcbfa24751c05
+    context: context_4b60ad3161e6def9
+    request: 6da53d0a1ea1d221c5bc7331880ce541d8fb33030af7ca5bf9e3da0e6c840438
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 9007199254740994.0
+    suppress_inherited_from: true
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    producer: producer_7ccfcbfa24751c05
+    context: context_44ee1175f8910ab7
+    request: 164f8d3fe71b2188715324b6dfbd3767d0e957925abe0fbd62561839097d1c94
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          value: 0.1
+    suppress_inherited_from: true
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    producer: producer_7ccfcbfa24751c05
+    context: context_fb6d8a2526faeb60
+    request: f0d009ea3918ea08d7f2259052c170ab2c829d8b9080a8529c7f066652044c2c
+    output:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments:
+          nested:
+            fraction: 9007199254740992.0
+            tiny: 0.0
+          values:
+          - 9007199254740993
+          - -9007199254740993
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    producer: producer_7ccfcbfa24751c05
+    context: context_18eb6c334c5b4f58
+    request: 6ecb42d151bf853cf9ad5fd8c8753c35394323be66a0e239140fe6cd882dfcbd
+    output:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments:
+          city: Paris
+          value: 1.5
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    producer: producer_7ccfcbfa24751c05
+    context: context_95a91ef9e6cd1fdd
+    request: 4cd7dce28efc35f96ae850568a1bc8ee272620740d98fd6cbbf88390a525d437
+    output:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    producer: producer_7ccfcbfa24751c05
+    context: context_42902d53d794f82a
+    request: 1d31ae512de02dbb3770dd4ba6bda84fdfab47a1fc348eca6b4d6f30542304af
+    output:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+    suppress_inherited_from: true
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    producer: producer_7ccfcbfa24751c05
+    context: context_94f1890fb0bb513b
+    request: 14814669e0604451b9439bbfe0f2a7c098cffa386ac42dcc1061bf3f2250f743
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+            s: </atem:parameter>
+    suppress_inherited_from: true
   arg_string_null:
     case_key: arg_string_null
     context: context_9e440b1d84eb9443
@@ -17085,6 +17436,18 @@ records:
     case_key: arg_string_null_enum
     context: context_b1376141f7e78b88
     request: df07054d5ef7ae2aa8db0de302f31920e567e5cc55013766d08acdb9cf333073
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+    suppress_inherited_from: true
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    producer: producer_7ccfcbfa24751c05
+    context: context_44d9af18e6b973a6
+    request: f914471a8e68e357d8668ca8b8e6f8eff0952456d3159d5d43724468b3082d68
     output:
       assembled:
       - kind: tool_call
@@ -17147,6 +17510,82 @@ records:
         arguments:
           city: São Paulo 東京
     suppress_inherited_from: true
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    producer: producer_7ccfcbfa24751c05
+    context: context_8bad63c118a4f7f7
+    request: 4af0cf57621203250bdc86503932a4e2bcf827c0f766a4e50f340e4ba485e21a
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+    suppress_inherited_from: true
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    producer: producer_7ccfcbfa24751c05
+    context: context_af5d9f2b0476650f
+    request: 32363aee3be043e01ec13e8687e458da921dd096e1ad031ea09743d79c64a887
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+    suppress_inherited_from: true
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    producer: producer_7ccfcbfa24751c05
+    context: context_3cd88f0faa8ca0f6
+    request: 4f6ef07f0685fdaa8dc3bf1fe413593ebfbb26e6c89fe8ec53489ecf602d2145
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+    suppress_inherited_from: true
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    producer: producer_7ccfcbfa24751c05
+    context: context_3cd88f0faa8ca0f6
+    request: 8539832b34c2482096b834f7c756a451c795405a6e8abd06dc80c6e3e45d4851
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+    suppress_inherited_from: true
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    producer: producer_7ccfcbfa24751c05
+    context: context_81c11dab9696168d
+    request: a72c397bfc1cecaf399b9111aa3ad67208797a12320198a4ae8dd9566087e168
+    output:
+      assembled:
+      - kind: text
+        text: Pressing it now.
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+    suppress_inherited_from: true
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    producer: producer_7ccfcbfa24751c05
+    context: context_dcf75eab65ecc31b
+    request: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
+    output:
+      assembled: []
+    suppress_inherited_from: true
   conditional_schema_number_types:
     case_key: conditional_schema_number_types
     context: context_1dcbfd46855d82ce
@@ -17184,6 +17623,71 @@ records:
         name: get_weather
         arguments:
           city: Paris
+    suppress_inherited_from: true
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: deepseek_v41_mixed_control_text_in_string
+    producer: producer_7ccfcbfa24751c05
+    context: context_77f5ff9dc846dc01
+    request: b144d713da4863735c48eb48c3fbd60dd485922569bf578dcb6681e36d1768f5
+    output:
+      assembled:
+      - kind: reasoning
+        text: quoted
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '  <tool_call>'
+    suppress_inherited_from: true
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    producer: producer_7ccfcbfa24751c05
+    context: context_5e63e9ff10fb7186
+    request: d82c8f3e1463f943107b1d1aaebb2311895cf592e479d79537491e838c06a39b
+    output:
+      assembled:
+      - kind: tool_call
+        name: a.b
+        arguments: {}
+    suppress_inherited_from: true
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    producer: producer_7ccfcbfa24751c05
+    context: context_c87df4cfac228b3c
+    request: d9ab3010f411504e00d4bf6a0ae2cd3cb3ba6e0f2bb79cd1dd8b632f59699dca
+    output:
+      assembled:
+      - kind: tool_call
+        name: my-tool.v2
+        arguments:
+          location: Beijing
+    suppress_inherited_from: true
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    producer: producer_7ccfcbfa24751c05
+    context: context_0ea7648c991fe963
+    request: eb6cc9f165568440e0e8031342655d42b5448f237957b286441ca2bd87c4b522
+    output:
+      assembled:
+      - kind: tool_call
+        name: server.tools.weather
+        arguments:
+          location: Beijing
+    suppress_inherited_from: true
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    producer: producer_7ccfcbfa24751c05
+    context: context_e550db089227231c
+    request: 6b86dd5bb09326bbee451f48011381603bbc9b3687e2d619bffe47bc31505054
+    output:
+      assembled:
+      - kind: tool_call
+        name: server.weather
+        arguments:
+          location: Beijing
+      - kind: tool_call
+        name: server.time
+        arguments:
+          timezone: Asia/Shanghai
     suppress_inherited_from: true
   empty_args:
     case_key: empty_args
@@ -17262,6 +17766,29 @@ records:
           flag: true
           narrowed: 42
     suppress_inherited_from: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    producer: producer_7ccfcbfa24751c05
+    context: context_027fb21746d5ea1c
+    request: e8299bfdd877d96f8728c4d4e50066276f5c99528792e89df1e75470c9ba6ee5
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2
+    suppress_inherited_from: true
+  guided_json_after_reasoning:
+    case_key: guided_json_after_reasoning
+    producer: producer_7ccfcbfa24751c05
+    request: 926ec0bab6be34b0b5ab9793df6fd88b2449421dc38834434a6735bcc6bcd43f
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
   guided_json_array_argument:
     case_key: guided_json_array_argument
     context: context_81ad27d69b5bb6e5
@@ -17270,10 +17797,42 @@ records:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
     suppress_inherited_from: true
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    case_key: guided_json_bare_tool_header_recovers_inside_a_thought
+    producer: producer_7ccfcbfa24751c05
+    request: 5e01047d7b58cb7978f13a2d3b90683192df1a5cad8bb2f97ceec57d1699e073
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
   guided_json_escaped_string_args:
     case_key: guided_json_escaped_string_args
     context: context_0742a56cb31e8291
     request: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_bare_opener:
+    case_key: guided_json_gt_in_argument_bare_opener
+    producer: producer_7ccfcbfa24751c05
+    request: 74200eaa2143286b7af3cd6bb6683f63f19ddeccbcf60d58ab5f04e1e72e5905
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_trailing_close:
+    case_key: guided_json_gt_in_argument_trailing_close
+    producer: producer_7ccfcbfa24751c05
+    request: 904fd37c157b376aa4e20af758b8a6149525c71bf6036f3992b260cd354d6abe
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_wrapped:
+    case_key: guided_json_gt_in_argument_wrapped
+    producer: producer_7ccfcbfa24751c05
+    request: 105061c824a0d125ba875888de6d84995ace7c0d829ada46d34b180bd64929ff
     unavailable:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
@@ -17302,10 +17861,50 @@ records:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
     suppress_inherited_from: true
+  guided_json_marker_inside_argument:
+    case_key: guided_json_marker_inside_argument
+    producer: producer_7ccfcbfa24751c05
+    request: 415915c4d1a92b5b73e3bb98b9e8896b6f420a2015acd029b98669c361e5cde2
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
   guided_json_named_tool:
     case_key: guided_json_named_tool
     context: context_88ade1a727728537
     request: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_narrated_invoke_in_reasoning:
+    case_key: guided_json_narrated_invoke_in_reasoning
+    producer: producer_7ccfcbfa24751c05
+    request: 3b7517bedb718cfdbfd479bc6c7e7df26ed14baa6bf70a6b5240a1664eb5c71b
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: guided_json_narrated_prefix_inside_reasoning
+    producer: producer_7ccfcbfa24751c05
+    request: 8d44c05482e47e356e9a664176aa8e669b712815a17111b9b4eb251290c39bdc
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_orphan_reason_close_before_payload:
+    case_key: guided_json_orphan_reason_close_before_payload
+    producer: producer_7ccfcbfa24751c05
+    request: faca4256f43a498be803e27d06cdf74904acfa52ab93706229dfa4defe3649d7
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_orphan_tool_close_before_payload:
+    case_key: guided_json_orphan_tool_close_before_payload
+    producer: producer_7ccfcbfa24751c05
+    request: f6f2f5e1a6abb08368fb27547973142b40fe1a2be2a93f25292c592f51318596
     unavailable:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
@@ -17318,6 +17917,30 @@ records:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
     suppress_inherited_from: true
+  guided_json_prose_before_reasoning:
+    case_key: guided_json_prose_before_reasoning
+    producer: producer_7ccfcbfa24751c05
+    request: 4b8d866f33dac0207b0ba618ee86a2908f66b3ce747c8ace414f3ff65f923e3d
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_quoted_bare_header_after_payload:
+    case_key: guided_json_quoted_bare_header_after_payload
+    producer: producer_7ccfcbfa24751c05
+    request: 48ce062fd453ab21870d952820bc4297a339cfef1d7e4d728fff7e58dc6834d4
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_quoted_bare_header_in_answer:
+    case_key: guided_json_quoted_bare_header_in_answer
+    producer: producer_7ccfcbfa24751c05
+    request: 3b31c44f5a50864b065a4469b3da131afcb45d3b745a3e65f5f7a18eb4ea2162
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
   guided_json_required_tool:
     case_key: guided_json_required_tool
     context: context_bedb0c97cc0b5fc5
@@ -17326,10 +17949,154 @@ records:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
     suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: guided_json_schema_error_nameless_element_bare_opener
+    producer: producer_7ccfcbfa24751c05
+    request: 202f18ac4049a59e837b75c86e4f75a00e04e253041c189e9943e4968a8602e5
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_trailing_close:
+    case_key: guided_json_schema_error_nameless_element_trailing_close
+    producer: producer_7ccfcbfa24751c05
+    request: 47809632bc5124a031a97c920ed2b70c9df895ebbe53c287c4369b30cb4fd65b
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_wrapped:
+    case_key: guided_json_schema_error_nameless_element_wrapped
+    producer: producer_7ccfcbfa24751c05
+    request: 694188b65b9025c3aebf04e1c352ddf2b57a9b8016d353491d4c20e2239111f7
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: guided_json_schema_error_not_a_call_bare_opener
+    producer: producer_7ccfcbfa24751c05
+    request: 8523c6b8a1336e81636aef8a28d15009ad1058c2e553260f483cb0b7b1139670
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_trailing_close:
+    case_key: guided_json_schema_error_not_a_call_trailing_close
+    producer: producer_7ccfcbfa24751c05
+    request: 0fc97e495f816f6d498685aacc537583ea98be5f011566075d79ad223f67c5d4
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_wrapped:
+    case_key: guided_json_schema_error_not_a_call_wrapped
+    producer: producer_7ccfcbfa24751c05
+    request: 1965de5b7d80dcb3d14d9bc823adf5fbca51882adea0aabe209eea2fcf262535
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_stray_prefix_before_reasoning:
+    case_key: guided_json_stray_prefix_before_reasoning
+    producer: producer_7ccfcbfa24751c05
+    request: 3616b4075762cf4e45bced9de77bf4fc9cec2ef331324014506fbce6e2e4dc67
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_syntax_error_bare_opener:
+    case_key: guided_json_syntax_error_bare_opener
+    producer: producer_7ccfcbfa24751c05
+    request: 741cb20c596d8c5268ba2adfba6e6605b132507938d7d7fba8ebe448b5602cb6
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_syntax_error_trailing_close:
+    case_key: guided_json_syntax_error_trailing_close
+    producer: producer_7ccfcbfa24751c05
+    request: de3bdf4e582f6d08add49e6cb5a6c40dfa50b30c58739391b5883cf503810408
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_syntax_error_wrapped:
+    case_key: guided_json_syntax_error_wrapped
+    producer: producer_7ccfcbfa24751c05
+    request: 9af82e39fbd9bc56e0ae1d4cfaa1d4fe765cd55a06c8006ae2b35810ff72aeec
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_tool_close_after_payload:
+    case_key: guided_json_tool_close_after_payload
+    producer: producer_7ccfcbfa24751c05
+    request: 00472ac95fe7cd9343a86268612ba22fc05735087582f26db389a64a17c3aaa8
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_tool_open_before_payload:
+    case_key: guided_json_tool_open_before_payload
+    producer: producer_7ccfcbfa24751c05
+    request: fbe10fab8fa5bed873465d9cb12e1b98f93ac2d229f88a739c783ea1c870ea4c
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
   guided_json_two_calls:
     case_key: guided_json_two_calls
     context: context_88a4331bdf7ff8fe
     request: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: guided_json_unterminated_reasoning_then_wrapped_payload
+    producer: producer_7ccfcbfa24751c05
+    request: f75d5b41d68123a8829d1ed1d3c5cce6a360467643ccf3d14b0f6243546c0152
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_json_wrapped_in_tool_markup:
+    case_key: guided_json_wrapped_in_tool_markup
+    producer: producer_7ccfcbfa24751c05
+    request: 7b72c9553144b1c3c6a5b88d562c85ec1537b0c92ab9f5b9da003cea13b7be5e
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_quoted_reasoning_closer_named:
+    case_key: guided_quoted_reasoning_closer_named
+    producer: producer_7ccfcbfa24751c05
+    request: 811ecae9f5443ca6d909b5e2f0256ba0f8325f47937e8822e2256c74854e2ad5
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_quoted_reasoning_closer_required:
+    case_key: guided_quoted_reasoning_closer_required
+    producer: producer_7ccfcbfa24751c05
+    request: 31b18954f7555a4319f2bd259fe526a6c41e238ed7b0609575fc743476da0ae9
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_response_quoted_control_braces_named:
+    case_key: guided_response_quoted_control_braces_named
+    producer: producer_7ccfcbfa24751c05
+    request: 58dbbb6a79a88e84aaf560cdadbe9a431ed4d7286fa2515f09aaef00103c87eb
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  guided_response_quoted_control_braces_required:
+    case_key: guided_response_quoted_control_braces_required
+    producer: producer_7ccfcbfa24751c05
+    request: cd922bbbe458ce5ff1f5a0d396e453c427549aa411e2defd5f9168b148925572
     unavailable:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
@@ -17380,11 +18147,79 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
+    suppress_inherited_from: true
+  native_quoted_control_in_reasoning:
+    case_key: native_quoted_control_in_reasoning
+    producer: producer_7ccfcbfa24751c05
+    context: context_b51b11ffa6042bac
+    request: c158e45c7d1e75c1fd3c1bc72b5308397e1f28b5f638d611272a8577e50f5f12
+    output:
+      assembled:
+      - kind: reasoning
+        text: The literal "<tool_call>" marker is part of the explanation.
+    suppress_inherited_from: true
+  native_quoted_control_in_response:
+    case_key: native_quoted_control_in_response
+    producer: producer_7ccfcbfa24751c05
+    request: 0b4e64bbdadf85e8453873db0dd524cb701862f0f52a4b5212e2ac1e6d315cb4
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  native_quoted_control_then_call:
+    case_key: native_quoted_control_then_call
+    producer: producer_7ccfcbfa24751c05
+    request: fdc55d0e66183e926003b2aba3a5e5293983789b544ee25be817229a1d2d787d
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  native_quoted_incomplete_header:
+    case_key: native_quoted_incomplete_header
+    producer: producer_7ccfcbfa24751c05
+    request: ece4ccbc2407874cf8e7fecb79949096468724f7cf2b781da7ff3025647c6338
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  native_single_quote_contraction_reasoning:
+    case_key: native_single_quote_contraction_reasoning
+    producer: producer_7ccfcbfa24751c05
+    context: context_1fc24df8c396eacf
+    request: 175a199302a698e7509fb9894a62b059deacf0954dbb1a4c0d2b5725f13abf65
+    output:
+      assembled:
+      - kind: reasoning
+        text: The literal 'doesn't <tool_call> marker' stays quoted.
+    suppress_inherited_from: true
+  native_single_quote_contraction_response:
+    case_key: native_single_quote_contraction_response
+    producer: producer_7ccfcbfa24751c05
+    request: 4d8c02203439e30bafd740f4914252907e1d089304b43a74c06832fc28d745ac
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  native_single_quoted_word_control:
+    case_key: native_single_quoted_word_control
+    producer: producer_7ccfcbfa24751c05
+    request: 8612c79e88d278e9875ccf9de5ab4a6ec1296a2d31a5c9f61738d1741b198b91
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  native_unmatched_quote_then_call:
+    case_key: native_unmatched_quote_then_call
+    producer: producer_7ccfcbfa24751c05
+    request: b65d24c715b7131b37a553a458caa5163bfc0ea71d58ac54717a9e288121d582
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
     suppress_inherited_from: true
   not_keyword_type_complement:
     case_key: not_keyword_type_complement
@@ -17396,7 +18231,7 @@ records:
         name: capture_payload
         arguments:
           count: -2500
-          text: '42'
+          text: "42"
     suppress_inherited_from: true
   nullable_reference_alias_literals:
     case_key: nullable_reference_alias_literals
@@ -17409,6 +18244,16 @@ records:
         arguments:
           const_text: 'null'
           enum_text: 'null'
+    suppress_inherited_from: true
+  orphan_close_after_prose:
+    case_key: orphan_close_after_prose
+    producer: producer_7ccfcbfa24751c05
+    context: context_bc3c7a0429197dd5
+    request: 7f69fedfa7141427c8c2641c848922c207e1572a255ad65df78bd20f86dd3ea6
+    output:
+      assembled:
+      - kind: text
+        text: I will check that.
     suppress_inherited_from: true
   prefilled_reasoning_redundant_opener:
     case_key: prefilled_reasoning_redundant_opener
@@ -17489,6 +18334,134 @@ records:
       code: unsupported_request_mode
       detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
     suppress_inherited_from: true
+  quoted_name_backtick_nonpossessive_s_name:
+    case_key: quoted_name_backtick_nonpossessive_s_name
+    producer: producer_7ccfcbfa24751c05
+    context: context_c3fa6ac9300ee0d2
+    request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s_name'
+      - kind: text
+        text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+    suppress_inherited_from: true
+  quoted_name_backtick_nonpossessive_some:
+    case_key: quoted_name_backtick_nonpossessive_some
+    producer: producer_7ccfcbfa24751c05
+    context: context_dfe3c6bb684516f6
+    request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''some'
+      - kind: text
+        text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+    suppress_inherited_from: true
+  quoted_name_backtick_possessive_guided:
+    case_key: quoted_name_backtick_possessive_guided
+    producer: producer_7ccfcbfa24751c05
+    request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  quoted_name_backtick_possessive_reasoning:
+    case_key: quoted_name_backtick_possessive_reasoning
+    producer: producer_7ccfcbfa24751c05
+    context: context_e94d289630cda702
+    request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
+      - kind: text
+        text: I've found the bug in `app.py`.
+    suppress_inherited_from: true
+  quoted_name_backtick_possessive_then_call:
+    case_key: quoted_name_backtick_possessive_then_call
+    producer: producer_7ccfcbfa24751c05
+    context: context_f6620cd4470115ff
+    request: 296028de9623c0ad71ff967d2982cb4240ce7eea0dbece0fa97a2d1cb17ec02c
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+    suppress_inherited_from: true
+  quoted_name_double_quote_nonpossessive_s_name:
+    case_key: quoted_name_double_quote_nonpossessive_s_name
+    producer: producer_7ccfcbfa24751c05
+    context: context_7ff047e566e7838c
+    request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s_name'
+      - kind: text
+        text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+    suppress_inherited_from: true
+  quoted_name_double_quote_nonpossessive_some:
+    case_key: quoted_name_double_quote_nonpossessive_some
+    producer: producer_7ccfcbfa24751c05
+    context: context_75533eaba27fcb6c
+    request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''some'
+      - kind: text
+        text: 'marker'' stays quoted.
+
+
+          I''ve found the bug in `app.py`.'
+    suppress_inherited_from: true
+  quoted_name_double_quote_possessive_guided:
+    case_key: quoted_name_double_quote_possessive_guided
+    producer: producer_7ccfcbfa24751c05
+    request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  quoted_name_double_quote_possessive_reasoning:
+    case_key: quoted_name_double_quote_possessive_reasoning
+    producer: producer_7ccfcbfa24751c05
+    context: context_c48cbc0df624a0b7
+    request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
+      - kind: text
+        text: I've found the bug in `app.py`.
+    suppress_inherited_from: true
+  quoted_name_double_quote_possessive_then_call:
+    case_key: quoted_name_double_quote_possessive_then_call
+    producer: producer_7ccfcbfa24751c05
+    context: context_7fa1909fcd9a3ceb
+    request: c4f87691a05fe54e74d87977e016bcefde9f3ac7f0dbb953c6602fb680e946fc
+    output:
+      assembled:
+      - kind: reasoning
+        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+    suppress_inherited_from: true
   reason_after_tool:
     case_key: reason_after_tool
     context: context_2259fcdf32520ea0
@@ -17513,11 +18486,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   reason_interleaved:
     case_key: reason_interleaved
@@ -17530,11 +18503,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   reason_markup_in_arg:
     case_key: reason_markup_in_arg
@@ -17608,11 +18581,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   reason_tool_text_reason_tool:
     case_key: reason_tool_text_reason_tool
@@ -17625,11 +18598,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   reason_unterminated:
     case_key: reason_unterminated
@@ -17845,7 +18818,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_const_number_bare:
     case_key: schema_const_number_bare
@@ -17856,7 +18829,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_const_number_ref:
     case_key: schema_const_number_ref
@@ -17867,7 +18840,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_const_number_typed:
     case_key: schema_const_number_typed
@@ -17878,7 +18851,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_const_numeric_bare:
     case_key: schema_const_numeric_bare
@@ -18244,7 +19217,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_escaped_ref_const:
     case_key: schema_escaped_ref_const
@@ -18277,7 +19250,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_intersection_anyOf:
     case_key: schema_intersection_anyOf
@@ -18343,7 +19316,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_ref_sibling_integer:
     case_key: schema_ref_sibling_integer
@@ -18431,7 +19404,7 @@ records:
       - kind: tool_call
         name: schema_probe
         arguments:
-          value: '42'
+          value: "42"
     suppress_inherited_from: true
   schema_union_anyOf_array_reverse_string:
     case_key: schema_union_anyOf_array_reverse_string
@@ -18995,11 +19968,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   text_only:
     case_key: text_only
@@ -19023,11 +19996,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   text_sandwich:
     case_key: text_sandwich
@@ -19041,6 +20014,36 @@ records:
         name: get_weather
         arguments:
           city: Paris
+    suppress_inherited_from: true
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    producer: producer_7ccfcbfa24751c05
+    request: 77b5ef3daa522aa40b289d358b919625131dd9503c4eed127b714ec12fd219f1
+    unavailable:
+      code: unsupported_request_mode
+      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+    suppress_inherited_from: true
+  tool_block_never_closed_then_text:
+    case_key: tool_block_never_closed_then_text
+    producer: producer_7ccfcbfa24751c05
+    context: context_dcf75eab65ecc31b
+    request: 7c95bc8699388be8819d5d9826899a20677ba3e91c1c8d9e7b2c85c9603b1e5b
+    output:
+      assembled: []
+    suppress_inherited_from: true
+  tool_call_ids_unique:
+    case_key: tool_call_ids_unique
+    producer: producer_9c63442047be607a
+    context: context_be6ee8e7c857be50
+    request: 12f0df0db8ad09ba1d8a76468eab9260acdd4e9b45ae560286db665123c911c4
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city":"Paris"}'
     suppress_inherited_from: true
   tool_in_reason:
     case_key: tool_in_reason
@@ -19061,6 +20064,26 @@ records:
         text: <tool_call>{"name":"get_weather","arguments":{"city":"Paris"}}</tool_call>
       - kind: text
         text: beforeafter
+    suppress_inherited_from: true
+  tool_markup_only_emits_nothing:
+    case_key: tool_markup_only_emits_nothing
+    producer: producer_7ccfcbfa24751c05
+    context: context_dcf75eab65ecc31b
+    request: 60bb71191675b3466938b0d36a570a18afdf96706e66f742dcd81e29a3587e5d
+    output:
+      assembled: []
+    suppress_inherited_from: true
+  tool_no_close:
+    case_key: tool_no_close
+    producer: producer_7ccfcbfa24751c05
+    context: context_3cd88f0faa8ca0f6
+    request: 8964bedde8872b3850f3d08e17cdf76b0e0a2bd4e54d2ef73f85bd69e29a61e3
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
     suppress_inherited_from: true
   tool_only:
     case_key: tool_only
@@ -19113,11 +20136,11 @@ records:
       - kind: tool_call
         name: f
         arguments:
-          x: '1'
+          x: "1"
       - kind: tool_call
         name: g
         arguments:
-          y: '2'
+          y: "2"
     suppress_inherited_from: true
   two_calls_same_name:
     case_key: two_calls_same_name
@@ -19158,916 +20181,6 @@ records:
           flag: false
           text: 'null'
     suppress_inherited_from: true
-  gpt_oss_multiple_unknown_and_empty_tools:
-    case_key: gpt_oss_multiple_unknown_and_empty_tools
-    producer: producer_7ccfcbfa24751c05
-    context: context_027fb21746d5ea1c
-    request: e8299bfdd877d96f8728c4d4e50066276f5c99528792e89df1e75470c9ba6ee5
-    output:
-      assembled:
-      - kind: tool_call
-        name: run
-        arguments: {}
-      - kind: tool_call
-        name: not_offered
-        arguments:
-          x: 2
-    suppress_inherited_from: true
-  arg_marker_in_string:
-    case_key: arg_marker_in_string
-    producer: producer_7ccfcbfa24751c05
-    context: context_d594e7fa994cd97f
-    request: 76a323ddbdaf91f7d7a13ec01bae7c3f9ae395ca6afe44e95dcb722e98a3b1e8
-    output:
-      assembled:
-      - kind: tool_call
-        name: run
-        arguments:
-          cmd: git log
-    suppress_inherited_from: true
-  orphan_close_after_prose:
-    case_key: orphan_close_after_prose
-    producer: producer_7ccfcbfa24751c05
-    context: context_bc3c7a0429197dd5
-    request: 7f69fedfa7141427c8c2641c848922c207e1572a255ad65df78bd20f86dd3ea6
-    output:
-      assembled:
-      - kind: text
-        text: I will check that.
-    suppress_inherited_from: true
-  tool_no_close:
-    case_key: tool_no_close
-    producer: producer_7ccfcbfa24751c05
-    context: context_3cd88f0faa8ca0f6
-    request: 8964bedde8872b3850f3d08e17cdf76b0e0a2bd4e54d2ef73f85bd69e29a61e3
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-    suppress_inherited_from: true
-  guided_json_after_reasoning:
-    case_key: guided_json_after_reasoning
-    producer: producer_7ccfcbfa24751c05
-    request: 926ec0bab6be34b0b5ab9793df6fd88b2449421dc38834434a6735bcc6bcd43f
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_marker_inside_argument:
-    case_key: guided_json_marker_inside_argument
-    producer: producer_7ccfcbfa24751c05
-    request: 415915c4d1a92b5b73e3bb98b9e8896b6f420a2015acd029b98669c361e5cde2
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_tool_open_before_payload:
-    case_key: guided_json_tool_open_before_payload
-    producer: producer_7ccfcbfa24751c05
-    request: fbe10fab8fa5bed873465d9cb12e1b98f93ac2d229f88a739c783ea1c870ea4c
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_tool_close_after_payload:
-    case_key: guided_json_tool_close_after_payload
-    producer: producer_7ccfcbfa24751c05
-    request: 00472ac95fe7cd9343a86268612ba22fc05735087582f26db389a64a17c3aaa8
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_wrapped_in_tool_markup:
-    case_key: guided_json_wrapped_in_tool_markup
-    producer: producer_7ccfcbfa24751c05
-    request: 7b72c9553144b1c3c6a5b88d562c85ec1537b0c92ab9f5b9da003cea13b7be5e
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_narrated_invoke_in_reasoning:
-    case_key: guided_json_narrated_invoke_in_reasoning
-    producer: producer_7ccfcbfa24751c05
-    request: 3b7517bedb718cfdbfd479bc6c7e7df26ed14baa6bf70a6b5240a1664eb5c71b
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_prose_before_reasoning:
-    case_key: guided_json_prose_before_reasoning
-    producer: producer_7ccfcbfa24751c05
-    request: 4b8d866f33dac0207b0ba618ee86a2908f66b3ce747c8ace414f3ff65f923e3d
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_orphan_reason_close_before_payload:
-    case_key: guided_json_orphan_reason_close_before_payload
-    producer: producer_7ccfcbfa24751c05
-    request: faca4256f43a498be803e27d06cdf74904acfa52ab93706229dfa4defe3649d7
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_orphan_tool_close_before_payload:
-    case_key: guided_json_orphan_tool_close_before_payload
-    producer: producer_7ccfcbfa24751c05
-    request: f6f2f5e1a6abb08368fb27547973142b40fe1a2be2a93f25292c592f51318596
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: deepseek_v41_mixed_control_text_in_string
-    producer: producer_7ccfcbfa24751c05
-    context: context_77f5ff9dc846dc01
-    request: b144d713da4863735c48eb48c3fbd60dd485922569bf578dcb6681e36d1768f5
-    output:
-      assembled:
-      - kind: reasoning
-        text: quoted
-      - kind: tool_call
-        name: f
-        arguments:
-          x: '  <tool_call>'
-    suppress_inherited_from: true
-  guided_json_syntax_error_trailing_close:
-    case_key: guided_json_syntax_error_trailing_close
-    producer: producer_7ccfcbfa24751c05
-    request: de3bdf4e582f6d08add49e6cb5a6c40dfa50b30c58739391b5883cf503810408
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_syntax_error_wrapped:
-    case_key: guided_json_syntax_error_wrapped
-    producer: producer_7ccfcbfa24751c05
-    request: 9af82e39fbd9bc56e0ae1d4cfaa1d4fe765cd55a06c8006ae2b35810ff72aeec
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_syntax_error_bare_opener:
-    case_key: guided_json_syntax_error_bare_opener
-    producer: producer_7ccfcbfa24751c05
-    request: 741cb20c596d8c5268ba2adfba6e6605b132507938d7d7fba8ebe448b5602cb6
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_schema_error_not_a_call_trailing_close:
-    case_key: guided_json_schema_error_not_a_call_trailing_close
-    producer: producer_7ccfcbfa24751c05
-    request: 0fc97e495f816f6d498685aacc537583ea98be5f011566075d79ad223f67c5d4
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_schema_error_not_a_call_wrapped:
-    case_key: guided_json_schema_error_not_a_call_wrapped
-    producer: producer_7ccfcbfa24751c05
-    request: 1965de5b7d80dcb3d14d9bc823adf5fbca51882adea0aabe209eea2fcf262535
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_schema_error_not_a_call_bare_opener:
-    case_key: guided_json_schema_error_not_a_call_bare_opener
-    producer: producer_7ccfcbfa24751c05
-    request: 8523c6b8a1336e81636aef8a28d15009ad1058c2e553260f483cb0b7b1139670
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_schema_error_nameless_element_trailing_close:
-    case_key: guided_json_schema_error_nameless_element_trailing_close
-    producer: producer_7ccfcbfa24751c05
-    request: 47809632bc5124a031a97c920ed2b70c9df895ebbe53c287c4369b30cb4fd65b
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_schema_error_nameless_element_wrapped:
-    case_key: guided_json_schema_error_nameless_element_wrapped
-    producer: producer_7ccfcbfa24751c05
-    request: 694188b65b9025c3aebf04e1c352ddf2b57a9b8016d353491d4c20e2239111f7
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_schema_error_nameless_element_bare_opener:
-    case_key: guided_json_schema_error_nameless_element_bare_opener
-    producer: producer_7ccfcbfa24751c05
-    request: 202f18ac4049a59e837b75c86e4f75a00e04e253041c189e9943e4968a8602e5
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_gt_in_argument_trailing_close:
-    case_key: guided_json_gt_in_argument_trailing_close
-    producer: producer_7ccfcbfa24751c05
-    request: 904fd37c157b376aa4e20af758b8a6149525c71bf6036f3992b260cd354d6abe
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_gt_in_argument_wrapped:
-    case_key: guided_json_gt_in_argument_wrapped
-    producer: producer_7ccfcbfa24751c05
-    request: 105061c824a0d125ba875888de6d84995ace7c0d829ada46d34b180bd64929ff
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_gt_in_argument_bare_opener:
-    case_key: guided_json_gt_in_argument_bare_opener
-    producer: producer_7ccfcbfa24751c05
-    request: 74200eaa2143286b7af3cd6bb6683f63f19ddeccbcf60d58ab5f04e1e72e5905
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  tool_markup_only_emits_nothing:
-    case_key: tool_markup_only_emits_nothing
-    producer: producer_7ccfcbfa24751c05
-    context: context_dcf75eab65ecc31b
-    request: 60bb71191675b3466938b0d36a570a18afdf96706e66f742dcd81e29a3587e5d
-    output:
-      assembled: []
-    suppress_inherited_from: true
-  tool_block_never_closed_then_text:
-    case_key: tool_block_never_closed_then_text
-    producer: producer_7ccfcbfa24751c05
-    context: context_dcf75eab65ecc31b
-    request: 7c95bc8699388be8819d5d9826899a20677ba3e91c1c8d9e7b2c85c9603b1e5b
-    output:
-      assembled: []
-    suppress_inherited_from: true
-  guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: guided_json_unterminated_reasoning_then_wrapped_payload
-    producer: producer_7ccfcbfa24751c05
-    request: f75d5b41d68123a8829d1ed1d3c5cce6a360467643ccf3d14b0f6243546c0152
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_quoted_bare_header_in_answer:
-    case_key: guided_json_quoted_bare_header_in_answer
-    producer: producer_7ccfcbfa24751c05
-    request: 3b31c44f5a50864b065a4469b3da131afcb45d3b745a3e65f5f7a18eb4ea2162
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_quoted_bare_header_after_payload:
-    case_key: guided_json_quoted_bare_header_after_payload
-    producer: producer_7ccfcbfa24751c05
-    request: 48ce062fd453ab21870d952820bc4297a339cfef1d7e4d728fff7e58dc6834d4
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: guided_json_bare_tool_header_recovers_inside_a_thought
-    producer: producer_7ccfcbfa24751c05
-    request: 5e01047d7b58cb7978f13a2d3b90683192df1a5cad8bb2f97ceec57d1699e073
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_stray_prefix_before_reasoning:
-    case_key: guided_json_stray_prefix_before_reasoning
-    producer: producer_7ccfcbfa24751c05
-    request: 3616b4075762cf4e45bced9de77bf4fc9cec2ef331324014506fbce6e2e4dc67
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_json_narrated_prefix_inside_reasoning:
-    case_key: guided_json_narrated_prefix_inside_reasoning
-    producer: producer_7ccfcbfa24751c05
-    request: 8d44c05482e47e356e9a664176aa8e669b712815a17111b9b4eb251290c39bdc
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  adjacent_calls_partial_header:
-    case_key: adjacent_calls_partial_header
-    producer: producer_7ccfcbfa24751c05
-    request: 1e83cc6205f620d8d22a3169475164f9ee2f29f13c8758c33123e9cb185f4c6b
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  three_calls_partial_header:
-    case_key: three_calls_partial_header
-    producer: producer_7ccfcbfa24751c05
-    request: 77b5ef3daa522aa40b289d358b919625131dd9503c4eed127b714ec12fd219f1
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  arg_json_null_ref:
-    case_key: arg_json_null_ref
-    producer: producer_7ccfcbfa24751c05
-    context: context_c6f5cbd1c284fe4d
-    request: d775b5e6478ede529cfda91861ff760f5740771c95095e730fe79a17bcb25718
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: null
-    suppress_inherited_from: true
-  arg_string_null_ref:
-    case_key: arg_string_null_ref
-    producer: producer_7ccfcbfa24751c05
-    context: context_44d9af18e6b973a6
-    request: f914471a8e68e357d8668ca8b8e6f8eff0952456d3159d5d43724468b3082d68
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: 'null'
-    suppress_inherited_from: true
-  arg_null_mixed_labels:
-    case_key: arg_null_mixed_labels
-    producer: producer_7ccfcbfa24751c05
-    context: context_48a5c4aa239442ac
-    request: 9e89fcc8e98098655649f671dcc5c1519d949f0e246f3814637167240525eca4
-    output:
-      assembled:
-      - kind: tool_call
-        name: set_labels
-        arguments:
-          label: null
-          note: null
-          literal: 'null'
-    suppress_inherited_from: true
-  arg_object_quoted_parameter_close:
-    case_key: arg_object_quoted_parameter_close
-    producer: producer_7ccfcbfa24751c05
-    context: context_94f1890fb0bb513b
-    request: 14814669e0604451b9439bbfe0f2a7c098cffa386ac42dcc1061bf3f2250f743
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments:
-          value:
-            s: </atem:parameter>
-    suppress_inherited_from: true
-  arg_array_quoted_parameter_close:
-    case_key: arg_array_quoted_parameter_close
-    producer: producer_7ccfcbfa24751c05
-    context: context_99a0911275089370
-    request: f5b82ff0e187b01e81a8ae7cbc82f754bc57b59cc68ae934bfc1110368eeea6e
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments:
-          value:
-          - é \" </atem:parameter>
-    suppress_inherited_from: true
-  arg_numeric_14_const_decimal:
-    case_key: arg_numeric_14_const_decimal
-    producer: producer_7ccfcbfa24751c05
-    context: context_25b3f999b5b106d7
-    request: 83a37943771dfef7863ac45109f0ca4a82b0e51862d85f2e4ed5526ad7564f83
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 42.0
-    suppress_inherited_from: true
-  arg_numeric_14_const_exponent:
-    case_key: arg_numeric_14_const_exponent
-    producer: producer_7ccfcbfa24751c05
-    context: context_25b3f999b5b106d7
-    request: f5fd24027d2412efa8aeb0c41e91768240f0a5b07e88cf8de004884a9d7b47ab
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 42.0
-    suppress_inherited_from: true
-  arg_numeric_14_enum_decimal:
-    case_key: arg_numeric_14_enum_decimal
-    producer: producer_7ccfcbfa24751c05
-    context: context_25b3f999b5b106d7
-    request: 86fb8ed21d760aab8e46bc7353b3ac28ca81f293844e182073e1895dfd7074c1
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 42.0
-    suppress_inherited_from: true
-  arg_numeric_14_enum_exponent:
-    case_key: arg_numeric_14_enum_exponent
-    producer: producer_7ccfcbfa24751c05
-    context: context_25b3f999b5b106d7
-    request: bb689e3205c57f4f53eb419050792241a0b9f3b5dafe8ebd90f61d1aba66d33d
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 42.0
-    suppress_inherited_from: true
-  arg_numeric_14_large_decimal:
-    case_key: arg_numeric_14_large_decimal
-    producer: producer_7ccfcbfa24751c05
-    context: context_4b60ad3161e6def9
-    request: e1cd0b42e4addd3b934dbd82dd561ed7cda9969d245c8c74f4f3939163692e22
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 9007199254740994.0
-    suppress_inherited_from: true
-  arg_numeric_14_large_exponent:
-    case_key: arg_numeric_14_large_exponent
-    producer: producer_7ccfcbfa24751c05
-    context: context_91a5fe21fd46b27c
-    request: b1f1c797a3fa4e688013d3ab6eb54d2e3b90a00b472ef6cb5dda0695444b54be
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 9007199254740992.0
-    suppress_inherited_from: true
-  arg_numeric_14_negative:
-    case_key: arg_numeric_14_negative
-    producer: producer_7ccfcbfa24751c05
-    context: context_f64a3974189c0b13
-    request: 40f4cfe083da61def282c66a6fbb8c49b739215cfb9ccfaeee2bfa4222a7cd30
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: -42.0
-    suppress_inherited_from: true
-  arg_numeric_14_negative_exponent:
-    case_key: arg_numeric_14_negative_exponent
-    producer: producer_7ccfcbfa24751c05
-    context: context_25b3f999b5b106d7
-    request: 209018c1c7d22cc593ef970ee1b0d389b6d2b1608b73eead5cf1e25428490b63
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 42.0
-    suppress_inherited_from: true
-  arg_numeric_14_zero_underflow:
-    case_key: arg_numeric_14_zero_underflow
-    producer: producer_7ccfcbfa24751c05
-    context: context_c08051273f8fa361
-    request: a742c3e0f79df51db80b4e17922a54a36bacd866a734046c6dbe0a6d634a9f15
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 0.0
-    suppress_inherited_from: true
-  arg_numeric_15_ordinary:
-    case_key: arg_numeric_15_ordinary
-    producer: producer_7ccfcbfa24751c05
-    context: context_167087524ce4155d
-    request: 62672f7824103193888f5e1a435eb6a31e7d2bda5169028162fecb89d81989a5
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 42.5
-    suppress_inherited_from: true
-  arg_numeric_15_round_down:
-    case_key: arg_numeric_15_round_down
-    producer: producer_7ccfcbfa24751c05
-    context: context_91a5fe21fd46b27c
-    request: a23aca012790832b802bbcedf6dc9849b2a248f4bed2f5a53a7876d908673243
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 9007199254740992.0
-    suppress_inherited_from: true
-  arg_numeric_15_round_up:
-    case_key: arg_numeric_15_round_up
-    producer: producer_7ccfcbfa24751c05
-    context: context_4b60ad3161e6def9
-    request: 6da53d0a1ea1d221c5bc7331880ce541d8fb33030af7ca5bf9e3da0e6c840438
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 9007199254740994.0
-    suppress_inherited_from: true
-  arg_numeric_15_quarter:
-    case_key: arg_numeric_15_quarter
-    producer: producer_7ccfcbfa24751c05
-    context: context_4b60ad3161e6def9
-    request: 1f55d717b9c6d2c327b75d5e53ab6caacbec0c154526474276dc70a0d687cc14
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 9007199254740994.0
-    suppress_inherited_from: true
-  arg_numeric_15_exponent:
-    case_key: arg_numeric_15_exponent
-    producer: producer_7ccfcbfa24751c05
-    context: context_91a5fe21fd46b27c
-    request: 05856afdd5019838f17d3945cf8cbc04469fdb8a7d8332dac7e509f65634962f
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 9007199254740992.0
-    suppress_inherited_from: true
-  arg_numeric_15_small:
-    case_key: arg_numeric_15_small
-    producer: producer_7ccfcbfa24751c05
-    context: context_44ee1175f8910ab7
-    request: 164f8d3fe71b2188715324b6dfbd3767d0e957925abe0fbd62561839097d1c94
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: 0.1
-    suppress_inherited_from: true
-  arg_numeric_15_negative:
-    case_key: arg_numeric_15_negative
-    producer: producer_7ccfcbfa24751c05
-    context: context_9a9f2208f9c925d7
-    request: 5fa9e22ecf43dede4bde2e9b7a48e6db04bcfe3b22804659f70f4fb6f6789b01
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          value: -9007199254740992.0
-    suppress_inherited_from: true
-  arg_numeric_nested_exact:
-    case_key: arg_numeric_nested_exact
-    producer: producer_7ccfcbfa24751c05
-    context: context_fb6d8a2526faeb60
-    request: f0d009ea3918ea08d7f2259052c170ab2c829d8b9080a8529c7f066652044c2c
-    output:
-      assembled:
-      - kind: tool_call
-        name: inspect
-        arguments:
-          nested:
-            fraction: 9007199254740992.0
-            tiny: 0.0
-          values:
-          - 9007199254740993
-          - -9007199254740993
-    suppress_inherited_from: true
-  arg_numeric_overflow_siblings_finite:
-    case_key: arg_numeric_overflow_siblings_finite
-    producer: producer_7ccfcbfa24751c05
-    context: context_18eb6c334c5b4f58
-    request: 6ecb42d151bf853cf9ad5fd8c8753c35394323be66a0e239140fe6cd882dfcbd
-    output:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments:
-          city: Paris
-          value: 1.5
-    suppress_inherited_from: true
-  arg_numeric_overflow_siblings_positive:
-    case_key: arg_numeric_overflow_siblings_positive
-    producer: producer_7ccfcbfa24751c05
-    context: context_42902d53d794f82a
-    request: 1d31ae512de02dbb3770dd4ba6bda84fdfab47a1fc348eca6b4d6f30542304af
-    output:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":1e400}'
-    suppress_inherited_from: true
-  arg_numeric_overflow_siblings_negative:
-    case_key: arg_numeric_overflow_siblings_negative
-    producer: producer_7ccfcbfa24751c05
-    context: context_95a91ef9e6cd1fdd
-    request: 4cd7dce28efc35f96ae850568a1bc8ee272620740d98fd6cbbf88390a525d437
-    output:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":-1E+400}'
-    suppress_inherited_from: true
-  native_quoted_control_in_response:
-    case_key: native_quoted_control_in_response
-    producer: producer_7ccfcbfa24751c05
-    request: 0b4e64bbdadf85e8453873db0dd524cb701862f0f52a4b5212e2ac1e6d315cb4
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  native_quoted_control_in_reasoning:
-    case_key: native_quoted_control_in_reasoning
-    producer: producer_7ccfcbfa24751c05
-    context: context_b51b11ffa6042bac
-    request: c158e45c7d1e75c1fd3c1bc72b5308397e1f28b5f638d611272a8577e50f5f12
-    output:
-      assembled:
-      - kind: reasoning
-        text: The literal "<tool_call>" marker is part of the explanation.
-    suppress_inherited_from: true
-  native_single_quoted_word_control:
-    case_key: native_single_quoted_word_control
-    producer: producer_7ccfcbfa24751c05
-    request: 8612c79e88d278e9875ccf9de5ab4a6ec1296a2d31a5c9f61738d1741b198b91
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  native_single_quote_contraction_response:
-    case_key: native_single_quote_contraction_response
-    producer: producer_7ccfcbfa24751c05
-    request: 4d8c02203439e30bafd740f4914252907e1d089304b43a74c06832fc28d745ac
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  native_single_quote_contraction_reasoning:
-    case_key: native_single_quote_contraction_reasoning
-    producer: producer_7ccfcbfa24751c05
-    context: context_1fc24df8c396eacf
-    request: 175a199302a698e7509fb9894a62b059deacf0954dbb1a4c0d2b5725f13abf65
-    output:
-      assembled:
-      - kind: reasoning
-        text: The literal 'doesn't <tool_call> marker' stays quoted.
-    suppress_inherited_from: true
-  native_quoted_incomplete_header:
-    case_key: native_quoted_incomplete_header
-    producer: producer_7ccfcbfa24751c05
-    request: ece4ccbc2407874cf8e7fecb79949096468724f7cf2b781da7ff3025647c6338
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  native_quoted_control_then_call:
-    case_key: native_quoted_control_then_call
-    producer: producer_7ccfcbfa24751c05
-    request: fdc55d0e66183e926003b2aba3a5e5293983789b544ee25be817229a1d2d787d
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  native_unmatched_quote_then_call:
-    case_key: native_unmatched_quote_then_call
-    producer: producer_7ccfcbfa24751c05
-    request: b65d24c715b7131b37a553a458caa5163bfc0ea71d58ac54717a9e288121d582
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  quoted_name_backtick_possessive_reasoning:
-    case_key: quoted_name_backtick_possessive_reasoning
-    producer: producer_7ccfcbfa24751c05
-    context: context_e94d289630cda702
-    request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
-      - kind: text
-        text: I've found the bug in `app.py`.
-    suppress_inherited_from: true
-  quoted_name_backtick_possessive_then_call:
-    case_key: quoted_name_backtick_possessive_then_call
-    producer: producer_7ccfcbfa24751c05
-    context: context_f6620cd4470115ff
-    request: 296028de9623c0ad71ff967d2982cb4240ce7eea0dbece0fa97a2d1cb17ec02c
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.'
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-    suppress_inherited_from: true
-  quoted_name_backtick_possessive_guided:
-    case_key: quoted_name_backtick_possessive_guided
-    producer: producer_7ccfcbfa24751c05
-    request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  quoted_name_backtick_nonpossessive_some:
-    case_key: quoted_name_backtick_nonpossessive_some
-    producer: producer_7ccfcbfa24751c05
-    context: context_dfe3c6bb684516f6
-    request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''some'
-      - kind: text
-        text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-    suppress_inherited_from: true
-  quoted_name_backtick_nonpossessive_s_name:
-    case_key: quoted_name_backtick_nonpossessive_s_name
-    producer: producer_7ccfcbfa24751c05
-    context: context_c3fa6ac9300ee0d2
-    request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
-    output:
-      assembled:
-      - kind: reasoning
-        text: '`load_config`''s_name'
-      - kind: text
-        text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-    suppress_inherited_from: true
-  quoted_name_double_quote_possessive_reasoning:
-    case_key: quoted_name_double_quote_possessive_reasoning
-    producer: producer_7ccfcbfa24751c05
-    context: context_c48cbc0df624a0b7
-    request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
-      - kind: text
-        text: I've found the bug in `app.py`.
-    suppress_inherited_from: true
-  quoted_name_double_quote_possessive_then_call:
-    case_key: quoted_name_double_quote_possessive_then_call
-    producer: producer_7ccfcbfa24751c05
-    context: context_7fa1909fcd9a3ceb
-    request: c4f87691a05fe54e74d87977e016bcefde9f3ac7f0dbb953c6602fb680e946fc
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.'
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-    suppress_inherited_from: true
-  quoted_name_double_quote_possessive_guided:
-    case_key: quoted_name_double_quote_possessive_guided
-    producer: producer_7ccfcbfa24751c05
-    request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  quoted_name_double_quote_nonpossessive_some:
-    case_key: quoted_name_double_quote_nonpossessive_some
-    producer: producer_7ccfcbfa24751c05
-    context: context_75533eaba27fcb6c
-    request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''some'
-      - kind: text
-        text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-    suppress_inherited_from: true
-  quoted_name_double_quote_nonpossessive_s_name:
-    case_key: quoted_name_double_quote_nonpossessive_s_name
-    producer: producer_7ccfcbfa24751c05
-    context: context_7ff047e566e7838c
-    request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
-    output:
-      assembled:
-      - kind: reasoning
-        text: '"load_config"''s_name'
-      - kind: text
-        text: 'marker'' stays quoted.
-
-
-          I''ve found the bug in `app.py`.'
-    suppress_inherited_from: true
-  guided_quoted_reasoning_closer_required:
-    case_key: guided_quoted_reasoning_closer_required
-    producer: producer_7ccfcbfa24751c05
-    request: 31b18954f7555a4319f2bd259fe526a6c41e238ed7b0609575fc743476da0ae9
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_quoted_reasoning_closer_named:
-    case_key: guided_quoted_reasoning_closer_named
-    producer: producer_7ccfcbfa24751c05
-    request: 811ecae9f5443ca6d909b5e2f0256ba0f8325f47937e8822e2256c74854e2ad5
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_response_quoted_control_braces_required:
-    case_key: guided_response_quoted_control_braces_required
-    producer: producer_7ccfcbfa24751c05
-    request: cd922bbbe458ce5ff1f5a0d396e453c427549aa411e2defd5f9168b148925572
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  guided_response_quoted_control_braces_named:
-    case_key: guided_response_quoted_control_braces_named
-    producer: producer_7ccfcbfa24751c05
-    request: 58dbbb6a79a88e84aaf560cdadbe9a431ed4d7286fa2515f09aaef00103c87eb
-    unavailable:
-      code: unsupported_request_mode
-      detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-    suppress_inherited_from: true
-  dotted_name_minimal:
-    case_key: dotted_name_minimal
-    producer: producer_7ccfcbfa24751c05
-    context: context_5e63e9ff10fb7186
-    request: d82c8f3e1463f943107b1d1aaebb2311895cf592e479d79537491e838c06a39b
-    output:
-      assembled:
-      - kind: tool_call
-        name: a.b
-        arguments: {}
-    suppress_inherited_from: true
-  dotted_name_mixed_punctuation:
-    case_key: dotted_name_mixed_punctuation
-    producer: producer_7ccfcbfa24751c05
-    context: context_c87df4cfac228b3c
-    request: d9ab3010f411504e00d4bf6a0ae2cd3cb3ba6e0f2bb79cd1dd8b632f59699dca
-    output:
-      assembled:
-      - kind: tool_call
-        name: my-tool.v2
-        arguments:
-          location: Beijing
-    suppress_inherited_from: true
-  dotted_name_multiple_segments:
-    case_key: dotted_name_multiple_segments
-    producer: producer_7ccfcbfa24751c05
-    context: context_0ea7648c991fe963
-    request: eb6cc9f165568440e0e8031342655d42b5448f237957b286441ca2bd87c4b522
-    output:
-      assembled:
-      - kind: tool_call
-        name: server.tools.weather
-        arguments:
-          location: Beijing
-    suppress_inherited_from: true
-  dotted_name_shared_prefix:
-    case_key: dotted_name_shared_prefix
-    producer: producer_7ccfcbfa24751c05
-    context: context_e550db089227231c
-    request: 6b86dd5bb09326bbee451f48011381603bbc9b3687e2d619bffe47bc31505054
-    output:
-      assembled:
-      - kind: tool_call
-        name: server.weather
-        arguments:
-          location: Beijing
-      - kind: tool_call
-        name: server.time
-        arguments:
-          timezone: Asia/Shanghai
-    suppress_inherited_from: true
-  xml_string_type_single_quoted_object:
-    case_key: xml_string_type_single_quoted_object
-    producer: producer_7ccfcbfa24751c05
-    context: context_1b221a52a35d5c2c
-    request: b6755dc1853c0a57efe3878f5f611cf7fbf56c51b0427ca9ca27beee83aefdc4
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments:
-          value: '{''a'':1}'
-    suppress_inherited_from: true
   xml_string_type_double_quoted_object:
     case_key: xml_string_type_double_quoted_object
     producer: producer_7ccfcbfa24751c05
@@ -20080,79 +20193,15 @@ records:
         arguments:
           value: '{"a":1}'
     suppress_inherited_from: true
-  blank_framing_tool_only:
-    case_key: blank_framing_tool_only
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
     producer: producer_7ccfcbfa24751c05
-    context: context_3cd88f0faa8ca0f6
-    request: 8539832b34c2482096b834f7c756a451c795405a6e8abd06dc80c6e3e45d4851
+    context: context_1b221a52a35d5c2c
+    request: b6755dc1853c0a57efe3878f5f611cf7fbf56c51b0427ca9ca27beee83aefdc4
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
+        name: schema_probe
         arguments:
-          city: Paris
-    suppress_inherited_from: true
-  blank_framing_between_calls_single_chunk:
-    case_key: blank_framing_between_calls_single_chunk
-    producer: producer_7ccfcbfa24751c05
-    context: context_af5d9f2b0476650f
-    request: 32363aee3be043e01ec13e8687e458da921dd096e1ad031ea09743d79c64a887
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Tokyo
-    suppress_inherited_from: true
-  blank_framing_with_prose:
-    case_key: blank_framing_with_prose
-    producer: producer_7ccfcbfa24751c05
-    context: context_81c11dab9696168d
-    request: a72c397bfc1cecaf399b9111aa3ad67208797a12320198a4ae8dd9566087e168
-    output:
-      assembled:
-      - kind: text
-        text: Pressing it now.
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-    suppress_inherited_from: true
-  blank_framing_after_reasoning:
-    case_key: blank_framing_after_reasoning
-    producer: producer_7ccfcbfa24751c05
-    context: context_8bad63c118a4f7f7
-    request: 4af0cf57621203250bdc86503932a4e2bcf827c0f766a4e50f340e4ba485e21a
-    output:
-      assembled:
-      - kind: reasoning
-        text: Check weather.
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-    suppress_inherited_from: true
-  blank_framing_prose_after_call:
-    case_key: blank_framing_prose_after_call
-    producer: producer_7ccfcbfa24751c05
-    context: context_3cd88f0faa8ca0f6
-    request: 4f6ef07f0685fdaa8dc3bf1fe413593ebfbb26e6c89fe8ec53489ecf602d2145
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: Paris
-    suppress_inherited_from: true
-  blank_output_without_call:
-    case_key: blank_output_without_call
-    producer: producer_7ccfcbfa24751c05
-    context: context_dcf75eab65ecc31b
-    request: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
-    output:
-      assembled: []
+          value: '{''a'':1}'
     suppress_inherited_from: true
