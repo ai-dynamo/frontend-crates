@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#[path = "support/quote_policy.rs"]
+mod quote_policy;
+
 use dynamo_parsers_v2::{
     InvalidGuidedPayloadPolicy, Qwen3CoderToolStreamParser, Tool, ToolParser, UnifiedEvent,
     UnifiedParserEvent, UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState,
@@ -682,6 +685,11 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
 
 #[test]
 fn visible_prose_preserves_quoted_native_markers_without_changing_routing() {
+    if !quote_policy::quote_aware_process(
+        "visible_prose_preserves_quoted_native_markers_without_changing_routing",
+    ) {
+        return;
+    }
     for starting_state in [
         UnifiedParserStartingState::None,
         UnifiedParserStartingState::Response,
@@ -737,6 +745,11 @@ fn visible_prose_preserves_quoted_native_markers_without_changing_routing() {
 
 #[test]
 fn reject_quoted_response_prefix_waits_for_payload_validation() {
+    if !quote_policy::quote_aware_process(
+        "reject_quoted_response_prefix_waits_for_payload_validation",
+    ) {
+        return;
+    }
     for family in guided_families() {
         for named in [false, true] {
             for quote in ['"', '\'', '`'] {
