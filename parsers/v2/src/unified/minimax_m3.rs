@@ -65,6 +65,7 @@ fn spec(tools: Arc<[ToolDefinition]>) -> WrappedBlockSpec {
             })
         }))),
         narrated_invoke_header_end: None,
+        dedupe_calls_repeated_after_thought: false,
     }
 }
 

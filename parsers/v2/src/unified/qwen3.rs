@@ -1478,6 +1478,152 @@ mod tests {
         assert_eq!(out, &expected, "char by char: {out:?}");
     }
 
+    /// A wrapped call made inside a thought and then REPEATED after `</think>`
+    /// (ai-dynamo/dynamo#17732; the rule lives at
+    /// `WrappedBlockScanner::repeats_in_thought_call`). The in-thought call is
+    /// kept where it was made (`I3`, `tool_in_reason`); the repeat is dropped.
+    const RUN_ONE: &str =
+        "<tool_call><function=run><parameter=a>1</parameter></function></tool_call>";
+    const RUN_TWO: &str =
+        "<tool_call><function=run><parameter=a>2</parameter></function></tool_call>";
+
+    fn at_every_split_and_char_by_char(input: &str, expected: &[UnifiedEvent]) {
+        at_every_split(input, |out, cut| {
+            assert_eq!(out, expected, "split at {cut}: {out:?}");
+        });
+        let chars: Vec<&str> = input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect();
+        let out = events(&narration_tools(), &chars);
+        assert_eq!(out, expected, "char by char: {out:?}");
+    }
+
+    #[test]
+    fn a_wrapped_call_repeated_right_after_the_thought_is_dispatched_once() {
+        // The whitespace framing between `</think>` and the block is visible
+        // text on this path with or without the repeat (unchanged behaviour);
+        // only the repeated call disappears.
+        let input = format!("<think>Plan: {RUN_ONE} ok</think>\n\n{RUN_ONE}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Plan: "),
+                call("run", serde_json::json!({"a": "1"})),
+                reasoning(" ok"),
+                text("\n\n"),
+            ],
+        );
+        let input = format!("<think>Plan: {RUN_ONE} ok</think>{RUN_ONE}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Plan: "),
+                call("run", serde_json::json!({"a": "1"})),
+                reasoning(" ok"),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_wrapped_call_inside_an_unterminated_thought_is_still_one_call() {
+        // The model never closes the thought and never repeats the call: the
+        // in-thought call is the only one and must survive (`I3`).
+        let input = format!("<think>Plan: {RUN_ONE} ok");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Plan: "),
+                call("run", serde_json::json!({"a": "1"})),
+                reasoning(" ok"),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_different_call_after_the_thought_is_not_a_repeat() {
+        let input = format!("<think>Plan: {RUN_ONE} ok</think>{RUN_TWO}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Plan: "),
+                call("run", serde_json::json!({"a": "1"})),
+                reasoning(" ok"),
+                call("run", serde_json::json!({"a": "2"})),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_parallel_pair_quoted_in_the_thought_and_repeated_after_it_is_dispatched_once() {
+        let pair = "<tool_call><function=run><parameter=a>1</parameter></function>\
+                    <function=run><parameter=a>2</parameter></function></tool_call>";
+        let input = format!("<think>Both: {pair} then</think>\n{pair}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Both: "),
+                call("run", serde_json::json!({"a": "1"})),
+                call("run", serde_json::json!({"a": "2"})),
+                reasoning(" then"),
+                text("\n"),
+            ],
+        );
+        // Two separate blocks inside the thought, repeated as two blocks.
+        let input = format!("<think>Both: {RUN_ONE}{RUN_TWO} then</think>{RUN_ONE}{RUN_TWO}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Both: "),
+                call("run", serde_json::json!({"a": "1"})),
+                call("run", serde_json::json!({"a": "2"})),
+                reasoning(" then"),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_repeat_after_visible_text_or_a_new_thought_is_a_new_call() {
+        // Visible text after the closer means the model moved on; the same call
+        // later is a real second call.
+        let input = format!("<think>Plan: {RUN_ONE} ok</think>Calling again.{RUN_ONE}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Plan: "),
+                call("run", serde_json::json!({"a": "1"})),
+                reasoning(" ok"),
+                text("Calling again."),
+                call("run", serde_json::json!({"a": "1"})),
+            ],
+        );
+        let input = format!("<think>Plan: {RUN_ONE} ok</think><think>again</think>{RUN_ONE}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                reasoning("Plan: "),
+                call("run", serde_json::json!({"a": "1"})),
+                reasoning(" okagain"),
+                call("run", serde_json::json!({"a": "1"})),
+            ],
+        );
+    }
+
+    #[test]
+    fn only_the_leading_repeats_after_the_thought_are_dropped() {
+        // The second post-closer call differs from the thought's second call:
+        // comparison stops there and everything after it is dispatched.
+        let input = format!("<think>{RUN_ONE}{RUN_TWO}</think>{RUN_ONE}{RUN_ONE}");
+        at_every_split_and_char_by_char(
+            &input,
+            &[
+                call("run", serde_json::json!({"a": "1"})),
+                call("run", serde_json::json!({"a": "2"})),
+                call("run", serde_json::json!({"a": "1"})),
+            ],
+        );
+    }
+
     #[test]
     fn a_bare_invoke_terminator_without_a_narrated_header_stays_literal_in_a_thought() {
         // Only a terminator that closes a narrated header is markup; a stray one
