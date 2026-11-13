@@ -65,6 +65,31 @@ const MARKERS: [&str; 4] = [START, MESSAGE, EOM, EOT];
 const PROSE_HOLDBACK_MARKERS: [&str; 6] =
     [START, MESSAGE, EOM, EOT, INVOKE_OPEN_PREFIX, INVOKE_CLOSE];
 
+/// Offset of the first message boundary in `buffer`: an `<|eom|>` or `<|eot|>`
+/// whose next control marker is `<|start|>`. A balanced prose quotation keeps the
+/// control markers inside it literal, but it cannot span a boundary: a quote still
+/// open there is unmatched, so its terminator ends the body and the next message is
+/// read as a message, not as quoted text up to some later quote character.
+fn message_boundary(buffer: &str) -> Option<usize> {
+    let mut from = 0;
+    loop {
+        let (at, len) = [EOM, EOT]
+            .iter()
+            .filter_map(|t| buffer[from..].find(t).map(|p| (from + p, t.len())))
+            .min_by_key(|(p, _)| *p)?;
+        let after = at + len;
+        let next = MARKERS
+            .iter()
+            .filter_map(|m| buffer[after..].find(m).map(|p| (p, *m)))
+            .min_by_key(|(p, _)| *p);
+        match next {
+            Some((_, START)) => return Some(at),
+            Some(_) => from = after,
+            None => return None,
+        }
+    }
+}
+
 /// The ATEM tool BLOCK pair, which wraps a tool channel's invokes.
 const BLOCK_OPEN: &str = "<atem:function_calls>";
 const BLOCK_CLOSE: &str = "</atem:function_calls>";
@@ -1335,10 +1360,16 @@ impl MuseChannelScanner {
     fn drain(&mut self, flush: bool, out: &mut Vec<UnifiedParserEvent>) -> anyhow::Result<()> {
         loop {
             if self.state != State::InToolChannel && self.prose_invoke_depth == 0 {
+                // Quotation is read only up to the first message boundary, as if the
+                // stream ended there: a quote it cannot close is unmatched.
+                let (scan_end, bounded) = match message_boundary(&self.buffer) {
+                    Some(at) => (at, true),
+                    None => (self.buffer.len(), false),
+                };
                 let control = self.prose.classify(
-                    &self.buffer,
+                    &self.buffer[..scan_end],
                     PROSE_HOLDBACK_MARKERS,
-                    flush,
+                    flush || bounded,
                     |text, at, flush| {
                         let suffix = &text[at..];
                         if !flush && INVOKE_OPEN_PREFIX.starts_with(suffix) {

@@ -2274,4 +2274,32 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn an_unmatched_quote_does_not_span_a_message_boundary() {
+        // A quote left open at `<|eom|>` must not pair with a quote in the next
+        // message and turn that message's framing into reasoning text.
+        let input = format!(
+            "{}{}{}",
+            channel("self", "x `"),
+            tool_channel("get_weather", "city", "`Paris`"),
+            "<|start|>assistant to=user<|message|>a `b`<|eot|>"
+        );
+        let expected = vec![
+            reasoning("x `"),
+            call("get_weather", serde_json::json!({"city": "`Paris`"})),
+            text("a `b`"),
+        ];
+        assert_eq!(batch(&input), expected, "whole input");
+        let per_character: Vec<String> = input.chars().map(String::from).collect();
+        let chunks: Vec<&str> = per_character.iter().map(String::as_str).collect();
+        assert_eq!(events(&chunks), expected, "one character at a time");
+        for split in (1..input.len()).filter(|&i| input.is_char_boundary(i)) {
+            assert_eq!(
+                events(&[&input[..split], &input[split..]]),
+                expected,
+                "split {split}"
+            );
+        }
+    }
 }
