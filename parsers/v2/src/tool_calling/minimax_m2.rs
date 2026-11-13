@@ -25,7 +25,7 @@
 //! stray close that does follow is stripped by the orphan-close handling.
 
 use crate::tool_calling::scan::{
-    BareRecoveryLatch, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, InvokeScan,
+    BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
     WrappedBlockScanner, WrappedBlockSpec, reorder_arguments,
 };
 use crate::tool_calling::v1core::{
@@ -57,6 +57,32 @@ fn minimax_config() -> XmlParserConfig {
     }
 }
 
+struct MinimaxInvokeBoundary;
+
+impl InvokeBoundary for MinimaxInvokeBoundary {
+    fn end_append(
+        &mut self,
+        candidate: &str,
+        _append: &str,
+        _flush: bool,
+        _tool_index: usize,
+    ) -> Option<usize> {
+        minimax_delimiter(candidate, FUNCTION_END).map(|position| position + FUNCTION_END.len())
+    }
+
+    fn opens(&self, _text: &str, _at: usize) -> bool {
+        true
+    }
+
+    fn holdback(&self, _text: &str) -> usize {
+        0
+    }
+
+    fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
+        None
+    }
+}
+
 fn spec() -> WrappedBlockSpec {
     WrappedBlockSpec {
         family: "minimax_m2",
@@ -64,13 +90,8 @@ fn spec() -> WrappedBlockSpec {
         block_ends: vec![BLOCK_END.to_string()],
         invoke_start: FUNCTION_START.to_string(),
         invoke_end: FUNCTION_END.to_string(),
-        invoke_boundary_factory: Some(InvokeBoundaryFactory::stateless(InvokeScan {
-            end: |text, _, _| {
-                minimax_delimiter(text, FUNCTION_END).map(|at| at + FUNCTION_END.len())
-            },
-            opens: |_, _| true,
-            holdback: |_| 0,
-            resync: None,
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(|| {
+            Box::new(MinimaxInvokeBoundary)
         })),
         orphan_markers: vec![BLOCK_END.to_string()],
         // BLOCK_END is held back too: a lone orphan close that arrives split
