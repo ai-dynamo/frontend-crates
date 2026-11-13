@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.12](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.11...dynamo-parsers-v11.0.12) - 2026-11-13
+
+### Bug fixes
+
+- *(parsers)* Hold a lone `<` that may start the reasoning close marker ([#600](https://github.com/ai-dynamo/frontend-crates/pull/600))
+
 ## [11.0.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.10...dynamo-parsers-v11.0.11) - 2026-11-09
 
 ### Bug fixes
