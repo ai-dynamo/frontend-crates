@@ -98,6 +98,21 @@ impl QwenVlProcessor {
                 "qwen_vl spec: sizes must be positive",
             ));
         }
+        // These products are used by header-only accounting and patchification.
+        // Reject malformed runtime specs here rather than panicking (or wrapping
+        // in release builds) when their first image is processed.
+        if spec.patch_size.checked_mul(spec.merge_size).is_none()
+            || spec.merge_size.checked_mul(spec.merge_size).is_none()
+            || 3usize
+                .checked_mul(spec.temporal_patch_size)
+                .and_then(|n| n.checked_mul(spec.patch_size))
+                .and_then(|n| n.checked_mul(spec.patch_size))
+                .is_none()
+        {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: resize factor, merge area and patch feature dimension must fit in usize",
+            ));
+        }
         if spec.min_pixels == 0 || spec.min_pixels > spec.max_pixels {
             return Err(MmError::invalid_input(
                 "qwen_vl spec: min_pixels must be positive and no greater than max_pixels",
@@ -418,12 +433,16 @@ pub fn smart_video_resize(
 
 /// The video processor type [`Qwen3VlVideo`] accepts.
 const QWEN3_VL_VIDEO_PROCESSOR: &str = "Qwen3VLVideoProcessor";
+/// Cosmos3-Edge's video processor: the same sizing, built for one temporal
+/// patch (it refuses any other `temporal_patch_size`).
+const COSMOS3_EDGE_VIDEO_PROCESSOR: &str = "Cosmos3EdgeVideoProcessor";
 
 /// Video sizing of HF's `Qwen3VLVideoProcessor`, deserialized from the
 /// model's `video_preprocessor_config.json` (unknown keys are ignored).
 ///
 /// Deserializing fails unless `video_processor_type` is
-/// `Qwen3VLVideoProcessor` and `size` gives both bounds. Video is never sized
+/// `Qwen3VLVideoProcessor` (or `Cosmos3EdgeVideoProcessor` with
+/// `temporal_patch_size` 1) and `size` gives both bounds. Video is never sized
 /// with a model's image bounds, which can differ (Qwen3-VL-8B: 65,536 to
 /// 16,777,216 pixels for images, 4,096 to 25,165,824 for a clip), or with the
 /// rules of Qwen2-VL and Qwen2.5-VL, which size video differently.
@@ -468,11 +487,15 @@ impl TryFrom<RawQwen3VlVideo> for Qwen3VlVideo {
     type Error = MmError;
 
     fn try_from(raw: RawQwen3VlVideo) -> Result<Self> {
-        if raw.video_processor_type != QWEN3_VL_VIDEO_PROCESSOR {
-            return Err(MmError::unsupported(format!(
-                "video processor {} is not {QWEN3_VL_VIDEO_PROCESSOR}",
-                raw.video_processor_type
-            )));
+        match raw.video_processor_type.as_str() {
+            QWEN3_VL_VIDEO_PROCESSOR => {}
+            COSMOS3_EDGE_VIDEO_PROCESSOR if raw.temporal_patch_size == 1 => {}
+            other => {
+                return Err(MmError::unsupported(format!(
+                    "video processor {other} is not {QWEN3_VL_VIDEO_PROCESSOR} \
+                     (or {COSMOS3_EDGE_VIDEO_PROCESSOR} with temporal_patch_size 1)"
+                )));
+            }
         }
         if raw.do_resize == Some(false) || raw.cap_pixels_per_frame == Some(true) {
             return Err(MmError::unsupported(
@@ -574,6 +597,35 @@ impl Qwen3VlVideo {
     }
 }
 
+/// [`Qwen3VlVideo`] as the decoder's [`crate::video_decode::Fit`]: HF's
+/// `Qwen3VLVideoProcessor` sizing under a request budget, resampled as the
+/// torchvision-backed video processors do (bicubic on uint8 frames, before
+/// rescaling). Cosmos3-Nano / Super ship that processor unchanged, and
+/// Cosmos3-Edge the same sizing.
+#[cfg(feature = "video-decode")]
+#[derive(Clone, Copy, Debug)]
+pub struct Qwen3VlVideoFit<'a> {
+    pub video: &'a Qwen3VlVideo,
+    pub budget: VideoPixelBudget,
+}
+
+#[cfg(feature = "video-decode")]
+impl crate::video_decode::Fit for Qwen3VlVideoFit<'_> {
+    fn fit(&self, num_frames: usize, width: u32, height: u32) -> Result<(u32, u32)> {
+        let (h, w) =
+            self.video
+                .resize(num_frames, height as usize, width as usize, &self.budget)?;
+        let side = |v: usize| {
+            u32::try_from(v).map_err(|_| MmError::invalid_input("resized frame side out of range"))
+        };
+        Ok((side(w)?, side(h)?))
+    }
+
+    fn filter(&self) -> resize::Resample {
+        resize::Resample::AtenU8
+    }
+}
+
 /// Image-only M-RoPE (the image branch of `MRotaryEmbedding.get_rope_index`):
 /// text runs sequentially on all three rows, each image spans `(t, h/m, w/m)`
 /// index grids, and positions advance by the grid's max past an image.
@@ -670,6 +722,25 @@ mod tests {
             image_mean: [0.0; 3],
             image_std: [1.0; 3],
             resample: Resampler::default(),
+        }
+    }
+
+    #[test]
+    fn rejects_overflowing_spec_dimensions() {
+        for (patch_size, merge_size, temporal_patch_size) in [
+            (usize::MAX, 2, 1),         // Resize factor overflows.
+            (1, usize::MAX, 1),         // Merge area overflows.
+            (1, 1, usize::MAX / 3 + 1), // Flattened patch dimension overflows.
+        ] {
+            let mut spec = valid_spec();
+            spec.patch_size = patch_size;
+            spec.merge_size = merge_size;
+            spec.temporal_patch_size = temporal_patch_size;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
         }
     }
 
@@ -856,6 +927,28 @@ mod tests {
             "Qwen2VLVideoProcessor".into(),
         ));
         assert!(r.is_err_and(|e| e.to_string().contains("is not Qwen3VLVideoProcessor")));
+    }
+
+    #[test]
+    fn cosmos3_edge_video_processor_is_the_same_sizing_with_one_temporal_patch() {
+        // Cosmos3-Edge's video_preprocessor_config.json: HF's
+        // Cosmos3EdgeVideoProcessor runs Qwen3-VL's smart_resize with
+        // temporal_patch_size 1 (it refuses any other value).
+        let edge: serde_json::Value = serde_json::json!({
+            "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+            "merge_size": 2, "patch_size": 16, "processor_class": "Cosmos3EdgeProcessor",
+            "return_metadata": true,
+            "size": {"longest_edge": 25165824, "shortest_edge": 4096},
+            "temporal_patch_size": 1, "video_processor_type": "Cosmos3EdgeVideoProcessor"
+        });
+        let video: Qwen3VlVideo = serde_json::from_value(edge.clone()).unwrap();
+        assert_eq!(video.temporal_patch_size, 1);
+        // 20 frames of 720p: 1280x704 as HF's formula gives (t_bar = 20).
+        let none = VideoPixelBudget::default();
+        assert_eq!(video.resize(20, 720, 1280, &none).unwrap(), (704, 1280));
+        let mut two = edge;
+        two["temporal_patch_size"] = 2.into();
+        assert!(serde_json::from_value::<Qwen3VlVideo>(two).is_err());
     }
 
     #[test]

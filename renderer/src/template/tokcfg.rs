@@ -85,6 +85,16 @@ pub struct ChatTemplate {
     tokenizer_class: Option<String>,
     truncation_size: Option<String>,
     use_default_system_prompt: Option<bool>,
+
+    /// The `added_tokens` of the model's `tokenizer.json`; see
+    /// [`ChatTemplate::with_tokenizer_json`].
+    #[serde(skip)]
+    tokenizer_added_tokens: Vec<AddedTokensDecoder>,
+
+    /// See [`ChatTemplate::with_request_control_tokens_as_text`]; `None` is the
+    /// default, on.
+    #[serde(skip)]
+    pub(crate) request_control_tokens_as_text: Option<bool>,
 }
 
 impl ChatTemplate {
@@ -107,6 +117,76 @@ impl ChatTemplate {
             Either::Left(ref lit) => Some(lit.clone()),
             Either::Right(ref added) => Some(added.content.clone()),
         }
+    }
+
+    /// Add the `added_tokens` of the model's `tokenizer.json` to
+    /// [`ChatTemplate::added_token_spellings`]. Some repos declare no
+    /// `added_tokens_decoder` in `tokenizer_config.json` (DeepSeek V3/R1,
+    /// GLM-5, Gemma 4), so their chat markers are listed only there.
+    pub fn with_tokenizer_json(mut self, tokenizer_json: &str) -> anyhow::Result<Self> {
+        #[derive(Deserialize)]
+        struct TokenizerJson {
+            #[serde(default)]
+            added_tokens: Vec<AddedTokensDecoder>,
+        }
+        self.tokenizer_added_tokens =
+            serde_json::from_str::<TokenizerJson>(tokenizer_json)?.added_tokens;
+        Ok(self)
+    }
+
+    /// Whether control-token spellings in request text render as ordinary
+    /// text, so that only the template's own markers encode as control tokens.
+    /// On by default; `false` turns it off, except under a template with
+    /// Harmony framing, which always renders this way.
+    ///
+    /// The spellings come back as ordinary segments of
+    /// [`OAIPromptFormatter::render_prompt`](crate::OAIPromptFormatter::render_prompt),
+    /// to encode with [`crate::RenderedPrompt::encode_segments`]; `render`
+    /// returns the same text without them. A model that lists its markers
+    /// only in `tokenizer.json` also needs [`ChatTemplate::with_tokenizer_json`].
+    /// In assistant history, a marker the template itself reads stays a
+    /// control token.
+    pub fn with_request_control_tokens_as_text(mut self, enabled: bool) -> Self {
+        self.request_control_tokens_as_text = Some(enabled);
+        self
+    }
+
+    /// Spellings the tokenizer turns into one added token, each with whether it
+    /// is `special`: every `added_tokens_decoder` entry, the `tokenizer.json`
+    /// `added_tokens` when given, the `additional_special_tokens`, and the
+    /// bos/eos/unk literals. Whitespace-only spellings are dropped; a spelling
+    /// listed twice is special if either entry says so. Sorted for a stable
+    /// result.
+    pub(crate) fn added_token_spellings(&self) -> Vec<(String, bool)> {
+        fn insert(spellings: &mut HashMap<String, bool>, spelling: Option<String>, special: bool) {
+            if let Some(spelling) = spelling
+                && !spelling.trim().is_empty()
+            {
+                *spellings.entry(spelling).or_insert(false) |= special;
+            }
+        }
+        let mut spellings = HashMap::new();
+        for token in self
+            .added_tokens_decoder
+            .iter()
+            .flat_map(HashMap::values)
+            .chain(&self.tokenizer_added_tokens)
+        {
+            insert(
+                &mut spellings,
+                Some(token.content.clone()),
+                token.special.unwrap_or(false),
+            );
+        }
+        for token in self.additional_special_tokens.iter().flatten() {
+            insert(&mut spellings, Some(token.clone()), true);
+        }
+        insert(&mut spellings, self.bos_tok(), true);
+        insert(&mut spellings, self.eos_tok(), true);
+        insert(&mut spellings, self.unk_tok(), true);
+        let mut spellings: Vec<_> = spellings.into_iter().collect();
+        spellings.sort();
+        spellings
     }
 }
 
@@ -233,6 +313,9 @@ pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value
 /// (`'`, `<`, `>`, `&` stay literal). serde_json leaves non-ASCII unescaped by
 /// default, matching `ensure_ascii=False`.
 pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
+    let value = crate::python::template_json(value).map_err(|err| {
+        Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
+    })?;
     let mut buf = Vec::new();
     let result = if let Ok(indent) = kwargs.get("indent") {
         // Python `json.dumps(indent=n)` separators are `(",", ": ")` with the
@@ -272,7 +355,7 @@ pub fn fromjson(value: Value) -> Result<Value, Error> {
     let parsed: serde_json::Value = serde_json::from_str(text).map_err(|err| {
         Error::new(ErrorKind::InvalidOperation, "cannot parse JSON").with_source(err)
     })?;
-    Ok(Value::from_serialize(&parsed))
+    Ok(crate::python::template_value(&parsed))
 }
 
 pub fn strftime_now(format_str: &str) -> Result<Value, Error> {
@@ -305,7 +388,7 @@ mod fromjson_tests {
     #[test]
     fn passes_through_non_string() {
         // Already-decoded values must survive a defensive `| fromjson`.
-        let already = Value::from_serialize(serde_json::json!({"a": 1}));
+        let already = crate::python::template_value(&serde_json::json!({"a": 1}));
         let out = fromjson(already).unwrap();
         assert_eq!(out.get_attr("a").unwrap().to_string(), "1");
     }

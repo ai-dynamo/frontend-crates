@@ -222,16 +222,20 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
     }
 }
 
-/// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    xml_unified(tools, false)
+}
+
+pub(crate) fn nemotron_v3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    xml_unified(tools, true)
+}
+
+fn xml_unified(tools: &[Tool], forced_start: bool) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(
         ScannerUnified::new(qwen3_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
-            // Qwen3 emits its own `<think>`; the template does not pre-fill one,
-            // so the stream starts in visible content (policy P5).
-            forced_start: false,
-            // `<think>` is not a special token for this family; the OR comes from the grammar.
+            forced_start,
             preserve_special_tokens: false,
             ..Default::default()
         }))
@@ -268,6 +272,55 @@ mod tests {
         }
         deltas.extend(parser.finish().expect("finish").events);
         assemble(&deltas)
+    }
+
+    #[test]
+    fn nemotron_debug_wrapper_preserves_deltas_and_reuse() {
+        for mode in [
+            UnifiedToolOutputMode::Native,
+            UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            UnifiedToolOutputMode::GuidedJson {
+                named_tool: Some("get_weather".into()),
+            },
+        ] {
+            let payload = match &mode {
+                UnifiedToolOutputMode::Native => {
+                    "<tool_call><function=get_weather><parameter=city>雪</parameter></function></tool_call>"
+                }
+                UnifiedToolOutputMode::GuidedJson { named_tool: None } => {
+                    r#"[{"name":"get_weather","arguments":{"city":"雪"}}]"#
+                }
+                UnifiedToolOutputMode::GuidedJson { .. } => r#"{"city":"雪"}"#,
+            };
+            let input = format!("Montréal</think>{payload}");
+            for at in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                let mut plain = nemotron_v3_unified(&weather_tools());
+                let mut debug = crate::unified::DebugUnifiedParser::wrap(
+                    "nemotron_v3",
+                    nemotron_v3_unified(&weather_tools()),
+                );
+                let init = UnifiedParserInit {
+                    tool_output_mode: mode.clone(),
+                    ..Default::default()
+                };
+                plain.initialize_request(init.clone()).unwrap();
+                debug.initialize_request(init).unwrap();
+                assert_eq!(
+                    plain.preserve_special_tokens(),
+                    debug.preserve_special_tokens()
+                );
+                for _ in 0..2 {
+                    for chunk in [&input[..at], &input[at..]] {
+                        assert_eq!(plain.push(chunk).unwrap(), debug.push(chunk).unwrap());
+                    }
+                    assert_eq!(
+                        plain.finish().unwrap().events,
+                        debug.finish().unwrap().events
+                    );
+                    assert_eq!(plain.reset(), debug.reset());
+                }
+            }
+        }
     }
 
     #[test]
@@ -1281,6 +1334,162 @@ mod tests {
             !format!("{out:?}").contains("}}]"),
             "payload fragments surfaced as thinking: {out:?}"
         );
+    }
+
+    /// Tools for the narrated-bare-invoke tests (ai-dynamo/dynamo#17663; the
+    /// rule lives at `WrappedBlockScanner::bare_invoke_in_reasoning_is_narration`).
+    fn narration_tools() -> Vec<Tool> {
+        vec![
+            Tool {
+                name: "queue_label_print_job".to_string(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "label_count": { "type": "integer", "multipleOf": 24 } }
+                }),
+                strict: None,
+            },
+            Tool {
+                name: "run".to_string(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "a": { "type": "string" } }
+                }),
+                strict: None,
+            },
+        ]
+    }
+
+    fn at_every_split(input: &str, check: impl Fn(&[UnifiedEvent], usize)) {
+        for cut in 0..=input.len() {
+            if !input.is_char_boundary(cut) {
+                continue;
+            }
+            let out = events(&narration_tools(), &[&input[..cut], &input[cut..]]);
+            check(&out, cut);
+        }
+    }
+
+    #[test]
+    fn bare_invokes_quoted_inside_an_unclosed_thought_are_not_calls() {
+        const QUOTED: &str =
+            "<function=queue_label_print_job><parameter=label_count>48</parameter></function>";
+        let input = format!("<think>Plan: {QUOTED} Done. Proceeds. {QUOTED} matches. {QUOTED}");
+        // The invoke markers are stripped; `<parameter=` is ordinary text for the
+        // native scanner (pinned by `a_narrated_invoke_inside_a_thought_leaves_no_marker_behind`).
+        let narrated = "<parameter=label_count>48</parameter>";
+        let expected = format!("Plan: {narrated} Done. Proceeds. {narrated} matches. {narrated}");
+        at_every_split(&input, |out, cut| {
+            assert_eq!(
+                out,
+                &[reasoning(&expected)],
+                "a quoted call was promoted to a tool call, split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_narrated_bare_invoke_in_a_thought_leaves_the_real_wrapped_call_alone() {
+        let input = "<think>plan <function=run>x</function> more</think>\
+                     <tool_call><function=run><parameter=a>1</parameter></function></tool_call>";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[
+                    reasoning("plan x more"),
+                    call("run", serde_json::json!({"a": "1"})),
+                ],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_narrated_header_cut_by_the_thought_closer_strips_only_the_opener() {
+        // No `>` before `</think>`: the header can never complete inside the
+        // thought, so the bare opener alone is stripped and the thought closes.
+        let input = "<think>use <function=run</think>Done.";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[reasoning("use run"), text("Done.")],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_wrapped_call_inside_a_thought_is_still_extracted_after_a_narrated_one() {
+        // The wrapper keeps its structural reading (`I3`, `tool_in_reason`) even
+        // when the same thought first quoted the call bare.
+        let input = "<think>maybe <function=run>x</function>; yes: \
+                     <tool_call><function=run><parameter=a>1</parameter></function></tool_call> now answer</think>Done.";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[
+                    reasoning("maybe x; yes: "),
+                    call("run", serde_json::json!({"a": "1"})),
+                    reasoning(" now answer"),
+                    text("Done."),
+                ],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_narrated_terminator_inside_a_parameter_value_is_data() {
+        // Same ownership rule as a real invoke (`I7`): a `</function>` inside an
+        // open `<parameter>` value does not end the narrated invoke, so the
+        // value text survives and the real outer terminator is the one stripped.
+        let input = "<think><function=run><parameter=a>x</function>y</parameter></function> tail</think>Done.";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[
+                    reasoning("<parameter=a>x</function>y</parameter> tail"),
+                    text("Done."),
+                ],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_nested_narrated_header_inside_a_parameter_value_is_data() {
+        // A further `<function=` inside the narrated invoke's parameter value is
+        // data too (`I7`): it must not start a new narration (which would strip it
+        // and read the inner `</function>` as the terminator). Only the OUTER
+        // markers go. Checked whole, at every two-chunk split, and char by char.
+        let input = "<think><function=run><parameter=a>x<function=run>y</function>z</parameter></function></think>";
+        let expected = [reasoning(
+            "<parameter=a>x<function=run>y</function>z</parameter>",
+        )];
+        at_every_split(input, |out, cut| {
+            assert_eq!(out, &expected, "split at {cut}: {out:?}");
+        });
+        let chars: Vec<&str> = input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect();
+        let out = events(&narration_tools(), &chars);
+        assert_eq!(out, &expected, "char by char: {out:?}");
+    }
+
+    #[test]
+    fn a_bare_invoke_terminator_without_a_narrated_header_stays_literal_in_a_thought() {
+        // Only a terminator that closes a narrated header is markup; a stray one
+        // is text on both paths (pinned above), and stays so.
+        let input = "<think>a</function>b</think>";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[reasoning("a</function>b")],
+                "split at {cut}: {out:?}"
+            );
+        });
     }
 
     #[test]

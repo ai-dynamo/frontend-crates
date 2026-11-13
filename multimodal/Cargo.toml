@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-multimodal"
 readme = "README.md"
-version = "0.1.1"
+version = "0.2.6"
 edition.workspace = true
 description = "Shared multimodal input processing, prompt geometry, token accounting, and content identity for LLM inference serving."
 authors.workspace = true
@@ -24,6 +24,12 @@ fetch = ["dep:base64", "dep:ipnet", "dep:reqwest", "dep:tokio", "dep:url"]
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
 # rayon from the dependency graph and force the inline path at compile time.
 parallel = ["dep:rayon"]
+# `video_decode`: MP4 / WebM / Matroska demuxing, probing, frame sampling, and
+# hardware decoding through NVDEC, with VP8 / VP9 on the CPU through libvpx
+# when NVDEC cannot. NVIDIA's driver libraries and libvpx are loaded at runtime
+# when present; nothing is linked at build time. Decodes on 64-bit Linux only
+# (32-bit Linux does not build with this feature).
+video-decode = ["dep:matroska-demuxer"]
 
 [dependencies]
 base64 = { workspace = true, optional = true }
@@ -31,6 +37,7 @@ blake3.workspace = true
 gif.workspace = true
 image.workspace = true
 ipnet = { workspace = true, optional = true }
+matroska-demuxer = { workspace = true, optional = true }
 png.workspace = true
 rayon = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
@@ -42,4 +49,5 @@ url = { workspace = true, optional = true }
 xxhash-rust.workspace = true
 
 [dev-dependencies]
+sha2 = "0.10"
 tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "time"] }

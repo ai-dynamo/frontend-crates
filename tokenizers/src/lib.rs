@@ -5,6 +5,7 @@ pub mod basetenkenizer;
 pub mod cache;
 pub mod fastokens;
 pub mod hf;
+pub mod tekken;
 pub mod tiktoken;
 
 // TODO: Add tokenizer benchmarks
@@ -25,6 +26,7 @@ pub use cache::{
 };
 pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
+pub use tekken::TekkenTokenizer;
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;
 
@@ -56,6 +58,24 @@ impl<'a> EncodeSegment<'a> {
     pub const fn control(text: &'a str) -> Self {
         Self::new(text, true)
     }
+}
+
+/// Reject an ordinary segment that encoded to a control-token id.
+///
+/// Every backend demotes control-token spellings in ordinary segments, but a
+/// base vocabulary whose merges assemble an added token's id would still let
+/// request text become a control token. Refusing the encode keeps that
+/// property independent of the vocabulary.
+pub(crate) fn reject_control_ids_in_ordinary_segment(
+    ids: &[TokenIdType],
+    control_ids: &std::collections::HashSet<TokenIdType>,
+) -> Result<()> {
+    if let Some(id) = ids.iter().find(|id| control_ids.contains(id)) {
+        return Err(Error::msg(format!(
+            "ordinary segment encoded to control-token id {id}; this tokenizer cannot keep request text out of the control vocabulary"
+        )));
+    }
+    Ok(())
 }
 
 /// Represents the type of tokenizer being used
@@ -107,12 +127,15 @@ pub mod traits {
         /// tool, or attribute content from becoming structural when it happens
         /// to resemble a control token.
         ///
-        /// The Baseten backend preserves legacy tiktoken behavior by splitting
-        /// each segment into chunks of at most 400,000 characters and splitting
-        /// whitespace/non-whitespace runs at 25,000 characters. Independent
-        /// chunks are encoded through the Rayon thread pool, then concatenated
-        /// in input order. Tokenizer post-processing is applied once after all
-        /// segment IDs have been joined.
+        /// The Baseten and TikToken backends preserve legacy tiktoken behavior
+        /// by splitting each segment into chunks of at most 400,000 characters
+        /// and splitting whitespace/non-whitespace runs at 25,000 characters.
+        /// Baseten encodes independent chunks through the Rayon thread pool,
+        /// then concatenates them in input order, and applies tokenizer
+        /// post-processing once after all segment IDs have been joined.
+        /// TikToken classifies whitespace like the reference Kimi tokenizer
+        /// (Python's `str.isspace`), while Baseten uses `char::is_whitespace`;
+        /// the two differ only on runs of U+001C..U+001F.
         ///
         /// Backends must not implement this by flattening the segments first,
         /// because that discards the special-token trust boundary.
@@ -202,6 +225,18 @@ pub mod traits {
         /// return an error explaining why the tokenizer is incompatible.
         fn validate_prefix_cache(&self) -> Result<()> {
             Err(Error::msg("tokenizer does not support prefix caching"))
+        }
+
+        /// Validate that a segment which allows special tokens encodes to the ids
+        /// [`Encoder::encode`] gives its text, so the prefix cache can serve it.
+        ///
+        /// Implementations opt in by returning `Ok(())`, as with
+        /// [`Self::validate_prefix_cache`]. A backend whose segmented encoding cuts
+        /// the text by position, like the tiktoken reference pieces, must not.
+        fn validate_segment_prefix_cache(&self) -> Result<()> {
+            Err(Error::msg(
+                "tokenizer does not support prefix caching within a segment",
+            ))
         }
 
         /// Apply construction-time [`TokenizerOptions`].
@@ -420,9 +455,10 @@ where
 /// Create a tokenizer from a file path to a tokenizer file.
 /// The file extension is used to determine the tokenizer type.
 /// Supported file types are:
+/// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
     create_tokenizer_from_file_with_options(file_path, Default::default())
 }
@@ -430,9 +466,10 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// Create a tokenizer from a file path to a tokenizer file with additional tokenizer option.
 /// The file extension is used to determine the tokenizer type.
 /// Supported file types are:
+/// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,
@@ -440,6 +477,11 @@ pub fn create_tokenizer_from_file_with_options(
     use traits::Tokenizer as _;
 
     let path = Path::new(file_path);
+    if TekkenTokenizer::is_tekken_file(path) {
+        let tokenizer = TekkenTokenizer::from_file(file_path)?.with_options(options);
+        return Ok(Arc::new(tokenizer));
+    }
+
     let extension = path
         .extension()
         .and_then(std::ffi::OsStr::to_str)

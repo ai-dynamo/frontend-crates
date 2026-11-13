@@ -6,4 +6,35 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-{}
+beam: {}
+gpt_oss: {}
+kimi_k3: {}
+muse_glimmer: {}
+gemma4: {}
+deepseek_v41:
+  UNIFIED.5-dsml_unterminated_parameter_then_call:
+    golden:
+      note: 'FIXME (v2 defect): an unterminated parameter consumes the later invoke instead of preserving the complete trailing call.'
+      actual: tool_call f {"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}
+glm47: {}
+deepseek_v4:
+  UNIFIED.5-dsml_unterminated_parameter_then_call:
+    golden:
+      note: 'FIXME (v2 defect): an unterminated parameter consumes the later invoke instead of preserving the complete trailing call.'
+      actual: tool_call f {"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"}
+  UNIFIED.5-dsml_unterminated_parameter_then_empty_call:
+    golden:
+      note: 'FIXME (v2 defect): an unterminated parameter consumes the later invoke instead of preserving the complete trailing call.'
+      actual: tool_call get_weather {}
+kimi_k2: {}
+nemotron_v3:
+  UNIFIED.enum_contradicting_declared_type.nemotron_v3:
+    golden:
+      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
+      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
+qwen3:
+  UNIFIED.enum_contradicting_declared_type.qwen3:
+    golden:
+      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
+      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
+minimax_m3: {}

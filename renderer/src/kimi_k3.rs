@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Native Kimi K3 XTML prompt rendering.
+//! Native Kimi K3 and K3.1 XTML prompt rendering.
 //!
 //! K3 does not ship a Jinja chat template. Its model-side `encoding_k3.py`
 //! emits a sequence of segments where protocol markers are encoded with
@@ -43,15 +43,31 @@ const END_OF_MSG_TOKEN: &str = "<|end_of_msg|>";
 const MEDIA_PAD: &str = "<|media_pad|>";
 const VALID_THINKING_EFFORTS: &[&str] = &["low", "high", "max"];
 
+#[derive(Debug, Clone, Copy)]
+enum KimiVersion {
+    K3,
+    K31,
+}
+
 #[derive(Debug, Clone)]
 pub struct KimiK3Formatter {
     exclude_tools_when_tool_choice_none: bool,
+    version: KimiVersion,
 }
 
 impl KimiK3Formatter {
     pub fn new(exclude_tools_when_tool_choice_none: bool) -> Self {
         Self {
             exclude_tools_when_tool_choice_none,
+            version: KimiVersion::K3,
+        }
+    }
+
+    /// K3.1 shares the K3 encoding and thinking-effort values.
+    pub fn new_k31(exclude_tools_when_tool_choice_none: bool) -> Self {
+        Self {
+            version: KimiVersion::K31,
+            ..Self::new(exclude_tools_when_tool_choice_none)
         }
     }
 
@@ -95,9 +111,14 @@ impl KimiK3Formatter {
         // clients to know K3-specific chat-template arguments.
         let thinking = named_tool.is_none() && thinking_bool_from_args(args).unwrap_or(true);
         let thinking_effort = resolve_thinking_effort(args);
+        let model_name = match self.version {
+            KimiVersion::K3 => "Kimi K3",
+            KimiVersion::K31 => "Kimi K3.1",
+        };
         if thinking && !VALID_THINKING_EFFORTS.contains(&thinking_effort.as_str()) {
             return Err(PromptRenderError::invalid_request(format!(
-                "Unsupported Kimi K3 thinking_effort={thinking_effort:?}; supported values are low, high, and max"
+                "Unsupported {model_name} thinking_effort={thinking_effort:?}; supported values are {}",
+                VALID_THINKING_EFFORTS.join(", ")
             ))
             .into());
         }
@@ -145,7 +166,7 @@ impl ChatSegments {
 }
 
 fn json_value(value: minijinja::value::Value) -> Result<Value> {
-    serde_json::to_value(&value).context("Failed to convert template value to JSON")
+    crate::python::template_json(&value).context("Failed to convert template value to JSON")
 }
 
 fn resolve_tool_choice(tool_choice: Option<&Value>) -> Result<(Option<&str>, Option<&str>)> {
@@ -1375,6 +1396,93 @@ mod tests {
             Some(PromptRenderError::InvalidRequest(message))
                 if message.contains("thinking_effort=\"medium\"")
         ));
+    }
+
+    #[test]
+    fn k31_rejects_medium_effort_like_current_checkpoint() {
+        let crate::PromptFormatter::OAI(formatter) = crate::template::kimi_k3_formatter_for(
+            &Some("kimi_k31".to_string()),
+            "served-name",
+            true,
+        )
+        .unwrap();
+        // Reference: encoding_k3.py at checkpoint revision d9e99b07.
+        for key in ["thinking_effort", "reasoning_effort"] {
+            let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+            request.args.insert(key.to_string(), json!("medium"));
+            let error = formatter.render(&request).unwrap_err();
+            let message = invalid_request_message(&error);
+            assert!(
+                message.contains("thinking_effort=\"medium\""),
+                "{key}: {message}"
+            );
+            assert!(
+                message.contains("supported values are low, high, max"),
+                "{message}"
+            );
+            let prompt_error = formatter.render_prompt(&request).err().unwrap();
+            assert_eq!(invalid_request_message(&prompt_error), message, "{key}");
+        }
+    }
+
+    #[test]
+    fn factory_selects_model_specific_error_name() {
+        for (model_type, name, model_name) in [
+            (Some("kimi_k31"), "served-name", "Kimi K3.1"),
+            (Some("kimi_k31"), "moonshot/kimi-k3", "Kimi K3.1"),
+            (Some("kimi_k3"), "moonshot/kimi-k3.1", "Kimi K3"),
+            (None, "moonshot/kimi-k3", "Kimi K3"),
+            (None, "moonshot/kimi-k3.1", "Kimi K3.1"),
+            (None, "kimi_k3.1-instruct", "Kimi K3.1"),
+            (None, "kimik3.1", "Kimi K3.1"),
+            (None, "kimi-k31", "Kimi K3.1"),
+            (None, "kimi_k31", "Kimi K3.1"),
+            (None, "kimik31", "Kimi K3.1"),
+        ] {
+            let crate::PromptFormatter::OAI(formatter) =
+                crate::template::kimi_k3_formatter_for(&model_type.map(str::to_owned), name, true)
+                    .unwrap();
+            let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+            request
+                .args
+                .insert("thinking_effort".to_string(), json!("medium"));
+            let error = formatter.render(&request).unwrap_err();
+            let message = invalid_request_message(&error);
+            assert!(
+                message.starts_with(&format!("Unsupported {model_name} thinking_effort=")),
+                "model_type={model_type:?}, name={name}"
+            );
+        }
+    }
+
+    #[test]
+    fn k31_preserves_shared_efforts_and_rejects_invalid_values() {
+        let crate::PromptFormatter::OAI(formatter) = crate::template::kimi_k3_formatter_for(
+            &Some("kimi_k31".to_string()),
+            "served-name",
+            true,
+        )
+        .unwrap();
+        for key in ["thinking_effort", "reasoning_effort"] {
+            for effort in ["low", "high", "max"] {
+                let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+                request.args.insert(key.to_string(), json!(effort));
+                assert_eq!(
+                    formatter.render(&request).unwrap(),
+                    fmt().render(&request).unwrap()
+                );
+            }
+            let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+            request.args.insert(key.to_string(), json!("invalid"));
+            let error = formatter.render(&request).unwrap_err();
+            let message = invalid_request_message(&error);
+            assert!(message.contains("Kimi K3.1"), "{message}");
+            assert!(message.contains("invalid"), "{message}");
+            assert!(
+                message.contains("supported values are low, high, max"),
+                "{message}"
+            );
+        }
     }
 
     // -- Kimi Partial Mode (prefix continuation) --

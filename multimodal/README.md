@@ -15,6 +15,7 @@ against the mirrored HF processor.
 | ---------- | ------- | ---- |
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool |
 | `fetch`    | off     | `fetch::MediaFetcher`, a protected http(s)/data: fetcher for untrusted URLs (SSRF policy, redirect revalidation, byte caps); links reqwest and tokio. The trusted-source `fetch_bytes*` helpers in the same module are still stubs |
+| `video-decode` | off | `video_decode`: MP4 / WebM / Matroska demuxing and decoding to RGB frames, through NVDEC or (VP8 / VP9) libvpx, both loaded at runtime; links `matroska-demuxer`. 64-bit Linux only |
 
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
@@ -36,8 +37,8 @@ per request:                        │
 image sources, caps ───────────────►│  fetch::fetch_bytes (stub)  ─► raw bytes
       ├─ supplied mm_hashes ───────►│  use unchanged
       ├─ bytes, no supplied hash ──►│  content_hash_bytes
-      └─ bytes ────────────────────►│  image::decode::decode_rgb
-        └─ rgb ────────────────────►│  family.process_item      (per item; the engine drives
+      └─ bytes ────────────────────►│  family.decode_image
+        └─ decoded media ──────────►│  family.process_item      (per item; the engine drives
                                     │                            the loop, optionally fanning
                                     │                            out on `execution`)
                                     │     │ ProcessedItem
@@ -74,6 +75,9 @@ prompt length (token costs)         │
 | `models/` | one module per family — `models::qwen_vl` first |
 | `image/` | decode (8-bit only, PIL-matching), header-only dimension probe, bit-exact resize kernels, transforms |
 | `fetch` *(feature)* | `MediaFetcher`: protected fetcher for untrusted http(s)/data: URLs. Also a planned trusted-source helper (`fetch_bytes*`: data:/base64/file/http, `requests`-parity proxy semantics) that is still a stub returning `MmError::Unsupported` and is not for untrusted request URLs |
+| `video_decode` *(feature)* | `Video` (open once: `info`, `decode`, `decode_sampled`) and the one-shot `probe`, `decode_frames`, `decode_sampled`: MP4 / WebM / Matroska to the RGB frames a caller names, through NVDEC or libvpx, each frame resized by a `Fit` as it is decoded (§2.4) |
+| `video` | per-request video inputs: `VideoOptions` (`fps`, `max_frames`, `num_frames`) → `resolve_num_frames`; `VideoPixelBudget` |
+| `frames` | `VideoFrames`, what a decoder hands over (RGB + timestamps), and `encode_jpeg_frames` for a backend that takes images but not video |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -127,6 +131,10 @@ pub fn spec_from_hf_configs(config_json: &str, preprocessor_config_json: &str)
 pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 ```
 
+`spec_from_model_dir` reads `preprocessor_config.json`, or the nested
+transformers v5 `processor_config.json` when a checkpoint ships only that
+file (GLM-5.3-Flash).
+
 ### 2.1 A router (e.g. dynamo) — accounting and routing, no pixel work
 
 | when | API | in → out |
@@ -150,7 +158,7 @@ decoded media or a passthrough URL.
 | --- | --- | --- |
 | boot, per worker pool | `registry::build_processor` | spec pre-resolved by the engine's gate or config dir → `Box<dyn MmFamilyProcessor>` |
 | per image without a supplied hash | `content_hash_bytes` | encoded bytes → SGLang's fallback `u64` identity |
-| per image | `image::decode::decode_rgb` | bytes + `DecodeLimits` → `(rgb, h, w)` (8-bit only, PIL-matching, header-checked caps); the engine wraps it as `DecodedMedia::Image` |
+| per image | `MmFamilyProcessor::decode_image` | bytes + `DecodeLimits` → `DecodedMedia::Image` (8-bit only, header-checked caps, family-specific EXIF and alpha policy) |
 | per image | `MmFamilyProcessor::process_item` | `DecodedMedia` → `ProcessedItem` (preserves modality, feature-token count, tensors, and optional geometry) |
 | per request | `MmFamilyProcessor::layout` | input_ids + processed items → `TokenLayout` (a description, not yet applied) |
 | per request | `token_layout::apply_layout` | ids + `TokenLayout` + per-item feature-token counts → expanded ids, per-item offsets, and feature ranges (where feature embeddings go); validates the layout (source covered exactly once, each item placed once and in prompt order, feature ranges match the produced embeddings) |
@@ -179,8 +187,8 @@ for (bytes, supplied_hash) in images {                  // fetched + capped by t
         None => content_hash_bytes(&bytes),
     };
     hashes.push(hash);
-    let (rgb, height, width) = image::decode::decode_rgb(&bytes, &limits)?;
-    items.push(family.process_item(&DecodedMedia::Image { rgb, height, width })?);
+    let media = family.decode_image(&bytes, &limits)?;
+    items.push(family.process_item(&media)?);
 }
 let input_ids: Vec<i32> = match request_ids { Some(ids) => ids, None => tokenizer.encode(&text)? };
 let layout: TokenLayout = family.layout(&input_ids, &items)?;
@@ -227,6 +235,52 @@ ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
 The engine scatters the ViT's 12 output embeddings into positions `2..14`
 (from `feature_ranges`) and feeds `positions` to the model's rotary path.
 
+### 2.4 Video (feature `video-decode`)
+
+| when | API | in → out |
+| --- | --- | --- |
+| boot, per model | `serde_json::from_str::<Qwen3VlVideo>` | `video_preprocessor_config.json` → the Qwen3-VL / Cosmos3 sizing rule |
+| boot | `VideoDecodeLimits::default()` | operator caps: 8192² frames, 512 MiB output, 512 MiB WebM / Matroska file |
+| per video | `video_decode::Video::open` | `&bytes` or any `ByteSource` (a file, a ranged download) + limits → the demuxed video; `info()` gives `VideoInfo` (codec, size, duration, fps, frame count) without decoding |
+| per video | `video::resolve_num_frames` | request `VideoOptions` (`fps` / `max_frames` / `num_frames`) + duration + frame count → frames to keep |
+| per video | `Video::decode` | indices (display order, non-decreasing) + `Option<&dyn Fit>` + limits → `VideoFrames` |
+| per video, no rule | `Video::decode_sampled` | `num_frames` + limits → evenly spaced frames at source size (`sample_indices` gives the same indices for `decode`) |
+| one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
+| image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
+
+`fit` is optional: `None` keeps the selected frames at the source size;
+`FrameResize` is a fixed size, `models::qwen_vl::Qwen3VlVideoFit` the
+Qwen3-VL / Cosmos3 rule under a request `VideoPixelBudget`, and a consumer
+implements `Fit` for any other model.
+
+Decoding runs on CUDA device 0: the first device `CUDA_VISIBLE_DEVICES`
+leaves, in CUDA's order (fastest first unless `CUDA_DEVICE_ORDER=PCI_BUS_ID`,
+so not always `nvidia-smi`'s GPU 0). `cuvidGetDecoderCaps` on that GPU decides
+which codecs and frame sizes NVDEC takes. VP8 always decodes on the CPU
+through libvpx, and VP9 does when NVDEC reports it unsupported (no driver
+library, no GPU, or a codec or size the GPU lacks); other NVDEC errors fail
+the decode. NVDEC needs the driver's `libnvcuvid.so.1`: in a container,
+`NVIDIA_DRIVER_CAPABILITIES` must include `video` (the NVIDIA Container
+Toolkit's default, for an image that does not set it, is `compute,utility`),
+e.g. `-e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`.
+
+```rust
+use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};
+use dynamo_multimodal::video::resolve_num_frames;
+use dynamo_multimodal::video_decode::{self, Video, VideoDecodeLimits};
+
+let model: Qwen3VlVideo = serde_json::from_str(&video_preprocessor_config_json)?; // boot
+let limits = VideoDecodeLimits::default();
+
+let video = Video::open(&bytes, &limits)?;                                        // per request
+let info = video.info();
+let n = resolve_num_frames(&options, info.duration, info.frame_count)?;
+let indices = video_decode::sample_indices(info.frame_count, n)?; // evenly spaced, or the model's own rule
+let fit = Qwen3VlVideoFit { video: &model, budget };        // `budget`: the request's VideoPixelBudget
+let frames = video.decode(&indices, Some(&fit), &limits)?;
+// frames.frame(i) is Some(RGB) at frames.width() x frames.height(); frames.timestamps()[i] its time
+```
+
 ## 3. Python-parity map
 
 Each item reproduces a specific Python behavior, most of them **bit-exactly**:
@@ -249,6 +303,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
+| `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
@@ -272,7 +327,7 @@ Three layers, all pinned to bitwise-equality:
    unarmed (the default).
 2. **Crate-local golden replay** — this repo's CI has no Python/HF, so
    committed fixtures drive the §2.2 composition (`build_processor` →
-   `decode_rgb` → `process_item` → `layout` → `apply_layout` → `positions`)
+   `decode_image` → `process_item` → `layout` → `apply_layout` → `positions`)
    and compare **every output field bitwise**, plus the resampler stage on
    its own (`resized_<i>.u8`) so a failure names the stage: both resamplers,
    both smart_resize branches, multi-image, and a tall image that crosses
@@ -336,28 +391,119 @@ python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
 The stdlib-only generator executes the pinned source's pure geometry
 functions. Fixture settings are mathematical test inputs, not model defaults.
 
-## 6. Roadmap
+## 6. GLM-5.3-Flash images
+
+
+`Glm5NextImageProcessor` adds the full image pipeline on top of the shared
+planner. Select `ProcessorSpec::Glm5NextImage`, or pass a `glm5_next` JSON
+spec with `image_mean`, `image_std`, and `resample` (`aten_u8` or `pil`) in
+addition to the planning fields below. Supplying pixel fields requires both
+normalization arrays; an incomplete pixel spec is an error.
+PIL preprocessing requires `patch_expand_factor = 1`; other values return
+`Unsupported` because the pinned HF PIL processor ignores this knob during
+resize and would disagree with the shared metadata planner.
+
+Call `family.decode_image(bytes, &limits)` before `family.process_item`.
+The default trait method preserves Qwen's plain RGB conversion. GLM uses
+`image::decode::decode_rgb_smart`: EXIF transpose followed by alpha compositing
+onto an edge-contrasting background, matching SGLang's `smart_to_rgb` for PNG,
+WebP, GIF, and alpha-bitmask BMP. GLM then resizes the content without
+unnecessary upscaling, zero-pads to the planned canvas, normalizes and
+patchifies, expands placeholders, and emits image-only M-RoPE positions.
+Video and samples deeper than 8 bits remain unsupported.
+
+The metadata-only `Glm5NextSpec` API and `spec_from_hf_configs` keep their
+planning contract. Python-free consumers can combine that planning spec
+with explicitly resolved normalization and resampling in `Glm5NextImageSpec`.
+
+The `glm5_next_pixels` test replays the 26 Python CPU cases captured in
+[SGLang PR #46563](https://github.com/sgl-project/sglang/pull/46563), including
+both resamplers, multiple images, token overrides, EXIF, and alpha formats.
+See `tests/fixtures/glm5_next/pixels/README.md` for provenance and regeneration.
+
+
+`models::glm5_next::plan_image_grid(width, height, &spec)` returns the padded
+canvas, the `patch_size` grid (`image_grid_thw = [1, grid_h, grid_w]`), and the
+merged token count `grid_h * grid_w / merge_size²`, which is how many
+`<|image|>` copies the HF processor writes into the prompt. The canvas comes
+from the model's own `smart_resize`: bounds are vision-token counts
+(`min_image_tokens` / `max_image_tokens`), converted at
+`temporal_patch_size * factor²` pixels per token with
+`factor = patch_size * merge_size * patch_expand_factor`; sides align up,
+small images upscale to the minimum, and oversize images are cut by the
+processor's binary search over the content height. vLLM, SGLang, and
+TensorRT-LLM all take `image_grid_thw` from that HF image processor, so
+routers and workers share one geometry contract.
+
+The pixel-free planner mirrors the pinned
+[transformers v5.19.0 source](https://github.com/huggingface/transformers/blob/c4c4605f961877852b89b97478536bb3a26b6fd1/src/transformers/models/glm5_next/image_processing_glm5_next.py)
+(unchanged since v5.16.1). Python's `int / int` divisions are reproduced with
+integer arithmetic, which is exact while the numerator stays below 2⁵³;
+larger products return `LimitExceeded` rather than risk a one-patch drift.
+
+The registry exposes **metadata-only** planning: `ProcessorSpec::Glm5Next` /
+`{"family": "glm5_next", ...}` take `image_token_id`, an optional
+`video_token_id`, and the six geometry knobs above; there are no serving
+defaults. `spec_from_hf_configs` selects this family for `glm5_next` and
+accepts either the flat image-processor object or the nested
+`processor_config.json` (`image_processor` / `video_processor` /
+`processor_class`). Knobs that only shape pixel values are ignored; `do_resize`
+must stay on, crop/pad must stay off, unknown knobs are refused, and processor
+`patch_size` / `merge_size` / `temporal_patch_size` must agree with
+`vision_config`.
+
+The chat template renders each image as
+`<|begin_of_image|><|image|><|end_of_image|>`; `layout_from_metadata` expands
+only `<|image|>` (`layout_by_placeholder`), so the delimiters stay text and
+`feature_ranges` covers exactly the repeated image ids. GLM expands **video**
+frames with the same image token, which this planner does not reproduce:
+video metadata is `Unsupported`, and a prompt containing the declared
+`video_token_id` is refused rather than mis-attributed. `process_item` and
+processed-item `layout` also return `Unsupported`.
+
+Regenerate/check the Python-derived fixtures with:
+
+```sh
+python3 multimodal/tests/fixtures/glm5_next/generate.py
+python3 multimodal/tests/fixtures/glm5_next/generate.py --check
+python3 multimodal/tests/fixtures/glm5_next/generate.py --verify-hf  # needs transformers + torch
+```
+
+The stdlib-only generator executes the pinned source's pure `smart_resize`
+and repeats the geometry lines of `resize` / `_preprocess`; `--verify-hf`
+cross-checks the planned grid against the installed HF processor's
+`image_grid_thw`. Fixture settings beyond the first group are mathematical
+test inputs, not model defaults.
+
+## 7. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
-for `models::qwen_vl`. For video it has the request arithmetic, without
-decoding:
+for `models::qwen_vl`. For video it decodes to frames and has the request
+arithmetic; no family turns the frames into tensors yet:
 
+- `video_decode` (feature `video-decode`, §2.4): MP4 / WebM / Matroska
+  demuxing; H.264, HEVC, VP9 and AV1 through NVDEC, VP8 and VP9 on the CPU
+  through libvpx when NVDEC cannot (both loaded at runtime; 64-bit Linux).
+  `decode_frames` keeps the frames the caller names and resizes each to the
+  size a `video_decode::Fit` gives. The decoder itself knows no model.
 - `video`: per-request options. `VideoOptions` (`fps`, `max_frames`,
   `num_frames`, vLLM's `media_io_kwargs.video` keys) and `resolve_num_frames`
   give the frame count; `VideoPixelBudget` (`total_pixels`,
   `max_pixels_per_frame`, specific to this crate) carries pixel budgets.
 - `models::qwen_vl::Qwen3VlVideo`: Qwen3-VL video sizing, read from the
-  model's `video_preprocessor_config.json` (only `Qwen3VLVideoProcessor`), and
-  `smart_video_resize`, golden-tested against HF's own function.
+  model's `video_preprocessor_config.json` (`Qwen3VLVideoProcessor`, or
+  Cosmos3-Edge's `Cosmos3EdgeVideoProcessor`), and `smart_video_resize`,
+  golden-tested against HF's own function.
 
 What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;
    the feature currently exposes signatures only, and every call returns
    `MmError::Unsupported`.
-2. **Video decoding** — demuxing and decoding to sampled frames; the
-   arithmetic above takes the frame count and size from the consumer.
-3. **Family coverage** — GLM and Kimi are the validated candidates after
+2. **Video families** — temporal patchify, timestamp layouts and video
+   M-RoPE on decoded frames (`models::qwen_vl` first).
+3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
+   (§6); its video expansion, then Kimi, are next after
    `models::qwen_vl`.
 
 ### Video and audio: planned layout

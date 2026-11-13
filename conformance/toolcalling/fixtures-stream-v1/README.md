@@ -8,7 +8,7 @@ This corpus originally carried a `v2` suffix because the incremental parser was 
 
 The `conformance/toolcalling/fixtures-batch-v1/` corpus is batch-first v1 data. Streaming is different: vLLM Python, vLLM Rust, SGLang Python, and Dynamo Rust stream parsers emit per-chunk deltas, and those deltas can differ even when the final assembled call is the same. Streaming evidence lives here, not in the v1 corpus.
 
-Complete batch text fed through non-Unified streaming parsers lives in `conformance/toolcalling/fixtures-batch-on-stream-v1/`. Use both directories when adding an incremental parser: stream fixtures check chunk behavior, and batch-on-stream fixtures check whether the parser reconstructs the batch result.
+Retained stream fixtures check chunk behavior; retained batch-on-stream fixtures check complete-text reconstruction. New parser and scenario coverage uses Unified authored inputs/GOLDEN and latest tests; see the [contributor workflow](../../README.md#edit-parsers-and-authored-inputsgolden).
 
 ## Layout (versioned, no unversioned baseline)
 
@@ -71,7 +71,7 @@ A delta is `{index, name?, arguments?}`. The v2 Rust core delta does not include
 - `unavailable.<impl>` or `expected.<impl>.unavailable` records a parser that does not exist, cannot run, or failed before output was available.
 - `expected.<impl>.error` records a parser exception that is expected for the case.
 
-Every parser-failure marker in the generated HTML must have the exact error text in YAML. Do not rely on renderer inference for v2 parser failures.
+Every parser-failure marker in the browser matrix must have the exact error text in YAML. Do not rely on renderer inference for v2 parser failures.
 
 ## Families
 
@@ -79,26 +79,11 @@ Every parser-failure marker in the generated HTML must have the exact error text
 - `harmony_text/` uses the same parser through the text path. Label: `gpt-oss (harmony, text)`. The text path re-tokenizes a held suffix so character-split Harmony markers can settle before token commit.
 - Other family directories hold peer stream captures and Dynamo TODOs until their Dynamo parser v2 implementation lands.
 
-Harmony is only the first example. DS4 and later streaming families should use the same schema, capture flow, and validation flow.
+These schemas describe retained non-Unified evidence. New families use the Unified contributor workflow.
 
-## Capture Flow
+## Capture maintenance
 
-Use `conformance/utils/capture.sh` for new captures:
-
-```bash
-# Example: capture one Dynamo v2 Rust stream fixture into JSON for inspection.
-conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml \
-  --output /tmp/dynamo_stream.json
-
-# Example: capture all stream behavior and refresh `fixtures-stream-v1/`.
-conformance/utils/capture.sh stream \
-  --vllm-container vllm-localdev \
-  --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.23.0
-```
-
-Use `capture.sh stream` for all-family captures; do not add a second wrapper for the same workflow.
+Keep these archives unchanged. No backfill is needed for [the latest-capture change](../../../docs/CONFORMANCE-LATEST-PLAN.md); historical maintenance and versioned v2 removal are deferred to later PRs.
 
 ## Conformance Tests
 
@@ -107,5 +92,4 @@ Use `capture.sh stream` for all-family captures; do not add a second wrapper for
 ```bash
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
-conformance/utils/render_table_v2.sh
 ```

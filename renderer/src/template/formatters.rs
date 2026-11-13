@@ -3,11 +3,15 @@
 
 use std::sync::Arc;
 
+use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
     ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
     raise_exception, strftime_now, tojson,
 };
-use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
+use super::{
+    ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
+    SystemNormalization,
+};
 use either::Either;
 use minijinja::{Environment, Value, context};
 use serde_json::json;
@@ -101,9 +105,36 @@ fn detect_system_normalization(
         tok,
     );
     SystemNormalization {
+        fallback_developer: false,
         demote_nonleading_system: nonleading_system || mid_after_assistant,
         coalesce_consecutive_users: consecutive_users,
     }
+}
+
+/// Probe the representation actually used for rendering. An array-only
+/// template rejecting strings is not evidence that it rejects a message role.
+fn detect_developer_fallback(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+    requires_content_arrays: bool,
+) -> bool {
+    let content = |text: &str| {
+        if requires_content_arrays {
+            json!([{"type": "text", "text": text}])
+        } else {
+            json!(text)
+        }
+    };
+    let messages = |role: &str| {
+        json!([
+            {"role": role, "content": content("s")},
+            {"role": "user", "content": content("u")}
+        ])
+    };
+    !probe_template_raises(env, template_name, messages("system"), tools, tok)
+        && probe_template_raises(env, template_name, messages("developer"), tools, tok)
 }
 
 /// Detects whether a template renders JSON-string `tool_calls[].function.arguments`
@@ -214,6 +245,75 @@ fn detect_content_array_usage(env: &Environment) -> bool {
 
     // If array works but string doesn't, template requires arrays
     out_array.contains("template_test") && !out_string.contains("template_test")
+}
+
+/// Detects text-part rendering without assuming a separator. Adding an unused
+/// field must not change the output: printing an array or its parts (including
+/// through `tojson`) would expose that field instead of just their text.
+///
+/// This is conservative: templates that reject extra fields or produce changing
+/// output can miss detection and retain the existing string fallback.
+fn detect_native_text_array_roles(
+    env: &Environment,
+    template_name: &str,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+    arguments_string: bool,
+) -> Vec<&'static str> {
+    const FIRST: &str = "dynamo_text_array_probe_first";
+    const LAST: &str = "dynamo_text_array_probe_last";
+    let Ok(template) = env.get_template(template_name) else {
+        return Vec::new();
+    };
+    let arguments = if arguments_string {
+        json!("{}")
+    } else {
+        json!({})
+    };
+    let render = |role: &str, content: &serde_json::Value| {
+        let mut message = json!({"role": role, "content": content});
+        let user = json!({"role": "user", "content": "u"});
+        let messages = match role {
+            "user" => json!([message]),
+            "assistant" => json!([user, message, user]),
+            "tool" => {
+                message["tool_call_id"] = json!("call_probe");
+                let call = json!({"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "call_probe",
+                    "type": "function",
+                    "function": {"name": "probe", "arguments": arguments}
+                }]});
+                json!([user, call, message])
+            }
+            _ => json!([message, user]),
+        };
+        let ctx = context! {
+            messages => messages,
+            add_generation_prompt => false,
+            tools => tools,
+            bos_token => tok.bos,
+            eos_token => tok.eos,
+            unk_token => tok.unk,
+        };
+        template.render(ctx)
+    };
+    let parts = json!([{"type": "text", "text": FIRST}, {"type": "text", "text": LAST}]);
+    let mut with_metadata = parts.clone();
+    for part in with_metadata.as_array_mut().unwrap() {
+        part["__dynamo_probe_metadata"] = json!("unused");
+    }
+    ["system", "developer", "user", "assistant", "tool"]
+        .into_iter()
+        .filter(|role| {
+            let Ok(output) = render(role, &parts) else {
+                return false;
+            };
+            let (Some(first), Some(last)) = (output.find(FIRST), output.find(LAST)) else {
+                return false;
+            };
+            first < last && render(role, &with_metadata).is_ok_and(|other| other == output)
+        })
+        .collect()
 }
 
 /// Picks an image-placeholder template by sniffing the chat template source
@@ -526,14 +626,74 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
         .replace(OLD_TOOL_LOOP_END, NEW_TOOL_LOOP_END)
 }
 
-fn normalize_chat_template_source(source: &str) -> String {
+pub(super) fn normalize_chat_template_source(source: &str) -> String {
     let source = normalize_jinja_syntax(source);
 
     if is_gemma4_reasoning_field_template_source(&source) {
         adapt_gemma4_reasoning_template_source(&source)
+    } else if is_minimax_m2_template_source(&source) {
+        adapt_minimax_m2_thinking_template_source(&source)
     } else {
         source
     }
+}
+
+/// Find a capability marker in executable Jinja, excluding prose, comments,
+/// quoted strings and raw blocks. MiniJinja's undeclared-variable analysis
+/// treats `set x = x | default(...)` as already assigned and misses this
+/// template's self-defaulting `deferred_render_mode` declaration.
+pub(super) fn template_references_variable(source: &str, variable: &str) -> bool {
+    let mut offset = 0;
+    while offset < source.len() {
+        let rest = &source[offset..];
+        if rest.starts_with("{#") {
+            let Some(end) = rest.find("#}") else {
+                return false;
+            };
+            offset += end + 2;
+        } else if rest.starts_with("{{") || rest.starts_with("{%") {
+            let block = rest.starts_with("{%");
+            let Some(end) = find_tag_end(source, offset + 2, if block { "%}" } else { "}}" })
+            else {
+                return false;
+            };
+            let code = &source[offset + 2..end - 2];
+            if block && is_jinja_block_name(code, "raw") {
+                let Some(raw_end) = find_raw_block_end(source, end) else {
+                    return false;
+                };
+                offset = raw_end;
+                continue;
+            }
+            let mut chars = code.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == '\'' || ch == '"' {
+                    while let Some(next) = chars.next() {
+                        if next == '\\' {
+                            chars.next();
+                        } else if next == ch {
+                            break;
+                        }
+                    }
+                } else if ch.is_ascii_alphabetic() || ch == '_' {
+                    let mut identifier = String::from(ch);
+                    while chars
+                        .peek()
+                        .is_some_and(|next| next.is_ascii_alphanumeric() || *next == '_')
+                    {
+                        identifier.push(chars.next().unwrap());
+                    }
+                    if identifier == variable {
+                        return true;
+                    }
+                }
+            }
+            offset = end;
+        } else {
+            offset += rest.chars().next().unwrap().len_utf8();
+        }
+    }
+    false
 }
 
 impl JinjaEnvironment {
@@ -703,10 +863,24 @@ impl HfTokenizerConfigJsonFormatter {
                 &tool_use_probe_tools,
                 &probe_tokens,
             );
-        let default_system_normalization =
+        let mut default_system_normalization =
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
-        let tool_use_system_normalization =
+        let mut tool_use_system_normalization =
             detect_system_normalization(&env, "tool_use", &tool_use_probe_tools, &probe_tokens);
+        default_system_normalization.fallback_developer = detect_developer_fallback(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+        );
+        tool_use_system_normalization.fallback_developer = detect_developer_fallback(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+        );
         let default_template_requires_reasoning_string = default_template_handles_reasoning
             && detect_reasoning_string_requirement(
                 &env,
@@ -723,14 +897,45 @@ impl HfTokenizerConfigJsonFormatter {
                 &probe_tokens,
                 tool_use_template_handles_tool_calls_arguments_string,
             );
+        let default_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            default_template_handles_tool_calls_arguments_string,
+        );
+        let tool_use_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            tool_use_template_handles_tool_calls_arguments_string,
+        );
+
+        // Detect each variant once so rendering can safely fall back to flat tools.
+        let handles_native_tools = |name| {
+            env.get_template(name).ok().is_some_and(|template| {
+                template_references_variable(template.source(), "deferred_render_mode")
+            })
+        };
+        let default_template_handles_native_tools = handles_native_tools("default");
+        let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
+
+        let control_markers = super::oai::ControlMarkers::from_config(&config);
 
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
+            control_markers,
             mixins: Arc::new(mixins),
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
+            content_format: ChatTemplateContentFormat::Auto,
             requires_content_arrays,
+            default_native_text_array_roles,
+            tool_use_native_text_array_roles,
             exclude_tools_when_tool_choice_none,
+            default_template_handles_native_tools,
+            tool_use_template_handles_native_tools,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
             default_template_requires_reasoning_string,
@@ -765,6 +970,103 @@ mod tests {
         let mut env = JinjaEnvironment::default().env();
         env.add_template_owned("default", src.to_string()).unwrap();
         env
+    }
+
+    #[test]
+    fn text_array_probe_rejects_containers_errors_and_incomplete_text() {
+        for body in [
+            "{{ m.content }}",
+            "{{ m.content | tojson }}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {% for p in m.content %}{{ p }}{% endfor %}{% endif %}",
+            "{{ '<user>' + m.content + '</user>' }}",
+            "{{ m.content.strip() }}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {{ m.content[0].text }}{% endif %}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {% for p in m.content %}\
+             {% if p.__dynamo_probe_metadata is defined %}{{ raise_exception('extra field') }}{% endif %}\
+             {{ p.text }}{% endfor %}{% endif %}",
+            "{% if m.content is string %}{{ m.content }}{% else %}\
+             {% for p in m.content %}{{ p.text }}{{ p | length }}{% endfor %}{% endif %}",
+        ] {
+            let source = format!("{{% for m in messages %}}{body}{{% endfor %}}");
+            let formatter = HfTokenizerConfigJsonFormatter::new(
+                serde_json::from_value(json!({"chat_template": source})).unwrap(),
+                ContextMixins::new(&[]),
+            )
+            .unwrap();
+            assert!(
+                formatter.default_native_text_array_roles.is_empty(),
+                "{body}"
+            );
+            assert!(
+                formatter.tool_use_native_text_array_roles.is_empty(),
+                "{body}"
+            );
+        }
+    }
+
+    #[test]
+    fn text_array_probe_supplies_tokens_tools_and_tool_call_history() {
+        let body = concat!(
+            "{% for m in messages %}",
+            "{% if m.tool_calls %}",
+            "{% if m.tool_calls[0].function.arguments is string %}",
+            "{{ m.tool_calls[0].function.arguments }}",
+            "{% else %}{{ raise_exception('arguments must be strings') }}{% endif %}",
+            "{% endif %}",
+            "{% if m.role == 'tool' and (m.tool_call_id != 'call_probe' or messages[-2].tool_calls[0].id != m.tool_call_id) %}",
+            "{{ raise_exception('missing tool call') }}{% endif %}",
+            "{% if m.content is string %}{{ m.content }}{% else %}",
+            "{% for p in m.content %}{{ p.text }}{% endfor %}{% endif %}",
+            "{% endfor %}{{ bos_token + eos_token + unk_token }}",
+        );
+        let default = format!(
+            "{{% if tools is not none %}}{{{{ raise_exception('unexpected tools') }}}}{{% endif %}}{body}"
+        );
+        let tool_use = format!(
+            "{{% if tools | length != 1 or tools[0].function.name != 'probe' %}}\
+             {{{{ raise_exception('missing tools') }}}}{{% endif %}}{body}"
+        );
+        let formatter = HfTokenizerConfigJsonFormatter::new(
+            serde_json::from_value(json!({
+                "chat_template": [{"default": default}, {"tool_use": tool_use}],
+                "bos_token": "<s>", "eos_token": "</s>", "unk_token": "<unk>",
+            }))
+            .unwrap(),
+            ContextMixins::new(&[]),
+        )
+        .unwrap();
+        let roles = ["system", "developer", "user", "assistant", "tool"];
+        assert_eq!(formatter.default_native_text_array_roles, roles);
+        assert_eq!(formatter.tool_use_native_text_array_roles, roles);
+    }
+
+    #[test]
+    fn test_generation_tags_with_and_without_left_trim() {
+        for (source, expected) in [
+            ("A {% generation %} B {% endgeneration %} C", "A  B  C"),
+            (
+                "A \n{%- generation %}\n B \n{%- endgeneration %}\n C",
+                "A B C",
+            ),
+            ("A {%- generation %} B {% endgeneration %} C", "A B  C"),
+            ("A {% generation %} B {%- endgeneration %} C", "A  B C"),
+        ] {
+            let formatter = HfTokenizerConfigJsonFormatter::new(
+                serde_json::from_value(json!({"chat_template": source})).unwrap(),
+                ContextMixins::new(&[]),
+            )
+            .unwrap();
+            let rendered = formatter
+                .env
+                .get_template("default")
+                .unwrap()
+                .render(context! {})
+                .unwrap();
+            assert_eq!(rendered, expected, "source: {source:?}");
+        }
     }
 
     /// NVIDIA-Nemotron-Parse ships a pure pass-through chat template

@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 import yaml
+import normalized_yaml
 
 from capture_stimulus import validate_family_scoped_cases
 
@@ -27,7 +28,7 @@ def _family_path(input_root: Path, family: str) -> Path:
     return path
 
 
-def _case_job(family: str, case: dict) -> dict:
+def _case_job(family: str, case_id: str, case: dict, *, mode: str) -> dict:
     scenario = case.get("scenario")
     if not isinstance(scenario, str) or not scenario:
         raise ValueError(f"{family}: case has no non-empty scenario")
@@ -58,27 +59,31 @@ def _case_job(family: str, case: dict) -> dict:
         "finish_reason": request["finish_reason"],
         "tools": request["tools"],
         "chunks": texts,
+        **({"case_id": case_id, "request": request, "golden": case["golden"]} if mode in {"batch", "stream"} else {}),
     }
 
 
-def build_job(input_root: Path, family: str) -> dict:
+def build_job(input_root: Path, family: str, *, mode: str = "unified") -> dict:
     path = _family_path(input_root, family)
-    document = yaml.safe_load(path.read_text())
-    if not isinstance(document, dict):
+    raw = yaml.safe_load(path.read_text())
+    if not isinstance(raw, dict):
         raise ValueError(f"{path}: expected a YAML mapping")
+    document = normalized_yaml.expand_family(raw)
     input_document = document.get("input_document") or {}
     if input_document.get("family") != family:
         raise ValueError(
             f"{path}: input_document.family={input_document.get('family')!r} does not match {family!r}"
         )
-    if input_document.get("mode") != "unified":
+    if raw.get("schema_version") != normalized_yaml.SCHEMA and input_document.get("mode") != "unified":
         raise ValueError(f"{path}: input_document.mode must be 'unified'")
     cases = document.get("cases")
     if not isinstance(cases, dict):
         raise ValueError(f"{path}: cases must be a mapping")
+    if mode not in {"unified", "batch", "stream"}:
+        raise ValueError(f"unknown capture mode: {mode}")
     jobs = [
-        _case_job(family, case)
-        for case in cases.values()
+        _case_job(family, case_id, case, mode=mode)
+        for case_id, case in cases.items()
         if case.get("lifecycle", "active") != "retired"
     ]
     validate_family_scoped_cases(jobs)
@@ -87,17 +92,30 @@ def build_job(input_root: Path, family: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--family", required=True, help="one family directory under --input-root"
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument(
+        "--family", help="one family directory under --input-root"
     )
+    selection.add_argument("--families", nargs="+", help="family subset; --output is a directory containing one job per family")
     parser.add_argument(
         "--input-root",
         type=Path,
         default=Path(__file__).resolve().parents[2] / "fixtures-unified-v2" / "families",
     )
     parser.add_argument("--output", type=Path, help="write JSON here instead of stdout")
+    parser.add_argument("--mode", choices=("unified", "batch", "stream"), default="unified")
     args = parser.parse_args()
-    payload = json.dumps(build_job(args.input_root, args.family), indent=2, ensure_ascii=False)
+    if args.families:
+        if args.output is None:
+            parser.error("--families requires --output directory")
+        if len(set(args.families)) != len(args.families):
+            parser.error("duplicate families")
+        jobs = {family: build_job(args.input_root, family, mode=args.mode) for family in args.families}
+        args.output.mkdir(parents=True, exist_ok=True)
+        for family, job in jobs.items():
+            (args.output / f"{family}.json").write_text(json.dumps(job, indent=2, ensure_ascii=False) + "\n")
+        return
+    payload = json.dumps(build_job(args.input_root, args.family, mode=args.mode), indent=2, ensure_ascii=False)
     if args.output:
         args.output.write_text(payload + "\n")
     else:

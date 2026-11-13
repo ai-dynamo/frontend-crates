@@ -13,6 +13,18 @@ For all *transitive* third-party crates pulled in as `Cargo.toml` `[dependencies
 
 ---
 
+## `dynamo-multimodal` — GLM image processing adapted from SGLang
+
+`multimodal/src/models/glm5_next/image.rs`,
+`multimodal/src/image/decode/smart.rs`, and the GLM pixel parity tests and
+fixtures are adapted from [SGLang PR #46563](https://github.com/sgl-project/sglang/pull/46563)
+at commit `916577f5450a0475807c3a07b0b5b8377708935c`, authored by Kan Wu
+and Zhihan Guo. The image path mirrors transformers' `Glm5NextImageProcessor`
+and SGLang's `smart_to_rgb`. SGLang and transformers are distributed under
+Apache License, Version 2.0, reproduced in this repository's `LICENSE`.
+
+---
+
 ## `dynamo-multimodal` — DSV4.1 geometry adapted from SGLang
 
 The geometry math in `multimodal/src/models/deepseek_v41.rs` is adapted from

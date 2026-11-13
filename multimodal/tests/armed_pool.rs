@@ -16,6 +16,10 @@ fn init_pool_arms_fanout_and_pins_the_thread_count() {
     execution::for_chunks_mut(&mut buf, 2, |i, chunk| chunk.fill(i));
     assert_eq!(buf, [0, 0, 1, 1, 2, 2, 3, 3]);
 
+    // Workers spawn asynchronously and name themselves once running; a
+    // broadcast returns only after every worker has run it.
+    execution::in_pool(|| rayon::broadcast(|_| ()));
+
     let named: Vec<String> = std::fs::read_dir("/proc/self/task")
         .expect("procfs")
         .filter_map(|entry| {
