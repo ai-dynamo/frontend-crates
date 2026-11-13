@@ -541,4 +541,45 @@ mod tests {
 
         assert_eq!(assemble(&deltas), vec![reasoning("Look it up.")]);
     }
+
+    #[test]
+    fn a_thought_ending_inside_an_open_quote_still_closes_at_eom() {
+        // `<|eom|>` is a special token: an unmatched quote before it must not hold it
+        // literal and pull the following messages into the thought.
+        for quote in ['`', '"', '\''] {
+            let input = format!(
+                "<|start|>assistant to=self<|message|>x {quote}<|eom|>\
+                 <|start|>assistant to=commentary<|message|>a {quote}b{quote}<|eom|>\
+                 <|start|>assistant to=user<|message|>Done.<|eot|>"
+            );
+            assert_every_chunking(
+                &input,
+                &[
+                    reasoning(&format!("x {quote}")),
+                    text(&format!("a {quote}b{quote}Done.")),
+                ],
+            );
+        }
+    }
+
+    #[test]
+    fn an_open_quote_in_content_does_not_swallow_the_next_call() {
+        // The later backtick would close the quote: without the control-token bound,
+        // the call and the answer's opening became literal commentary text.
+        let input = concat!(
+            "<|start|>assistant to=commentary<|message|>Use `x<|eom|>",
+            "<|start|>assistant to=get_weather<|message|><atem:function_calls>",
+            "<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris</atem:parameter>",
+            "</atem:invoke></atem:function_calls><|eom|>",
+            "<|start|>assistant to=user<|message|>Said `done`<|eot|>"
+        );
+        assert_every_chunking(
+            input,
+            &[
+                text("Use `x"),
+                call("get_weather", serde_json::json!({"city": "Paris"})),
+                text("Said `done`"),
+            ],
+        );
+    }
 }
