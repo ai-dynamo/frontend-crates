@@ -20,9 +20,9 @@ The parser implementations and test binding live under `parsers/`, grouped but s
 There are two separate version axes. Do not infer one from the other:
 
 - **Implementation generation:** `dynamo-parsers` / `dynamo_v1` is the stable batch parser, also used behind the streaming jail. `dynamo-parsers-v2` / `dynamo_v2` is the newer crate containing the incremental tool-only parsers and Unified parsers. These implementation names stay unchanged.
-- **Conformance convention:** `fixtures-stream-v1`, `fixtures-batch-on-stream-v1`, and `TOOLCALLING.streamv1.*` identify the legacy, non-Unified streaming convention. `fixtures-unified-v2` identifies Unified, where one parser owns the ordered reasoning, visible-text, and tool-call stream.
+- **Conformance convention:** `TOOLCALLING.streamv1.*` identified the retired non-Unified streaming convention. `fixtures-unified-v2` identifies Unified, where one parser owns the ordered reasoning, visible-text, and tool-call stream.
 
-The non-Unified incremental parser was originally called `stream-v2` because it was intended to replace the original batch+jail implementation. Unified arrived later and also used the v2 name. That left two different “v2” conventions. The corpus rename resolves the collision: **streaming v1 means legacy/non-Unified streaming; v2 means Unified**. A `dynamo_v2-*` capture can therefore appear inside `fixtures-stream-v1`; the directory names the convention, while the capture key names the implementation.
+The non-Unified incremental parser was originally called `stream-v2` because it was intended to replace the original batch+jail implementation. Unified arrived later and also used the v2 name. That left two different “v2” conventions. The corpus rename resolves the collision: **streaming v1 means legacy/non-Unified streaming; v2 means Unified**. The retired corpora are removed. Parser implementation names remain distinct from the Unified corpus convention.
 
 Dynamo selects parsers through `DYN_PARSER_VERSION=auto|1|2` and its pinned registry/adapters; conformance names do not determine runtime behavior. See [Dynamo routing](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) for defaults and fallback.
 
@@ -38,14 +38,10 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 |---|---|---|
 | `parsers/v1/src/` | v1 frontend-crates-owned | Stable batch parser (`dynamo-parsers`). Bug-fix only; do not put v2 streaming work here. |
 | `parsers/v1/tests/` | v1 frontend-crates-owned | v1 crate tests. |
-| `conformance/fixtures/toolcalling/fixtures-batch-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
-| `conformance/fixtures/reasoning/fixtures-v1/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
 | `conformance/utils/src/tables/` | frontend-crates-owned | Capture/storage value helpers and source metadata. |
 | `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case descriptions indexed by the catalog and read by browser/Node models. |
 | `parsers/v2/src/tool_calling/*` | v2 frontend-crate-owned | Rust home for streaming tool-calling parsers. Current Harmony implementation is `parsers/v2/src/tool_calling/harmony.rs`. |
 | `parsers/v2-py/` | v2 frontend-crate-owned | Test-only PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. Not published. |
-| `conformance/fixtures/toolcalling/fixtures-stream-v1/` | legacy streaming convention | Per-chunk fixtures for non-Unified stream parsers, including `dynamo_v2` implementation captures. |
-| `conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz` | legacy streaming convention | Complete batch text captured through non-Unified stream parsers for stream-vs-batch comparison. |
 | `conformance/viewer/` and `conformance/utils/src/assets/` | frontend-crate-owned | Shared JavaScript data/model engine and maintained matrix renderer. |
 
 ## Migration Steps
@@ -91,11 +87,8 @@ These files exist only for the parser v1/v2 migration and conformance workflow.
 |---|---|
 | `parsers/v2/` | Temporary Rust parser crate for v2 streaming work. |
 | `parsers/v2-py/` | Temporary PyO3 binding crate/package for v2 streaming work. |
-| `conformance/fixtures/toolcalling/fixtures-stream-v1/` | Legacy, non-Unified stream fixtures using the v1 corpus convention. |
-| `conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz` | Legacy, non-Unified batch-on-stream fixture overlays. |
 | `conformance/utils/check.sh` | Runs Unified v2 conformance, source status, and CI qualification without legacy staging. |
 | `conformance/utils/src/viewer_catalog.py` | Indexes active source resources and checks their hashes without rendering a report. |
-| `conformance/utils/src/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/viewer/presentation.js` | Shared browser/Node matrix-model construction. |
 | `conformance/publisher/` | Rust latest/history publisher; default output is a self-contained `index.html`. |
 | `conformance/CONFORMANCE_v2.html` | Tracked canonical local report; refresh for inspection. |

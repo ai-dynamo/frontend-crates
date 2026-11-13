@@ -5,11 +5,11 @@ SPDX-License-Identifier: Apache-2.0
 
 # conformance
 
-Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The checkout root `index.html` reads the compact Unified catalog and selected versioned YAML over HTTP. Publication generates gzip-compressed typed JSON inputs and resolved captures in the site output; YAML remains authoritative, and raw-source links retain original YAML bytes. The full catalog remains available to Node model checks and legacy raw archive links.
+Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The checkout root `index.html` reads the compact Unified catalog and selected versioned YAML over HTTP. Publication generates gzip-compressed typed JSON inputs and resolved captures in the site output; YAML remains authoritative, and raw-source links retain original YAML bytes. The full Unified catalog remains available to Node model checks.
 
 ## Active corpus and capture policy
 
-`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence; deprecated v1 conformance executors and tests are retired; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
+All conformance cases, capture jobs, and reports use `UNIFIED.*`. The old batch, stream, batch-on-stream, and Reasoning corpora, archive shards, executors, and exclusive readers are removed. Dynamo v1 results measured against Unified requests remain selectable comparisons. Do not derive Unified GOLDEN expectations from recorded parser output.
 
 Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and generate the latest report. Capture changes use normal PR review. CI executes current native Dynamo v2 cases: differences from GOLDEN produce warnings; differences from recorded YAML fail. Generated publication JSON stays outside Git.
 
@@ -53,7 +53,7 @@ Back-capture is useful, but not absolutely needed. There is no need to back-capt
 
 The earlier implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Versionless latest observations live beside retained captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`. Batch and jail variants remain separate implementations. Authored cases and their frozen request library stay in each family's `inputs_and_golden.yaml`.
 
-No backfill is needed. Historical versioned captures and legacy archives retain their original bytes and paths. Current authored requests and GOLDEN retain their values through storage normalization. Versioned capture removal, historical moves, and archive expansion remain separate work.
+No backfill is needed. Historical versioned Unified captures and authored requests/GOLDEN retain their existing bytes and paths. The legacy v1 fixture archives are removed. Versioned capture removal, historical moves, and archive expansion remain separate work.
 
 Each latest capture contains complete observation records and resolves sealed request references through its current family file. These files require no historical parent. All selectable conformance versions and capture filenames use plain version numbers, including local candidates and published latest/history reports. Source hashes and Git revisions belong only in provenance metadata; they must never appear as version suffixes or selectable versions. The writer, source readers, native publisher, browser model, and publication qualification reject such selections. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
 
@@ -120,7 +120,7 @@ target/release/conformance-publish --root . --output ../reports/latest --revisio
 target/release/conformance-publish --root . --output ../reports/history --revision "$(git rev-parse HEAD)" --include-history
 ```
 
-Default generation reads authored inputs and versionless latest YAML only. `--include-history` adds historical selections from the unchanged versioned YAML and legacy archives at their current paths. `--history-source <directory>` selects an alternate dataset and requires `--include-history`. Latest and history use the same HTML template and JavaScript; their generated catalogs determine which releases and comparisons are available. Historical captures with recorded results remain selectable even when they used the Combined parser path. History publications retain the original authored inputs and GOLDEN for families absent from the latest native captures; selecting a v1 capture can therefore show its retained families alongside current v2 cases. Muse Spark message start/end events and commentary/final phases remain visible in both assembled output and per-chunk details. Default publication contains exactly one self-contained `index.html`, with no required JSON, JavaScript, CSS, fonts, or other files. Full history adds optional JSON sidecars beside the same HTML. Copy the default `index.html` to `conformance/CONFORMANCE_v2.html` to refresh the local reader-facing report; it can be moved or opened offline without companion files.
+Default generation reads authored inputs and versionless latest YAML only. `--include-history` adds historical selections from the unchanged Unified versioned YAML at its current paths. `--history-source <directory>` selects an alternate dataset and requires `--include-history`. Latest and history use the same HTML template and JavaScript; their generated catalogs determine which releases and comparisons are available. Historical captures with recorded results remain selectable even when they used the Combined parser path; the current native family list bounds the displayed rows. Muse Spark message start/end events and commentary/final phases remain visible in both assembled output and per-chunk details. Default publication contains exactly one self-contained `index.html`, with no required JSON, JavaScript, CSS, fonts, or other files. Full history adds optional JSON sidecars beside the same HTML. Copy the default `index.html` to `conformance/CONFORMANCE_v2.html` to refresh the local reader-facing report; it can be moved or opened offline without companion files.
 
 While results or history JSON load, a centered popup names the data being loaded and a gray backdrop blocks page interaction. The loading popup stays hidden when another dialog, capture dropdown, or result popup is open, and returns after it closes only if loading is still pending. The completed table stays in place. The popup closes after loading succeeds or fails; failed selection loads keep the previous results and offer Retry. If the deployed transport has changed, the report reloads once with the current URL and capture selection.
 
@@ -150,18 +150,18 @@ Before adding a conformance case, inspect every registered family. Always evalua
 
 ## Ownership
 
-New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy conformance suites and renderers are retired. Existing v1 captures remain available as historical comparisons in Unified.
+New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy conformance suites and renderers are retired. Existing Dynamo v1 captures measured against Unified requests remain available as historical comparisons in Unified.
 
-Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, browser resources, and test commands.
+Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the authored Unified inputs and capture files to add. This README covers conformance layout, browser resources, and test commands.
 
 ## Parser paths and modes (universal convention)
 
 - **Implementation generation:** `dynamo_v1` means the `dynamo-parsers` batch implementation, used for plain batch and jail+batch. `dynamo_v2` means the `dynamo-parsers-v2` implementation crate, which contains both non-Unified incremental parsers and Unified parsers.
-- **Conformance convention:** streaming v1 means the legacy, non-Unified stream and batch-on-stream corpora. Unified v2 means one parser owns the ordered reasoning, visible-text, and tool-call stream. A `dynamo_v2-*` capture inside `fixtures-stream-v1` names a v2 implementation measured against the v1 convention.
+- **Conformance convention:** streaming v1 means the legacy, non-Unified stream and batch-on-stream corpora. Unified v2 means one parser owns the ordered reasoning, visible-text, and tool-call stream. The old corpus has been removed; both implementation generations are compared using Unified YAML.
 - **Why the names changed:** the incremental parser was originally called `stream-v2` because it was intended to replace batch+jail. Unified later became a second v2 convention. Renaming the older corpus to streaming v1 removes that collision; it does not rename parser crates or implementation keys.
 - **Runtime behavior today:** parser identities are configured on the deployed model. `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not choose one by itself. Routing checks Unified first: the exact `tool_call_parser=qwen3_coder` plus `reasoning_parser=qwen3` pair uses Qwen3 Unified when the flag is on. If no Unified pair matches, eligible `qwen3_coder` or `deepseek_v4` requests use the older non-Unified incremental parser. All remaining tool-parsing requests use batch+jail. DeepSeek V4.1 and Muse have separate Unified routes that do not depend on this flag. There is no general fallback chain after a selected parser fails.
 - **Per-chunk cells show WHEN output reaches the consumer.** Streaming parsers emit whenever something is parseable, so their cells carry deltas at real chunk positions. The v1 jail bursts at end-of-call — its captures record emission order, not per-chunk timing — so its per-chunk cells stay `—` with a "(bursts at end of call; per-chunk timing not recorded)" header note, and its output appears only in the `assembled` row.
-- The public report shows only Unified. Its three selected captures are compared against authored GOLDEN. Legacy stream, batch-on-stream, batch, and reasoning corpora remain available to capture tools and regression tests.
+- The public report shows only Unified. Its three selected captures are compared against authored GOLDEN. The retired corpora are no longer shipped or read by capture tools or regression tests.
 
 ## Layout
 
@@ -175,13 +175,12 @@ conformance/
 └── utils/                                         # catalog, check, and capture helpers
 ```
 
-`extract_fixtures.py` materializes latest YAML and authored inputs into `~/.cache/dynamo/conformance-fixtures/` for existing consumers. `--include-history` resolves the retained versioned YAML and legacy archives explicitly. Materialized compatibility layout:
+`extract_fixtures.py` materializes latest YAML and authored inputs into `~/.cache/dynamo/conformance-fixtures/` for existing consumers. `--include-history` resolves the retained versioned YAML explicitly. Materialized compatibility layout:
 
-```
-toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
-toolcalling/fixtures-stream-v1/<family>/          # legacy, non-Unified stream cases
-toolcalling/fixtures-batch-on-stream-v1/<family>/ # legacy, non-Unified batch-on-stream cases
-reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
+```text
+unified/inputs/<family>.yaml
+unified/golden/<family>.yaml
+unified/<implementation>-<version>/<family>.yaml
 ```
 
 **Latest captures are complete current snapshots.** Each family/implementation/mode YAML contains its current records independently of historical parents. Latest records use `member` to download their supplied complete snapshot. Their record metadata retains the original producer, and the selection header identifies the selected release. Capture selectors display the recorded version number without a publication-status suffix; a newer crate release does not relabel an older capture. Historical records retain their original sparse source members; a newer selection label does not imply a new execution. Authored inputs and GOLDEN are contributor files. Contributors maintain recorded observations through the capture workflow and preserve historical request bindings. Routine latest changes require no historical backfill. `dynamo_v1` and `dynamo_v2` remain separate implementations.
@@ -231,7 +230,7 @@ Both publication modes emit byte-identical HTML for the same latest inputs and s
 
 ### Historical batch pipelines on Unified inputs
 
-Batch captures run reasoning extraction followed by batch tool extraction against the unchanged family-scoped Unified request. Dynamo v1 direct batch, Dynamo v1 batch + jail-buffer, vLLM Python batch, and SGLang Python batch use separate `dynamo_v1`, `dynamo_v1_jail`, `vllm_python_batch`, and `sglang_python_batch` histories. Where the published crate exposes `JailedStream`, the jail-buffer producer feeds each original chunk through the historical Dynamo v1 reasoning parser and that jail, then records the final fields; it does not rewrite or replace direct-batch history. Each complete snapshot retains source, adapter, and job identities; each observation is bound to the original input, initialization, tools, finish reason, and chunk schedule. Unchanged results are copied with the original source member and provenance. The GPT-OSS split-only family adds 159 active input/GOLDEN pairs for each Dynamo v1 batch identity; these are request-bound historical pipelines, not native Unified parser captures. Historical Unified observations and legacy archives remain unchanged.
+Batch captures run reasoning extraction followed by batch tool extraction against the unchanged family-scoped Unified request. Dynamo v1 direct batch, Dynamo v1 batch + jail-buffer, vLLM Python batch, and SGLang Python batch use separate `dynamo_v1`, `dynamo_v1_jail`, `vllm_python_batch`, and `sglang_python_batch` histories. Where the published crate exposes `JailedStream`, the jail-buffer producer feeds each original chunk through the historical Dynamo v1 reasoning parser and that jail, then records the final fields; it does not rewrite or replace direct-batch history. Each complete snapshot retains source, adapter, and job identities; each observation is bound to the original input, initialization, tools, finish reason, and chunk schedule. Unchanged results are copied with the original source member and provenance. The GPT-OSS split-only family adds 159 active input/GOLDEN pairs for each Dynamo v1 batch identity; these are request-bound historical pipelines, not native Unified parser captures. Historical Unified observations remain unchanged; the separate legacy archive corpus is removed.
 
 The frozen inventory in [`all-capture-inventory.yaml`](all-capture-inventory.yaml) accounts for these releases and modes. Each mode keeps its own execution receipts and history.
 
@@ -273,11 +272,11 @@ cargo test --locked -p dynamo-conformance-fixtures-v2
 node --test conformance/viewer/*.test.js
 ```
 
-`unified_parity`, `unified_render`, and `unified_schema_roundtrip` exercise Unified v2. Beam, DSML, and guided-streaming tests retain their v2 contracts. The old batch, stream, batch-on-stream, Reasoning, interleave, and split-sweep targets are retired. Existing archives remain available as evidence; their generators and capture writers are retired. Dynamo v1 results measured against Unified requests remain comparison data.
+`unified_parity`, `unified_render`, and `unified_schema_roundtrip` exercise Unified v2. Beam, DSML, and guided-streaming tests retain their v2 contracts. The old batch, stream, batch-on-stream, Reasoning, interleave, and split-sweep targets are retired. The old archive corpus and its generators and capture writers are removed. Dynamo v1 results measured against Unified requests remain comparison data.
 
 ## Fixture Workflows
 
-The commands below cover Unified v2. Preserve archived evidence and historical readers; do not regenerate the retired corpus.
+The commands below cover Unified v2. Preserve Unified historical evidence and its readers; do not regenerate the retired corpus.
 
 **Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Fixture-only work is outside every crate's packaged contents, so it proposes no bump.
 

@@ -278,19 +278,12 @@ export async function buildPage(catalog, reader, options = {}) {
   return { ...pageMetadata(catalog, options), tabs };
 }
 
-const sourceAliases = {
-  'conformance/toolcalling/fixtures-v1': 'conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz',
-  'conformance/toolcalling/fixtures-stream-v1': 'conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz',
-  'conformance/reasoning/fixtures': 'conformance/fixtures/reasoning/fixtures-v1/inputs.tar.gz',
-};
-
-
 export function createSourceLink(baseUrl, publication = null, catalogRevision = null) {
   if (publication) validatePublication(publication, catalogRevision);
   return path => {
     const normalized = path.replace(/\/$/, '');
     if (!normalized || normalized.startsWith('/') || normalized.includes(':') || normalized.includes('\\') || normalized.split('/').some(part => !part || part === '.' || part === '..')) throw new Error(`Invalid source target: ${path}`);
-    const target = sourceAliases[normalized] || normalized;
+    const target = normalized;
     if (publication) {
       const kind = /\.[a-z0-9]+$/i.test(target) ? 'blob' : 'tree';
       return `https://github.com/ai-dynamo/frontend-crates/${kind}/${publication.revision}/${target}`;

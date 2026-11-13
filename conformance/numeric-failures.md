@@ -1,5 +1,7 @@
 # Numeric conformance follow-ups
 
+These diagnostics describe historical parser runs. The non-Unified corpus, archive shards, and recording commands referenced below were removed after these measurements. Reproduce those runs from their recorded historical source; current qualification uses the Unified YAML corpus.
+
 The rows below preserve numeric failures measured in historical captures, including parser v0.7.14 and v0.7.21. PR #339 fixes exact numeric conversion and Gemma exponent scanning in v2; the live report uses the candidate parser v0.8.2 [unpublished]. Historical Dynamo v1 jail failures remain recorded and are not claimed fixed. The Unified report compares exact argument JSON, including nested numbers; parser tests also check emitted argument text. Captures retain that JSON text so YAML conversion cannot round the numbers. The report groups integral `7-14` cases under `7-17`, fractional-string `7-14` cases under `7-19`, and fractional-number `7-15` cases under `7-18`; popups retain the full Unified or tool-stream case ID. Bare Unified IDs `7-14` and `7-15` are separate reference-schema cases.
 
 ## TODO NUM-1: preserve decimal values through argument parsing

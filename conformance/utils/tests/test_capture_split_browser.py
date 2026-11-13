@@ -23,7 +23,6 @@ from fixture_test_support import (assert_viewer_data_matches_history, capture_re
                                   identity_for_key)
 from test_browser_viewer import _driver, _ready, _server, _choose_engine
 from test_browser_smoke import _RECORD_FIRST_VISIBLE_MATRIX_JS
-import capture_sources
 import unified_history
 
 
@@ -162,8 +161,6 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
         _ready(driver, "tab-unified")
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == historical
         assert driver.execute_script("return [...document.querySelectorAll('#tab-unified .matrix-segments')].some(box => box.children.length === 2)")
-        inventory = capture_sources.verify(history_source, capture_sources.history_pin(Path(__file__).resolve().parents[3], history_source))
-        legacy = next(row for row in inventory["files"] if row["path"].startswith("conformance/fixtures/") and row["path"].endswith(".tar.gz"))
         current = next(row for row in catalog["capture_generation"]["current"]
                        if row["surface"] == "unified" and row["family"] == "qwen3" and row["implementation"] == "dynamo_v2")
         older = min((row for row in catalog["sources"]["original_unified"]
@@ -176,8 +173,12 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
         selection = json.loads((checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
         latest_payload = (checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[1]
         assert hashlib.sha256(latest_payload).hexdigest() == selection["payload_sha256"]
-        for path, expected, size in ((legacy["path"], legacy["sha256"], legacy["size"]),
-                                     (older["path"], hashlib.sha256(original).hexdigest(), len(original)),
+        lineage = next(row for row in catalog['sources']['original_unified']
+                       if row['family'] == 'nemotron_v3' and row['implementation'] == 'vllm_rust'
+                       and row['version'] == '0.26.0')
+        lineage_original = historical_source_bytes(history_source, lineage['path'])
+        for path, expected, size in ((older["path"], hashlib.sha256(original).hexdigest(), len(original)),
+                                     (lineage['path'], hashlib.sha256(lineage_original).hexdigest(), len(lineage_original)),
                                      (current["source"], hashlib.sha256(current_original).hexdigest(), len(current_original))):
             before = len(requests)
             driver.get(url + "?" + urlencode({"raw": path}))

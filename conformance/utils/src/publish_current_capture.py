@@ -19,7 +19,6 @@ import capture_sources as sources
 from capture_versions import capture_release_sort_key
 import unified_archives
 import unified_history
-import migrate_capture_sources
 
 
 def choose_current(rows, candidate):
@@ -63,10 +62,9 @@ def atomic_write(path, data, *, immutable=False):
 
 
 def authored_paths(root, family, mode):
-    if mode == "unified":
-        return [root / sources.STORE / "families" / family / "inputs_and_golden.yaml"]
-    input_mode = "batch" if mode == "batch-on-stream" else mode
-    return sorted((root / "conformance/inputs" / input_mode / family).glob("*.yaml"))
+    if mode != "unified":
+        raise ValueError("only Unified conformance captures are supported")
+    return [root / sources.STORE / "families" / family / "inputs_and_golden.yaml"]
 
 
 def retained_authored(root, history, family):
@@ -185,8 +183,6 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
         sources.relative(component)
         if "/" in component:
             raise ValueError("capture identity must use single components")
-    if mode != "unified" and mode not in sources.LEGACY_CORPORA:
-        raise ValueError("unsupported capture mode")
     capture_release_sort_key(version)
     path = sources.latest_path(mode, family, implementation)
     target = root / path
@@ -201,56 +197,41 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
         # Stable serialization makes independent captures of the same records idempotent.
         data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
         authored_rows, lineage = [], []
-        if mode == "unified":
-            authored_name = authored_paths(root, family, mode)[0].relative_to(root).as_posix()
-            authored_bytes = sources.read(root, authored_name)
-            authored = unified_history._validate_family(root / authored_name, unified_history._parse_yaml(root / authored_name, authored_bytes))
-            unified_history._validate_complete_snapshot(capture, document, authored, implementation, version)
-            document = sources.independent_snapshot(document, authored.document)
-            data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
-            authored_rows.append(sources.identity(authored_name, authored_bytes))
-            logical = f"{sources.STORE}/families/{family}/{implementation}-{version}.yaml"
-            for member in sorted({record["member"] for record in document["records"].values()}):
-                identity = unified_history.source_identity(member.removeprefix(sources.STORE + "/"))
-                lineage.append({"path": member, **identity})
-        else:
-            if any(document.get(key) != value for key, value in
-                   (("surface", mode), ("family", family), ("implementation", implementation), ("version", version))):
-                raise ValueError("legacy snapshot identity mismatch")
-            if not isinstance(document.get("documents"), dict) or not document["documents"]:
-                raise ValueError("legacy snapshot requires complete documents")
-            logical = f"conformance/captures/{mode}/{family}/{implementation}-{version}.yaml"
-            input_sources = authored_paths(root, family, mode)
-            if not input_sources or set(document["documents"]) != {source.name for source in input_sources}:
-                raise ValueError("legacy snapshot must cover every authored family document")
-            for source in input_sources:
-                name = source.relative_to(root).as_posix()
-                authored_rows.append(sources.identity(name, sources.read(root, name)))
+        authored_name = authored_paths(root, family, mode)[0].relative_to(root).as_posix()
+        authored_bytes = sources.read(root, authored_name)
+        authored_storage = unified_history._parse_yaml_raw(root / authored_name, authored_bytes)
+        authored = unified_history._validate_family(root / authored_name, unified_history._parse_yaml(root / authored_name, authored_bytes))
+        unified_history._validate_complete_snapshot(capture, document, authored, implementation, version)
+        document = sources.independent_snapshot(document, authored.document)
+        data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
+        authored_rows.append(sources.identity(authored_name, authored_bytes))
+        logical = f"{sources.STORE}/families/{family}/{implementation}-{version}.yaml"
+        for member in sorted({record["member"] for record in document["records"].values()}):
+            identity = unified_history.source_identity(member.removeprefix(sources.STORE + "/"))
+            lineage.append({"path": member, **identity})
         row = {"source": logical, "surface": mode, "mode": mode, "family": family,
                "implementation": implementation, "version": version}
         selected = sources.selected_bytes(data, row, lineage,
-                                          authored=authored.document if mode == "unified" else None,
-                                          authored_storage=unified_history._parse_yaml_raw(root / authored_name, authored_bytes) if mode == "unified" else None)
+                                          authored=authored.document, authored_storage=authored_storage)
         previous_data = sources.read(root, path) if target.exists() else None
         previous_selection = json.loads(previous_data.split(b"\n", 1)[0].removeprefix(b"capture_selection: ")) if previous_data else None
         if previous_selection and previous_selection["version"] == version:
             previous_document = unified_history._parse_yaml(target, previous_data.split(b"\n", 1)[1])
-            comparable = sources.independent_snapshot(document, authored.document, source_member=logical) if mode == "unified" else document
-            previous_comparable = sources.independent_snapshot(previous_document, authored.document, source_member=logical) if mode == "unified" else previous_document
+            comparable = sources.independent_snapshot(document, authored.document, source_member=logical)
+            previous_comparable = sources.independent_snapshot(previous_document, authored.document, source_member=logical)
             if not unified_history.typed_equal(previous_comparable, comparable):
                 raise ValueError("a frozen current release cannot be overwritten")
             return {"archived": False, "current_advanced": False}
         # Check every retained identity, including older backfills and branch additions.
         inventory = sources.verify(history, sources.history_pin(root, history))
-        if mode == "unified":
-            known = {sources.STORE + "/" + member["path"] if not member["path"].startswith("conformance/") else member["path"]
-                     for entry in inventory["files"] for member in entry.get("members", [])}
-            for dataset in json.loads(sources.read(history, sources.DATASETS)) if (history / sources.DATASETS).is_file() else []:
-                prefix = dataset["root"] + "/"
-                known.update(entry["path"].removeprefix(prefix) for entry in inventory["files"]
-                             if entry["path"].startswith(prefix + sources.STORE + "/families/"))
-            if any(item["path"] not in known and item["path"] != logical for item in lineage):
-                raise ValueError("capture references unknown observation lineage")
+        known = {sources.STORE + "/" + member["path"] if not member["path"].startswith("conformance/") else member["path"]
+                 for entry in inventory["files"] for member in entry.get("members", [])}
+        for dataset in json.loads(sources.read(history, sources.DATASETS)) if (history / sources.DATASETS).is_file() else []:
+            prefix = dataset["root"] + "/"
+            known.update(entry["path"].removeprefix(prefix) for entry in inventory["files"]
+                         if entry["path"].startswith(prefix + sources.STORE + "/families/"))
+        if any(item["path"] not in known and item["path"] != logical for item in lineage):
+            raise ValueError("capture references unknown observation lineage")
         if mode == "unified" and (history / sources.DATASETS).is_file():
             with sources.history_view(root, history) as view:
                 retained = unified_history.load_store(view / sources.STORE)
@@ -269,14 +250,11 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
                 with tarfile.open(history / entry["path"], "r:gz") as archive:
                     original = yaml.load(archive.extractfile(member["path"]).read(), Loader=unified_history.StrictLoader)
                 original.pop(sources.SELECTION, None)
-                if mode == "unified":
-                    original = sources.independent_snapshot(original, retained_authored(root, history, family), source_member=logical)
-                proposed = sources.independent_snapshot(document, authored.document, source_member=logical) if mode == "unified" else document
+                original = sources.independent_snapshot(original, retained_authored(root, history, family), source_member=logical)
+                proposed = sources.independent_snapshot(document, authored.document, source_member=logical)
                 if not unified_history.typed_equal(original, proposed):
                     raise ValueError("frozen historical capture differs from the proposed records")
                 return {"archived": False, "current_advanced": False}
-        if mode != "unified":
-            validate_legacy_baseline(root, history, candidate=(row, document))
         advanced = previous_selection is None or release_order(version, mode) > release_order(previous_selection["version"], mode)
         compressed = unified_archives.capture_archive_bytes({logical: data})
         group = sources.digest(sources.encoded(row) + data)
@@ -329,49 +307,6 @@ def retained_candidates(root, history, evidence):
             lineage = [{"path": name, **unified_history.source_identity(name.removeprefix(sources.STORE + "/"))}
                        for name in sorted({record["member"] for record in document["records"].values()})]
             yield {"selection": row, "lineage": lineage}, data
-    with tempfile.TemporaryDirectory(prefix="baseline-current-") as temporary:
-        target = Path(temporary)
-        baseline = migrate_capture_sources.convert(target, history, inventory=evidence, all_versions=True)
-        for row in baseline["rows"]:
-            data = sources.read(target, row["path"]).split(b"\n", 1)[1]
-            yield {"selection": row, "lineage": []}, data
-
-
-def validate_legacy_baseline(root, history, *, candidate=None):
-    evidence = sources.verify(history, sources.history_pin(root, history))
-    proposed = []
-    if candidate is not None:
-        proposed.append(candidate)
-    else:
-        for entry in evidence["files"]:
-            if not entry["path"].startswith("additions/") or not entry["path"].endswith(".json"):
-                continue
-            descriptor = json.loads(sources.read(history, entry["path"]))
-            if descriptor["selection"]["mode"] == "unified":
-                continue
-            with tarfile.open(history / descriptor["archive"]["path"], "r:gz") as archive:
-                data = archive.extractfile(descriptor["selection"]["source"]).read()
-            proposed.append((descriptor["selection"], yaml.load(data, Loader=unified_history.StrictLoader)))
-    by_identity = {}
-    for selection, document in proposed:
-        key = tuple(selection[name] for name in ("mode", "family", "implementation", "version"))
-        if key in by_identity and not unified_history.typed_equal(by_identity[key], document):
-            raise ValueError("conflicting frozen legacy release evidence; explicit correction decision required")
-        by_identity[key] = document
-    with tempfile.TemporaryDirectory(prefix="baseline-legacy-") as temporary:
-        target = Path(temporary)
-        baseline = migrate_capture_sources.convert(target, history, inventory=evidence, all_versions=True)
-        originals = {(row["mode"], row["family"], row["implementation"], row["version"]): row for row in baseline["rows"]}
-        for selection, document in proposed:
-            key = tuple(selection[name] for name in ("mode", "family", "implementation", "version"))
-            if key not in originals:
-                continue
-            original = unified_history.load_yaml(target / originals[key]["path"])
-            original.pop(sources.SELECTION, None)
-            if not unified_history.typed_equal(original, document):
-                raise ValueError("conflicting frozen legacy release evidence; explicit correction decision required")
-
-
 def reconcile(root, history):
     """Rebuild latest outputs from the immutable baseline and both branches' evidence."""
     evidence = sources.verify(history, sources.history_pin(root, history))
@@ -406,19 +341,16 @@ def reconcile(root, history):
                 selection = json.loads(path.read_bytes().split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
                 if release_order(selection["version"], mode) > release_order(descriptor["selection"]["version"], mode):
                     continue
-            authored = retained_authored(root, history, family) if mode == "unified" else None
+            authored = retained_authored(root, history, family)
             atomic_write(path, sources.selected_bytes(data, descriptor["selection"], descriptor["lineage"],
                                                      authored=authored, authored_storage=unified_history._parse_yaml_raw(
                                                          root / sources.STORE / "families" / family / "inputs_and_golden.yaml",
-                                                         (root / sources.STORE / "families" / family / "inputs_and_golden.yaml").read_bytes()) if mode == "unified" else None))
+                                                         (root / sources.STORE / "families" / family / "inputs_and_golden.yaml").read_bytes())))
     return {"reconciled": len(grouped)}
 
 
 def release_order(version, mode):
-    if mode == "batch-on-stream" and version == "Dynamo parser v2":
-        return ((), 0, "")
-    token = version.split()[0].lstrip("v") if mode == "batch-on-stream" else version
-    return capture_release_sort_key(token)
+    return capture_release_sort_key(version)
 
 
 def main():
@@ -427,19 +359,15 @@ def main():
     parser.add_argument("--history-source", type=Path)
     parser.add_argument("--recover", action="store_true")
     parser.add_argument("--reconcile", action="store_true")
-    parser.add_argument("--validate-history", action="store_true")
     parser.add_argument("--capture", type=Path)
     parser.add_argument("--family")
     parser.add_argument("--implementation")
     parser.add_argument("--version")
-    parser.add_argument("--mode", default="unified", choices=["unified", *sources.LEGACY_CORPORA])
+    parser.add_argument("--mode", default="unified", choices=["unified"])
     args = parser.parse_args()
     root = args.root.resolve()
     history = args.history_source.resolve() if args.history_source else root / sources.HISTORIC
-    if args.validate_history:
-        validate_legacy_baseline(root, history)
-        print(json.dumps({"verified": True}))
-    elif args.recover:
+    if args.recover:
         print(json.dumps({"recovered": recover(root, history)}))
     elif args.reconcile:
         print(json.dumps(reconcile(root, history)))

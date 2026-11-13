@@ -4,7 +4,7 @@
 
 The base is `4a161dffe7749dbde417df81614bc018e627d53d`. The latest store contains 77 complete versionless YAML files across 12 families. Each family/implementation file contains complete records, sealed request bindings, and original producer provenance separate from selection metadata. Stream, batch, and jail-buffer identities remain distinct; missing measurements remain explicit.
 
-Direct Git-blob comparison preserves all 804 baseline evidence paths: 713 versioned capture YAMLs, 12 authored input/GOLDEN documents, 77 archives, and two Beam YAMLs. Existing evidence stays at its original path. Backfill, versioned-v2 removal, historical moves, archive expansion, and new compression remain deferred.
+Direct Git-blob comparison preserves all 804 baseline evidence paths: 713 versioned capture YAMLs, 12 authored input/GOLDEN documents, 77 archives, and two Beam YAMLs. Unified and Beam evidence stays at its original path. The subsequent v1 corpus cleanup removes the retired batch, stream, batch-on-stream, and Reasoning archives and their exclusive consumers; it preserves all Unified history and v1 comparisons measured against Unified requests. Backfill, versioned-v2 removal, historical moves, archive expansion, and new compression remain deferred.
 
 ## Active workflow
 

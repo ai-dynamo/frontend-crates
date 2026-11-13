@@ -3,14 +3,12 @@
 """Qualify the native site's actual Chromium journey under the Pages prefix."""
 import hashlib
 import base64
-import io
 import os
 import copy
 import gzip
 import json
 import re
 import shutil
-import tarfile
 import threading
 import ssl
 import sys
@@ -36,7 +34,7 @@ from fixture_test_support import (assert_viewer_data_matches_history, capture_re
                                   historical_source_bytes, identity_for_key)
 from fixture_test_support import prepare_isolated_publication
 from fixture_test_support import publish
-from test_capture_sources import native_publisher, split_evidence, pin_history
+from test_capture_sources import native_publisher, split_evidence
 import capture_sources
 import unified_history
 import verify_publication_transport as transport
@@ -163,26 +161,6 @@ def test_http_delivery_recovers_only_failed_get(tmp_path):
 def test_isolated_modes_select_and_download_without_the_history_source(
         split_evidence, native_publisher, tmp_path, monkeypatch, source_catalog, mode):
     root, history, _capture, _path = split_evidence
-    archive_probes = []
-    manifest_path = history / "conformance/fixtures-manifest.json"
-    manifest = json.loads(manifest_path.read_bytes())
-    for relative, member_name in (
-            ("toolcalling/isolated.tar.gz", "toolcalling/isolated/original.yaml"),
-            ("source-evidence/isolated.tar.gz", "source-evidence/isolated/SOURCE.json")):
-        archive_path = history / "conformance/fixtures" / relative
-        archive_path.parent.mkdir(parents=True, exist_ok=True)
-        member_bytes = b'{"recorded": null, "producer": "isolated"}\n'
-        with tarfile.open(archive_path, "w:gz") as output:
-            member = tarfile.TarInfo(member_name)
-            member.size = len(member_bytes)
-            output.addfile(member, io.BytesIO(member_bytes))
-        data = archive_path.read_bytes()
-        manifest["shards"].append({"path": relative, "format": "tar.gz",
-                                   "size": len(data), "sha256": hashlib.sha256(data).hexdigest()})
-        archive_probes.extend([(archive_path.relative_to(history).as_posix(), data),
-                               (member_name, member_bytes), ("conformance/" + member_name, member_bytes)])
-    manifest_path.write_bytes(capture_sources.encoded(manifest))
-    (root / capture_sources.PIN).write_bytes(capture_sources.encoded(pin_history(history)))
     metadata = copy.deepcopy(source_catalog["metadata"])
     metadata["tabs"] = [tab for tab in metadata["tabs"] if tab["suite"] == "unified"]
     metadata["source_hashes"] = {}
@@ -236,13 +214,6 @@ def test_isolated_modes_select_and_download_without_the_history_source(
         WebDriverWait(driver, 15).until(lambda page: page.find_elements("css selector", "#viewer > a[download]"))
         downloaded = raw_view_download(driver)
         assert downloaded["hash"] == downloaded["renderedHash"] == hashlib.sha256(expected).hexdigest()
-        if mode == "history":
-            for path, data in archive_probes:
-                driver.get(base + "?" + urlencode({"raw": path}))
-                WebDriverWait(driver, 15).until(lambda page: page.find_elements("css selector", "#viewer > a[download]"))
-                downloaded = raw_view_download(driver)
-                assert downloaded["hash"] == hashlib.sha256(data).hexdigest()
-                assert downloaded["size"] == len(data)
     finally:
         driver.quit()
         server.shutdown()
@@ -318,13 +289,6 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
                 data = historical_source_bytes(history_source, resource["path"])
                 assert hashlib.sha256(data).hexdigest() == resource["sha256"]
                 probes.append((resource["path"], data))
-        archive = next(row for row in inventory["files"]
-                       if row["path"].startswith("conformance/fixtures/toolcalling/") and row["path"].endswith(".tar.gz"))
-        member = next(item for item in capture_sources.archive_members(history_source / archive["path"]) if item["kind"] == "file")
-        with tarfile.open(history_source / archive["path"]) as stream:
-            member_bytes = stream.extractfile(member["path"]).read()
-            probes.extend([(member["path"], member_bytes), ("conformance/" + member["path"], member_bytes)])
-        probes.append((archive["path"], (history_source / archive["path"]).read_bytes()))
         for path, expected in probes:
             driver.get(base + "?" + urlencode({"raw": path}))
             WebDriverWait(driver, 180).until(lambda page: page.find_elements("css selector", "#viewer pre") or page.execute_script("return !!window.__conformanceError"))

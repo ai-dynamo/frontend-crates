@@ -12,6 +12,7 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit
+from fixture_test_support import retained_source_bytes
 from fixture_test_support import historical_source_bytes, assert_viewer_data_matches_history, identity_for_key
 from verify_publication_transport import publication_metadata, runtime_catalog
 
@@ -1312,9 +1313,13 @@ def test_reset_discards_popup_pin_during_retained_selection_load(published_viewe
         server.shutdown()
 
 
-def test_original_archive_view_and_blob_download_preserve_source_bytes(historical_published_viewer, history_source):
-    member = 'toolcalling/fixtures-stream-v1/inputs/deepseek_v4/TOOLCALLING.streamv1.1.yaml'
-    _assert_original_yaml_download(historical_published_viewer, member, historical_source_bytes(history_source, member))
+def test_historical_yaml_view_and_blob_download_preserve_source_bytes(historical_published_viewer, historical_unified_sources):
+    store, resources = historical_unified_sources
+    resource = next(row for row in resources if row.get("kind") == "history")
+    member = resource["path"]
+    if not member.startswith("conformance/"):
+        member = "conformance/fixtures-unified-v2/" + member
+    _assert_original_yaml_download(historical_published_viewer, member, retained_source_bytes(store, resource))
 
 
 def test_original_yaml_view_and_blob_download_preserve_source_bytes(published_viewer):

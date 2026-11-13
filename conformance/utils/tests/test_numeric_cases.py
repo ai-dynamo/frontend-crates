@@ -4,7 +4,6 @@
 import copy
 import json
 import sys
-import tarfile
 from decimal import Decimal
 from pathlib import Path
 
@@ -50,18 +49,6 @@ def test_overflow_sibling_cases_have_independent_raw_number_oracles_for_every_na
             assert matches_schema(arguments, case["tools"][0]["parameters"])
             assert numbered_id(scenario).startswith("UNIFIED.7-")
             assert "Paris" in case["input"]
-
-
-def test_numeric_backcaptures_use_their_versioned_archive_path():
-    root = Path(__file__).resolve().parents[2] / "fixtures/toolcalling/fixtures-stream-v1"
-    measured = 0
-    for path in root.glob("dynamo*.tar.gz"):
-        with tarfile.open(path) as archive:
-            for member in archive:
-                if member.isfile() and member.name.endswith("TOOLCALLING.streamv1.7-numeric.yaml"):
-                    assert member.name.startswith(f"toolcalling/fixtures-stream-v1/{path.name[:-7]}/")
-                    measured += 1
-    assert measured > 0
 
 
 def test_extreme_json_exponents_are_canonicalized_without_expanding_values():
