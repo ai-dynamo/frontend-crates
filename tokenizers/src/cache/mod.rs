@@ -89,8 +89,9 @@ use crate::{
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
-/// Smallest segment (in bytes) that [`CachedTokenizer::encode_segments`] caches.
-/// Shorter segments, such as control markers, encode faster than an entry pays off.
+/// Smallest segment (in bytes) that [`CachedTokenizer::encode_segments`] caches, and the
+/// smallest trailing segment an extending hit caches the start of. Shorter segments, such
+/// as control markers, encode faster than an entry pays off.
 const MIN_CACHED_SEGMENT_BYTES: usize = 128;
 
 /// Token-level cache usage for one successful encode.
@@ -931,6 +932,66 @@ mod tests {
 
         let stats = cached.cache_stats();
         assert!(stats.hits >= 1, "expected L1 hit on second request");
+    }
+
+    /// Turns of a chat whose client optionally rewrites the previous trailing user
+    /// message (as some trace replayers do). Returns the uncached tokens per turn after
+    /// the first, asserting every encode is byte-exact.
+    fn multi_turn_uncached(trim_trailing: bool) -> Vec<usize> {
+        let tok = inner();
+        let (cached, events) = collect_token_usage(
+            CachedTokenizer::new(tok.clone(), specials(), 64 * 1024 * 1024)
+                .expect("TinyLlama must support prefix caching")
+                .with_extend(true),
+        );
+        let text = |turn: usize, role: &str| {
+            (0..60)
+                .map(|i| format!("{role} {turn} word {i}"))
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        let mut messages = vec![format!("<s>system\n{}</s>", text(0, "system"))];
+        let mut user = text(0, "user");
+        let mut per_turn = Vec::new();
+        for turn in 0..8 {
+            if turn > 0 {
+                if trim_trailing {
+                    user.truncate(user.len() - 40);
+                }
+                messages.push(format!("<s>user\n{user}</s>"));
+                messages.push(format!("<s>assistant\n{}</s>", text(turn, "assistant")));
+                user = text(turn, "user");
+            }
+            let prompt = format!("{}<s>user\n{user}</s><s>assistant\n", messages.concat());
+            let ids = cached.encode(&prompt).unwrap();
+            assert_eq!(ids.token_ids(), tok.encode(&prompt).unwrap().token_ids());
+            if turn > 0 {
+                per_turn.push(events.lock().unwrap().last().unwrap().uncached_tokens);
+            }
+        }
+        per_turn
+    }
+
+    #[test]
+    fn extension_keeps_reuse_when_the_trailing_message_is_rewritten() {
+        let trimmed = multi_turn_uncached(true);
+        let appended = multi_turn_uncached(false);
+        // Each turn re-encodes only the rewritten message plus the new exchange, so
+        // per-turn work stays flat instead of growing with the conversation.
+        let (min, max) = (trimmed.iter().min().unwrap(), trimmed.iter().max().unwrap());
+        assert!(
+            max - min <= 2,
+            "trimmed per-turn uncached tokens grew: {trimmed:?}"
+        );
+        assert!(
+            trimmed.iter().zip(&appended).all(|(t, a)| t <= &(2 * a)),
+            "trimmed {trimmed:?} vs appended {appended:?}"
+        );
+        // Append-only still resumes at the deepest boundary.
+        assert!(
+            appended.windows(2).all(|w| w[0].abs_diff(w[1]) <= 2),
+            "{appended:?}"
+        );
     }
 
     #[test]
