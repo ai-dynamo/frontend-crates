@@ -1,31 +1,853 @@
-capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"f641fa68d4d3ca2c2826179e5fa64a9551e92495dd6d39a2ee1327d7c4ec0d21","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"4a227c4e8e688242a8df0b399b7f2aa32eb2472096758f66ac0781fce7227c46","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_6517e7493212421c
+  origin: origin_fe4b326273789e5a
 origins:
-  origin_6517e7493212421c:
+  origin_fe4b326273789e5a:
     crate_version: 0.10.7
     source_sha256: 7f91c304bf0c77d4cae125e8265c2a2e8b3060024a560335538f19b789d2c88f
-    git_commit: c77b2437170c91f742b1a67a03fe20c6f5558810
+    git_commit: 2ecce344db4c09ec2a52ff4fc27ce90218b081d0
 producers:
-  producer_a3755f6c1a551460:
+  producer_90c4ecd050fe0d64:
     captured_with:
       dynamo_v2: 0.10.7
-    capture_origin: origin_6517e7493212421c
+    capture_origin: origin_fe4b326273789e5a
 contexts:
-  context_0c04f3f5dabd1446:
-    family: mistral_4
+  context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml
-  producer: producer_a3755f6c1a551460
-  context: context_0c04f3f5dabd1446
+  producer: producer_90c4ecd050fe0d64
+  context: context_cdf0b3c0134ec96f
 records:
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8
+    output:
+      assembled:
+      - kind: reasoning
+        text: analysis "
+      - kind: text
+        text: Answer"
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: analysis "
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: Answer"
+      - expected: []
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    case_key: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0
+    output:
+      assembled:
+      - kind: reasoning
+        text: Use re.split(r'(\s)', text). Let's final.
+      - kind: text
+        text: The code prints ['a', ' ', 'b'].
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Use re.split(r'(\s)', text). Let's final.
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: The code prints ['a', ' ', 'b'].
+      - expected: []
+  UNIFIED.8-native_quoted_complete_call_default:
+    case_key: UNIFIED.8-native_quoted_complete_call_default
+    request: 57ff22e92b982cba062e5e294ad76b68df1e8713077afad5458e379eee1f1a05
+    output:
+      assembled:
+      - kind: text
+        text: 'Example: "'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: 'Example: "'
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+      - expected: []
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    request: 0762d00552a7af7480f8865994b7b1fa6b347a2902d0aef5ba304754797ff89a
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"a":"1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"b":"2"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"a":"1"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: g
+          arguments: '{"b":"2"}'
+          complete: true
+      - expected: []
+      - expected: []
+  arg_array_quoted_parameter_close:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
+    request: 001fc1f875bc12b5e4220a2353a95e801c084498d42f39d3ce67038191ef2056
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"value": ["é \\\" </atem:parameter>"]}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"value": ["é \\\" </atem:parameter>"]}'
+          complete: true
+      - expected: []
+  arg_json_null:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null
+    request: 1a545d8fe4a218186d388c1f1398872711805de51216eedd7e1e349c1899bf29
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": null}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+          complete: true
+      - expected: []
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
+    request: e4a633dc29b1363714e68220cbc909e5398d806323db98d9e0fecbe78fdabd7a
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": null}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+          complete: true
+      - expected: []
+  arg_json_null_const:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_const
+    request: e58714b04b1487a459911bcef2739b0444d489104abae25ae42b93cbceaf0729
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": null}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+          complete: true
+      - expected: []
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
+    request: 6b5d7384a630589712614a0ab222be66dd692863756667bad1c304c06e05167e
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": null}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+          complete: true
+      - expected: []
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
+    request: f27d1a820095ee439168757326c78967cc255afde0c898d6efa6193e407f6a22
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": null}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+          complete: true
+      - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
+    request: 3bcdeba7b9f84270a888a7787543991aeb8660a0ecc5b334d9f8e8dccca1571d
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": null}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": null}'
+          complete: true
+      - expected: []
+  arg_marker_in_string:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
+    request: 6cf1ce72ff38734c53bcaa7653f7098d104675d1f1967cdaa23a8af4d6dfcd78
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd": "git log [TOOL_CALLS] --oneline"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "git log [TOOL_CALLS] --oneline"}'
+          complete: true
+      - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
+    request: 3ebb815e544d7e8ca1cd15fd10578c00a91ffb1cb9ba590ee70349c5e79e8cac
+    output:
+      assembled:
+      - kind: tool_call
+        name: set_labels
+        arguments: '{"label": null, "note": null, "literal": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: set_labels
+          arguments: '{"label": null, "note": null, "literal": "null"}'
+          complete: true
+      - expected: []
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
+    request: b79049806b3af0561c1f84f1e86c829afe19b22680d514669bedd48c28c2119d
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.0}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":42.0}'
+          complete: true
+      - expected: []
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
+    request: 71fd6458ab4a20f5240764a21d9e6b84eb1122430acefe779b923ecd3bbfdde8
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4.2e1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":4.2e1}'
+          complete: true
+      - expected: []
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
+    request: c0e3097695bc15245c6444a6ecc371dac09baa7b44dc0a46239a51a646e7c1c0
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.0}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":42.0}'
+          complete: true
+      - expected: []
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
+    request: cae3a8a4c19b1ce5a469f09947727a41ec0c4bb07479870a6af62e51f008bc8a
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4.2e1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":4.2e1}'
+          complete: true
+      - expected: []
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
+    request: 23217880c4bd8a35f4afc9d37ebda6a628b9fde54a14b6ff34a0a47b3d42c181
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.0}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740993.0}'
+          complete: true
+      - expected: []
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
+    request: a5895078df81c4f384162f244dea7d82f63363ff5f7cbbf0c3eb75f3f48beeeb
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.007199254740993e15}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9.007199254740993e15}'
+          complete: true
+      - expected: []
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
+    request: 555fee87a1e0c719598512aacf0010c6ceebd81e0bc3f922f84356f3576ee255
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-4.2E+1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":-4.2E+1}'
+          complete: true
+      - expected: []
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
+    request: 419c056b11180d277cde78a15d6da4370c4631b86ffd40fe5341f83e83ddf9e7
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4200e-2}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":4200e-2}'
+          complete: true
+      - expected: []
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
+    request: 68c0a1de04767a1abf00773c7c01409ba7fa7e96a210d48d633284a72b816311
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.0e-400}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":0.0e-400}'
+          complete: true
+      - expected: []
+  arg_numeric_15_exponent:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
+    request: c2edba0bd9dc3619292834937cbcb609b1931aed338e48a0038c18c13b32c31f
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.0071992547409925e15}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9.0071992547409925e15}'
+          complete: true
+      - expected: []
+  arg_numeric_15_negative:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
+    request: 8b947869ecde5a4a67d95ca5dcd3948298d745f4cef1e88fed382276084f69e2
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-9007199254740992.5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":-9007199254740992.5}'
+          complete: true
+      - expected: []
+  arg_numeric_15_ordinary:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
+    request: 669ba70f1a8d8b5469fcc86399e0a9095629e4616e033fb41d3941ac4fd230ff
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":42.5}'
+          complete: true
+      - expected: []
+  arg_numeric_15_quarter:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
+    request: 683d86d70e71e3ebdc1bf6ee48e58ef9be684d86000963c4e85164205e281fe8
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.25}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740993.25}'
+          complete: true
+      - expected: []
+  arg_numeric_15_round_down:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
+    request: f5e99476d01a035713b35c99099d6848321a5b3cd03fe194a6c2f69b9e43a7d1
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740992.5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740992.5}'
+          complete: true
+      - expected: []
+  arg_numeric_15_round_up:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
+    request: b6bfbd9a1651bb47d86069af27c03b886becf57633bf4c7c81a32de29fb895fc
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":9007199254740993.1}'
+          complete: true
+      - expected: []
+  arg_numeric_15_small:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
+    request: 893038b6424929a841c8e053685c09a983005bec76115d1aca8c7ec65d3a147a
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.10000000000000000001}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"value":0.10000000000000000001}'
+          complete: true
+      - expected: []
+  arg_numeric_nested_exact:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
+    request: c37b83044eed2c0086d0390ef731fdf698d998aa84b5f48a224bb6b35c7387e4
+    output:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: inspect
+          arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+          complete: true
+      - expected: []
+  arg_numeric_overflow_siblings_finite:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
+    request: a7d1833f17bfd043ed5475da1f444fd867b2e50e96ff9e0aafb32544d4ff9327
+    output:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1.5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: echo
+          arguments: '{"city":"Paris","value":1.5}'
+          complete: true
+      - expected: []
+  arg_numeric_overflow_siblings_negative:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
+    request: bc81af91aac41425fa44d26fe82955324a25dbcfe31c64b9681b09c698fafbfd
+    output:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: echo
+          arguments: '{"city":"Paris","value":-1E+400}'
+          complete: true
+      - expected: []
+  arg_numeric_overflow_siblings_positive:
+    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
+    request: ef0a4880f4b6a8653ae283befdc2cc2649cd3f4728c10343a5fc3e7577b80944
+    output:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: echo
+          arguments: '{"city":"Paris","value":1e400}'
+          complete: true
+      - expected: []
+  arg_object_quoted_parameter_close:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
+    request: 0ce35e19a2f0d6265bfc4e9aea238031b657014014ef1a9afbdec97c0154b69a
+    output:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments: '{"value": {"s": "</atem:parameter>"}}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: record
+          arguments: '{"value": {"s": "</atem:parameter>"}}'
+          complete: true
+      - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null
+    request: 82baf993733c21fe4ea26067aabe6658b08a3198e7f713d8a3dd84d77b5c4ea4
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_const:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_const
+    request: 475a02788c15fe510025ce59dfed99645ba675978decf987b62ae3f6179f7ead
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_enum:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
+    request: 12fb77952cbb80f62240692a75a961e3a0a09fa49e82a5d1a148a01197883fae
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
+    request: 62a4749a395ca5b2469ca06310900710dc344744cb29b98d050bfe0a83bf00fb
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
+    request: d5429e01ed32c98f9e64078d532e80cbd5dd81e0779f73902ebeddfe6e3b404b
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
+    request: 2f5f29af8077db900419e78467a54d1d70aa89b99fd1da2dfcf8ab6483198778
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_union:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_union
+    request: 0d1a75c3432f4666f9d4563ad7d62146849f0fa2485c769e62dd1340e187e917
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
+    request: cb52fed2d942e6ebd88f3e72b092ba2dd4213d202cd9459cea287beb4066df48
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "null"}'
+          complete: true
+      - expected: []
+  arg_unicode:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_unicode
+    request: 9bc7ac945655fb88a025c913a2a28b51cd1db609472a09bac4af53a4cbbd3ef5
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "São Paulo 東京"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "São Paulo 東京"}'
+          complete: true
+      - expected: []
+  blank_output_without_call:
+    case_key: UNIFIED.3-blank_output_without_call
+    request: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
+    output:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+      chunks:
+      - expected:
+        - kind: text
+          text: '
+
+
+            '
+      - expected: []
+  closed_command_quote_before_reasoning_closer:
+    case_key: UNIFIED.40-closed_command_quote_before_reasoning_closer
+    request: 0b9654ac659e8f05ac9cdb663151778e0fc30fee0542f84c4e9eefe2c2c346f9
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, I should run this command "grep -v '
+      - kind: text
+        text: ''' ..."'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, I should run this command "grep -v '
+        - kind: text
+          text: ''' ..."'
+      - expected: []
+  conditional_schema_number_types:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
+    request: 55d1f507224defe0aa99410166e291ac737757641018da4b1acd670b36d79478
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"amount": 21.5, "retries": 37}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"amount": 21.5, "retries": 37}'
+          complete: true
+      - expected: []
+  content_then_reason:
+    case_key: UNIFIED.11-content_then_reason
+    request: 7cf9dd2b28335fb351e214993f110058feecadfa261cf00464a256ed83838deb
+    output:
+      assembled:
+      - kind: text
+        text: 'Hello there. '
+      - kind: reasoning
+        text: let me recall
+      - kind: text
+        text: The capital is Paris.
+      chunks:
+      - expected:
+        - kind: text
+          text: 'Hello there. '
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: The capital is Paris.
+      - expected: []
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11-content_then_reason_then_tool
+    request: fb91d78e0e2307bc5913be6e0d3e34f4036de07f3c943908633c40a7d6f0403a
+    output:
+      assembled:
+      - kind: text
+        text: 'Sure, one sec. '
+      - kind: reasoning
+        text: checking the forecast
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  decade_apostrophe_before_reasoning_closer:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    request: 30a0cdb63913ff1bee3c9dbd09a6d47a8a4edda4f9de982e0ea084d37f798a18
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the year is 80s'
+      - kind: text
+        text: 'Yes'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, the year is 80s'
+        - kind: text
+          text: 'Yes'
+      - expected: []
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+    request: 11fc1d6c5f8335a6c6ceb244d0bef9610cace4cd38443c4402fbc75f164278da
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''90s'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''90s'
+        - kind: text
+          text: '''Answer'''
+      - expected: []
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+    request: ad2a52481487bf04a3d9f1ca26ff60f52ab2c95bb4f4fbb0b2f5e510df821050
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the reference is 80s' music
+      - kind: text
+        text: '''Yes'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, the reference is 80s' music
+        - kind: text
+          text: '''Yes'''
+      - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
+    request: 4d7e1209b16bb1ba4f86123a5f209a462f8fc2ccd21c7012883f47ee93b49847
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
+          complete: true
+      - expected: []
   dotted_name_minimal:
     case_key: UNIFIED.1-dotted_name_minimal
     request: 6356f9b198c839ca0e023123463713759330bbbbcacfe4457d11dea986373f41
@@ -71,244 +893,6 @@ records:
           arguments: '{"location": "Beijing"}'
           complete: true
       - expected: []
-  tool_only:
-    case_key: UNIFIED.1-tool_only
-    request: 11f51a4723afce40da742464fea19c269863ec2aa016dca8163dfe099b83f418
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  tool_body_whitespace:
-    case_key: UNIFIED.1-tool_only_leading_json_body_whitespace
-    request: cd95add30a03bd273bf4586e50c185d92a77debab9633a6deab0cbfb1e758032
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  reason_only:
-    case_key: UNIFIED.10-reason_only
-    request: 9569759764cbf0a899361dd723bd8faad87bd37b123f5f90a019542179d345c7
-    output:
-      assembled:
-      - kind: reasoning
-        text: just thinking, no answer
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: just thinking, no answer
-      - expected: []
-  reason_then_content:
-    case_key: UNIFIED.10-reason_then_content
-    request: 5dcc7f289dbba6319bfbe5cf042a813ad2aa6edf79469c83a96e6be52cc44683
-    output:
-      assembled:
-      - kind: reasoning
-        text: let me think
-      - kind: text
-        text: The answer is 42.
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: let me think
-        - kind: text
-          text: The answer is 42.
-      - expected: []
-  reason_unterminated:
-    case_key: UNIFIED.10-reason_unterminated
-    request: fe0f5938593c9479fb2a805a345e6907d6c40af6862484ce0235be4f9221714a
-    output:
-      assembled:
-      - kind: reasoning
-        text: thinking but stream ends
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: thinking but stream ends
-      - expected: []
-  two_adjacent_reason_spans:
-    case_key: UNIFIED.10-two_adjacent_reason_spans
-    request: a49508953c75c027ead2afd47a37ed8e5b172d95937da28dab7434b18fdd2765
-    output:
-      assembled:
-      - kind: reasoning
-        text: 'first
-
-          second'
-      - kind: text
-        text: done
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: 'first
-
-            second'
-        - kind: text
-          text: done
-      - expected: []
-  two_reason_spans:
-    case_key: UNIFIED.10-two_reason_spans
-    request: 722abb5faddaa97e142539c45b734cd038040ec26cbec1214c9dba5aee2c41ee
-    output:
-      assembled:
-      - kind: reasoning
-        text: first thought
-      - kind: text
-        text: 'interlude '
-      - kind: reasoning
-        text: second thought
-      - kind: text
-        text: done
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: first thought
-        - kind: text
-          text: 'interlude '
-        - kind: reasoning
-          text: second thought
-        - kind: text
-          text: done
-      - expected: []
-  content_then_reason:
-    case_key: UNIFIED.11-content_then_reason
-    request: 7cf9dd2b28335fb351e214993f110058feecadfa261cf00464a256ed83838deb
-    output:
-      assembled:
-      - kind: text
-        text: 'Hello there. '
-      - kind: reasoning
-        text: let me recall
-      - kind: text
-        text: The capital is Paris.
-      chunks:
-      - expected:
-        - kind: text
-          text: 'Hello there. '
-        - kind: reasoning
-          text: let me recall
-        - kind: text
-          text: The capital is Paris.
-      - expected: []
-  content_then_reason_then_tool:
-    case_key: UNIFIED.11-content_then_reason_then_tool
-    request: fb91d78e0e2307bc5913be6e0d3e34f4036de07f3c943908633c40a7d6f0403a
-    output:
-      assembled:
-      - kind: text
-        text: 'Sure, one sec. '
-      - kind: reasoning
-        text: checking the forecast
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: text
-          text: 'Sure, one sec. '
-        - kind: reasoning
-          text: checking the forecast
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  interstitial_text:
-    case_key: UNIFIED.11-interstitial_text
-    request: 4d164ac9a8c330562ca245353dced2fc8ce2a7e868b3b2da6dd5bcc5e5362a60
-    output:
-      assembled:
-      - kind: reasoning
-        text: a
-      - kind: text
-        text: 'Here you go: '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: a
-        - kind: text
-          text: 'Here you go: '
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  reason_then_tool:
-    case_key: UNIFIED.11-reason_then_tool
-    request: 27868e09ae785e258ca2d234241877c7a6c961e0158a7c48f1b50df6e0bf271b
-    output:
-      assembled:
-      - kind: reasoning
-        text: Check weather.
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: Check weather.
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  reason_markup_in_arg:
-    case_key: UNIFIED.12-reason_markup_in_arg
-    request: 7e63acbf3a53e99ccaa704e397bfaedefe9398f656faad184e7d8623c0d19289
-    output:
-      assembled:
-      - kind: tool_call
-        name: log
-        arguments: '{"note": "[THINK]reconsider[/THINK]"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: log
-          arguments: '{"note": "[THINK]reconsider[/THINK]"}'
-          complete: true
-      - expected: []
-  adjacent_calls_partial_header:
-    case_key: UNIFIED.2-adjacent_calls_partial_header
-    request: 0762d00552a7af7480f8865994b7b1fa6b347a2902d0aef5ba304754797ff89a
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"a":"1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"b":"2"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"a":"1"}'
-          complete: true
-      - expected:
-        - kind: tool_call
-          name: g
-          arguments: '{"b":"2"}'
-          complete: true
-      - expected: []
-      - expected: []
   dotted_name_shared_prefix:
     case_key: UNIFIED.2-dotted_name_shared_prefix
     request: 3385d4734b228f3b8952d6a6ced48d3ee4e1013e099af8ae76ce283cc318de43
@@ -331,328 +915,111 @@ records:
           arguments: '{"timezone": "Asia/Shanghai"}'
           complete: true
       - expected: []
-  three_calls_partial_header:
-    case_key: UNIFIED.2-three_calls_partial_header
-    request: 926bf98da03f3a5211019bf88ba3535aa1f9fdcf8bae83a3dac7244e0e5e7506
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x":"1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"x":"2"}'
-      - kind: tool_call
-        name: h
-        arguments: '{"x":"3"}'
-      chunks:
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x":"1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{"x":"2"}'
-          complete: true
-      - expected:
-        - kind: tool_call
-          name: h
-          arguments: '{"x":"3"}'
-          complete: true
-      - expected: []
-      - expected: []
-  tool_call_ids_unique:
-    case_key: UNIFIED.2-tool_call_ids_unique
-    request: 543ab4d2f2639c8565ae97b4f89fc386b5afbeae34f819d8807f49a6e7a14ec5
+  empty_args:
+    case_key: UNIFIED.6-empty_args
+    request: 21ec4e05b83d5c0c34e2b77a5429695d03e475ed0e7ff49e4b4bba9d7e6e17e3
     output:
       assembled:
       - kind: tool_call
         name: get_weather
-        arguments: '{"city": "Paris"}'
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  two_calls:
-    case_key: UNIFIED.2-two_calls
-    request: 9191497e624e4d96af3200d6ced61628a31ada3169f09375ce179e6377e4c01b
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"y": "2"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{"y": "2"}'
-          complete: true
-      - expected: []
-  gpt_oss_multiple_unknown_and_empty_tools:
-    case_key: UNIFIED.2-two_calls_empty_body_and_unoffered_names
-    request: 0c4eb581c5ec83cb808efa18606ffb0e80f45e0b92e4eb32aab4beec789ba5ef
-    output:
-      assembled:
-      - kind: tool_call
-        name: run
         arguments: '{}'
-      - kind: tool_call
-        name: not_offered
-        arguments: '{"x": 2}'
       chunks:
       - expected:
         - kind: tool_call
-          name: run
+          name: get_weather
           arguments: '{}'
           complete: true
-        - kind: tool_call
-          name: not_offered
-          arguments: '{"x": 2}'
-          complete: true
       - expected: []
-  two_calls_same_name:
-    case_key: UNIFIED.2-two_calls_same_name
-    request: f5fb682ec8cab1980aad8362df12ece39a1d2af2a1d71a6ab4150f8f3435f3b3
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: 22198328df128b30b8bd1e5bf1de60d68e0e0dd896a045c1ff2aea41b9446ffb
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Tokyo"}'
+        name: capture_payload
+        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
       chunks:
       - expected:
         - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Tokyo"}'
+          name: capture_payload
+          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
           complete: true
       - expected: []
-  blank_output_without_call:
-    case_key: UNIFIED.3-blank_output_without_call
-    request: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
-    output:
-      assembled:
-      - kind: text
-        text: '
-
-
-          '
-      chunks:
-      - expected:
-        - kind: text
-          text: '
-
-
-            '
-      - expected: []
-  text_only:
-    case_key: UNIFIED.3-text_only
-    request: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
-    output:
-      assembled:
-      - kind: text
-        text: The answer is 42, no tools needed.
-      chunks:
-      - expected:
-        - kind: text
-          text: The answer is 42, no tools needed.
-      - expected: []
-  tool_block_never_closed_then_text:
-    case_key: UNIFIED.4-tool_block_never_closed_then_text
-    request: 74a0d906131ed444a4341d0ba69046a12d0381620b2308694badff00ef485421
-    output:
-      assembled: []
-      chunks:
-      - expected: []
-      - expected: []
-  tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4-tool_markup_only_emits_nothing
-    request: 28ded4e9a561864ffb25eb1dcc45e837e52167487ac40d8a609f66fec85ba31b
-    output:
-      assembled: []
-      chunks:
-      - expected: []
-      - expected: []
-  UNIFIED.40-native_quoted_reasoning_closer_default:
-    case_key: UNIFIED.40-native_quoted_reasoning_closer_default
-    request: 4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8
-    output:
-      assembled:
-      - kind: reasoning
-        text: analysis "
-      - kind: text
-        text: Answer"
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: analysis "
-      - expected: []
-      - expected: []
-      - expected:
-        - kind: text
-          text: Answer"
-      - expected: []
-  UNIFIED.40-native_raw_string_before_reasoning_closer:
-    case_key: UNIFIED.40-native_raw_string_before_reasoning_closer
-    request: 303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0
-    output:
-      assembled:
-      - kind: reasoning
-        text: Use re.split(r'(\s)', text). Let's final.
-      - kind: text
-        text: The code prints ['a', ' ', 'b'].
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: Use re.split(r'(\s)', text). Let's final.
-      - expected: []
-      - expected: []
-      - expected:
-        - kind: text
-          text: The code prints ['a', ' ', 'b'].
-      - expected: []
-  prefilled_reasoning_then_text:
-    case_key: UNIFIED.40-prefilled_reasoning_then_text
-    request: ce30c318783b1fc458a0eec2e3690300aaae361fa396b9faaacad99e1071966a
-    output:
-      assembled:
-      - kind: reasoning
-        text: no tool needed
-      - kind: text
-        text: The answer is 42.
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: no tool needed
-        - kind: text
-          text: The answer is 42.
-      - expected: []
-  prefilled_reasoning_then_text_then_tool:
-    case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
-    request: 7bfb70eda3c3e6c7f1635810bbf22e7eba5a5da0f6372fd5e0b2c7e35828ebd5
-    output:
-      assembled:
-      - kind: reasoning
-        text: weighing options
-      - kind: text
-        text: 'Here''s what I found: '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: weighing options
-        - kind: text
-          text: 'Here''s what I found: '
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  prefilled_reasoning_with_tool:
-    case_key: UNIFIED.40-prefilled_reasoning_with_tool
-    request: e9ed2ade278741c36db6512ed06cdef93d6bb095ade5228649154edf7b61830c
-    output:
-      assembled:
-      - kind: reasoning
-        text: checking weather
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  prefilled_reasoning_redundant_opener:
-    case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
-    request: 307cabd54da207fd6752c32bf8a815e93013f7b3b0c872d470dcdf23086ebf05
-    output:
-      assembled:
-      - kind: reasoning
-        text: checking weather
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "London"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: checking weather
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "London"}'
-          complete: true
-      - expected: []
-  prefilled_reasoning_truncated:
-    case_key: UNIFIED.41-prefilled_reasoning_truncated
-    request: 1bb08b21e172ee57cbfbd0575581105a46b47d2400a56db903baeb351ab6ac70
-    output:
-      assembled:
-      - kind: reasoning
-        text: analyzing data
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: analyzing data
-      - expected: []
-  malformed_json_then_two_valid_calls:
-    case_key: UNIFIED.5-malformed_json_then_two_valid_calls
-    request: b725ca6895c8504d80dc10d3188a7f1923d7fa4aca830a1554486bdc24514bb0
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
+    request: b3685f5413f799182f9192f53e2d1056e932f1fe17b08b4e93ef77944a92c97e
     output:
       assembled:
       - kind: tool_call
-        name: bad
-        arguments: '{}'
-      - kind: tool_call
-        name: echo
-        arguments: '{"value": "é"}'
-      - kind: tool_call
-        name: echo
-        arguments: '{"value": "Café"}'
+        name: capture_payload
+        arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
       chunks:
-      - expected: []
       - expected:
         - kind: tool_call
-          name: bad
-          arguments: '{"value": {"x":"unfinished'
+          name: capture_payload
+          arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
           complete: true
+      - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
+    request: b47d991a9e655776650668ab3a23e14e9a39f788d0174990b41db983172c89db
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
+      chunks:
+      - expected:
         - kind: tool_call
-          name: echo
-          arguments: '{"value": "é"}'
+          name: capture_payload
+          arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
           complete: true
+      - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_object
+    request: cc8cddf2ef5c2db964dd13e3b9353909bc6682384e2a58e11f33d34938995c63
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"payload": {"x": 1}}'
+      chunks:
+      - expected:
         - kind: tool_call
-          name: echo
-          arguments: '{"value": "Café"}'
+          name: capture_payload
+          arguments: '{"payload": {"x": 1}}'
           complete: true
+      - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
+    request: 88b21ceb0d6a9af217c37ee6246b32910f10c62a0bf23a1056485d2c1ca1ff2d
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+          complete: true
+      - expected: []
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_native_controls_in_arguments
+    request: b8717da9ef59c7d99bfe267ee801615c4f2c497ab7e2319593fd7033e83df650
+    output:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments: '{"markers": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: lookup
+          arguments: '{"markers": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]"}'
+          complete: true
+      - expected: []
   gpt_oss_invalid_tool_body_then_empty_call:
     case_key: UNIFIED.5-malformed_json_then_two_valid_calls_invalid_text_then_empty_call
     request: 260514f518c37401eb6dd254ba20de2b4585bce1d29a6a489a99243af48b1713
@@ -697,6 +1064,922 @@ records:
           arguments: '{"city": "Paris"}'
           complete: true
       - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    request: 0c4eb581c5ec83cb808efa18606ffb0e80f45e0b92e4eb32aab4beec789ba5ef
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{}'
+      - kind: tool_call
+        name: not_offered
+        arguments: '{"x": 2}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{}'
+          complete: true
+        - kind: tool_call
+          name: not_offered
+          arguments: '{"x": 2}'
+          complete: true
+      - expected: []
+  gpt_oss_quoted_message_header_literal:
+    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_quoted_closer_and_response_header
+    request: 1089bd9b99bc1d5723987c9917974a32a5e12841156961b73eb65ad1d3eb08cb
+    output:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments: '{"q": "[TOOL_CALLS]literal[ARGS]{}"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: lookup
+          arguments: '{"q": "[TOOL_CALLS]literal[ARGS]{}"}'
+          complete: true
+      - expected: []
+  inch_mark_before_reasoning_closer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer
+    request: baf5239a4a4c8b90cac623cdac7f8b5b22931070d0bed1523eabb85f12685d24
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the TV size is 40"
+      - kind: text
+        text: 'Yes'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, the TV size is 40"
+        - kind: text
+          text: 'Yes'
+      - expected: []
+  inch_mark_before_reasoning_closer_quoted_answer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+    request: 31e19c6d8003389826725346fbe7dc6ee391e6ae805f2278fe8c8bd5e51fea93
+    output:
+      assembled:
+      - kind: reasoning
+        text: 27"
+      - kind: text
+        text: '"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 27"
+        - kind: text
+          text: '"Answer"'
+      - expected: []
+  interstitial_text:
+    case_key: UNIFIED.11-interstitial_text
+    request: 4d164ac9a8c330562ca245353dced2fc8ce2a7e868b3b2da6dd5bcc5e5362a60
+    output:
+      assembled:
+      - kind: reasoning
+        text: a
+      - kind: text
+        text: 'Here you go: '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
+    request: dffb261151f3d54cf135a25455998d1555ce7d27bd44aa150bce86841884fb34
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"count": 42}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": 42}'
+          complete: true
+      - expected: []
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-malformed_json_then_two_valid_calls
+    request: b725ca6895c8504d80dc10d3188a7f1923d7fa4aca830a1554486bdc24514bb0
+    output:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments: '{}'
+      - kind: tool_call
+        name: echo
+        arguments: '{"value": "é"}'
+      - kind: tool_call
+        name: echo
+        arguments: '{"value": "Café"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: bad
+          arguments: '{"value": {"x":"unfinished'
+          complete: true
+        - kind: tool_call
+          name: echo
+          arguments: '{"value": "é"}'
+          complete: true
+        - kind: tool_call
+          name: echo
+          arguments: '{"value": "Café"}'
+          complete: true
+  mistral_brace_fallback_calls:
+    case_key: UNIFIED.mistral-brace_fallback_calls
+    request: 5c5925554f6d873d06f21e9ea23d99ec35ba2d74a3cf23bc6168469a3fd72d2d
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Tokyo"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Tokyo"}'
+          complete: true
+      - expected: []
+  mistral_call_id_stripped:
+    case_key: UNIFIED.mistral-call_id_stripped
+    request: 5cef8eb73ae97c75a81997c2e81f9610c8b7cce51cdb2244be28e56a319e8487
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  mistral_call_id_variants:
+    case_key: UNIFIED.mistral-call_id_variants
+    request: 97bf402d5622ba1fcf522c04f8f85e9c7db45d8be7d42a286dad35c06c136eb0
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{}'
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd": "ls"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{}'
+          complete: true
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "ls"}'
+          complete: true
+      - expected: []
+  mistral_call_inside_reasoning_ends_thought:
+    case_key: UNIFIED.mistral-call_inside_reasoning_ends_thought
+    request: 3e0b576d6f16d0196c7f7109229712fa4b6c5e05ea9321e28f4a86cb2af44896
+    output:
+      assembled:
+      - kind: reasoning
+        text: I should check.
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: I should check.
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  mistral_closed_string_marker_before_recovery:
+    case_key: UNIFIED.mistral-closed_string_marker_before_recovery
+    request: 1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{}'
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"ls"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x":"[TOOL_CALLS]g[ARGS]{}","tail":"unfinished'
+          complete: true
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"ls"}'
+          complete: true
+  mistral_closed_string_marker_before_truncation:
+    case_key: UNIFIED.mistral-closed_string_marker_before_truncation
+    request: 21880a2903be2b14901b178f19a15bb427c232c499087c8106fc9805d3e37d99
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+  mistral_duplicate_think_opener_stripped:
+    case_key: UNIFIED.mistral-duplicate_think_opener_stripped
+    request: 50f6af2e44de9bf6e28abf886ebdf661b4103df6a818cc38ec49326f815c0263
+    output:
+      assembled:
+      - kind: reasoning
+        text: ab
+      - kind: text
+        text: c
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: ab
+        - kind: text
+          text: c
+      - expected: []
+  mistral_empty_thoughts_emit_nothing:
+    case_key: UNIFIED.mistral-empty_thoughts_emit_nothing
+    request: f2bde4240db48d09a8f96b933c6c2252fecc2837fae09d4d7e4f63609796aeea
+    output:
+      assembled:
+      - kind: text
+        text: Answer
+      chunks:
+      - expected:
+        - kind: text
+          text: Answer
+      - expected: []
+  mistral_escaped_call_in_unclosed_string:
+    case_key: UNIFIED.mistral-escaped_call_in_unclosed_string
+    request: 8ae9fdddb4d304efebeb1e5b19b5817362043091da700f83dc8bc5d66cbf9800
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+  mistral_json_escapes_and_lookalikes:
+    case_key: UNIFIED.mistral-json_escapes_and_lookalikes
+    request: 2c7ff36936d24c74c82945222652e163177e7f9c96ce352dac638174d9f12a66
+    output:
+      assembled:
+      - kind: tool_call
+        name: log
+        arguments: '{"note": "} \"]\" \"[TOOL_CALLS]\" \\ [ARGS] \ud83d\ude00 [THINK]"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: log
+          arguments: '{"note": "} \"]\" \"[TOOL_CALLS]\" \\ [ARGS] \ud83d\ude00 [THINK]"}'
+          complete: true
+      - expected: []
+  mistral_json_reply_after_reasoning:
+    case_key: UNIFIED.mistral-json_reply_after_reasoning
+    request: f14b83995bf339cb461a70642d90a6a32ce9dee6c14ef3504a65d21da8ad731f
+    output:
+      assembled:
+      - kind: reasoning
+        text: The user wants JSON.
+      - kind: text
+        text: '{"location": "London", "unit": "celsius"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: The user wants JSON.
+        - kind: text
+          text: '{"location": "London", "unit": "celsius"}'
+      - expected: []
+  mistral_malformed_body_ends_at_next_call:
+    case_key: UNIFIED.mistral-malformed_body_ends_at_next_call
+    request: a52ef623dba16866727295c21a3da5dcd0ca92ac5729e98e843dc189b31db224
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  mistral_many_mixed_form_calls:
+    case_key: UNIFIED.mistral-many_mixed_form_calls
+    request: b615f095c3c54787c95f72166f1a7b64d4220537446fc3d81c0d1e9559d5ec8e
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"y": "2"}'
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd": "ls"}'
+      - kind: tool_call
+        name: log
+        arguments: '{}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "}"}'
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "]"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+          complete: true
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "ls"}'
+          complete: true
+        - kind: tool_call
+          name: log
+          arguments: '{}'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "}"}'
+          complete: true
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "]"}'
+          complete: true
+      - expected: []
+  mistral_marker_lookalikes_stay_text:
+    case_key: UNIFIED.mistral-marker_lookalikes_stay_text
+    request: 63ee81fd59f7c3e17ef0311787362d6ac4ed93307ea97a976547ae2d273f59d7
+    output:
+      assembled:
+      - kind: text
+        text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
+      chunks:
+      - expected:
+        - kind: text
+          text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
+      - expected: []
+  mistral_markers_split_across_chunks:
+    case_key: UNIFIED.mistral-markers_split_across_chunks
+    request: 90538bfb6f395bac195ccfcba27e8b67254cd7dd309e9df50ead10f63ba70a5e
+    output:
+      assembled:
+      - kind: reasoning
+        text: plan
+      - kind: text
+        text: On it.
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: plan
+      - expected:
+        - kind: text
+          text: On it.
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+      - expected: []
+  mistral_name_before_marker:
+    case_key: UNIFIED.mistral-name_before_marker
+    request: cdd4e39fc15eec2cbdd5eb74bcf6a3eb787c872cd2c7e04e39a1bd2368fcb37e
+    output:
+      assembled:
+      - kind: text
+        text: bash
+      - kind: tool_call
+        name: ''
+        arguments: '{"command": "ls"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: bash
+        - kind: tool_call
+          name: ''
+          arguments: '{"command": "ls"}'
+          complete: true
+      - expected: []
+  mistral_name_without_arguments:
+    case_key: UNIFIED.mistral-name_without_arguments
+    request: 0a256b487e3a54b569433b4fab0c74809ebaccd708efd5f9c026196e63924b42
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{}'
+          complete: true
+  mistral_non_object_arguments:
+    case_key: UNIFIED.mistral-non_object_arguments
+    request: 96c76252a3ed86c01cc5e3276ea68b0db6432143fa211b1c14e66f803d925fbe
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '[1, 2]'
+      - kind: tool_call
+        name: g
+        arguments: "42"
+      - kind: tool_call
+        name: run
+        arguments: '"done"'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '[1, 2]'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: "42"
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '"done"'
+          complete: true
+  mistral_pre_v11_array_not_a_call:
+    case_key: UNIFIED.mistral-pre_v11_array_not_a_call
+    request: 8e6b6d95ffa4b5a54ebfde117e2a5b815c729e329db9f4c332e433fbbd3d3083
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+  mistral_quoted_marker_is_structural:
+    case_key: UNIFIED.mistral-quoted_marker_is_structural
+    request: 851ecd1ed5a59843fc7b138297c596bf9d55f5e01084798afe7ae069b40ea655
+    output:
+      assembled:
+      - kind: reasoning
+        text: He said "hi
+      - kind: text
+        text: The answer is "42".
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: He said "hi
+        - kind: text
+          text: The answer is "42".
+      - expected: []
+  mistral_quoted_tool_marker_in_answer:
+    case_key: UNIFIED.mistral-quoted_tool_marker_in_answer
+    request: 563710ab1442644a2425029f8d96a5196772ba2e19ed1deaf4c84578aa64441c
+    output:
+      assembled:
+      - kind: text
+        text: The literal "
+      chunks:
+      - expected:
+        - kind: text
+          text: The literal "
+      - expected: []
+  mistral_quoted_tool_marker_then_call:
+    case_key: UNIFIED.mistral-quoted_tool_marker_then_call
+    request: 6d1c7404a35c1ff86e02d7da85ca53b61457e19f8aa9a07bac50e23ab41c6480
+    output:
+      assembled:
+      - kind: text
+        text: The literal "
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  mistral_reasoning_after_call_dropped:
+    case_key: UNIFIED.mistral-reasoning_after_call_dropped
+    request: 265073f6d949aece98b7b2c161be19ae36455299b90651e918a47fe346906397
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  mistral_reasoning_between_calls_dropped:
+    case_key: UNIFIED.mistral-reasoning_between_calls_dropped
+    request: 708fb3a4933a16d4c248b1b50d429e05852528a67e3c6e9813f8197548b768dc
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check both.
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"y": "2"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Check both.
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+          complete: true
+      - expected: []
+  mistral_reasoning_trailing_whitespace_stripped:
+    case_key: UNIFIED.mistral-reasoning_trailing_whitespace_stripped
+    request: e41417836403c7bbaec28fd533b0ee43e0ae20925ebae5b2df62e285e3902611
+    output:
+      assembled:
+      - kind: reasoning
+        text: checking
+      - kind: text
+        text: The answer is 42.
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: The answer is 42.
+      - expected: []
+  mistral_stray_separator_after_args:
+    case_key: UNIFIED.mistral-stray_separator_after_args
+    request: 4b5583bded8f2e4bbd88115049620ed47a67a5f7d2659a4c725206ae4ebee6c9
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"y": "2"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+          complete: true
+      - expected: []
+  mistral_text_after_call_dropped:
+    case_key: UNIFIED.mistral-text_after_call_dropped
+    request: 946e2faa1cb1f390cfd1b87a7efe179c9699910c1d6c97a48d25c06a4e14e9b2
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "SF"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "SF"}'
+          complete: true
+      - expected: []
+  mistral_text_between_calls_dropped:
+    case_key: UNIFIED.mistral-text_between_calls_dropped
+    request: e0434434afaaee5e47a762cf36e7915deed2973881a3161157e7974d39247ad8
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"y": "2"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+          complete: true
+      - expected: []
+  mistral_truncated_inside_args_marker:
+    case_key: UNIFIED.mistral-truncated_inside_args_marker
+    request: f5d86a7ae84dd5061071fd30ac51ce944f0fea1bff36de080d30d3e249964a3a
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+      - expected: []
+  mistral_truncated_second_call_dropped:
+    case_key: UNIFIED.mistral-truncated_second_call_dropped
+    request: 6aeb2aa30ac178125e86927061672d462582ac0fe4d7b5323e4416c7a32c369a
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+      - expected: []
+  mistral_unclosed_string_marker_at_eof:
+    case_key: UNIFIED.mistral-unclosed_string_marker_at_eof
+    request: 2eb1a571fa92695b537b8f6feefac44ed52775b2325f11f1503986dca2d931d6
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+  mistral_whitespace_between_markers:
+    case_key: UNIFIED.mistral-whitespace_between_markers
+    request: 90295d1bee54ea38854dda6f00394585c936564b783b9e60358673aa50048fcb
+    output:
+      assembled:
+      - kind: reasoning
+        text: '
+
+          plan'
+      - kind: text
+        text: 'On it.
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '
+
+            plan'
+        - kind: text
+          text: 'On it.
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  mistral_whitespace_only_arguments:
+    case_key: UNIFIED.mistral-whitespace_only_arguments
+    request: 83b0bb82f8181da4d4058cae5a83c87b55d977177c6a0251d4e636a9f66798af
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{}'
+      - kind: tool_call
+        name: g
+        arguments: '{ }'
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd": "ls"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{ }'
+          complete: true
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "ls"}'
+          complete: true
+      - expected: []
+  mixed_quotes_before_reasoning_closer:
+    case_key: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: a06b589a428879fc6a2262b0502c858514b35e8b1e12c8c87706a127faa90d7c
+    output:
+      assembled:
+      - kind: reasoning
+        text: f'" OR x -- '
+      - kind: text
+        text: '"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: f'" OR x -- '
+        - kind: text
+          text: '"Answer"'
+      - expected: []
+  native_quoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: 85940dfb44e4ed988b8adb5bde469ec92b3b98efb8b72468db5fcb993128521f
+    output:
+      assembled:
+      - kind: reasoning
+        text: The special "
+      - kind: text
+        text: '" marker is used to delineate parser paths'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: The special "
+        - kind: text
+          text: '" marker is used to delineate parser paths'
+      - expected: []
+  native_quoted_reasoning_closer_then_answer:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: a7315936be34a10ea6927f01d33e17caffd904522f983c9b96023a95dc21331b
+    output:
+      assembled:
+      - kind: reasoning
+        text: ''''
+      - kind: text
+        text: '''Answer'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: ''''
+        - kind: text
+          text: '''Answer'
+      - expected: []
+  native_reasoning_closer_in_quoted_sentence:
+    case_key: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    request: 592550cad76041319931d0cdc302ede368d96597d023dbadf7318e5af1fd131f
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, "The marker
+      - kind: text
+        text: ' is a special marker"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, "The marker
+        - kind: text
+          text: ' is a special marker"'
+      - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-native_unmatched_quote_then_call
+    request: c929885d866d626ecb83263e4e5a0a8a366753bc4cf5d1ad017f521e0141c32a
+    output:
+      assembled:
+      - kind: text
+        text: He said "maybe
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    request: ac8b4e3b9662a820c39b02839c11e472edef8ddac2e971c1b5ead303e7476260
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the marker
+      - kind: text
+        text: ' is a special marker'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, the marker
+        - kind: text
+          text: ' is a special marker'
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+    request: 71d23ec03bfa613c7e992f69f7153622dcf9b2b5853a2796f3c5bddf6b9a3ba1
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, user is asking if
+      - kind: text
+        text: ' is specialYes'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, user is asking if
+        - kind: text
+          text: ' is specialYes'
+      - expected: []
+  not_keyword_type_complement:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
+    request: 46c99d428feadf8fd92280dada373ac414226af81523a587c761fc3d33c54fa4
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"count": -2500, "text": "42"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count": -2500, "text": "42"}'
+          complete: true
+      - expected: []
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
+    request: e941ab4fedf702687d32c78eaa7212eca62fe80788b6b21311caa1ac34417ca4
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"const_text": "null", "enum_text": "null"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"const_text": "null", "enum_text": "null"}'
+          complete: true
+      - expected: []
   orphan_close_after_prose:
     case_key: UNIFIED.5-orphan_close_after_prose
     request: b9320176cb32741d53e3f13ab9d398945cf70d40aafef88cc1846c6ee3a720af
@@ -709,17 +1992,94 @@ records:
         - kind: text
           text: 'I will check that. '
       - expected: []
-  truncated_tool_eof:
-    case_key: UNIFIED.5-truncated_tool_eof
-    request: 9a19284971d3f2f3af652b22f7ef05d5cd227f52322d597f6d8df1abf91950b8
+  prefilled_reasoning_redundant_opener:
+    case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
+    request: 307cabd54da207fd6752c32bf8a815e93013f7b3b0c872d470dcdf23086ebf05
     output:
       assembled:
       - kind: reasoning
-        text: ok
+        text: checking weather
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "London"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: ok
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "London"}'
+          complete: true
+      - expected: []
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40-prefilled_reasoning_then_text
+    request: ce30c318783b1fc458a0eec2e3690300aaae361fa396b9faaacad99e1071966a
+    output:
+      assembled:
+      - kind: reasoning
+        text: no tool needed
+      - kind: text
+        text: The answer is 42.
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+      - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
+    request: 7bfb70eda3c3e6c7f1635810bbf22e7eba5a5da0f6372fd5e0b2c7e35828ebd5
+    output:
+      assembled:
+      - kind: reasoning
+        text: weighing options
+      - kind: text
+        text: 'Here''s what I found: '
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  prefilled_reasoning_truncated:
+    case_key: UNIFIED.41-prefilled_reasoning_truncated
+    request: 1bb08b21e172ee57cbfbd0575581105a46b47d2400a56db903baeb351ab6ac70
+    output:
+      assembled:
+      - kind: reasoning
+        text: analyzing data
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: analyzing data
+      - expected: []
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_with_tool
+    request: e9ed2ade278741c36db6512ed06cdef93d6bb095ade5228649154edf7b61830c
+    output:
+      assembled:
+      - kind: reasoning
+        text: checking weather
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
       - expected: []
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
@@ -740,19 +2100,139 @@ records:
           arguments: '{"city": "Paris"}'
           complete: true
       - expected: []
-  empty_args:
-    case_key: UNIFIED.6-empty_args
-    request: 21ec4e05b83d5c0c34e2b77a5429695d03e475ed0e7ff49e4b4bba9d7e6e17e3
+  quoted_name_possessive_inline_closer:
+    case_key: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: eaee9ba1768cbe86284c07d7a47e946c9771ef4059f3965356f6aa5f85bad787
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name`''s path.'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name`''s path.'
+        - kind: text
+          text: '''Answer'''
+      - expected: []
+  reason_markup_in_arg:
+    case_key: UNIFIED.12-reason_markup_in_arg
+    request: 7e63acbf3a53e99ccaa704e397bfaedefe9398f656faad184e7d8623c0d19289
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
-        arguments: '{}'
+        name: log
+        arguments: '{"note": "[THINK]reconsider[/THINK]"}'
       chunks:
       - expected:
         - kind: tool_call
+          name: log
+          arguments: '{"note": "[THINK]reconsider[/THINK]"}'
+          complete: true
+      - expected: []
+  reason_markup_in_arg_empty_span_then_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: e9075c8127e80a019b97339a407d67776632ff62c5f433d50c59d518307d88b3
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"content": "<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"content": "<think></think>answer"}'
+          complete: true
+      - expected: []
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+    request: 25b027d9bb1782fadfc9704a96dc9e9b9657bd4c62254c62f95c74344d622ad3
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"path": "/tmp/literal.txt", "content": "<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"path": "/tmp/literal.txt", "content": "<think></think>answer"}'
+          complete: true
+      - expected: []
+  reason_only:
+    case_key: UNIFIED.10-reason_only
+    request: 9569759764cbf0a899361dd723bd8faad87bd37b123f5f90a019542179d345c7
+    output:
+      assembled:
+      - kind: reasoning
+        text: just thinking, no answer
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: just thinking, no answer
+      - expected: []
+  reason_then_content:
+    case_key: UNIFIED.10-reason_then_content
+    request: 5dcc7f289dbba6319bfbe5cf042a813ad2aa6edf79469c83a96e6be52cc44683
+    output:
+      assembled:
+      - kind: reasoning
+        text: let me think
+      - kind: text
+        text: The answer is 42.
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+      - expected: []
+  reason_then_tool:
+    case_key: UNIFIED.11-reason_then_tool
+    request: 27868e09ae785e258ca2d234241877c7a6c961e0158a7c48f1b50df6e0bf271b
+    output:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
           name: get_weather
-          arguments: '{}'
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  reason_unterminated:
+    case_key: UNIFIED.10-reason_unterminated
+    request: fe0f5938593c9479fb2a805a345e6907d6c40af6862484ce0235be4f9221714a
+    output:
+      assembled:
+      - kind: reasoning
+        text: thinking but stream ends
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: thinking but stream ends
+      - expected: []
+  reference_object_recursive_and_composed_types:
+    case_key: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
+    request: 1b7290c46c54c0397f7ce93ceb2feb581c152a36e54f6944d1b284ac781facb7
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
           complete: true
       - expected: []
   schema_const_array_allof:
@@ -1505,21 +2985,6 @@ records:
           arguments: '{"value": 1}'
           complete: true
       - expected: []
-  enum_contradicting_declared_type:
-    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    request: 22198328df128b30b8bd1e5bf1de60d68e0e0dd896a045c1ff2aea41b9446ffb
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-          complete: true
-      - expected: []
   schema_enum_inferred_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
     request: e0e67e8be9be9a6d9c7b108be461323d94e5164f58518eedfe4e2adac259a615
@@ -1565,6 +3030,21 @@ records:
           arguments: '{"value": "42"}'
           complete: true
       - expected: []
+  schema_escaped_ref_const:
+    case_key: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
+    request: 824ca6fbc36427fe44a14c6562882900b745c7505891aae073663a8a23906558
+    output:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments: '{"value": "\"hello\""}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": "\"hello\""}'
+          complete: true
+      - expected: []
   schema_id_direct_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-id_direct_integer
     request: c53c7b4fb509b7c65de4d1986dd0e786a333c1c3c9b3923cec7a5ef4b2bb8b6d
@@ -1580,259 +3060,64 @@ records:
           arguments: '{"value": 42}'
           complete: true
       - expected: []
-  xml_string_type_double_quoted_object:
-    case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
-    request: b4d6e99820c6913ce60f7b3a5faea57bb64bf9b8f50ef16445da5e577f8a7729
+  schema_integer_const_ambiguous:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
+    request: 16bed5dc7becc9aadfa388755e2ee2db95722dfb89785f05e1eb34c13271e053
     output:
       assembled:
       - kind: tool_call
         name: schema_probe
-        arguments: '{"value": "{\"a\":1}"}'
+        arguments: '{"value": "42"}'
       chunks:
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value": "{\"a\":1}"}'
+          arguments: '{"value": "42"}'
           complete: true
       - expected: []
-  xml_string_type_single_quoted_object:
-    case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
-    request: afb1e58f65a061a1e7b0aaa7f5cbea2a0b5221f6885dec6ab06374c833292e41
+  schema_intersection_anyof:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
+    request: be13ad87452efed727b38f61e8c4538ab594968bae6b5cece5425a64e112120b
     output:
       assembled:
       - kind: tool_call
         name: schema_probe
-        arguments: '{"value": "{''a'':1}"}'
+        arguments: '{"value": 42}'
       chunks:
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value": "{''a'':1}"}'
+          arguments: '{"value": 42}'
           complete: true
       - expected: []
-  arg_json_null:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null
-    request: 1a545d8fe4a218186d388c1f1398872711805de51216eedd7e1e349c1899bf29
+  schema_intersection_oneof:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
+    request: b29d5c9376eefe81f1303722bd3604f9cd1d6aac803584153c973a8998d7486a
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
-        arguments: '{"city": null}'
+        name: schema_probe
+        arguments: '{"value": 42}'
       chunks:
       - expected:
         - kind: tool_call
-          name: get_weather
-          arguments: '{"city": null}'
+          name: schema_probe
+          arguments: '{"value": 42}'
           complete: true
       - expected: []
-  arg_json_null_anyof:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_anyof
-    request: e4a633dc29b1363714e68220cbc909e5398d806323db98d9e0fecbe78fdabd7a
+  schema_null_union_ambiguous:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
+    request: d63571c2fd939e61efd2c4a44743029d814d4e6652f1ffe4af3247b08ff2adb8
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
-        arguments: '{"city": null}'
+        name: schema_probe
+        arguments: '{"value": null}'
       chunks:
       - expected:
         - kind: tool_call
-          name: get_weather
-          arguments: '{"city": null}'
-          complete: true
-      - expected: []
-  arg_json_null_const:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_const
-    request: e58714b04b1487a459911bcef2739b0444d489104abae25ae42b93cbceaf0729
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": null}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": null}'
-          complete: true
-      - expected: []
-  arg_json_null_nullable:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_nullable
-    request: 6b5d7384a630589712614a0ab222be66dd692863756667bad1c304c06e05167e
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": null}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": null}'
-          complete: true
-      - expected: []
-  arg_json_null_oneof:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_oneof
-    request: f27d1a820095ee439168757326c78967cc255afde0c898d6efa6193e407f6a22
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": null}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": null}'
-          complete: true
-      - expected: []
-  arg_json_null_ref:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
-    request: 3bcdeba7b9f84270a888a7787543991aeb8660a0ecc5b334d9f8e8dccca1571d
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": null}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": null}'
-          complete: true
-      - expected: []
-  arg_null_mixed_labels:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
-    request: 3ebb815e544d7e8ca1cd15fd10578c00a91ffb1cb9ba590ee70349c5e79e8cac
-    output:
-      assembled:
-      - kind: tool_call
-        name: set_labels
-        arguments: '{"label": null, "note": null, "literal": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: set_labels
-          arguments: '{"label": null, "note": null, "literal": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null
-    request: 82baf993733c21fe4ea26067aabe6658b08a3198e7f713d8a3dd84d77b5c4ea4
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_const:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_const
-    request: 475a02788c15fe510025ce59dfed99645ba675978decf987b62ae3f6179f7ead
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_enum:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
-    request: 12fb77952cbb80f62240692a75a961e3a0a09fa49e82a5d1a148a01197883fae
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_ref:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
-    request: 62a4749a395ca5b2469ca06310900710dc344744cb29b98d050bfe0a83bf00fb
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_sibling_anyof:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
-    request: d5429e01ed32c98f9e64078d532e80cbd5dd81e0779f73902ebeddfe6e3b404b
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_sibling_oneof:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
-    request: 2f5f29af8077db900419e78467a54d1d70aa89b99fd1da2dfcf8ab6483198778
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_union:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_union
-    request: 0d1a75c3432f4666f9d4563ad7d62146849f0fa2485c769e62dd1340e187e917
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
-          complete: true
-      - expected: []
-  arg_string_null_untyped_branch:
-    case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
-    request: cb52fed2d942e6ebd88f3e72b092ba2dd4213d202cd9459cea287beb4066df48
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "null"}'
+          name: schema_probe
+          arguments: '{"value": null}'
           complete: true
       - expected: []
   schema_nullable_string:
@@ -1850,454 +3135,19 @@ records:
           arguments: '{"value": null}'
           complete: true
       - expected: []
-  schema_type_array_integer_null:
-    case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null
-    request: 35a35c7d0a8c0a25e749f074afde9a63e766c03e8592e469c66c608b0d14b6aa
+  schema_object_const_union:
+    case_key: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
+    request: 1e34ecd9bbdd16ef4487643ed22f3888438db737b77d35d85a2dfd33a607c42e
     output:
       assembled:
       - kind: tool_call
         name: schema_probe
-        arguments: '{"value": 42}'
+        arguments: '{"value": "{\"x\":1}"}'
       chunks:
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value": 42}'
-          complete: true
-      - expected: []
-  schema_type_array_integer_null_null:
-    case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
-    request: 8e51db1951ecaedf8f0a6c47614d2657a786d043699c956516a5cad452dbd806
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": null}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": null}'
-          complete: true
-      - expected: []
-  schema_type_array_string_integer:
-    case_key: UNIFIED.7-tool-argument-nullability-type_array_string_integer
-    request: 28d37f4802026a5d05b19cf1d981dad334395de7051a59c9bb9971638b6a713f
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": "42"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": "42"}'
-          complete: true
-      - expected: []
-  arg_numeric_14_const_decimal:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
-    request: b79049806b3af0561c1f84f1e86c829afe19b22680d514669bedd48c28c2119d
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":42.0}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":42.0}'
-          complete: true
-      - expected: []
-  arg_numeric_14_const_exponent:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
-    request: 71fd6458ab4a20f5240764a21d9e6b84eb1122430acefe779b923ecd3bbfdde8
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":4.2e1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":4.2e1}'
-          complete: true
-      - expected: []
-  arg_numeric_14_enum_decimal:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
-    request: c0e3097695bc15245c6444a6ecc371dac09baa7b44dc0a46239a51a646e7c1c0
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":42.0}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":42.0}'
-          complete: true
-      - expected: []
-  arg_numeric_14_enum_exponent:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
-    request: cae3a8a4c19b1ce5a469f09947727a41ec0c4bb07479870a6af62e51f008bc8a
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":4.2e1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":4.2e1}'
-          complete: true
-      - expected: []
-  arg_numeric_14_large_decimal:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
-    request: 23217880c4bd8a35f4afc9d37ebda6a628b9fde54a14b6ff34a0a47b3d42c181
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":9007199254740993.0}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":9007199254740993.0}'
-          complete: true
-      - expected: []
-  arg_numeric_14_large_exponent:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
-    request: a5895078df81c4f384162f244dea7d82f63363ff5f7cbbf0c3eb75f3f48beeeb
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":9.007199254740993e15}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":9.007199254740993e15}'
-          complete: true
-      - expected: []
-  arg_numeric_14_negative:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
-    request: 555fee87a1e0c719598512aacf0010c6ceebd81e0bc3f922f84356f3576ee255
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":-4.2E+1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":-4.2E+1}'
-          complete: true
-      - expected: []
-  arg_numeric_14_negative_exponent:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
-    request: 419c056b11180d277cde78a15d6da4370c4631b86ffd40fe5341f83e83ddf9e7
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":4200e-2}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":4200e-2}'
-          complete: true
-      - expected: []
-  arg_numeric_14_zero_underflow:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
-    request: 68c0a1de04767a1abf00773c7c01409ba7fa7e96a210d48d633284a72b816311
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":0.0e-400}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":0.0e-400}'
-          complete: true
-      - expected: []
-  arg_numeric_15_exponent:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
-    request: c2edba0bd9dc3619292834937cbcb609b1931aed338e48a0038c18c13b32c31f
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":9.0071992547409925e15}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":9.0071992547409925e15}'
-          complete: true
-      - expected: []
-  arg_numeric_15_negative:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
-    request: 8b947869ecde5a4a67d95ca5dcd3948298d745f4cef1e88fed382276084f69e2
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":-9007199254740992.5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":-9007199254740992.5}'
-          complete: true
-      - expected: []
-  arg_numeric_15_ordinary:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
-    request: 669ba70f1a8d8b5469fcc86399e0a9095629e4616e033fb41d3941ac4fd230ff
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":42.5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":42.5}'
-          complete: true
-      - expected: []
-  arg_numeric_15_quarter:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
-    request: 683d86d70e71e3ebdc1bf6ee48e58ef9be684d86000963c4e85164205e281fe8
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":9007199254740993.25}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":9007199254740993.25}'
-          complete: true
-      - expected: []
-  arg_numeric_15_round_down:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
-    request: f5e99476d01a035713b35c99099d6848321a5b3cd03fe194a6c2f69b9e43a7d1
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":9007199254740992.5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":9007199254740992.5}'
-          complete: true
-      - expected: []
-  arg_numeric_15_round_up:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
-    request: b6bfbd9a1651bb47d86069af27c03b886becf57633bf4c7c81a32de29fb895fc
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":9007199254740993.1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":9007199254740993.1}'
-          complete: true
-      - expected: []
-  arg_numeric_15_small:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
-    request: 893038b6424929a841c8e053685c09a983005bec76115d1aca8c7ec65d3a147a
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"value":0.10000000000000000001}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"value":0.10000000000000000001}'
-          complete: true
-      - expected: []
-  arg_numeric_nested_exact:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
-    request: c37b83044eed2c0086d0390ef731fdf698d998aa84b5f48a224bb6b35c7387e4
-    output:
-      assembled:
-      - kind: tool_call
-        name: inspect
-        arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: inspect
-          arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
-          complete: true
-      - expected: []
-  arg_numeric_overflow_siblings_finite:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
-    request: a7d1833f17bfd043ed5475da1f444fd867b2e50e96ff9e0aafb32544d4ff9327
-    output:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":1.5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: echo
-          arguments: '{"city":"Paris","value":1.5}'
-          complete: true
-      - expected: []
-  arg_numeric_overflow_siblings_negative:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
-    request: bc81af91aac41425fa44d26fe82955324a25dbcfe31c64b9681b09c698fafbfd
-    output:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":-1E+400}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: echo
-          arguments: '{"city":"Paris","value":-1E+400}'
-          complete: true
-      - expected: []
-  arg_numeric_overflow_siblings_positive:
-    case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
-    request: ef0a4880f4b6a8653ae283befdc2cc2649cd3f4728c10343a5fc3e7577b80944
-    output:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":1e400}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: echo
-          arguments: '{"city":"Paris","value":1e400}'
-          complete: true
-      - expected: []
-  schema_escaped_ref_const:
-    case_key: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
-    request: 824ca6fbc36427fe44a14c6562882900b745c7505891aae073663a8a23906558
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": "\"hello\""}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": "\"hello\""}'
-          complete: true
-      - expected: []
-  glm_ref_encoded_targets:
-    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
-    request: b3685f5413f799182f9192f53e2d1056e932f1fe17b08b4e93ef77944a92c97e
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
-          complete: true
-      - expected: []
-  glm_ref_json_looking_strings:
-    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
-    request: b47d991a9e655776650668ab3a23e14e9a39f788d0174990b41db983172c89db
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
-          complete: true
-      - expected: []
-  glm_ref_object:
-    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_object
-    request: cc8cddf2ef5c2db964dd13e3b9353909bc6682384e2a58e11f33d34938995c63
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"payload": {"x": 1}}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"payload": {"x": 1}}'
-          complete: true
-      - expected: []
-  glm_ref_scalar_types:
-    case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_scalar_types
-    request: 88b21ceb0d6a9af217c37ee6246b32910f10c62a0bf23a1056485d2c1ca1ff2d
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
-          complete: true
-      - expected: []
-  local_schema_id_preserves_type:
-    case_key: UNIFIED.7-tool-argument-schema-references-local_schema_id_preserves_type
-    request: dffb261151f3d54cf135a25455998d1555ce7d27bd44aa150bce86841884fb34
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"count": 42}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"count": 42}'
-          complete: true
-      - expected: []
-  nullable_reference_alias_literals:
-    case_key: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
-    request: e941ab4fedf702687d32c78eaa7212eca62fe80788b6b21311caa1ac34417ca4
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"const_text": "null", "enum_text": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"const_text": "null", "enum_text": "null"}'
+          arguments: '{"value": "{\"x\":1}"}'
           complete: true
       - expected: []
   schema_percent_ref_const:
@@ -2390,174 +3240,9 @@ records:
           arguments: '{"value": "auto"}'
           complete: true
       - expected: []
-  reference_object_recursive_and_composed_types:
-    case_key: UNIFIED.7-tool-argument-schema-references-reference_object_recursive_and_composed_types
-    request: 1b7290c46c54c0397f7ce93ceb2feb581c152a36e54f6944d1b284ac781facb7
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}'
-          complete: true
-      - expected: []
-  unused_reference_graph_parameter_types:
-    case_key: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
-    request: f9aa9b5ebd7180f3db062076420246e1800cb7937fbc20065cad3ccaf24e98e4
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"count": 42, "flag": false, "text": "null"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"count": 42, "flag": false, "text": "null"}'
-          complete: true
-      - expected: []
-  arg_array_quoted_parameter_close:
-    case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
-    request: 001fc1f875bc12b5e4220a2353a95e801c084498d42f39d3ce67038191ef2056
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"value": ["é \\\" </atem:parameter>"]}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"value": ["é \\\" </atem:parameter>"]}'
-          complete: true
-      - expected: []
-  arg_marker_in_string:
-    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
-    request: 6cf1ce72ff38734c53bcaa7653f7098d104675d1f1967cdaa23a8af4d6dfcd78
-    output:
-      assembled:
-      - kind: tool_call
-        name: run
-        arguments: '{"cmd": "git log [TOOL_CALLS] --oneline"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd": "git log [TOOL_CALLS] --oneline"}'
-          complete: true
-      - expected: []
-  gpt_oss_control_marker_inside_argument_string:
-    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_native_controls_in_arguments
-    request: b8717da9ef59c7d99bfe267ee801615c4f2c497ab7e2319593fd7033e83df650
-    output:
-      assembled:
-      - kind: tool_call
-        name: lookup
-        arguments: '{"markers": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: lookup
-          arguments: '{"markers": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]"}'
-          complete: true
-      - expected: []
-  gpt_oss_quoted_message_header_literal:
-    case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string_quoted_closer_and_response_header
-    request: 1089bd9b99bc1d5723987c9917974a32a5e12841156961b73eb65ad1d3eb08cb
-    output:
-      assembled:
-      - kind: tool_call
-        name: lookup
-        arguments: '{"q": "[TOOL_CALLS]literal[ARGS]{}"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: lookup
-          arguments: '{"q": "[TOOL_CALLS]literal[ARGS]{}"}'
-          complete: true
-      - expected: []
-  arg_object_quoted_parameter_close:
-    case_key: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
-    request: 0ce35e19a2f0d6265bfc4e9aea238031b657014014ef1a9afbdec97c0154b69a
-    output:
-      assembled:
-      - kind: tool_call
-        name: record
-        arguments: '{"value": {"s": "</atem:parameter>"}}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: record
-          arguments: '{"value": {"s": "</atem:parameter>"}}'
-          complete: true
-      - expected: []
-  arg_unicode:
-    case_key: UNIFIED.7-tool-argument-text-preservation-arg_unicode
-    request: 9bc7ac945655fb88a025c913a2a28b51cd1db609472a09bac4af53a4cbbd3ef5
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "São Paulo 東京"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "São Paulo 東京"}'
-          complete: true
-      - expected: []
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
-    request: 4d7e1209b16bb1ba4f86123a5f209a462f8fc2ccd21c7012883f47ee93b49847
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
-          complete: true
-      - expected: []
-  conditional_schema_number_types:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
-    request: 55d1f507224defe0aa99410166e291ac737757641018da4b1acd670b36d79478
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"amount": 21.5, "retries": 37}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"amount": 21.5, "retries": 37}'
-          complete: true
-      - expected: []
-  schema_integer_const_ambiguous:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-integer_const_ambiguous
-    request: 16bed5dc7becc9aadfa388755e2ee2db95722dfb89785f05e1eb34c13271e053
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": "42"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": "42"}'
-          complete: true
-      - expected: []
-  schema_intersection_anyof:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_anyOf
-    request: be13ad87452efed727b38f61e8c4538ab594968bae6b5cece5425a64e112120b
+  schema_type_array_integer_null:
+    case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null
+    request: 35a35c7d0a8c0a25e749f074afde9a63e766c03e8592e469c66c608b0d14b6aa
     output:
       assembled:
       - kind: tool_call
@@ -2570,39 +3255,9 @@ records:
           arguments: '{"value": 42}'
           complete: true
       - expected: []
-  schema_intersection_oneof:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-intersection_oneOf
-    request: b29d5c9376eefe81f1303722bd3604f9cd1d6aac803584153c973a8998d7486a
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": 42}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": 42}'
-          complete: true
-      - expected: []
-  not_keyword_type_complement:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
-    request: 46c99d428feadf8fd92280dada373ac414226af81523a587c761fc3d33c54fa4
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"count": -2500, "text": "42"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"count": -2500, "text": "42"}'
-          complete: true
-      - expected: []
-  schema_null_union_ambiguous:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-null_union_ambiguous
-    request: d63571c2fd939e61efd2c4a44743029d814d4e6652f1ffe4af3247b08ff2adb8
+  schema_type_array_integer_null_null:
+    case_key: UNIFIED.7-tool-argument-nullability-type_array_integer_null_null
+    request: 8e51db1951ecaedf8f0a6c47614d2657a786d043699c956516a5cad452dbd806
     output:
       assembled:
       - kind: tool_call
@@ -2615,19 +3270,19 @@ records:
           arguments: '{"value": null}'
           complete: true
       - expected: []
-  schema_object_const_union:
-    case_key: UNIFIED.7-tool-argument-unions-and-intersections-object_const_union
-    request: 1e34ecd9bbdd16ef4487643ed22f3888438db737b77d35d85a2dfd33a607c42e
+  schema_type_array_string_integer:
+    case_key: UNIFIED.7-tool-argument-nullability-type_array_string_integer
+    request: 28d37f4802026a5d05b19cf1d981dad334395de7051a59c9bb9971638b6a713f
     output:
       assembled:
       - kind: tool_call
         name: schema_probe
-        arguments: '{"value": "{\"x\":1}"}'
+        arguments: '{"value": "42"}'
       chunks:
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value": "{\"x\":1}"}'
+          arguments: '{"value": "42"}'
           complete: true
       - expected: []
   schema_union_anyof_array_reverse_string:
@@ -3350,45 +4005,21 @@ records:
           arguments: '{"value": {"x": 1}}'
           complete: true
       - expected: []
-  UNIFIED.8-native_quoted_complete_call_default:
-    case_key: UNIFIED.8-native_quoted_complete_call_default
-    request: 57ff22e92b982cba062e5e294ad76b68df1e8713077afad5458e379eee1f1a05
+  sql_fragment_before_reasoning_closer:
+    case_key: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 410651a0e669c5b119e4eef31cc51caed4e933acfa3866cb1c2c6616c12ce729
     output:
       assembled:
+      - kind: reasoning
+        text: Let me think, this SQL fragment is '1'='1
       - kind: text
-        text: 'Example: "'
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
+        text: '''Yes'''
       chunks:
       - expected:
+        - kind: reasoning
+          text: Let me think, this SQL fragment is '1'='1
         - kind: text
-          text: 'Example: "'
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-      - expected: []
-  native_unmatched_quote_then_call:
-    case_key: UNIFIED.8-native_unmatched_quote_then_call
-    request: c929885d866d626ecb83263e4e5a0a8a366753bc4cf5d1ad017f521e0141c32a
-    output:
-      assembled:
-      - kind: text
-        text: He said "maybe
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: text
-          text: He said "maybe
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
+          text: '''Yes'''
       - expected: []
   text_before_tool:
     case_key: UNIFIED.8-text_before_tool
@@ -3409,9 +4040,175 @@ records:
           arguments: '{"city": "Paris"}'
           complete: true
       - expected: []
-  mistral_brace_fallback_calls:
-    case_key: UNIFIED.mistral-brace_fallback_calls
-    request: 5c5925554f6d873d06f21e9ea23d99ec35ba2d74a3cf23bc6168469a3fd72d2d
+  text_only:
+    case_key: UNIFIED.3-text_only
+    request: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+    output:
+      assembled:
+      - kind: text
+        text: The answer is 42, no tools needed.
+      chunks:
+      - expected:
+        - kind: text
+          text: The answer is 42, no tools needed.
+      - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    request: 926bf98da03f3a5211019bf88ba3535aa1f9fdcf8bae83a3dac7244e0e5e7506
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x":"1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"x":"2"}'
+      - kind: tool_call
+        name: h
+        arguments: '{"x":"3"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x":"1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{"x":"2"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: h
+          arguments: '{"x":"3"}'
+          complete: true
+      - expected: []
+      - expected: []
+  tool_block_never_closed_then_text:
+    case_key: UNIFIED.4-tool_block_never_closed_then_text
+    request: 74a0d906131ed444a4341d0ba69046a12d0381620b2308694badff00ef485421
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+  tool_body_whitespace:
+    case_key: UNIFIED.1-tool_only_leading_json_body_whitespace
+    request: cd95add30a03bd273bf4586e50c185d92a77debab9633a6deab0cbfb1e758032
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  tool_call_ids_unique:
+    case_key: UNIFIED.2-tool_call_ids_unique
+    request: 543ab4d2f2639c8565ae97b4f89fc386b5afbeae34f819d8807f49a6e7a14ec5
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  tool_markup_only_emits_nothing:
+    case_key: UNIFIED.4-tool_markup_only_emits_nothing
+    request: 28ded4e9a561864ffb25eb1dcc45e837e52167487ac40d8a609f66fec85ba31b
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+  tool_only:
+    case_key: UNIFIED.1-tool_only
+    request: 11f51a4723afce40da742464fea19c269863ec2aa016dca8163dfe099b83f418
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected: []
+  truncated_tool_eof:
+    case_key: UNIFIED.5-truncated_tool_eof
+    request: 9a19284971d3f2f3af652b22f7ef05d5cd227f52322d597f6d8df1abf91950b8
+    output:
+      assembled:
+      - kind: reasoning
+        text: ok
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: ok
+      - expected: []
+  two_adjacent_reason_spans:
+    case_key: UNIFIED.10-two_adjacent_reason_spans
+    request: a49508953c75c027ead2afd47a37ed8e5b172d95937da28dab7434b18fdd2765
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'first
+
+          second'
+      - kind: text
+        text: done
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'first
+
+            second'
+        - kind: text
+          text: done
+      - expected: []
+  two_calls:
+    case_key: UNIFIED.2-two_calls
+    request: 9191497e624e4d96af3200d6ced61628a31ada3169f09375ce179e6377e4c01b
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"y": "2"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+        - kind: tool_call
+          name: g
+          arguments: '{"y": "2"}'
+          complete: true
+      - expected: []
+  two_calls_same_name:
+    case_key: UNIFIED.2-two_calls_same_name
+    request: f5fb682ec8cab1980aad8362df12ece39a1d2af2a1d71a6ab4150f8f3435f3b3
     output:
       assembled:
       - kind: tool_call
@@ -3431,616 +4228,132 @@ records:
           arguments: '{"city": "Tokyo"}'
           complete: true
       - expected: []
-  mistral_call_id_stripped:
-    case_key: UNIFIED.mistral-call_id_stripped
-    request: 5cef8eb73ae97c75a81997c2e81f9610c8b7cce51cdb2244be28e56a319e8487
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  mistral_call_id_variants:
-    case_key: UNIFIED.mistral-call_id_variants
-    request: 97bf402d5622ba1fcf522c04f8f85e9c7db45d8be7d42a286dad35c06c136eb0
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{}'
-      - kind: tool_call
-        name: run
-        arguments: '{"cmd": "ls"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{}'
-          complete: true
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd": "ls"}'
-          complete: true
-      - expected: []
-  mistral_call_inside_reasoning_ends_thought:
-    case_key: UNIFIED.mistral-call_inside_reasoning_ends_thought
-    request: 3e0b576d6f16d0196c7f7109229712fa4b6c5e05ea9321e28f4a86cb2af44896
+  two_reason_spans:
+    case_key: UNIFIED.10-two_reason_spans
+    request: 722abb5faddaa97e142539c45b734cd038040ec26cbec1214c9dba5aee2c41ee
     output:
       assembled:
       - kind: reasoning
-        text: I should check.
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
+        text: first thought
+      - kind: text
+        text: 'interlude '
+      - kind: reasoning
+        text: second thought
+      - kind: text
+        text: done
       chunks:
       - expected:
         - kind: reasoning
-          text: I should check.
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
+          text: first thought
+        - kind: text
+          text: 'interlude '
+        - kind: reasoning
+          text: second thought
+        - kind: text
+          text: done
       - expected: []
-  mistral_closed_string_marker_before_recovery:
-    case_key: UNIFIED.mistral-closed_string_marker_before_recovery
-    request: 1a50d59e309449cd5c789b1820b509e4ca85cdef7d58bedbb59f75a1858339e5
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{}'
-      - kind: tool_call
-        name: run
-        arguments: '{"cmd":"ls"}'
-      chunks:
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x":"[TOOL_CALLS]g[ARGS]{}","tail":"unfinished'
-          complete: true
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd":"ls"}'
-          complete: true
-  mistral_closed_string_marker_before_truncation:
-    case_key: UNIFIED.mistral-closed_string_marker_before_truncation
-    request: 21880a2903be2b14901b178f19a15bb427c232c499087c8106fc9805d3e37d99
-    output:
-      assembled: []
-      chunks:
-      - expected: []
-      - expected: []
-  mistral_duplicate_think_opener_stripped:
-    case_key: UNIFIED.mistral-duplicate_think_opener_stripped
-    request: 50f6af2e44de9bf6e28abf886ebdf661b4103df6a818cc38ec49326f815c0263
+  unclosed_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: c1d1fe543ae50b05acacf2bc04939a7783f60dbcdde4b2e5f1f51b93a429577c
     output:
       assembled:
       - kind: reasoning
-        text: ab
+        text: '`name'
       - kind: text
-        text: c
+        text: '`Answer`'
       chunks:
       - expected:
         - kind: reasoning
-          text: ab
+          text: '`name'
         - kind: text
-          text: c
+          text: '`Answer`'
       - expected: []
-  mistral_empty_thoughts_emit_nothing:
-    case_key: UNIFIED.mistral-empty_thoughts_emit_nothing
-    request: f2bde4240db48d09a8f96b933c6c2252fecc2837fae09d4d7e4f63609796aeea
-    output:
-      assembled:
-      - kind: text
-        text: Answer
-      chunks:
-      - expected:
-        - kind: text
-          text: Answer
-      - expected: []
-  mistral_escaped_call_in_unclosed_string:
-    case_key: UNIFIED.mistral-escaped_call_in_unclosed_string
-    request: 8ae9fdddb4d304efebeb1e5b19b5817362043091da700f83dc8bc5d66cbf9800
-    output:
-      assembled: []
-      chunks:
-      - expected: []
-      - expected: []
-  mistral_json_escapes_and_lookalikes:
-    case_key: UNIFIED.mistral-json_escapes_and_lookalikes
-    request: 2c7ff36936d24c74c82945222652e163177e7f9c96ce352dac638174d9f12a66
-    output:
-      assembled:
-      - kind: tool_call
-        name: log
-        arguments: '{"note": "} \"]\" \"[TOOL_CALLS]\" \\ [ARGS] \ud83d\ude00 [THINK]"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: log
-          arguments: '{"note": "} \"]\" \"[TOOL_CALLS]\" \\ [ARGS] \ud83d\ude00 [THINK]"}'
-          complete: true
-      - expected: []
-  mistral_json_reply_after_reasoning:
-    case_key: UNIFIED.mistral-json_reply_after_reasoning
-    request: f14b83995bf339cb461a70642d90a6a32ce9dee6c14ef3504a65d21da8ad731f
+  unclosed_command_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: 1ef8e6ba19a8e7df73924d8c0bad2b0067a6891dd904eb7591fb7a3dcf403403
     output:
       assembled:
       - kind: reasoning
-        text: The user wants JSON.
+        text: Let me think, I should try `pytest -x
       - kind: text
-        text: '{"location": "London", "unit": "celsius"}'
+        text: Run pytest
       chunks:
       - expected:
         - kind: reasoning
-          text: The user wants JSON.
+          text: Let me think, I should try `pytest -x
         - kind: text
-          text: '{"location": "London", "unit": "celsius"}'
+          text: Run pytest
       - expected: []
-  mistral_malformed_body_ends_at_next_call:
-    case_key: UNIFIED.mistral-malformed_body_ends_at_next_call
-    request: a52ef623dba16866727295c21a3da5dcd0ca92ac5729e98e843dc189b31db224
-    output:
-      assembled:
-      - kind: tool_call
-        name: run
-        arguments: '{}'
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd":'
-          complete: true
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  mistral_many_mixed_form_calls:
-    case_key: UNIFIED.mistral-many_mixed_form_calls
-    request: b615f095c3c54787c95f72166f1a7b64d4220537446fc3d81c0d1e9559d5ec8e
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"y": "2"}'
-      - kind: tool_call
-        name: run
-        arguments: '{"cmd": "ls"}'
-      - kind: tool_call
-        name: log
-        arguments: '{}'
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "}"}'
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "]"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{"y": "2"}'
-          complete: true
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd": "ls"}'
-          complete: true
-        - kind: tool_call
-          name: log
-          arguments: '{}'
-          complete: true
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "}"}'
-          complete: true
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "]"}'
-          complete: true
-      - expected: []
-  mistral_marker_lookalikes_stay_text:
-    case_key: UNIFIED.mistral-marker_lookalikes_stay_text
-    request: 63ee81fd59f7c3e17ef0311787362d6ac4ed93307ea97a976547ae2d273f59d7
-    output:
-      assembled:
-      - kind: text
-        text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
-      chunks:
-      - expected:
-        - kind: text
-          text: Use [TOOL_CALL], [ARG], [THINKING] or [/THINK ] literally.
-      - expected: []
-  mistral_markers_split_across_chunks:
-    case_key: UNIFIED.mistral-markers_split_across_chunks
-    request: 90538bfb6f395bac195ccfcba27e8b67254cd7dd309e9df50ead10f63ba70a5e
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+    request: f4aeaf9be9619adf432f70a1eb2c2b9d34004e935552719a0f1703ec07216c0e
     output:
       assembled:
       - kind: reasoning
-        text: plan
+        text: '`pytest -x'
       - kind: text
-        text: On it.
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
+        text: Run `pytest`
       chunks:
-      - expected: []
       - expected:
         - kind: reasoning
-          text: plan
-      - expected:
+          text: '`pytest -x'
         - kind: text
-          text: On it.
+          text: Run `pytest`
       - expected: []
-      - expected: []
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-      - expected: []
-  mistral_name_before_marker:
-    case_key: UNIFIED.mistral-name_before_marker
-    request: cdd4e39fc15eec2cbdd5eb74bcf6a3eb787c872cd2c7e04e39a1bd2368fcb37e
-    output:
-      assembled:
-      - kind: text
-        text: bash
-      - kind: tool_call
-        name: ''
-        arguments: '{"command": "ls"}'
-      chunks:
-      - expected:
-        - kind: text
-          text: bash
-        - kind: tool_call
-          name: ''
-          arguments: '{"command": "ls"}'
-          complete: true
-      - expected: []
-  mistral_name_without_arguments:
-    case_key: UNIFIED.mistral-name_without_arguments
-    request: 0a256b487e3a54b569433b4fab0c74809ebaccd708efd5f9c026196e63924b42
-    output:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments: '{}'
-      chunks:
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: get_weather
-          arguments: '{}'
-          complete: true
-  mistral_non_object_arguments:
-    case_key: UNIFIED.mistral-non_object_arguments
-    request: 96c76252a3ed86c01cc5e3276ea68b0db6432143fa211b1c14e66f803d925fbe
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '[1, 2]'
-      - kind: tool_call
-        name: g
-        arguments: "42"
-      - kind: tool_call
-        name: run
-        arguments: '"done"'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '[1, 2]'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: "42"
-          complete: true
-      - expected:
-        - kind: tool_call
-          name: run
-          arguments: '"done"'
-          complete: true
-  mistral_pre_v11_array_not_a_call:
-    case_key: UNIFIED.mistral-pre_v11_array_not_a_call
-    request: 8e6b6d95ffa4b5a54ebfde117e2a5b815c729e329db9f4c332e433fbbd3d3083
-    output:
-      assembled: []
-      chunks:
-      - expected: []
-      - expected: []
-  mistral_quoted_marker_is_structural:
-    case_key: UNIFIED.mistral-quoted_marker_is_structural
-    request: 851ecd1ed5a59843fc7b138297c596bf9d55f5e01084798afe7ae069b40ea655
+  unclosed_command_quote_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+    request: d959895c8f225307af2d428350272ed5d2dddb7313df7b9d09bf870177999c08
     output:
       assembled:
       - kind: reasoning
-        text: He said "hi
-      - kind: text
-        text: The answer is "42".
+        text: Let me think, I should run this command "grep -v '
       chunks:
       - expected:
         - kind: reasoning
-          text: He said "hi
-        - kind: text
-          text: The answer is "42".
+          text: Let me think, I should run this command "grep -v '
       - expected: []
-  mistral_quoted_tool_marker_in_answer:
-    case_key: UNIFIED.mistral-quoted_tool_marker_in_answer
-    request: 563710ab1442644a2425029f8d96a5196772ba2e19ed1deaf4c84578aa64441c
-    output:
-      assembled:
-      - kind: text
-        text: The literal "
-      chunks:
-      - expected:
-        - kind: text
-          text: The literal "
-      - expected: []
-  mistral_quoted_tool_marker_then_call:
-    case_key: UNIFIED.mistral-quoted_tool_marker_then_call
-    request: 6d1c7404a35c1ff86e02d7da85ca53b61457e19f8aa9a07bac50e23ab41c6480
-    output:
-      assembled:
-      - kind: text
-        text: The literal "
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: text
-          text: The literal "
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  mistral_reasoning_after_call_dropped:
-    case_key: UNIFIED.mistral-reasoning_after_call_dropped
-    request: 265073f6d949aece98b7b2c161be19ae36455299b90651e918a47fe346906397
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
+    request: f9aa9b5ebd7180f3db062076420246e1800cb7937fbc20065cad3ccaf24e98e4
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
+        name: capture_payload
+        arguments: '{"count": 42, "flag": false, "text": "null"}'
       chunks:
       - expected:
         - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
+          name: capture_payload
+          arguments: '{"count": 42, "flag": false, "text": "null"}'
           complete: true
       - expected: []
-  mistral_reasoning_between_calls_dropped:
-    case_key: UNIFIED.mistral-reasoning_between_calls_dropped
-    request: 708fb3a4933a16d4c248b1b50d429e05852528a67e3c6e9813f8197548b768dc
-    output:
-      assembled:
-      - kind: reasoning
-        text: Check both.
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"y": "2"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: Check both.
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{"y": "2"}'
-          complete: true
-      - expected: []
-  mistral_reasoning_trailing_whitespace_stripped:
-    case_key: UNIFIED.mistral-reasoning_trailing_whitespace_stripped
-    request: e41417836403c7bbaec28fd533b0ee43e0ae20925ebae5b2df62e285e3902611
-    output:
-      assembled:
-      - kind: reasoning
-        text: checking
-      - kind: text
-        text: The answer is 42.
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: checking
-        - kind: text
-          text: The answer is 42.
-      - expected: []
-  mistral_stray_separator_after_args:
-    case_key: UNIFIED.mistral-stray_separator_after_args
-    request: 4b5583bded8f2e4bbd88115049620ed47a67a5f7d2659a4c725206ae4ebee6c9
+  xml_string_type_double_quoted_object:
+    case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
+    request: b4d6e99820c6913ce60f7b3a5faea57bb64bf9b8f50ef16445da5e577f8a7729
     output:
       assembled:
       - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"y": "2"}'
+        name: schema_probe
+        arguments: '{"value": "{\"a\":1}"}'
       chunks:
       - expected:
         - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{"y": "2"}'
+          name: schema_probe
+          arguments: '{"value": "{\"a\":1}"}'
           complete: true
       - expected: []
-  mistral_text_after_call_dropped:
-    case_key: UNIFIED.mistral-text_after_call_dropped
-    request: 946e2faa1cb1f390cfd1b87a7efe179c9699910c1d6c97a48d25c06a4e14e9b2
+  xml_string_type_single_quoted_object:
+    case_key: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
+    request: afb1e58f65a061a1e7b0aaa7f5cbea2a0b5221f6885dec6ab06374c833292e41
     output:
       assembled:
       - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "SF"}'
+        name: schema_probe
+        arguments: '{"value": "{''a'':1}"}'
       chunks:
       - expected:
         - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "SF"}'
-          complete: true
-      - expected: []
-  mistral_text_between_calls_dropped:
-    case_key: UNIFIED.mistral-text_between_calls_dropped
-    request: e0434434afaaee5e47a762cf36e7915deed2973881a3161157e7974d39247ad8
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"y": "2"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{"y": "2"}'
-          complete: true
-      - expected: []
-  mistral_truncated_inside_args_marker:
-    case_key: UNIFIED.mistral-truncated_inside_args_marker
-    request: f5d86a7ae84dd5061071fd30ac51ce944f0fea1bff36de080d30d3e249964a3a
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-      - expected: []
-  mistral_truncated_second_call_dropped:
-    case_key: UNIFIED.mistral-truncated_second_call_dropped
-    request: 6aeb2aa30ac178125e86927061672d462582ac0fe4d7b5323e4416c7a32c369a
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-      - expected: []
-  mistral_unclosed_string_marker_at_eof:
-    case_key: UNIFIED.mistral-unclosed_string_marker_at_eof
-    request: 2eb1a571fa92695b537b8f6feefac44ed52775b2325f11f1503986dca2d931d6
-    output:
-      assembled: []
-      chunks:
-      - expected: []
-      - expected: []
-  mistral_whitespace_between_markers:
-    case_key: UNIFIED.mistral-whitespace_between_markers
-    request: 90295d1bee54ea38854dda6f00394585c936564b783b9e60358673aa50048fcb
-    output:
-      assembled:
-      - kind: reasoning
-        text: '
-
-          plan'
-      - kind: text
-        text: 'On it.
-
-          '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
-      chunks:
-      - expected:
-        - kind: reasoning
-          text: '
-
-            plan'
-        - kind: text
-          text: 'On it.
-
-            '
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
-      - expected: []
-  mistral_whitespace_only_arguments:
-    case_key: UNIFIED.mistral-whitespace_only_arguments
-    request: 83b0bb82f8181da4d4058cae5a83c87b55d977177c6a0251d4e636a9f66798af
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{}'
-      - kind: tool_call
-        name: g
-        arguments: '{ }'
-      - kind: tool_call
-        name: run
-        arguments: '{"cmd": "ls"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{}'
-          complete: true
-        - kind: tool_call
-          name: g
-          arguments: '{ }'
-          complete: true
-        - kind: tool_call
-          name: run
-          arguments: '{"cmd": "ls"}'
+          name: schema_probe
+          arguments: '{"value": "{''a'':1}"}'
           complete: true
       - expected: []

@@ -612,6 +612,57 @@ fn string_quote_controls_survive_every_split_for_every_family() {
 }
 
 #[test]
+fn reasoning_quote_workload_cases_keep_current_results_at_every_split() {
+    let scenarios = [
+        "quoted_name_possessive_inline_closer",
+        "inch_mark_before_reasoning_closer",
+        "unclosed_backtick_before_reasoning_closer",
+        "decade_apostrophe_before_reasoning_closer",
+        "unclosed_command_backtick_before_reasoning_closer",
+        "sql_fragment_before_reasoning_closer",
+        "mixed_quotes_before_reasoning_closer",
+        "native_quoted_reasoning_closer_then_answer",
+        "native_unquoted_reasoning_closer_in_sentence",
+        "native_quoted_reasoning_closer_in_sentence",
+        "native_reasoning_closer_in_quoted_sentence",
+        "reason_markup_in_arg_empty_span_then_text",
+        "native_quoted_control_then_call_progress",
+    ];
+    let mut covered = std::collections::BTreeSet::new();
+    for file in load_native_golden() {
+        for (id, case) in &file.cases {
+            if !scenarios
+                .iter()
+                .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
+            {
+                continue;
+            }
+            covered.insert((file.family.clone(), id.clone()));
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            // Delivery invariance is independent of GOLDEN agreement and retains
+            // the measured quote policy and EOF recovery for every split.
+            let baseline = events(
+                &file.family,
+                std::slice::from_ref(&case.input),
+                &case.init,
+                &tools,
+            );
+            for split in
+                (0..=case.input.len()).filter(|offset| case.input.is_char_boundary(*offset))
+            {
+                let chunks = vec![case.input[..split].into(), case.input[split..].into()];
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools),
+                    baseline,
+                    "{id}: split {split}"
+                );
+            }
+        }
+    }
+    assert_eq!(covered.len(), 159, "#595 family/case inventory changed");
+}
+
+#[test]
 fn missing_inner_closers_obey_family_argument_ownership() {
     let mut covered = std::collections::BTreeSet::new();
     for file in load_native_golden() {

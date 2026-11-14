@@ -3982,14 +3982,16 @@ def _quoted_name_possessive_cases() -> Iterator[tuple]:
                     golden = [{"kind": "reasoning", "text": reasoning},
                               {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "`Paris`"}}]
                 inputs[family] = ("".join(pieces), M, M, golden)
-                chunks[family] = pieces
+                chunks[family] = ["".join(pieces)] if span == "backtick" and output == "reasoning" else pieces
             yield (
                 f"quoted_name_{span}_possessive_{output}",
-                "A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.",
+                ("#595: Native output starting in Reasoning, no offered tools, one content chunk and EOF. Preserve the original public possessive reproduction and its reasoning/text split."
+                 if span == "backtick" and output == "reasoning" else "A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix."),
                 ["I2", "I5", "I7"], [],
                 {"starting_state": "Reasoning",
                  "tool_output_mode": "GuidedJson" if output == "guided" else "Native", "named_tool": None},
-                {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
+                {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True}, OnlyFamilies(inputs),
+                [] if span == "backtick" and output == "reasoning" else None,
             )
         for word in ("some", "s_name"):
             inputs, chunks = {}, {}
@@ -4013,6 +4015,125 @@ def _quoted_name_possessive_cases() -> Iterator[tuple]:
 
 
 EDGE += list(_quoted_name_possessive_cases())
+
+# #595 fixes the desired interpretation before measuring any parser output.
+ISSUE595_REASONING_CASES = (
+    ('inch_mark_before_reasoning_closer', 'Let me think, the TV size is 40"', 'Yes', ''),
+    ('decade_apostrophe_before_reasoning_closer', "Let me think, the year is 80s'", 'Yes', ''),
+    ('decade_apostrophe_before_reasoning_closer_mixed_quotes', "Let me think, the reference is 80s' music", "'Yes'", ''),
+    ('native_unquoted_reasoning_closer_in_sentence_then_closer', 'Let me think, user is asking if ', ' is special</think>Yes', 'Alternative interpretation: the first the native reasoning closer could be a literal mention in the question; only the second closer would end reasoning, leaving text=Yes.'),
+    ('native_unquoted_reasoning_closer_in_sentence', 'Let me think, the marker ', ' is a special marker', 'Alternative interpretation: even without quotation marks, the wording mentions the marker as a subject. A reader could expect the whole sentence to remain reasoning.'),
+    ('native_reasoning_closer_in_quoted_sentence', 'Let me think, "The marker ', ' is a special marker"', 'Alternative interpretation: the whole quotation discusses the marker. A reader could expect the complete quoted sentence to remain reasoning.'),
+    ('closed_command_quote_before_reasoning_closer', 'Let me think, I should run this command "grep -v \'', '\' ..."', 'Alternative interpretation: the grep command quotes a literal search pattern. A reader could expect the entire command, including the native reasoning closer, to remain reasoning.'),
+    ('unclosed_command_quote_before_reasoning_closer', 'Let me think, I should run this command "grep -v \'', '', 'Alternative interpretation: the unfinished grep command may be quoting a literal the native reasoning closer search pattern. A reader could retain the entire unfinished command in reasoning through EOF.'),
+    ('unclosed_command_backtick_before_reasoning_closer', 'Let me think, I should try `pytest -x', 'Run pytest', 'Alternative interpretation: this could be an unfinished code snippet containing a literal the native reasoning closer. The unfinished backtick does not by itself establish which boundary was intended.'),
+    ('sql_fragment_before_reasoning_closer', "Let me think, this SQL fragment is '1'='1", "'Yes'", 'Alternative interpretation: a reader treating the fragment as quoted SQL data could keep the native reasoning closer inside reasoning. The incomplete SQL and quotation make intent uncertain.'),
+    ('quoted_name_possessive_inline_closer', "`name`'s path.", "'Answer'", ''),
+    ('inch_mark_before_reasoning_closer_quoted_answer', '27"', '"Answer"', ''),
+    ('unclosed_backtick_before_reasoning_closer', '`name', '`Answer`', 'Alternative interpretation: the backtick that closes after the marker could make the native reasoning closer literal code within reasoning.'),
+    ('decade_apostrophe_before_reasoning_closer_leading_apostrophe', "'90s", "'Answer'", ''),
+    ('unclosed_command_backtick_before_reasoning_closer_later_backticks', '`pytest -x', 'Run `pytest`', 'Alternative interpretation: the later backtick could close a code span containing the native reasoning closer, keeping that marker in reasoning.'),
+    ('mixed_quotes_before_reasoning_closer', 'f\'" OR x -- \'\n', '"Answer"', 'Alternative interpretation: this code-shaped fragment could be read as quoted reasoning data containing the native reasoning closer, rather than a channel boundary.'),
+    ('native_quoted_reasoning_closer_then_answer', "'", "'</think>Answer", 'Alternative interpretation: the first quoted the native reasoning closer could be literal reasoning data; only the second closer would end reasoning, leaving text=Answer.'),
+    ('native_quoted_reasoning_closer_in_sentence', 'The special "', '" marker is used to delineate parser paths', 'Alternative interpretation: the sentence explicitly discusses the marker. A reader could expect the entire sentence, including the quoted the native reasoning closer, to remain reasoning.'),
+)
+ISSUE595_SCENARIOS = frozenset(
+    {row[0] for row in ISSUE595_REASONING_CASES}
+    | {"reason_markup_in_arg_empty_span_then_text",
+       "reason_markup_in_arg_empty_span_then_text_with_path",
+       "native_quoted_control_then_call_progress"}
+)
+
+
+def _issue595_cases():
+    reasoning_families = sorted(
+        family for family, row in _MANIFEST.items()
+        if row.get("reasoning_grammar") != "none"
+    )
+    for scenario, before, after, alternative in ISSUE595_REASONING_CASES:
+        inputs, chunks = {}, {}
+        for family in reasoning_families:
+            closer = r_reason(family, "\x00").split("\x00")[1]
+            wire = before + closer
+            if after:
+                # A routed response must reopen after an orphan message terminator.
+                wire += closer.join(r_text(family, part) for part in after.split("</think>"))
+            answer = after.replace("</think>", "")
+            # Mistral owns trailing-whitespace stripping at the reasoning closer.
+            reasoning = before.rstrip() if family == "mistral_4" else before
+            golden = [{"kind": "reasoning", "text": reasoning}]
+            if answer:
+                golden.append({"kind": "text", "text": answer})
+            inputs[family] = (wire, M, M, golden)
+            chunks[family] = [wire]
+        description = (
+            "#595: start in Reasoning with Native output. Under #606 the first "
+            "family-native closer ends reasoning despite prose quotes or code. "
+            "Preserve non-control bytes; consume subsequent orphan closers. "
+            "Mistral retains its established trailing-reasoning-whitespace stripping rule."
+        )
+        if alternative:
+            description += " " + alternative
+        yield (
+            scenario, description, ["I2", "I5", "P6"], [],
+            {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True},
+            OnlyFamilies(inputs), [],
+        )
+    for with_path in (False, True):
+        scenario = "reason_markup_in_arg_empty_span_then_text" + ("_with_path" if with_path else "")
+        arguments = ({"path": "/tmp/literal.txt"} if with_path else {})
+        arguments["content"] = "<think></think>answer"
+        inputs, chunks = {}, {}
+        for family in sorted(_MANIFEST):
+            wire = r_tool_arguments(family, "write_file", arguments, 0)
+            inputs[family] = (wire, M, M, [{"kind": "tool_call", "name": "write_file", "arguments": arguments}])
+            chunks[family] = [wire]
+        tools = [{"name": "write_file", "parameters": {
+            "type": "object", "properties": {key: {"type": "string"} for key in arguments},
+            "required": list(arguments),
+        }}]
+        yield (
+            scenario,
+            "#595: start in Response with Native output and an offered write_file tool. "
+            "The complete native envelope owns the content string; preserve literal "
+            "<think></think>answer and the path when supplied. This tests output "
+            "argument fidelity, independently of input tokenization.",
+            ["I7"], [],
+            {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+            {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True},
+            OnlyFamilies(inputs), tools,
+        )
+    inputs, chunks = {}, {}
+    markers = dict(_NATIVE_QUOTED_CONTROL, hermes="<tool_call>")
+    for family, marker in sorted(markers.items()):
+        if family in {"beam", "gpt_oss", "mistral_4"}:
+            continue
+        prefix = f'The literal "{marker}" marker is part of the explanation. '
+        call = r_tool_arguments(family, "run", {"cmd": "Paris"}, 0)
+        wire = prefix + call
+        inputs[family] = (wire, M, M, [
+            {"kind": "text", "text": 'The literal "'},
+            {"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}},
+        ])
+        cut = call.index("Paris")
+        chunks[family] = [prefix, call[:cut], call[cut:]]
+    yield (
+        "native_quoted_control_then_call_progress",
+        "#595: start in Response with Native output and offered run(cmd:string). "
+        "The structural prose opener owns and drops its incomplete body; recover "
+        "the following complete call. Three content chunks expose pre-EOF progress. "
+        "A literal reading would instead retain the quoted marker and explanation.",
+        ["I3", "I7", "P2"], [],
+        {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True},
+        OnlyFamilies(inputs),
+        [{"name": "run", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}, "required": ["cmd"]}}],
+    )
+
+
+EDGE += list(_issue595_cases())
+
 
 
 EDGE.append((
@@ -4482,6 +4603,11 @@ BLANK_FRAMING = [
 # so a behavior that differs only in the inheriting family's parser is declared here:
 # (scenario, family) -> that family's golden. Keep it to measured, scoped rules.
 INHERITED_GOLDEN = {}
+for _scenario, _before, _after, _alternative in ISSUE595_REASONING_CASES:
+    if _before != _before.rstrip():
+        _declaration = next(edge for edge in EDGE if edge[0] == _scenario)
+        INHERITED_GOLDEN[(_scenario, "mistral_4")] = deepcopy(_declaration[6]["mistral_4"][3])
+
 for _scenario, _description, _policy, _segments, _nemotron_golden, _stream, _families in BLANK_FRAMING:
     EDGE.append((
         _scenario, _description, _policy, golden_of(_segments), _BLANK_INIT, _stream,
@@ -5097,7 +5223,7 @@ def _registered_native_cases(fam):
     for edge in EDGE:
         init = edge[4] or {}
         mapping = _edge_case_family_policy(edge)
-        if edge[0] in DEFAULT_STRUCTURAL_QUOTE_CASES and fam in mapping:
+        if edge[0] in (*DEFAULT_STRUCTURAL_QUOTE_CASES, *ISSUE595_SCENARIOS) and fam in mapping:
             authored = _build_edge_cases(fam, [edge])
             if fam not in UNIFIED_FAMILIES:
                 for case in authored.values():
@@ -5558,7 +5684,7 @@ def _preserve_historical_requests(cases, family):
     }
     for old_case in historical.values():
         scenario = old_case["scenario"]
-        if scenario in V1_SPLIT_SCENARIOS:
+        if scenario in V1_SPLIT_SCENARIOS or scenario in ISSUE595_SCENARIOS | {"quoted_name_backtick_possessive_reasoning"}:
             continue
         case = cases_by_scenario.get(scenario)
         if case is None:

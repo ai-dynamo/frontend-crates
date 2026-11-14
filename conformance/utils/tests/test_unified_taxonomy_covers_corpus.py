@@ -606,6 +606,9 @@ def test_gpt_oss_response_applicability_is_not_derived_from_the_denylist() -> No
 
 def test_response_state_uses_only_control_marker_contracts() -> None:
     response_scenarios = {
+        "reason_markup_in_arg_empty_span_then_text",
+        "reason_markup_in_arg_empty_span_then_text_with_path",
+        "native_quoted_control_then_call_progress",
         "prefilled_response_reasoning_markers_literal",
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_header_after_payload",
@@ -688,6 +691,13 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 }[scenario]
             elif family == "gpt_oss" and scenario == "prefilled_response_reasoning_markers_literal":
                 marker = "<think>"
+            elif scenario in {
+                "reason_markup_in_arg_empty_span_then_text",
+                "reason_markup_in_arg_empty_span_then_text_with_path",
+            }:
+                marker = "<think></think>answer"
+            elif scenario == "native_quoted_control_then_call_progress":
+                marker = G._NATIVE_QUOTED_CONTROL.get(family, "<tool_call>")
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
             elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
@@ -1050,7 +1060,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES)
+    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1087,7 +1097,14 @@ def test_kimi_k3_corpus_uses_xtml_not_kimi_k2_wire_syntax():
     cases = build_cases("kimi_k3")
     assert cases
     for case_id, case in cases.items():
-        leaked = [marker for marker in forbidden if marker in case["input"]]
+        wire = case["input"]
+        if _scenario_of(case_id, "kimi_k3") in {
+            "reason_markup_in_arg_empty_span_then_text",
+            "reason_markup_in_arg_empty_span_then_text_with_path",
+        }:
+            assert case["golden"][0]["arguments"]["content"] == "<think></think>answer"
+            wire = wire.replace("<think></think>answer", "")
+        leaked = [marker for marker in forbidden if marker in wire]
         assert not leaked, f"{case_id} copied Kimi K2 wire syntax: {leaked}"
 
 
@@ -2594,8 +2611,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             if text in raw:
                 continue
             controls_removed = raw
-            for marker in control_tokens(family):
-                controls_removed = controls_removed.replace(marker, "")
+            for marker in (*control_tokens(family), *G.r_text(family, "\x00").split("\x00")):
+                if marker:
+                    controls_removed = controls_removed.replace(marker, "")
             if text in controls_removed:
                 continue
             # Coalescing can remove intervening control/native spans, but it may
@@ -3444,3 +3462,23 @@ def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
         elif family == "kimi_k3":
             assert case["input"].count('index="1"') == 2
             assert 'index="2"' not in case["input"]
+
+
+def test_issue595_ordinary_requests_use_whole_input_and_progress_uses_semantic_chunks():
+    for family in NATIVE_FAMILIES:
+        cases = build_cases(family)
+        for scenario in G.ISSUE595_SCENARIOS:
+            if family not in G.scenario_families(scenario):
+                continue
+            case = cases[f"UNIFIED.{scenario}.{family}"]
+            assert case["init"]["tool_output_mode"] == "Native"
+            assert "".join(case["input_chunks"]) == case["input"]
+            assert case["finish_step"] is True
+            if scenario == "native_quoted_control_then_call_progress":
+                assert len(case["input_chunks"]) == 3
+                assert "Paris" not in case["input_chunks"][1]
+                assert "Paris" in case["input_chunks"][2]
+            else:
+                assert case["input_chunks"] == [case["input"]]
+            if case["init"]["starting_state"] == "Reasoning":
+                assert case["tools"] == []

@@ -812,3 +812,62 @@ def test_sealed_release_context_qualifies_a_shallow_checkout(tmp_path):
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(context))
     assert ci_publication_cache.read_context(restored, path=path) == context
+
+
+@pytest.mark.parametrize("workspace_path", [None, "Cargo.toml", "Cargo.lock"])
+def test_capture_provenance_distinguishes_release_from_exact_current_source(tmp_path, workspace_path):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    version = ci_publication_cache.dynamo_version
+    released = version.dynamo_v2_provenance(root)
+    assert released["kind"] == "release"
+    if workspace_path:
+        (root / workspace_path).write_text("# changed workspace build input\n")
+    recorded = version.dynamo_v2_provenance(root)
+    assert recorded["kind"] == ("unpublished" if workspace_path else "release")
+    assert version.validate_capture_provenance(root, recorded) == version.compact_capture_origin(recorded)
+    if workspace_path:
+        with pytest.raises(ValueError, match="source does not match release tag"):
+            version.validate_capture_provenance(root, released)
+
+
+@pytest.mark.parametrize("source_path", [
+    "parsers/v1/src/lib.rs",
+    "parsers/v2/src/lib.rs",
+    "protocols/src/lib.rs",
+    "parsers/v2/Cargo.toml",
+])
+def test_capture_provenance_rejects_changed_released_parser_source(tmp_path, monkeypatch, source_path):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    source = root / source_path
+    source.parent.mkdir(parents=True, exist_ok=True)
+    comment = "//" if source.suffix == ".rs" else "#"
+    source.write_text((source.read_text() if source.exists() else "") + f"\n{comment} changed parser source\n")
+    monkeypatch.setenv("CONFORMANCE_DYNAMO_V2_LABEL", "current")
+    version = ci_publication_cache.dynamo_version
+    recorded = version.dynamo_v2_provenance(root)
+    assert recorded["kind"] == "unpublished"
+    with pytest.raises(ValueError, match="already released with different source"):
+        version.validate_capture_provenance(root, recorded)
+    manifest = root / "parsers/v2/Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('version="1.2.3"', 'version="1.2.4"'))
+    bumped = version.dynamo_v2_provenance(root)
+    assert version.validate_capture_provenance(root, bumped) == version.compact_capture_origin(bumped)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("source_sha256", "0" * 64),
+    ("git_head_tree", "0" * 40),
+    ("kind", "release"),
+])
+def test_unpublished_capture_provenance_rejects_tampering(tmp_path, field, value):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    (root / "Cargo.lock").write_text("version = 4\n")
+    version = ci_publication_cache.dynamo_version
+    recorded = version.dynamo_v2_provenance(root)
+    assert recorded["kind"] == "unpublished"
+    recorded[field] = value
+    with pytest.raises(ValueError, match="source identity"):
+        version.validate_capture_provenance(root, recorded)
