@@ -23,7 +23,7 @@ import package_fixtures
 import gen_unified_golden as golden
 import unified_history
 import viewer_catalog
-from unified_taxonomy import numbered_id
+from unified_taxonomy import numbered_id, scenario_for_label
 from fixture_disposition import canonical_unified_case_key
 from explode_unified_fixtures import _split_only_cases
 from conformance.utils.tests.test_unified_history import _change, _write_capture, _write_family
@@ -59,6 +59,42 @@ def test_golden_output_directory_rejects_a_file(tmp_path):
     with pytest.raises(FileExistsError):
         golden.main(["--output", str(output)])
     assert output.read_text() == "keep existing file"
+
+
+@pytest.mark.parametrize(
+    ("family", "historical_scenario"),
+    [
+        ("deepseek_v4", "dsml_unterminated_parameter_then_call"),
+        ("deepseek_v4", "dsml_unterminated_parameter_then_empty_call"),
+        ("deepseek_v41", "dsml_unterminated_parameter_then_call"),
+        ("deepseek_v41", "dsml_unterminated_parameter_then_empty_call"),
+        ("muse_glimmer", "muse_unterminated_parameter_then_call"),
+        ("muse_glimmer", "muse_unterminated_parameter_then_empty_call"),
+        ("muse_spark", "muse_unterminated_parameter_then_call"),
+        ("muse_spark", "muse_unterminated_parameter_then_empty_call"),
+    ],
+)
+def test_generation_preserves_requests_and_goldens_across_scenario_aliases(family, historical_scenario):
+    path = ROOT / f"conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+    historical = unified_history.load_yaml(path)["cases"]
+    old_case = historical[historical_scenario]
+    canonical_scenario = old_case["scenario"]
+    assert scenario_for_label(historical_scenario, family=family) == canonical_scenario
+
+    generated = golden.build_cases(family)
+    current_id = next(
+        case_id for case_id in generated
+        if case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0] == canonical_scenario
+    )
+    current = generated[current_id]
+    request = old_case["request"]
+    for field in ("input", "init", "finish_reason", "tools"):
+        assert current[field] == request[field]
+    assert current["golden"] == old_case["golden"]["assembled"]
+    chunks = [chunk["delta_text"] for chunk in request.get("chunks", [])]
+    if chunks and chunks[-1] == "‹finish›" and "".join(chunks[:-1]) == request["input"]:
+        chunks.pop()
+    assert current["input_chunks"] == chunks
 
 
 def _catalog_root(tmp_path, monkeypatch):

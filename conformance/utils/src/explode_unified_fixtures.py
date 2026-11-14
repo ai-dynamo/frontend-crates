@@ -189,6 +189,8 @@ def _request_stimulus(record, *, keep_finish_chunk):
 @lru_cache(maxsize=None)
 def _historical_finish_chunks(family):
     path = CONF / f"fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+    if not path.is_file():
+        return {}
     historical = unified_history.load_yaml(path)
     finish_chunks = {}
     for case in historical["cases"].values():
@@ -266,25 +268,34 @@ def write_split_only_family(family):
 
 
 
+def _append_authored_inputs(store, registry):
+    for family, entry in registry.items():
+        if entry.get("scenario_profile") != "native" or family not in store.families:
+            continue
+        document = yaml.safe_load((BUILD / "golden_spec" / entry["golden_spec"]).read_text())
+        rows = _split_only_cases(family, document)
+        fam = store.families[family]
+        for display_id, row in rows.items():
+            scenario = row["scenario"]
+            if any(
+                case["scenario"] == scenario
+                or case["display_id"] == display_id
+                or display_id in case["historical_ids"]
+                for case in fam.cases.values()
+            ):
+                continue
+            fam.cases[scenario] = {
+                "lifecycle": "active", "scenario": scenario,
+                "description": row["description"], "policy": row["policy"],
+                "display_id": display_id, "historical_ids": [],
+                "request": row["request"], "golden": row["golden"],
+            }
+
+
 def append_authored_inputs():
     registry = yaml.safe_load((CONF / "utils/src/parser_families.yaml").read_text())["unified"]
     def append(store):
-        for family, entry in registry.items():
-            if entry.get("scenario_profile") != "native":
-                continue
-            document = yaml.safe_load((BUILD / "golden_spec" / entry["golden_spec"]).read_text())
-            rows = _split_only_cases(family, document)
-            fam = store.families[family]
-            for display_id, row in rows.items():
-                scenario = row["scenario"]
-                if scenario in fam.cases:
-                    continue
-                fam.cases[scenario] = {
-                    "lifecycle": "active", "scenario": scenario,
-                    "description": row["description"], "policy": row["policy"],
-                    "display_id": display_id, "historical_ids": [],
-                    "request": row["request"], "golden": row["golden"],
-                }
+        _append_authored_inputs(store, registry)
     owner = unified_history.mutate_authored_store if capture_sources.is_current(REPO) else unified_history._mutate_store
     return owner(CONF / "fixtures-unified-v2", append)
 

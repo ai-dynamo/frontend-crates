@@ -1980,11 +1980,11 @@ requests:
     input: '[TOOL_CALLS]get_weather[ARGS]{"city": "null"}'
     tools: tools_1098354780bc95a8
   303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0:
-    input: Use re.split(r'(\s)', text). Let's final.[/THINK]The code prints ['a', ' ', 'b'].
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Use re.split(r'(\s)', text). Let's final.[/THINK]The code prints ['a', ' ', 'b'].
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 41
@@ -2066,11 +2066,11 @@ requests:
     input: '[TOOL_CALLS]f[ARGS]{"x": " [THINK]quoted[/THINK] [TOOL_CALLS] [ARGS] [CALL_ID] &amp; \"x\"\\\n "}'
     tools: tools_cbf47ccf5fd2ef00
   4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8:
-    input: analysis "[/THINK]Answer"
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: analysis "[/THINK]Answer"
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 10
@@ -2112,11 +2112,11 @@ requests:
     input: '[TOOL_CALLS]schema_probe[ARGS]{"value": "auto"}'
     tools: tools_d634a43e2a693178
   57ff22e92b982cba062e5e294ad76b68df1e8713077afad5458e379eee1f1a05:
-    input: 'Example: "[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}".'
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: 'Example: "[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}".'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 10
@@ -5862,10 +5862,10 @@ cases:
         city: Paris
   UNIFIED.40-native_quoted_reasoning_closer_default:
     scenario: native_quoted_reasoning_closer_default
-    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
     policy:
     - I2
     - I5
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
     display_id: UNIFIED.40-native_quoted_reasoning_closer_default
     request: 4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8
     golden:
@@ -5875,10 +5875,10 @@ cases:
       text: Answer"
   UNIFIED.40-native_raw_string_before_reasoning_closer:
     scenario: native_raw_string_before_reasoning_closer
-    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
     policy:
     - I2
     - I5
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
     display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
     request: 303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0
     golden:
@@ -5888,11 +5888,11 @@ cases:
       text: The code prints ['a', ' ', 'b'].
   UNIFIED.8-native_quoted_complete_call_default:
     scenario: native_quoted_complete_call_default
-    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
     policy:
     - I3
     - I5
     - I7
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
     display_id: UNIFIED.8-native_quoted_complete_call_default
     request: 57ff22e92b982cba062e5e294ad76b68df1e8713077afad5458e379eee1f1a05
     golden:

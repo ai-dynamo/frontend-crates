@@ -7416,60 +7416,60 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-5
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: cd13fe797c0e310f8325940e9ae2053e6de57817fd310b08a17805837fdfb5e4
     golden:
     - kind: reasoning
-      text: The literal "
+      text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
   native_quoted_incomplete_header:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-10
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: a5e13756a637db063cae59e60858c329b65f52a0e8a8c0650b34396bb42bd5c0
     golden:
     - kind: text
-      text: The literal `
+      text: The literal `<｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">` header is part of the explanation.
   native_quoted_control_in_response:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-6
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: ce740c7b97681e2fe84466d5c48d43e4a791d405cbd6d0fc687a4645db770c7f
     golden:
     - kind: text
-      text: The literal "
+      text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-7
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: eefa887d200e1f2d5a12de395526b7219b41f594070263e3c05e63084a4e5f91
     golden:
     - kind: text
-      text: 'The literal ''example '
+      text: The literal 'example <｜DSML｜tool_calls> marker' is part of the explanation.
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-8
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: cd315a5698d0555dbf11752e5856d31b67c537039df4ea715621b3f89ede5e3e
     golden:
     - kind: text
-      text: The literal "
+      text: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7495,14 +7495,12 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-8
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't </think> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7512,14 +7510,12 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-9
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't </think> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7530,35 +7526,35 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-6
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 2938b04536bb934a68dcd2e6dad6cc4e86af4613aaaf4b22d01c85fcf055364c
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
+      text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-11
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 38c99362c05e6e436e53c3b9de934d4c4827edc1924f424a8c12b304a0cf67a3
     golden:
     - kind: text
-      text: 'The literal ''doesn''t '
+      text: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
   guided_response_quoted_control_braces_named:
     policy:
     - I7
     historical_ids:
     - UNIFIED.35-3
-    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: e1b753e60a4b76849fbf321fc31e4ab17d4d3d187690759206ae6c2905b01569
     golden:
     - kind: text
-      text: 'The literal "{ example }" stays visible. '
+      text: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7568,12 +7564,12 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.35-4
-    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: d8f3590b617177676ed52e86922241585457be0873fbfdd0c212e49aeccfae1a
     golden:
     - kind: text
-      text: 'The literal "{ example }" stays visible. '
+      text: 'The literal "<｜DSML｜tool_calls> { example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -9539,7 +9535,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
     golden:
@@ -10197,10 +10193,8 @@ cases:
     scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
-    historical_ids:
-    - UNIFIED.5-dsml_unterminated_parameter_then_empty_call
-    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: Discard the malformed invocation at an invoke closer followed by optional whitespace and another same-dialect invocation opener. This recovery precedence applies inside raw string parameters; isolated invoke closers and outer-block-looking text remain data. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
-    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
+    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.'
+    display_id: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
     request: d8b621a0dd49e49562dbc9f56b5c2aaf51ac7adb5ff80f98125ed8a137c23b15
     golden:
     - kind: tool_call
@@ -10211,10 +10205,8 @@ cases:
     policy:
     - P2
     - I7
-    historical_ids:
-    - UNIFIED.5-dsml_unterminated_parameter_then_call
-    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: Discard the malformed invocation at an invoke closer followed by optional whitespace and another same-dialect invocation opener. This recovery precedence applies inside raw string parameters; isolated invoke closers and outer-block-looking text remain data. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
-    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
+    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call''s name and arguments.'
+    display_id: UNIFIED.5-dsml_unterminated_parameter_then_call
     request: b06b0ec19eef6394df2973e92c46d16ce08f91b060b782ce509f195d35336e0f
     golden:
     - kind: tool_call

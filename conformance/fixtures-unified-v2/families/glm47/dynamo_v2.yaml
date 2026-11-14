@@ -1,4 +1,4 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"bb27e18e296ae1371b6daad34c29ae5c801dea83866f387172c3768e014f131a","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"6e35e3bf9e1b9ce3e80288c6f5bcef3450deeb1a15714624ea9524034e92c07c","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -2125,13 +2125,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not "
+          text: 'Check London météo🙂 before answering; this is prose, not '
       - expected:
         - kind: reasoning
           text: JSON.

@@ -10853,14 +10853,12 @@ cases:
   guided_quoted_reasoning_closer_named:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: f582c9b2e2d6145f7cacec2a416697e509730d1cb05832bcd9051c5dcd7cb6a6
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't <|eom|> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -10868,14 +10866,12 @@ cases:
   guided_quoted_reasoning_closer_required:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: ecb3e5a854cb5070157463717ace718f8c2ab1651dc54c2cf017813a28945b47
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't <|eom|> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -10937,12 +10933,12 @@ cases:
   guided_response_quoted_control_braces_named:
     policy:
     - I7
-    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: ea4fbbf015c371203e74ff14a516e900f26b79cbdeb7290e4915263cb720214d
     golden:
     - kind: text
-      text: 'The literal "assistant to=get_weather{ example }" stays visible. '
+      text: 'The literal "<|start|>assistant to=get_weather<|message|> { example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -10950,12 +10946,12 @@ cases:
   guided_response_quoted_control_braces_required:
     policy:
     - I7
-    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: e4cf6ec0478d651cf359ab658505ec4dbe3a360364983acc4df45da743b482dc
     golden:
     - kind: text
-      text: 'The literal "assistant to=get_weather{ example }" stays visible. '
+      text: 'The literal "<|start|>assistant to=get_weather<|message|> { example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -10978,22 +10974,22 @@ cases:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: 6f75ed469619f443316bdd896b365abfbf9960a3e9aa538886d974a9042ce414
     golden:
     - kind: reasoning
-      text: The literal "
+      text: The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation.
   native_single_quote_contraction_reasoning:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 625602f9f5b1ec7586ed450f311243ac2e96f1b7d872f52db652dbc38d2e0ec7
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
+      text: The literal 'doesn't <|start|>assistant to=get_weather<|message|> marker' stays quoted.
   prefilled_reasoning_then_text:
     policy:
     - P5
@@ -13018,22 +13014,22 @@ cases:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 48c0bdb9e8e946eab34bbe8f34b33c79919a7ca96595df13062ecb4d093290e3
     golden:
     - kind: text
-      text: The literal "
+      text: The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation.
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 87417644fbdfb59dc40c130e032847e68b4420a7e12d7d2fccb5c41f220f84d9
     golden:
     - kind: text
-      text: The literal "
+      text: The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -13042,32 +13038,36 @@ cases:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: 39a9c789aeedbb9c7604bc2a86989e31ff11458102bfcf99bcc46adac0273b84
     golden:
     - kind: text
-      text: The literal `
+      text: 'The literal `<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">` header is part of the explanation.'
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 34e524946dbff6033f75acefb08223b06f564ba2c2d320579eb2339e47c22684
     golden:
     - kind: text
-      text: 'The literal ''doesn''t '
+      text: The literal 'doesn't <|start|>assistant to=get_weather<|message|> marker' stays quoted.
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: b39af74534b89c4891e49f0cf0ceaff3b1a72017048d4105dc7d83c4f2cd2ff8
     golden:
     - kind: text
-      text: 'The literal ''example '
+      text: The literal 'example <|start|>assistant to=get_weather<|message|> marker' is part of the explanation.
   native_unmatched_quote_then_call:
     policy:
     - I7
@@ -13212,10 +13212,8 @@ cases:
     policy:
     - P2
     - I7
-    historical_ids:
-    - UNIFIED.muse-unterminated_parameter_then_call
-    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
-    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
+    description: 'Muse: a parameter owns invocation-shaped text until its closer. Preserve the complete outer argument instead of treating the embedded declared tool as a new call.'
+    display_id: UNIFIED.muse-unterminated_parameter_then_call
     request: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
     golden:
     - kind: tool_call
@@ -13226,10 +13224,8 @@ cases:
     scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
-    historical_ids:
-    - UNIFIED.muse-unterminated_parameter_then_empty_call
-    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists. The turn emits nothing. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
-    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
+    description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
+    display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
     request: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
     golden: []
   spark_phase_empty:
@@ -13419,7 +13415,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 7c5c4490e052bdf039c4ad72169df6fbea5db54264a9905549770d2e12fc16f2
     golden:

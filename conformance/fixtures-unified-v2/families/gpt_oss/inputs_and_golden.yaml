@@ -7670,9 +7670,7 @@ cases:
     request: b42f3d319d9d63fe4c1ea4818fe57cfb53ad33cc67497a10bafca26f57c257ac
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't <|end|> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7685,9 +7683,7 @@ cases:
     request: 740fd26fc9c51aab33959bae93588b36e302080a720038c251b80ae242e9a488
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't <|end|> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -8539,7 +8535,11 @@ cases:
     request: 46733b8e2a3938ca09b7b029db5398f7a2c6e2cba37a5a36a2bc5ac79dbcdc2c
     golden:
     - kind: text
-      text: The literal "
+      text: 'The literal "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> { example }" stays visible. '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
   guided_response_quoted_control_braces_required:
     policy:
     - I7
@@ -8548,7 +8548,11 @@ cases:
     request: 44af50e5129ca11013e96f23b28554be89a727a250c373179ec7ad165d219a71
     golden:
     - kind: text
-      text: The literal "
+      text: 'The literal "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> { example }" stays visible. '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
   native_unmatched_quote_then_call:
     policy:
     - I7

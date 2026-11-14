@@ -9470,14 +9470,12 @@ cases:
   guided_quoted_reasoning_closer_named:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: 2d6027050269b33d36393f6a6c7465f2b55eda122749ab836635ee3c7cd2448d
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't </mm:think> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -9485,14 +9483,12 @@ cases:
   guided_quoted_reasoning_closer_required:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: 105321c3ed3cd0fe09dfa65a73f5082c63b280b82a1a00ddb6b3be80deb194fa
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
-    - kind: text
-      text: ' marker'' stays quoted.'
+      text: The literal 'doesn't </mm:think> marker' stays quoted.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -9526,12 +9522,12 @@ cases:
   guided_response_quoted_control_braces_named:
     policy:
     - I7
-    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 1aab90d877118ebd9c6fbafcba1cf7259b55fdfa42295aa34b6ad51be8d433cc
     golden:
     - kind: text
-      text: 'The literal "{ example }" stays visible. '
+      text: 'The literal "]<]minimax[>[<tool_call> { example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -9539,12 +9535,12 @@ cases:
   guided_response_quoted_control_braces_required:
     policy:
     - I7
-    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: a8cce50f426566e08a510ef95f12c54c1799a6fef0215b6cfc5d4f5fff9eb2ad
     golden:
     - kind: text
-      text: 'The literal "{ example }" stays visible. '
+      text: 'The literal "]<]minimax[>[<tool_call> { example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -9567,22 +9563,22 @@ cases:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: f969091db9c5d6a03f4d1725c8182a380d3ed062ec797d273e1a52b6072fd0c6
     golden:
     - kind: reasoning
-      text: The literal "
+      text: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
   native_single_quote_contraction_reasoning:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: d273e87ab478d3b8da15020945a146c3c07d1030fac9a81b36cdd1bcc99f541a
     golden:
     - kind: reasoning
-      text: 'The literal ''doesn''t '
+      text: The literal 'doesn't ]<]minimax[>[<tool_call> marker' stays quoted.
   prefilled_reasoning_then_text:
     policy:
     - P5
@@ -11595,22 +11591,22 @@ cases:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 543d331c555be2db08d4d4a4182fe7a4150c66ab4910494932b2dde9df1edf6c
     golden:
     - kind: text
-      text: The literal "
+      text: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
     golden:
     - kind: text
-      text: The literal "
+      text: The literal "]<]minimax[>[<tool_call>" marker is part of the explanation.
     - kind: tool_call
       name: get_weather
       arguments:
@@ -11619,32 +11615,32 @@ cases:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
     golden:
     - kind: text
-      text: The literal `
+      text: The literal `]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>` header is part of the explanation.
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: e33413aa3749f755662ca1aaceb5ec9d30f120c84cb7f46e4506ea1098a3e45f
     golden:
     - kind: text
-      text: 'The literal ''doesn''t '
+      text: The literal 'doesn't ]<]minimax[>[<tool_call> marker' stays quoted.
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
-    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: b0b910ff77ea112990d5cc47dc50756613cb752578c2f48cb091d48ef3cb8fd6
     golden:
     - kind: text
-      text: 'The literal ''example '
+      text: The literal 'example ]<]minimax[>[<tool_call> marker' is part of the explanation.
   native_unmatched_quote_then_call:
     policy:
     - I7

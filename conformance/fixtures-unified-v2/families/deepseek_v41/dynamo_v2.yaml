@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"a6547919dd34c8b4173eb0dc4b546aeed72918230a891de38b3d24a7df3ba948","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e403ba8576792e98b84e10e87b408efbbb156d1c0d95d00c2e6eacf21dc6afd8","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -2053,13 +2053,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
         - kind: text
           text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       - expected: []
@@ -6700,7 +6700,7 @@ records:
       assembled:
       - kind: tool_call
         name: inspect
-        arguments: "{\"value\":\" café \U0001F408 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \\\"x\\\"\\n\",\"nested\":{\"values\":[true,42,-1250]}}"
+        arguments: '{"value":" café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n","nested":{"values":[true,42,-1250]}}'
       - kind: tool_call
         name: done
         arguments: '{}'
@@ -6716,7 +6716,7 @@ records:
       - expected:
         - kind: tool_call
           name: inspect
-          arguments: "{\"value\":\" café \U0001F408 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \\\"x\\\"\\n\",\"nested\":{\"values\":[true,42,-1250]}}"
+          arguments: '{"value":" café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n","nested":{"values":[true,42,-1250]}}'
           complete: true
       - expected: []
       - expected: []
