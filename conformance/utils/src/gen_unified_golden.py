@@ -3982,16 +3982,16 @@ def _quoted_name_possessive_cases() -> Iterator[tuple]:
                     golden = [{"kind": "reasoning", "text": reasoning},
                               {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "`Paris`"}}]
                 inputs[family] = ("".join(pieces), M, M, golden)
-                chunks[family] = ["".join(pieces)] if span == "backtick" and output == "reasoning" else pieces
+                chunks[family] = pieces
+            possessive_reuse = span == "backtick" and output == "reasoning"
             yield (
                 f"quoted_name_{span}_possessive_{output}",
-                ("#595: Native output starting in Reasoning, no offered tools, one content chunk and EOF. Preserve the original public possessive reproduction and its reasoning/text split."
-                 if span == "backtick" and output == "reasoning" else "A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix."),
+                ("#595: Native output starting in Reasoning. Retain the published request: its chunks separate the closed backtick name, possessive apostrophe and suffix to test quote ownership across pushes."
+                 if possessive_reuse else "A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix."),
                 ["I2", "I5", "I7"], [],
                 {"starting_state": "Reasoning",
                  "tool_output_mode": "GuidedJson" if output == "guided" else "Native", "named_tool": None},
-                {"finish_reason": "stop", "input_chunks": chunks, "finish_step": True}, OnlyFamilies(inputs),
-                [] if span == "backtick" and output == "reasoning" else None,
+                {"finish_reason": "stop", "input_chunks": chunks}, OnlyFamilies(inputs),
             )
         for word in ("some", "s_name"):
             inputs, chunks = {}, {}
@@ -5684,7 +5684,7 @@ def _preserve_historical_requests(cases, family):
     }
     for old_case in historical.values():
         scenario = old_case["scenario"]
-        if scenario in V1_SPLIT_SCENARIOS or scenario in ISSUE595_SCENARIOS | {"quoted_name_backtick_possessive_reasoning"}:
+        if scenario in V1_SPLIT_SCENARIOS or scenario in ISSUE595_SCENARIOS:
             continue
         case = cases_by_scenario.get(scenario)
         if case is None:

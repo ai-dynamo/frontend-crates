@@ -8,7 +8,7 @@ import fcntl
 import json
 import os
 import shutil
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 import tarfile
 import tempfile
@@ -169,12 +169,14 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
     version = origin["crate_version"]
     directory = f"dynamo_v2-{version}"
     store_root = root / sources.STORE
-    store = unified_history.load_authored_store(store_root)
     expected_families = {row["family"] for row in sources.current(root)["captures"]
                          if row["surface"] == "unified" and row["implementation"] == "dynamo_v2"}
     incoming_families = {path.name for path in (loose / directory).iterdir() if path.is_dir()}
     if incoming_families != expected_families:
         raise ValueError("latest refresh family set differs from the canonical native captures")
+    with unified_history._store_read_lock(store_root):
+        store = unified_history.load_authored_store(store_root)
+        authored_sources = {family.path: family.path.read_bytes() for family in store.families.values()}
     with tempfile.TemporaryDirectory(prefix=".latest-refresh-", dir=store_root.parent) as temporary:
         temporary = Path(temporary)
         shutil.copytree(loose / directory, temporary / directory)
@@ -182,7 +184,8 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             store, temporary, complete_snapshot=True,
             required_capture_dirs={directory},
         )
-        pairs, fingerprints, results = [], {}, []
+        pairs, results = [], []
+        fingerprints = {path: sources.digest(data) for path, data in authored_sources.items()}
         for (family, implementation), capture in store.histories.items():
             target = root / sources.latest_path("unified", family, implementation)
             require_current_records(capture.resolve(directory), store.families[family], origin, implementation, version)
@@ -197,9 +200,8 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             selection = json.loads(previous.split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
             if capture_release_sort_key(version) < capture_release_sort_key(selection["version"]):
                 raise ValueError("latest refresh cannot move to an older producer version")
-            authored_path = root / sources.STORE / "families" / family / unified_history.FAMILY_DOCUMENT_NAME
-            authored_storage = unified_history._parse_yaml_raw(authored_path, authored_path.read_bytes())
-            fingerprints[authored_path] = sources.digest(authored_path.read_bytes())
+            authored_path = store.families[family].path
+            authored_storage = unified_history._parse_yaml_raw(authored_path, authored_sources[authored_path])
             document = capture.complete_snapshot(directory)
             unified_history._validate_complete_snapshot(target, document, store.families[family], implementation, version)
             logical = f"{sources.STORE}/families/{family}/{directory}.yaml"
@@ -212,7 +214,10 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             candidate.write_bytes(data)
             pairs.append((candidate, target))
             results.append({"family": family, "implementation": implementation, "version": version, "refreshed_latest": True})
-        with unified_history._store_mutation_lock(store_root):
+        with ExitStack() as locks:
+            for family, implementation in sorted(store.histories):
+                locks.enter_context(capture_lock(root, family, implementation, "unified"))
+            locks.enter_context(unified_history._store_mutation_lock(store_root))
             for path, expected in fingerprints.items():
                 if sources.digest(path.read_bytes()) != expected:
                     raise ValueError("current capture or authored inputs changed during refresh")
@@ -222,12 +227,12 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
 
 def publish_loose(root: Path, history: Path, loose: Path) -> list[dict]:
     """Use the existing capture importer, then archive each newly recorded snapshot."""
+    recover(root, history)
     feed_path = loose / "unified_results.yaml"
     if feed_path.is_file():
         provenance = unified_history.load_yaml(feed_path).get("capture_provenance", {})
         if provenance.get("kind") == "unpublished":
             return refresh_unpublished_latest(root, loose, provenance)
-    recover(root, history)
     current = sources.current(root)
     previous = {row["source"]: row for row in current["captures"] if row["surface"] == "unified"}
     results = []

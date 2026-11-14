@@ -3464,6 +3464,19 @@ def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
             assert 'index="2"' not in case["input"]
 
 
+def test_issue595_split_inventory_matches_authored_scenarios():
+    scenarios = G.ISSUE595_SCENARIOS | {"quoted_name_backtick_possessive_reasoning"}
+    for family in NATIVE_FAMILIES:
+        selected = {
+            case_id.removeprefix("UNIFIED.").removesuffix(f".{family}")
+            for case_id, case in build_cases(family).items()
+            if case["description"].startswith("#595:")
+        }
+        assert selected == {
+            scenario for scenario in scenarios if family in G.scenario_families(scenario)
+        }, family
+
+
 def test_issue595_ordinary_requests_use_whole_input_and_progress_uses_semantic_chunks():
     for family in NATIVE_FAMILIES:
         cases = build_cases(family)

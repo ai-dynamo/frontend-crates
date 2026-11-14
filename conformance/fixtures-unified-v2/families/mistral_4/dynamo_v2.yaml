@@ -1,20 +1,20 @@
-capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"4a227c4e8e688242a8df0b399b7f2aa32eb2472096758f66ac0781fce7227c46","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"3fd12c333b393ee6eea035dad47918b94faa9db7f9832cc7d9b58deea339c2ca","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_fe4b326273789e5a
+  origin: origin_883f78c28b7d2088
 origins:
-  origin_fe4b326273789e5a:
+  origin_883f78c28b7d2088:
     crate_version: 0.10.7
-    source_sha256: 7f91c304bf0c77d4cae125e8265c2a2e8b3060024a560335538f19b789d2c88f
-    git_commit: 2ecce344db4c09ec2a52ff4fc27ce90218b081d0
+    source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
+    git_commit: 731c488a763345d2940794be01d3a5d7c89ebc3a
 producers:
-  producer_90c4ecd050fe0d64:
+  producer_446828e67b23fad3:
     captured_with:
       dynamo_v2: 0.10.7
-    capture_origin: origin_fe4b326273789e5a
+    capture_origin: origin_883f78c28b7d2088
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
@@ -22,7 +22,7 @@ contexts:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml
-  producer: producer_90c4ecd050fe0d64
+  producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:

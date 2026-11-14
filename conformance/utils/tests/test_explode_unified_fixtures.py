@@ -155,6 +155,62 @@ def test_split_only_family_preserves_authored_request_and_golden() -> None:
     assert row["golden"] == {"assembled": golden}
 
 
+def test_append_authored_inputs_skips_existing_display_id_with_external_case_key(
+    tmp_path, monkeypatch
+) -> None:
+    family = "hermes"
+    scenario = "native_quoted_complete_call_default"
+    display_id = "UNIFIED.8-native_quoted_complete_call_default"
+    registry_path = tmp_path / "utils/src/parser_families.yaml"
+    registry_path.parent.mkdir(parents=True)
+    registry_path.write_text(
+        explode.yaml.safe_dump(
+            {"unified": {family: {"scenario_profile": "native", "golden_spec": "hermes.yaml"}}}
+        )
+    )
+    spec_dir = tmp_path / "unified/golden_spec"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "hermes.yaml").write_text(
+        explode.yaml.safe_dump(
+            {
+                "family": family,
+                "cases": {
+                    f"UNIFIED.{scenario}.{family}": {
+                        "input": "request",
+                        "init": {
+                            "starting_state": "Response",
+                            "tool_output_mode": "Native",
+                            "named_tool": None,
+                        },
+                        "finish_reason": "stop",
+                        "golden": [{"kind": "text", "text": "response"}],
+                    }
+                },
+            }
+        )
+    )
+    existing = {
+        "scenario": scenario,
+        "display_id": display_id,
+        "lifecycle": "active",
+    }
+    store = SimpleNamespace(
+        families={family: SimpleNamespace(cases={display_id: existing})}
+    )
+    monkeypatch.setattr(explode, "CONF", tmp_path)
+    monkeypatch.setattr(explode, "BUILD", tmp_path / "unified")
+    monkeypatch.setattr(explode.capture_sources, "is_current", lambda _root: True)
+
+    def mutate(_root, callback):
+        callback(store)
+        return []
+
+    monkeypatch.setattr(explode.unified_history, "mutate_authored_store", mutate)
+
+    assert explode.append_authored_inputs() == []
+    assert store.families[family].cases == {display_id: existing}
+
+
 def test_split_only_family_rejects_mismatched_family_scope() -> None:
     with pytest.raises(ValueError, match="belongs to qwen3"):
         explode._split_only_cases(

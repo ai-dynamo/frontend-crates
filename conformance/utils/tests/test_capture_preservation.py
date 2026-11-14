@@ -38,6 +38,20 @@ def test_latest_unified_records_download_their_selected_complete_snapshot():
             assert record["member"] == row["source"], (row["path"], case)
 
 
+def test_retained_possessive_captures_keep_their_published_request():
+    directory = ROOT / capture_sources.STORE / "families/hermes"
+    scenario = "quoted_name_backtick_possessive_reasoning"
+    case = unified_history.load_yaml(directory / "inputs_and_golden.yaml")["cases"][scenario]
+    for implementation in ("dynamo_v1", "dynamo_v1_jail"):
+        path = directory / f"{implementation}-11.0.6.yaml"
+        stimulus = unified_history.load_yaml(path)["changes"][scenario]["stimulus"]
+        unified_history._validate_stimulus(stimulus, case, str(path))
+        changed = copy.deepcopy(case)
+        changed["request"]["chunks"] = [{"delta_text": changed["request"]["input"]}]
+        with pytest.raises(ValueError, match="digest differs from the canonical request"):
+            unified_history._validate_stimulus(stimulus, changed, str(path))
+
+
 def test_preserved_history_matches_committed_baseline(history_source):
     pin = capture_sources.history_pin(ROOT, history_source)
     inventory = capture_sources.verify(history_source, pin)
@@ -80,6 +94,25 @@ def test_preserved_history_matches_committed_baseline(history_source):
             header = process.stdout.readline().decode().strip().split()
             assert len(header) == 3 and header[1] == "blob", row["path"]
             remaining = int(header[2])
+            authored_inputs = (
+                row["path"].endswith("/inputs_and_golden.yaml") and source.endswith("/inputs_and_golden.yaml")
+            )
+            if authored_inputs and remaining >= 1024:
+                baseline = process.stdout.read(remaining)
+                assert process.stdout.read(1) == b"\n"
+                if hashlib.sha256(baseline).hexdigest() != row["sha256"]:
+                    previous = yaml.safe_load(baseline)
+                    current = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+                    if previous.get("family") == current.get("family"):
+                        old_requests = previous.get("requests", {})
+                        new_requests = current.get("requests", {})
+                        assert all(new_requests.get(key) == value for key, value in old_requests.items()), row["path"]
+                        old_cases = previous.get("cases", {})
+                        new_cases = current.get("cases", {})
+                        assert all(new_cases.get(key) == value for key, value in old_cases.items()), row["path"]
+                        continue
+                    assert hashlib.sha256(baseline).hexdigest() == row["sha256"], row["path"]
+                continue
             if remaining != row["size"]:
                 assert remaining < 1024, row["path"]
                 pointer = process.stdout.read(remaining).decode().splitlines()

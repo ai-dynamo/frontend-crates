@@ -10103,9 +10103,9 @@ cases:
     - I2
     - I5
     - I7
-    description: '#595: Native output starting in Reasoning, no offered tools, one content chunk and EOF. Preserve the original public possessive reproduction and its reasoning/text split.'
+    description: '#595: Native output starting in Reasoning. Retain the published request: its chunks separate the closed backtick name, possessive apostrophe and suffix to test quote ownership across pushes.'
     display_id: UNIFIED.40-quoted_name_backtick_possessive_reasoning
-    request: 5a12226fc769bb774dc759d83027948fd688893875e903cb656ecca5dcc89c15
+    request: 4f1ad4776aa77120d123182983861a653fbacab6707a590c8055a7609da3051d
     golden:
     - kind: reasoning
       text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.

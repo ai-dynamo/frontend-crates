@@ -291,9 +291,11 @@ def append_authored_inputs():
             if not _has_authored_family(family, store.families, registry):
                 continue
             fam = store.families[family]
+            existing_scenarios = {case["scenario"] for case in fam.cases.values()}
+            existing_display_ids = {case["display_id"] for case in fam.cases.values()}
             for display_id, row in rows.items():
                 scenario = row["scenario"]
-                if scenario in fam.cases:
+                if scenario in existing_scenarios or display_id in existing_display_ids:
                     continue
                 fam.cases[scenario] = {
                     "lifecycle": "active", "scenario": scenario,
@@ -301,6 +303,8 @@ def append_authored_inputs():
                     "display_id": display_id, "historical_ids": [],
                     "request": row["request"], "golden": row["golden"],
                 }
+                existing_scenarios.add(scenario)
+                existing_display_ids.add(display_id)
     owner = unified_history.mutate_authored_store if capture_sources.is_current(REPO) else unified_history._mutate_store
     return owner(CONF / "fixtures-unified-v2", append)
 

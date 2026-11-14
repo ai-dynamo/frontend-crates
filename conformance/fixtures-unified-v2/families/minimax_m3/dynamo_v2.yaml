@@ -1,20 +1,20 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"c5b6acc5c0290ed2cb279a80ebf5ea640f22132b43ad52ed5d0798155d6b43c9","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"5c75291e96dab5fbef48ddbb917aa9f123a422a3b6f89dddb402fd834c205dfb","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_fe4b326273789e5a
+  origin: origin_883f78c28b7d2088
 origins:
-  origin_fe4b326273789e5a:
+  origin_883f78c28b7d2088:
     crate_version: 0.10.7
-    source_sha256: 7f91c304bf0c77d4cae125e8265c2a2e8b3060024a560335538f19b789d2c88f
-    git_commit: 2ecce344db4c09ec2a52ff4fc27ce90218b081d0
+    source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
+    git_commit: 731c488a763345d2940794be01d3a5d7c89ebc3a
 producers:
-  producer_90c4ecd050fe0d64:
+  producer_446828e67b23fad3:
     captured_with:
       dynamo_v2: 0.10.7
-    capture_origin: origin_fe4b326273789e5a
+    capture_origin: origin_883f78c28b7d2088
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
@@ -22,7 +22,7 @@ contexts:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml
-  producer: producer_90c4ecd050fe0d64
+  producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
@@ -4670,7 +4670,7 @@ records:
       - expected: []
   quoted_name_backtick_possessive_reasoning:
     case_key: UNIFIED.40-quoted_name_backtick_possessive_reasoning
-    request: f09ca89d41ddccdce529fd83f0377e1ead363d6eac887df488dfcd74b117db1c
+    request: 28d8074639c45f0315d96abe754cc7f80c0ecdb56092f8ec73e977fed6d2d5f9
     output:
       assembled:
       - kind: reasoning
@@ -4685,9 +4685,17 @@ records:
       chunks:
       - expected:
         - kind: reasoning
-          text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+          text: '`load_config`'
+      - expected: []
+      - expected:
+        - kind: reasoning
+          text: '''s'
+      - expected:
+        - kind: reasoning
+          text: ' check is fine, but `open(''/tmp/x'')` is not.
 
             '
+      - expected:
         - kind: text
           text: '
 
