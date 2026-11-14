@@ -1,4 +1,4 @@
-capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"e984955957ec5c246e9ae5c7aa0f6c8d3c703571254f3778a9b0a57d57f43998","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"697d3d0901dece4a60725ec393d0d129bf5f432c2b26bd30c6d97e3907f2fcd2","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -2467,7 +2467,7 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '
 
@@ -2476,7 +2476,7 @@ records:
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
       - expected: []
       - expected:
         - kind: text

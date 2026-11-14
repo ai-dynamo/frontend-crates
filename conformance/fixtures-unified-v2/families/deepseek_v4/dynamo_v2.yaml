@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"08f07dc987404fe0cc7b8eabe3b3b33eedbb4494769d1468be8b1b61b35aa33d","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"91174e9fb0a6fe8f3b861eba8cf6b578129a6a82fd161758a83f7610d0061c4c","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -2245,13 +2245,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
       - expected: []
       - expected:
         - kind: text

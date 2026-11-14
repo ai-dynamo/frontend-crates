@@ -13532,6 +13532,7 @@ cases:
       arguments:
         value: '{"x":1}'
   muse_unterminated_parameter_then_call:
+    scenario: invoke_close_inside_open_parameter_then_call
     policy:
     - P2
     - I7
@@ -13544,6 +13545,7 @@ cases:
       arguments:
         x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_parameter_then_empty_call:
+    scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
     description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
@@ -14419,9 +14421,9 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
-    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     policy:
     - I7
+    description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
     request: 61cddb41022faf45cde799c294cbd726c735c01842a063920932667ee04ed912
     golden:
     - kind: tool_call

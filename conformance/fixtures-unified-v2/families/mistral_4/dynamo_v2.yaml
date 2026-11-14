@@ -1,4 +1,4 @@
-capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"f641fa68d4d3ca2c2826179e5fa64a9551e92495dd6d39a2ee1327d7c4ec0d21","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"c7df92709faceccac20381132b0fe6c37de9444ffa1af6468ec108877eb15fc7","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -3756,7 +3756,7 @@ records:
         arguments: '[1, 2]'
       - kind: tool_call
         name: g
-        arguments: "42"
+        arguments: '42'
       - kind: tool_call
         name: run
         arguments: '"done"'
@@ -3768,7 +3768,7 @@ records:
           complete: true
         - kind: tool_call
           name: g
-          arguments: "42"
+          arguments: '42'
           complete: true
       - expected:
         - kind: tool_call

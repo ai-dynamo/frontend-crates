@@ -1,4 +1,4 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"6b8ccf180931c31b86d183c0333960c2d681a848dfbb0213d24d3f9474f6dea7","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"5de2fa5596a7fca9a6f3c5d6646f9bc238dad4f3512b6142ee9892b7ac8917cf","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -681,7 +681,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -717,7 +717,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -770,7 +770,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -806,7 +806,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -909,7 +909,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -945,7 +945,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -1009,7 +1009,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -1054,7 +1054,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -1120,7 +1120,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -1165,7 +1165,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -1592,7 +1592,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -1619,7 +1619,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -2340,7 +2340,11 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "before <rfl:parameter name=\"x\">\né\U0001F642<par{value}\n</rfl:parameter> after"
+        text: 'before <rfl:parameter name="x">
+
+          é🙂<par{value}
+
+          </rfl:parameter> after'
       - kind: tool_call
         name: get_weather
         arguments: '{"city": "Paris"}'
@@ -2358,7 +2362,9 @@ records:
           text: <rfl:parameter name="x">
       - expected:
         - kind: reasoning
-          text: "\né\U0001F642"
+          text: '
+
+            é🙂'
       - expected:
         - kind: reasoning
           text: '<par{value}
@@ -2901,13 +2907,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
         - kind: text
           text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       - expected: []
@@ -4075,7 +4081,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -4112,7 +4118,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -4149,7 +4155,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -4186,7 +4192,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -5278,7 +5284,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -6727,7 +6733,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected:
         - kind: tool_call
@@ -9179,7 +9185,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -9215,7 +9221,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call
@@ -9495,7 +9501,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected:
         - kind: tool_call
@@ -9531,7 +9537,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected:
         - kind: tool_call

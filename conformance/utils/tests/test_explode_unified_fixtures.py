@@ -177,6 +177,46 @@ def test_split_only_family_retains_explicit_schedule_and_finish() -> None:
     ]
 
 
+def test_authored_input_append_skips_missing_families_and_existing_scenarios(tmp_path, monkeypatch) -> None:
+    display_id = "UNIFIED.8-native_quoted_complete_call_default"
+    scenario = "native_quoted_complete_call_default"
+    existing = {
+        "scenario": scenario,
+        "display_id": display_id,
+        "historical_ids": [],
+    }
+    store = SimpleNamespace(families={"hermes": SimpleNamespace(cases={display_id: existing})})
+    specs = tmp_path / "golden_spec"
+    specs.mkdir()
+    (specs / "hermes.yaml").write_text("unused")
+    monkeypatch.setattr(explode, "BUILD", tmp_path)
+    monkeypatch.setattr(explode.yaml, "safe_load", lambda _text: {"family": "hermes", "cases": {}})
+    monkeypatch.setattr(
+        explode,
+        "_split_only_cases",
+        lambda _family, _document: {
+            display_id: {
+                "scenario": scenario,
+                "description": "duplicate authored case",
+                "policy": [],
+                "request": {},
+                "golden": {"assembled": []},
+            }
+        },
+    )
+    registry = {
+        "deepseek_v3": {
+            "scenario_profile": "native",
+            "golden_spec": "deepseek_v3.yaml",
+        },
+        "hermes": {"scenario_profile": "native", "golden_spec": "hermes.yaml"},
+    }
+
+    explode._append_authored_inputs(store, registry)
+
+    assert store.families["hermes"].cases == {display_id: existing}
+
+
 @pytest.mark.parametrize("offered_tools", [[], None])
 def test_split_only_family_preserves_explicit_offered_tools(offered_tools) -> None:
     rows = explode._split_only_cases(
@@ -261,6 +301,16 @@ def test_historical_finish_chunk_ignores_retired_cases_without_request(tmp_path,
     try:
         assert explode._historical_finish_chunk("gpt_oss", "retired_case") is False
         assert explode._historical_finish_chunk("gpt_oss", "new_case") is True
+    finally:
+        explode._historical_finish_chunks.cache_clear()
+
+
+def test_historical_finish_chunk_defaults_for_registry_family_without_store_document(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(explode, "CONF", tmp_path)
+    explode._historical_finish_chunks.cache_clear()
+
+    try:
+        assert explode._historical_finish_chunk("qwen3_coder", "new_case") is True
     finally:
         explode._historical_finish_chunks.cache_clear()
 

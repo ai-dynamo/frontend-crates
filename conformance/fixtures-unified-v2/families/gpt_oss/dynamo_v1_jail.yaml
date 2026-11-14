@@ -1,4 +1,4 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v1_jail","lineage":[],"mode":"unified","payload_sha256":"e7458012356ef30ec73af677a3c5b358d1f1e503e258731947e349a2298c02df","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v1_jail-11.0.10.yaml","surface":"unified","version":"11.0.10"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v1_jail","lineage":[],"mode":"unified","payload_sha256":"12dfb7f17728cba1770409e0d7501e8710967e6ac9c19351e157ccfce1a68321","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v1_jail-11.0.10.yaml","surface":"unified","version":"11.0.10"}
 document:
   mode: unified
 schema_version: 3
@@ -32512,10 +32512,10 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
-            - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -32548,10 +32548,10 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
-            - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -32579,10 +32579,10 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
-            - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -32610,10 +32610,10 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
-            - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -32644,10 +32644,10 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
-            - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -32679,10 +32679,10 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
-            - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -32731,7 +32731,7 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
             - delta_text: <|start|>
@@ -32747,7 +32747,7 @@ contexts:
             - delta_text: <|constrain|>
             - delta_text: json
             - delta_text: <|message|>
-            - delta_text: "{\"x\": \"é\U0001F642"
+            - delta_text: '{"x": "é🙂'
             - delta_text: <par{value}"}<|call|>
             - delta_text: ' after'
             - delta_text: <|end|>
@@ -32785,7 +32785,7 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
             - delta_text: <|start|>
@@ -32801,7 +32801,7 @@ contexts:
             - delta_text: <|constrain|>
             - delta_text: json
             - delta_text: <|message|>
-            - delta_text: "{\"x\": \"é\U0001F642"
+            - delta_text: '{"x": "é🙂'
             - delta_text: <par{value}"}<|call|>
             - delta_text: ' after'
             - delta_text: <|end|>
@@ -32834,7 +32834,7 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
             - delta_text: <|start|>
@@ -32850,7 +32850,7 @@ contexts:
             - delta_text: <|constrain|>
             - delta_text: json
             - delta_text: <|message|>
-            - delta_text: "{\"x\": \"é\U0001F642"
+            - delta_text: '{"x": "é🙂'
             - delta_text: <par{value}"}<|call|>
             - delta_text: ' after'
             - delta_text: <|end|>
@@ -32883,7 +32883,7 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
             - delta_text: <|start|>
@@ -32899,7 +32899,7 @@ contexts:
             - delta_text: <|constrain|>
             - delta_text: json
             - delta_text: <|message|>
-            - delta_text: "{\"x\": \"é\U0001F642"
+            - delta_text: '{"x": "é🙂'
             - delta_text: <par{value}"}<|call|>
             - delta_text: ' after'
             - delta_text: <|end|>
@@ -32935,7 +32935,7 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
             - delta_text: <|start|>
@@ -32951,7 +32951,7 @@ contexts:
             - delta_text: <|constrain|>
             - delta_text: json
             - delta_text: <|message|>
-            - delta_text: "{\"x\": \"é\U0001F642"
+            - delta_text: '{"x": "é🙂'
             - delta_text: <par{value}"}<|call|>
             - delta_text: ' after'
             - delta_text: <|end|>
@@ -32988,7 +32988,7 @@ contexts:
               tool_output_mode: GuidedJson
               named_tool: null
             finish_reason: stop
-            input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
             tools: []
             chunks:
             - delta_text: <|start|>
@@ -33004,7 +33004,7 @@ contexts:
             - delta_text: <|constrain|>
             - delta_text: json
             - delta_text: <|message|>
-            - delta_text: "{\"x\": \"é\U0001F642"
+            - delta_text: '{"x": "é🙂'
             - delta_text: <par{value}"}<|call|>
             - delta_text: ' after'
             - delta_text: <|end|>
@@ -47530,10 +47530,10 @@ contexts:
             city: Paris
           name: get_weather
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: ''
@@ -47614,10 +47614,10 @@ contexts:
                 city: Paris
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -47636,11 +47636,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -47666,10 +47666,10 @@ contexts:
                 city: Paris
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -47688,11 +47688,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -47718,10 +47718,10 @@ contexts:
                 city: Paris
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -47740,11 +47740,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -47773,10 +47773,10 @@ contexts:
                 city: Paris
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -47797,11 +47797,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -48159,7 +48159,7 @@ contexts:
         calls:
         - arguments:
             count: -2500
-            text: "42"
+            text: '42'
           name: capture_payload
         normal_text: ''
         reasoning_text: ''
@@ -48245,7 +48245,7 @@ contexts:
             - name: capture_payload
               arguments:
                 count: -2500
-                text: "42"
+                text: '42'
           capture_input:
             init:
               starting_state: None
@@ -48280,7 +48280,7 @@ contexts:
             name: capture_payload
             arguments:
               count: -2500
-              text: "42"
+              text: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -48304,7 +48304,7 @@ contexts:
             - name: capture_payload
               arguments:
                 count: -2500
-                text: "42"
+                text: '42'
           capture_input:
             init:
               starting_state: None
@@ -48339,7 +48339,7 @@ contexts:
             name: capture_payload
             arguments:
               count: -2500
-              text: "42"
+              text: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -48363,7 +48363,7 @@ contexts:
             - name: capture_payload
               arguments:
                 count: -2500
-                text: "42"
+                text: '42'
           capture_input:
             init:
               starting_state: None
@@ -48398,7 +48398,7 @@ contexts:
             name: capture_payload
             arguments:
               count: -2500
-              text: "42"
+              text: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -48425,7 +48425,7 @@ contexts:
             - name: capture_payload
               arguments:
                 count: -2500
-                text: "42"
+                text: '42'
           capture_input:
             init:
               starting_state: None
@@ -48460,7 +48460,7 @@ contexts:
             name: capture_payload
             arguments:
               count: -2500
-              text: "42"
+              text: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -51681,10 +51681,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: ''
@@ -51757,10 +51757,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -51775,11 +51775,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -51802,10 +51802,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -51820,11 +51820,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -51847,10 +51847,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -51865,11 +51865,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -51895,10 +51895,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -51915,11 +51915,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -51992,10 +51992,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: A
@@ -52072,10 +52072,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -52092,11 +52092,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -52119,10 +52119,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -52139,11 +52139,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -52166,10 +52166,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -52186,11 +52186,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -52218,10 +52218,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -52240,11 +52240,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -53844,10 +53844,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: A
@@ -53928,10 +53928,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -53948,11 +53948,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -53975,10 +53975,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -53995,11 +53995,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -54022,10 +54022,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -54042,11 +54042,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -54076,10 +54076,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -54100,11 +54100,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -54185,10 +54185,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: A
@@ -54267,10 +54267,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -54287,11 +54287,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -54314,10 +54314,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -54334,11 +54334,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -54361,10 +54361,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -54381,11 +54381,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -54413,10 +54413,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -54437,11 +54437,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -60716,7 +60716,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -60755,7 +60755,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: "42"
+                    - const: '42'
                     - minLength: 0
                 required:
                 - value
@@ -60794,7 +60794,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -60809,7 +60809,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: "42"
+                    - const: '42'
                     - minLength: 0
                 required:
                 - value
@@ -60821,7 +60821,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -60844,7 +60844,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -60859,7 +60859,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: "42"
+                    - const: '42'
                     - minLength: 0
                 required:
                 - value
@@ -60871,7 +60871,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -60894,7 +60894,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -60909,7 +60909,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: "42"
+                    - const: '42'
                     - minLength: 0
                 required:
                 - value
@@ -60921,7 +60921,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -60947,7 +60947,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -60962,7 +60962,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: "42"
+                    - const: '42'
                     - minLength: 0
                 required:
                 - value
@@ -60974,7 +60974,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61015,7 +61015,7 @@ contexts:
                 properties:
                   value:
                     allOf:
-                    - const: "42"
+                    - const: '42'
                     - minLength: 0
                 required:
                 - value
@@ -61052,7 +61052,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -61090,7 +61090,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61128,7 +61128,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61142,7 +61142,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61153,7 +61153,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -61176,7 +61176,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61190,7 +61190,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61201,7 +61201,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61224,7 +61224,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61238,7 +61238,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61249,7 +61249,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61275,7 +61275,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61289,7 +61289,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61300,7 +61300,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61340,7 +61340,7 @@ contexts:
                 type: object
                 properties:
                   value:
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61376,7 +61376,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -61420,7 +61420,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -61455,7 +61455,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61475,7 +61475,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -61483,7 +61483,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -61506,7 +61506,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61526,7 +61526,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -61534,7 +61534,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61557,7 +61557,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61577,7 +61577,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -61585,7 +61585,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61611,7 +61611,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61631,7 +61631,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -61639,7 +61639,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61685,7 +61685,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Literal:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -61718,7 +61718,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -61757,7 +61757,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61795,7 +61795,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61810,7 +61810,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61821,7 +61821,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -61844,7 +61844,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61859,7 +61859,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61870,7 +61870,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61893,7 +61893,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61908,7 +61908,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61919,7 +61919,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -61945,7 +61945,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -61960,7 +61960,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -61971,7 +61971,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -62012,7 +62012,7 @@ contexts:
                 properties:
                   value:
                     type: string
-                    const: "42"
+                    const: '42'
                 required:
                 - value
                 additionalProperties: false
@@ -72695,7 +72695,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -72736,7 +72736,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - "42"
+                    - '42'
                 required:
                 - value
                 additionalProperties: false
@@ -72774,7 +72774,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -72791,7 +72791,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - "42"
+                    - '42'
                 required:
                 - value
                 additionalProperties: false
@@ -72802,7 +72802,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -72825,7 +72825,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -72842,7 +72842,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - "42"
+                    - '42'
                 required:
                 - value
                 additionalProperties: false
@@ -72853,7 +72853,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -72876,7 +72876,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -72893,7 +72893,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - "42"
+                    - '42'
                 required:
                 - value
                 additionalProperties: false
@@ -72904,7 +72904,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -72930,7 +72930,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -72947,7 +72947,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - "42"
+                    - '42'
                 required:
                 - value
                 additionalProperties: false
@@ -72958,7 +72958,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -73001,7 +73001,7 @@ contexts:
                     type: string
                     enum:
                     - auto
-                    - "42"
+                    - '42'
                 required:
                 - value
                 additionalProperties: false
@@ -73709,7 +73709,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -73748,7 +73748,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: "42"
+                    - const: '42'
                     - type: integer
                 required:
                 - value
@@ -73787,7 +73787,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -73802,7 +73802,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: "42"
+                    - const: '42'
                     - type: integer
                 required:
                 - value
@@ -73814,7 +73814,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -73837,7 +73837,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -73852,7 +73852,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: "42"
+                    - const: '42'
                     - type: integer
                 required:
                 - value
@@ -73864,7 +73864,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -73887,7 +73887,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -73902,7 +73902,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: "42"
+                    - const: '42'
                     - type: integer
                 required:
                 - value
@@ -73914,7 +73914,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -73940,7 +73940,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -73955,7 +73955,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: "42"
+                    - const: '42'
                     - type: integer
                 required:
                 - value
@@ -73967,7 +73967,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -74008,7 +74008,7 @@ contexts:
                 properties:
                   value:
                     anyOf:
-                    - const: "42"
+                    - const: '42'
                     - type: integer
                 required:
                 - value
@@ -75743,7 +75743,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -75787,7 +75787,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -75822,7 +75822,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -75842,7 +75842,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -75850,7 +75850,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -75873,7 +75873,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -75893,7 +75893,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -75901,7 +75901,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -75924,7 +75924,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -75944,7 +75944,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -75952,7 +75952,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -75978,7 +75978,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -75998,7 +75998,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -76006,7 +76006,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -76052,7 +76052,7 @@ contexts:
                 additionalProperties: false
                 $defs:
                   Café:
-                    const: "42"
+                    const: '42'
               strict: true
             chunks:
             - delta_text: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -78581,7 +78581,7 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            value: "42"
+            value: '42'
           name: schema_probe
         normal_text: ''
         reasoning_text: ''
@@ -78659,7 +78659,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -78686,7 +78686,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -78709,7 +78709,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -78736,7 +78736,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -78759,7 +78759,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -78786,7 +78786,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -78812,7 +78812,7 @@ contexts:
             calls:
             - name: schema_probe
               arguments:
-                value: "42"
+                value: '42'
           capture_input:
             init:
               starting_state: None
@@ -78839,7 +78839,7 @@ contexts:
           - kind: tool_call
             name: schema_probe
             arguments:
-              value: "42"
+              value: '42'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -95194,20 +95194,20 @@ contexts:
                   - conditions
                   additionalProperties: false
                 rejected:
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
             tools: []
             chunks:
             - delta_text: <|channel|>
             - delta_text: analysis
             - delta_text: <|message|>
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
             - delta_text: <|end|>
             - delta_text: <|start|>
             - delta_text: assistant
@@ -95267,20 +95267,20 @@ contexts:
                   - conditions
                   additionalProperties: false
                 rejected:
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
             tools: []
             chunks:
             - delta_text: <|channel|>
             - delta_text: analysis
             - delta_text: <|message|>
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
             - delta_text: <|end|>
             - delta_text: <|start|>
             - delta_text: assistant
@@ -95335,20 +95335,20 @@ contexts:
                   - conditions
                   additionalProperties: false
                 rejected:
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
             tools: []
             chunks:
             - delta_text: <|channel|>
             - delta_text: analysis
             - delta_text: <|message|>
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
             - delta_text: <|end|>
             - delta_text: <|start|>
             - delta_text: assistant
@@ -95403,20 +95403,20 @@ contexts:
                   - conditions
                   additionalProperties: false
                 rejected:
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
             tools: []
             chunks:
             - delta_text: <|channel|>
             - delta_text: analysis
             - delta_text: <|message|>
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
             - delta_text: <|end|>
             - delta_text: <|start|>
             - delta_text: assistant
@@ -95474,20 +95474,20 @@ contexts:
                   - conditions
                   additionalProperties: false
                 rejected:
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
             tools: []
             chunks:
             - delta_text: <|channel|>
             - delta_text: analysis
             - delta_text: <|message|>
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
             - delta_text: <|end|>
             - delta_text: <|start|>
             - delta_text: assistant
@@ -95546,20 +95546,20 @@ contexts:
                   - conditions
                   additionalProperties: false
                 rejected:
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
-                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+                - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
             finish_reason: stop
-            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
             tools: []
             chunks:
             - delta_text: <|channel|>
             - delta_text: analysis
             - delta_text: <|message|>
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
             - delta_text: <|end|>
             - delta_text: <|start|>
             - delta_text: assistant
@@ -95870,10 +95870,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: ''
@@ -95946,10 +95946,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -95964,11 +95964,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -95991,10 +95991,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96009,11 +96009,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -96036,10 +96036,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96054,11 +96054,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -96084,10 +96084,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96104,11 +96104,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -96416,10 +96416,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: 'Sure. '
         reasoning_text: ''
@@ -96498,10 +96498,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96518,11 +96518,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -96545,10 +96545,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96565,11 +96565,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -96592,10 +96592,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96612,11 +96612,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -96644,10 +96644,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -96668,11 +96668,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -99345,10 +99345,10 @@ contexts:
       batch_final:
         calls:
         - arguments:
-            x: "1"
+            x: '1'
           name: f
         - arguments:
-            y: "2"
+            y: '2'
           name: g
         normal_text: ''
         reasoning_text: ''
@@ -99419,10 +99419,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -99437,11 +99437,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.9
@@ -99464,10 +99464,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -99482,11 +99482,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -99509,10 +99509,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -99527,11 +99527,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -99557,10 +99557,10 @@ contexts:
             calls:
             - name: f
               arguments:
-                x: "1"
+                x: '1'
             - name: g
               arguments:
-                y: "2"
+                y: '2'
           capture_input:
             init:
               starting_state: None
@@ -99575,11 +99575,11 @@ contexts:
           - kind: tool_call
             name: f
             arguments:
-              x: "1"
+              x: '1'
           - kind: tool_call
             name: g
             arguments:
-              y: "2"
+              y: '2'
         provenance:
           implementation: dynamo_v1_jail
           version: 11.0.10
@@ -109001,11 +109001,11 @@ records:
         kind: tool_call
         name: get_weather
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -109025,7 +109025,7 @@ records:
       assembled:
       - arguments:
           count: -2500
-          text: "42"
+          text: '42'
         kind: tool_call
         name: capture_payload
     suppress_inherited_from: true
@@ -109135,11 +109135,11 @@ records:
     output:
       assembled:
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -109152,11 +109152,11 @@ records:
       - kind: reasoning
         text: A
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -109216,11 +109216,11 @@ records:
       - kind: reasoning
         text: A
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -109233,11 +109233,11 @@ records:
       - kind: reasoning
         text: A
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -109453,7 +109453,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -109464,7 +109464,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -109475,7 +109475,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -109486,7 +109486,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -109852,7 +109852,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -109885,7 +109885,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -109951,7 +109951,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -110039,7 +110039,7 @@ records:
     output:
       assembled:
       - arguments:
-          value: "42"
+          value: '42'
         kind: tool_call
         name: schema_probe
     suppress_inherited_from: true
@@ -110611,11 +110611,11 @@ records:
     output:
       assembled:
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -110637,11 +110637,11 @@ records:
       - kind: text
         text: 'Sure. '
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true
@@ -110744,11 +110744,11 @@ records:
     output:
       assembled:
       - arguments:
-          x: "1"
+          x: '1'
         kind: tool_call
         name: f
       - arguments:
-          y: "2"
+          y: '2'
         kind: tool_call
         name: g
     suppress_inherited_from: true

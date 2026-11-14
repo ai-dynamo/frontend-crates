@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"fe625a3c71134787af88e2feca0e49df337cdb2b31e33a571c5ac11a9d84366c","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"6582b347a7d8d1eb5e232c2c1adbc352d7e771a4b1d88c56850ced7f5d845f12","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -551,7 +551,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -596,7 +596,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -658,7 +658,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -703,7 +703,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -824,7 +824,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -869,7 +869,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -938,7 +938,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -986,7 +986,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -1055,7 +1055,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -1103,7 +1103,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -1463,7 +1463,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -1503,7 +1503,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -2776,13 +2776,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
         - kind: text
           text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       - expected: []
@@ -4521,7 +4521,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -4571,7 +4571,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -4621,7 +4621,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -4671,7 +4671,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -6132,7 +6132,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -7814,7 +7814,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "42"
+          arguments: '42'
           complete: false
       - expected: []
       - expected: []
@@ -11071,7 +11071,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -11113,7 +11113,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []
@@ -11451,7 +11451,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "1"
+          arguments: '1'
           complete: false
       - expected: []
       - expected: []
@@ -11493,7 +11493,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "2"
+          arguments: '2'
           complete: false
       - expected: []
       - expected: []

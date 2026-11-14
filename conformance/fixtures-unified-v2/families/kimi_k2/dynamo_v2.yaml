@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"00078eb1bf9d35409dc4dad315734f03ee0e03d93834dd0bdfe8a80ba2e985a1","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"50d5b997521fd1d27d8f9956757b30ade17028bf71ac10d4f543fe3e3e624fd9","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
@@ -2304,13 +2304,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          text: Check London météo🙂 before answering; this is prose, not JSON.
         - kind: text
           text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       - expected: []
@@ -11340,7 +11340,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "7"
+          arguments: '7'
           complete: false
       - expected:
         - kind: tool_call
@@ -11602,7 +11602,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: "7"
+          arguments: '7'
           complete: false
       - expected:
         - kind: tool_call

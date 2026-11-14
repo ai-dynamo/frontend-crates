@@ -10183,9 +10183,10 @@ cases:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
   dsml_unterminated_parameter_then_empty_call:
-    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.'
+    scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
+    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.'
     display_id: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
     request: ca1b33a058b56adbf2218580f8480958134c20fa8248789759f10bb6ffe708bd
     golden:
@@ -10193,10 +10194,11 @@ cases:
       name: f
       arguments: {}
   dsml_unterminated_parameter_then_call:
-    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call''s name and arguments.'
+    scenario: invoke_close_inside_open_parameter_then_call
     policy:
     - P2
     - I7
+    description: 'DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call''s name and arguments.'
     display_id: UNIFIED.5-dsml_unterminated_parameter_then_call
     request: d67b8fb3a7a01e870ef85f9370d0717234d774674f058d04fd3bfdf1ad140074
     golden:
