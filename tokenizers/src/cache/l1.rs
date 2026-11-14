@@ -26,6 +26,7 @@
 use std::{
     hash::BuildHasherDefault,
     mem::size_of_val,
+    ops::Deref,
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
@@ -33,7 +34,7 @@ use std::{
 };
 
 use aho_corasick::AhoCorasick;
-use moka::sync::Cache;
+use moka::{notification::RemovalCause, sync::Cache};
 use rustc_hash::FxHasher;
 
 use crate::{TokenIdType, traits::Encoder};
@@ -51,10 +52,50 @@ type PrefixHasher = BuildHasherDefault<FxHasher>;
 /// Weighted W-TinyLFU cache mapping a prefix's blake3 digest to its cumulative tokens.
 type PrefixCache = Cache<Blake3Hash, CachedPrefix, PrefixHasher>;
 
+/// Index from a trailing-message prefix key to the deeper entry whose buffer starts
+/// with its tokens, and how many tokens that is.
+type ViewIndex = Cache<Blake3Hash, (Blake3Hash, usize), PrefixHasher>;
+
 #[derive(Clone)]
 struct CachedPrefix {
     namespace: Blake3Hash,
     tokens: Arc<[TokenIdType]>,
+    /// Trailing-message key indexed into this entry's buffer; unindexed when it leaves.
+    view: Option<Blake3Hash>,
+}
+
+/// The first `len` ids of a cached buffer.
+#[derive(Clone)]
+pub(super) struct PrefixTokens {
+    buf: Arc<[TokenIdType]>,
+    len: usize,
+}
+
+impl Deref for PrefixTokens {
+    type Target = [TokenIdType];
+    fn deref(&self) -> &[TokenIdType] {
+        &self.buf[..self.len]
+    }
+}
+
+impl From<Arc<[TokenIdType]>> for PrefixTokens {
+    fn from(buf: Arc<[TokenIdType]>) -> Self {
+        Self {
+            len: buf.len(),
+            buf,
+        }
+    }
+}
+
+impl PrefixTokens {
+    /// The ids as their own buffer; copies only a view into a longer buffer.
+    fn into_arc(self) -> Arc<[TokenIdType]> {
+        if self.len == self.buf.len() {
+            self.buf
+        } else {
+            self[..].into()
+        }
+    }
 }
 
 impl CachedPrefix {
@@ -68,9 +109,15 @@ impl CachedPrefix {
 /// Clones share the same entries and capacity. The budget counts token-ID payloads,
 /// excluding keys, metadata, and tokenizer objects. Moka enforces it on a best-effort
 /// basis through deferred maintenance; it is not a process-memory limit.
+///
+/// A trailing-message prefix stored by an extending hit is not a cache entry: it is a
+/// key in a side index pointing into the deeper entry's buffer. Its tokens are charged
+/// once, by that entry, and leave with it, so it adds no budget bytes and cannot crowd
+/// out other entries. The uncharged index overhead is one small record per such entry.
 #[derive(Clone)]
 pub struct SharedTokenizerCache {
     cache: PrefixCache,
+    views: ViewIndex,
 }
 
 /// Storage statistics after pending maintenance. Concurrent writes can change them.
@@ -82,12 +129,44 @@ pub struct SharedTokenizerCacheStats {
 
 impl SharedTokenizerCache {
     pub fn new(max_memory_bytes: usize) -> Self {
+        let views: ViewIndex = Cache::builder().build_with_hasher(PrefixHasher::default());
+        let index = views.clone();
         Self {
             cache: Cache::builder()
                 .max_capacity(max_memory_bytes as u64)
                 .weigher(|_key: &Blake3Hash, entry: &CachedPrefix| entry.weight())
+                .eviction_listener(move |_key, entry: CachedPrefix, cause| {
+                    // A replacement holds the same text, so its tokens still match the view.
+                    if let Some(view) = entry.view
+                        && cause != RemovalCause::Replaced
+                    {
+                        index.invalidate(&view);
+                    }
+                })
                 .build_with_hasher(PrefixHasher::default()),
+            views,
         }
+    }
+
+    /// The cached tokens for `key`, directly or through a trailing-message view.
+    fn get(&self, key: &Blake3Hash) -> Option<PrefixTokens> {
+        if let Some(entry) = self.cache.get(key) {
+            return Some(entry.tokens.into());
+        }
+        let (owner, len) = self.views.get(key)?;
+        let buf = self.cache.get(&owner)?.tokens;
+        (len <= buf.len()).then_some(PrefixTokens { buf, len })
+    }
+
+    /// Bytes of the distinct token buffers the entries keep alive.
+    pub fn resident_token_bytes(&self) -> usize {
+        self.cache.run_pending_tasks();
+        let mut seen = std::collections::HashSet::new();
+        (&self.cache)
+            .into_iter()
+            .filter(|(_, e)| seen.insert(e.tokens.as_ptr() as usize))
+            .map(|(_, e)| size_of_val(e.tokens.as_ref()))
+            .sum()
     }
 
     /// Combined token-ID byte budget for all namespaces.
@@ -127,7 +206,7 @@ fn namespace_hasher(namespace: &[u8]) -> blake3::Hasher {
 
 /// Request-local lookup result. The deepest digest can differ from the matched key.
 pub(super) struct PrefixMatch {
-    pub(super) tokens: Arc<[TokenIdType]>,
+    pub(super) tokens: PrefixTokens,
     pub(super) prefix_len: usize,
     deepest_boundary: usize,
     deepest_hash: Option<Blake3Hash>,
@@ -250,6 +329,8 @@ pub struct L1Cache {
     misses: AtomicU64,
     on_hit: Option<CacheEventFn>,
     on_miss: Option<CacheEventFn>,
+    /// Keep a trailing-message view on extending hits; off only to compare in tests.
+    pub(super) trailing_views: bool,
 }
 
 impl L1Cache {
@@ -286,6 +367,7 @@ impl L1Cache {
             misses: AtomicU64::new(0),
             on_hit: None,
             on_miss: None,
+            trailing_views: true,
         }
     }
 
@@ -305,6 +387,7 @@ impl L1Cache {
             CachedPrefix {
                 namespace: self.namespace_hash,
                 tokens,
+                view: None,
             },
         );
     }
@@ -363,9 +446,11 @@ impl L1Cache {
     /// handed back so [`extend_after_match`] need not rescan the input for it.
     pub fn longest_prefix_match(&self, input: &str) -> Option<(Arc<[TokenIdType]>, usize, usize)> {
         match self.lookup_prefix(input) {
-            PrefixLookup::Hit(matched) => {
-                Some((matched.tokens, matched.prefix_len, matched.deepest_boundary))
-            }
+            PrefixLookup::Hit(matched) => Some((
+                matched.tokens.into_arc(),
+                matched.prefix_len,
+                matched.deepest_boundary,
+            )),
             PrefixLookup::Miss(_) => None,
         }
     }
@@ -390,18 +475,18 @@ impl L1Cache {
         let prefix_hashes: Vec<_> = hash_prefixes(self.hasher(), input, &boundaries).collect();
 
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
-            if let Some(entry) = self.cache.cache.get(&hash_bytes) {
+            if let Some(tokens) = self.cache.get(&hash_bytes) {
                 // Share cached tokens to avoid copying the prefix during lookup.
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
                 let trailing_cut = prefix_hashes
                     .windows(2)
                     .rev()
-                    .take_while(|w| w[0].0 > boundary_pos)
+                    .take_while(|w| self.trailing_views && w[0].0 > boundary_pos)
                     .find(|w| w[1].0 - w[0].0 >= super::MIN_CACHED_SEGMENT_BYTES)
                     .map(|w| w[0]);
                 return PrefixLookup::Hit(PrefixMatch {
-                    tokens: entry.tokens,
+                    tokens,
                     prefix_len: boundary_pos,
                     deepest_boundary,
                     deepest_hash: Some(deepest_hash),
@@ -522,11 +607,11 @@ impl L1Cache {
     /// In an append-only conversation the next turn always reaches the deepest boundary,
     /// so caching it bounds per-turn work to the newest exchange. Clients that rewrite
     /// the trailing message on the next turn miss that entry, so at most one more entry
-    /// is cached: the start of the last segment of at least `MIN_CACHED_SEGMENT_BYTES`
+    /// is kept: the start of the last segment of at least `MIN_CACHED_SEGMENT_BYTES`
     /// before the deepest boundary. Shallow/branching coverage comes from the miss
-    /// path's [`insert_at_boundaries`]. Each entry holds its whole prefix's token ids, so
-    /// that extra entry roughly doubles the bytes a hit adds to the cache. This wrapper
-    /// has no lookup digests, so it stores only the deepest entry. Splitting at
+    /// path's [`insert_at_boundaries`]. The extra prefix is a view into the deepest
+    /// entry's buffer (see [`SharedTokenizerCache`]), so it adds no token bytes. This
+    /// wrapper has no lookup digests, so it stores only the deepest entry. Splitting at
     /// special-token boundaries is correctness-safe because special tokens are atomic in
     /// BPE (`tokenize(a) + tokenize(b) == tokenize(a + b)`).
     ///
@@ -544,7 +629,7 @@ impl L1Cache {
         self.extend_after_match_with_hash(
             input,
             PrefixMatch {
-                tokens: prefix_tokens,
+                tokens: prefix_tokens.into(),
                 prefix_len,
                 deepest_boundary,
                 deepest_hash: None,
@@ -596,19 +681,27 @@ impl L1Cache {
         );
         cumulative.extend_from_slice(&prefix_tokens);
         cumulative.extend_from_slice(seg_t);
-        if let Some((_, hash)) = trailing_cut {
-            self.insert(hash, cumulative.as_slice().into());
-        }
+        let trailing_len = cumulative.len();
         cumulative.extend_from_slice(seg_a.token_ids());
 
         let hash_bytes =
             deepest_hash.unwrap_or_else(|| self.hash_prefix(&input.as_bytes()[..deepest]));
         debug_assert_eq!(hash_bytes, self.hash_prefix(&input.as_bytes()[..deepest]));
 
-        // Copy only the populated prefix, excluding capacity reserved for the tail.
-        let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
-        self.insert(hash_bytes, tokens);
-
+        // Copy only the populated prefix, excluding capacity reserved for the tail. The
+        // trailing-message key indexes into this buffer instead of copying it.
+        let view = trailing_cut.map(|(_, hash)| hash);
+        self.cache.cache.insert(
+            hash_bytes,
+            CachedPrefix {
+                namespace: self.namespace_hash,
+                tokens: cumulative.as_slice().into(),
+                view,
+            },
+        );
+        if let Some(view) = view {
+            self.cache.views.insert(view, (hash_bytes, trailing_len));
+        }
         cumulative.extend_from_slice(seg_b.token_ids());
         Ok(cumulative)
     }

@@ -941,14 +941,14 @@ mod tests {
         trim_trailing: bool,
         conversations: usize,
         budget_bytes: usize,
-        extend_on_hit: bool,
+        trailing_views: bool,
     ) -> Vec<usize> {
         let tok = inner();
-        let (cached, events) = collect_token_usage(
-            CachedTokenizer::new(tok.clone(), specials(), budget_bytes)
-                .expect("TinyLlama must support prefix caching")
-                .with_extend(extend_on_hit),
-        );
+        let mut cached = CachedTokenizer::new(tok.clone(), specials(), budget_bytes)
+            .expect("TinyLlama must support prefix caching")
+            .with_extend(true);
+        cached.l1.trailing_views = trailing_views;
+        let (cached, events) = collect_token_usage(cached);
         let text = |conv: usize, turn: usize, role: &str| {
             (0..60)
                 .map(|i| format!("{role} {conv} {turn} word {i}"))
@@ -1010,19 +1010,22 @@ mod tests {
     }
 
     #[test]
-    fn extension_under_eviction_is_no_worse_than_no_extension() {
-        // Without extension a hit stores nothing, which bounds what deepest-only
-        // extension achieved on rewritten traffic. The extra extension entry costs
-        // budget; under eviction it must not lose more reuse than it adds.
+    fn trailing_views_never_cost_reuse_under_eviction() {
+        // Against deepest-only extension: rewritten traffic must gain, and append-only
+        // traffic, which never uses the view, must not lose reuse to it under eviction.
         for budget in [64 * 1024, 512 * 1024] {
-            for trim in [true, false] {
-                let with: usize = multi_turn_uncached(trim, 6, budget, true).iter().sum();
-                let without: usize = multi_turn_uncached(trim, 6, budget, false).iter().sum();
-                assert!(
-                    with <= without,
-                    "budget {budget} trim {trim}: {with} > {without}"
-                );
-            }
+            let total = |trim, views| multi_turn_uncached(trim, 6, budget, views).iter().sum();
+            let (appended, appended_old): (usize, usize) =
+                (total(false, true), total(false, false));
+            assert!(
+                appended <= appended_old,
+                "budget {budget}: {appended} > {appended_old}"
+            );
+            let (trimmed, trimmed_old): (usize, usize) = (total(true, true), total(true, false));
+            assert!(
+                trimmed < trimmed_old,
+                "budget {budget}: {trimmed} >= {trimmed_old}"
+            );
         }
     }
 
