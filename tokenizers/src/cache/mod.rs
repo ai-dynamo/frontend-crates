@@ -934,48 +934,63 @@ mod tests {
         assert!(stats.hits >= 1, "expected L1 hit on second request");
     }
 
-    /// Turns of a chat whose client optionally rewrites the previous trailing user
-    /// message (as some trace replayers do). Returns the uncached tokens per turn after
-    /// the first, asserting every encode is byte-exact.
-    fn multi_turn_uncached(trim_trailing: bool) -> Vec<usize> {
+    /// Interleaved chats whose client optionally rewrites the previous trailing user
+    /// message (as some trace replayers do). Returns the uncached tokens of each request
+    /// after every conversation's first, asserting every encode is byte-exact.
+    fn multi_turn_uncached(
+        trim_trailing: bool,
+        conversations: usize,
+        budget_bytes: usize,
+        extend_on_hit: bool,
+    ) -> Vec<usize> {
         let tok = inner();
         let (cached, events) = collect_token_usage(
-            CachedTokenizer::new(tok.clone(), specials(), 64 * 1024 * 1024)
+            CachedTokenizer::new(tok.clone(), specials(), budget_bytes)
                 .expect("TinyLlama must support prefix caching")
-                .with_extend(true),
+                .with_extend(extend_on_hit),
         );
-        let text = |turn: usize, role: &str| {
+        let text = |conv: usize, turn: usize, role: &str| {
             (0..60)
-                .map(|i| format!("{role} {turn} word {i}"))
+                .map(|i| format!("{role} {conv} {turn} word {i}"))
                 .collect::<Vec<_>>()
                 .join(" ")
         };
-        let mut messages = vec![format!("<s>system\n{}</s>", text(0, "system"))];
-        let mut user = text(0, "user");
-        let mut per_turn = Vec::new();
+        let mut messages: Vec<Vec<String>> = (0..conversations)
+            .map(|_| vec![format!("<s>system\n{}</s>", text(0, 0, "system"))])
+            .collect();
+        let mut users: Vec<String> = (0..conversations).map(|c| text(c, 0, "user")).collect();
+        let mut per_request = Vec::new();
         for turn in 0..8 {
-            if turn > 0 {
-                if trim_trailing {
-                    user.truncate(user.len() - 40);
+            for c in 0..conversations {
+                if turn > 0 {
+                    if trim_trailing {
+                        let len = users[c].len();
+                        users[c].truncate(len - 40);
+                    }
+                    messages[c].push(format!("<s>user\n{}</s>", users[c]));
+                    messages[c].push(format!("<s>assistant\n{}</s>", text(c, turn, "assistant")));
+                    users[c] = text(c, turn, "user");
                 }
-                messages.push(format!("<s>user\n{user}</s>"));
-                messages.push(format!("<s>assistant\n{}</s>", text(turn, "assistant")));
-                user = text(turn, "user");
-            }
-            let prompt = format!("{}<s>user\n{user}</s><s>assistant\n", messages.concat());
-            let ids = cached.encode(&prompt).unwrap();
-            assert_eq!(ids.token_ids(), tok.encode(&prompt).unwrap().token_ids());
-            if turn > 0 {
-                per_turn.push(events.lock().unwrap().last().unwrap().uncached_tokens);
+                let prompt = format!(
+                    "{}<s>user\n{}</s><s>assistant\n",
+                    messages[c].concat(),
+                    users[c]
+                );
+                let ids = cached.encode(&prompt).unwrap();
+                assert_eq!(ids.token_ids(), tok.encode(&prompt).unwrap().token_ids());
+                if turn > 0 {
+                    per_request.push(events.lock().unwrap().last().unwrap().uncached_tokens);
+                }
             }
         }
-        per_turn
+        per_request
     }
 
     #[test]
     fn extension_keeps_reuse_when_the_trailing_message_is_rewritten() {
-        let trimmed = multi_turn_uncached(true);
-        let appended = multi_turn_uncached(false);
+        let budget = 64 * 1024 * 1024;
+        let trimmed = multi_turn_uncached(true, 1, budget, true);
+        let appended = multi_turn_uncached(false, 1, budget, true);
         // Each turn re-encodes only the rewritten message plus the new exchange, so
         // per-turn work stays flat instead of growing with the conversation.
         let (min, max) = (trimmed.iter().min().unwrap(), trimmed.iter().max().unwrap());
@@ -992,6 +1007,23 @@ mod tests {
             appended.windows(2).all(|w| w[0].abs_diff(w[1]) <= 2),
             "{appended:?}"
         );
+    }
+
+    #[test]
+    fn extension_under_eviction_is_no_worse_than_no_extension() {
+        // Without extension a hit stores nothing, which bounds what deepest-only
+        // extension achieved on rewritten traffic. The extra extension entry costs
+        // budget; under eviction it must not lose more reuse than it adds.
+        for budget in [64 * 1024, 512 * 1024] {
+            for trim in [true, false] {
+                let with: usize = multi_turn_uncached(trim, 6, budget, true).iter().sum();
+                let without: usize = multi_turn_uncached(trim, 6, budget, false).iter().sum();
+                assert!(
+                    with <= without,
+                    "budget {budget} trim {trim}: {with} > {without}"
+                );
+            }
+        }
     }
 
     #[test]

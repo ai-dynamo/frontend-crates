@@ -131,6 +131,9 @@ pub(super) struct PrefixMatch {
     pub(super) prefix_len: usize,
     deepest_boundary: usize,
     deepest_hash: Option<Blake3Hash>,
+    /// Start of the last segment of at least `MIN_CACHED_SEGMENT_BYTES` between the
+    /// match and the deepest boundary, with its digest; cached when the hit extends.
+    trailing_cut: Option<(usize, Blake3Hash)>,
 }
 
 /// A miss retains lookup's boundary hashes for population without another input scan.
@@ -391,11 +394,18 @@ impl L1Cache {
                 // Share cached tokens to avoid copying the prefix during lookup.
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
+                let trailing_cut = prefix_hashes
+                    .windows(2)
+                    .rev()
+                    .take_while(|w| w[0].0 > boundary_pos)
+                    .find(|w| w[1].0 - w[0].0 >= super::MIN_CACHED_SEGMENT_BYTES)
+                    .map(|w| w[0]);
                 return PrefixLookup::Hit(PrefixMatch {
                     tokens: entry.tokens,
                     prefix_len: boundary_pos,
                     deepest_boundary,
                     deepest_hash: Some(deepest_hash),
+                    trailing_cut,
                 });
             }
         }
@@ -514,9 +524,11 @@ impl L1Cache {
     /// the trailing message on the next turn miss that entry, so at most one more entry
     /// is cached: the start of the last segment of at least `MIN_CACHED_SEGMENT_BYTES`
     /// before the deepest boundary. Shallow/branching coverage comes from the miss
-    /// path's [`insert_at_boundaries`]. Splitting at special-token boundaries is correctness-safe
-    /// because special tokens are atomic in BPE
-    /// (`tokenize(a) + tokenize(b) == tokenize(a + b)`).
+    /// path's [`insert_at_boundaries`]. Each entry holds its whole prefix's token ids, so
+    /// that extra entry roughly doubles the bytes a hit adds to the cache. This wrapper
+    /// has no lookup digests, so it stores only the deepest entry. Splitting at
+    /// special-token boundaries is correctness-safe because special tokens are atomic in
+    /// BPE (`tokenize(a) + tokenize(b) == tokenize(a + b)`).
     ///
     /// Note: unlike the read-only fast path, this **writes** to the cache on a hit
     /// (one insert + possible eviction). It relies on the same best-effort memory
@@ -536,6 +548,7 @@ impl L1Cache {
                 prefix_len,
                 deepest_boundary,
                 deepest_hash: None,
+                trailing_cut: None,
             },
             tokenizer,
         )
@@ -555,6 +568,7 @@ impl L1Cache {
             prefix_len,
             deepest_boundary,
             deepest_hash,
+            trailing_cut,
         } = matched;
         // Boundaries exclude input.len(), so the trailing segment is nonempty.
         let deepest = (deepest_boundary > prefix_len).then_some(deepest_boundary);
@@ -568,37 +582,22 @@ impl L1Cache {
             return Ok(merged);
         };
 
-        // Also cache the start of the last substantial segment (normally the trailing
-        // message), so a next turn that rewrites only that message still resumes there.
-        let trailing = self
-            .boundaries(&input[..deepest])
-            .into_iter()
-            .filter(|&b| b > prefix_len)
-            .chain(std::iter::once(deepest))
-            .collect::<Vec<_>>()
-            .windows(2)
-            .rev()
-            .find(|w| w[1] - w[0] >= super::MIN_CACHED_SEGMENT_BYTES)
-            .map(|w| w[0]);
-
         // Encode all segments first to reserve capacity without recopying the prefix.
-        let split = trailing.unwrap_or(prefix_len);
-        let seg_t = tokenizer.encode(&input[prefix_len..split])?;
+        // A trailing cut splits off the segment before the trailing message (see `PrefixMatch`).
+        let split = trailing_cut.map_or(prefix_len, |(cut, _)| cut);
+        let seg_t = trailing_cut
+            .map(|_| tokenizer.encode(&input[prefix_len..split]))
+            .transpose()?;
+        let seg_t = seg_t.as_ref().map_or(&[][..], |e| e.token_ids());
         let seg_a = tokenizer.encode(&input[split..deepest])?;
         let seg_b = tokenizer.encode(&input[deepest..])?;
         let mut cumulative = Vec::with_capacity(
-            prefix_tokens.len()
-                + seg_t.token_ids().len()
-                + seg_a.token_ids().len()
-                + seg_b.token_ids().len(),
+            prefix_tokens.len() + seg_t.len() + seg_a.token_ids().len() + seg_b.token_ids().len(),
         );
         cumulative.extend_from_slice(&prefix_tokens);
-        cumulative.extend_from_slice(seg_t.token_ids());
-        if let Some(cut) = trailing {
-            self.insert(
-                self.hash_prefix(&input.as_bytes()[..cut]),
-                cumulative.as_slice().into(),
-            );
+        cumulative.extend_from_slice(seg_t);
+        if let Some((_, hash)) = trailing_cut {
+            self.insert(hash, cumulative.as_slice().into());
         }
         cumulative.extend_from_slice(seg_a.token_ids());
 
