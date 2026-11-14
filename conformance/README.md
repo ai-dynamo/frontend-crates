@@ -13,6 +13,20 @@ Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Un
 
 Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and generate the latest report. Capture changes use normal PR review. CI executes current native Dynamo v2 cases: differences from GOLDEN produce warnings; differences from recorded YAML fail. Generated publication JSON stays outside Git.
 
+## Parser behavior changes and recorded YAML
+
+Whenever a Rust change alters conformance behavior, update the affected latest conformance YAML in the same PR. Always. Include changed final output, argument values, event ordering, completion flags, per-chunk progress, recovery, errors, and support status. For current Dynamo v2, recapture the affected `fixtures-unified-v2/families/<family>/dynamo_v2.yaml` files from the changed source. Parser code, necessary regression cases, and these captures belong in the same delivered PR; regenerating HTML alone is insufficient. Commit/push approval for the fix covers its required YAML updates too. If that approval is absent, prepare the complete bundle and ask once; do not deliver only the code or present an unpushed bundle as the PR's current contents.
+
+Run the existing strict replay before pre-merge delivery:
+
+```bash
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render committed_dynamo_capture_matches_the_live_parsers -- --exact
+```
+
+This test runs current inputs through every registered native Dynamo v2 parser family and compares live output with recorded latest YAML, including assembled events, per-chunk deltas, errors, and missing captures. The `rust` CI job invokes it through the workspace test suite. GOLDEN differences warn; differences from recorded latest output fail. CI can verify only the pushed head, so a green result on the previous head does not validate local Rust/YAML changes. Peer, v1, and historical captures retain their own producer evidence and are not executed by this native v2 replay.
+
+Keep GOLDEN independently authored and justified; do not copy an incorrect parser result into it. Preserve historical and peer observations when updating latest captures. If a Rust edit does not change observable conformance behavior, establish that with replay rather than changing YAML merely to create a diff.
+
 ## Latest captures and retained history
 
 ### Normalized current YAML

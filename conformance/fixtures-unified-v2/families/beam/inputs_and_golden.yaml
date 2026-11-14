@@ -191,6 +191,7 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_9db8284c68087826: []
   tools_89d6d7dc387a8930:
   - name: my-tool.v2
     parameters:
@@ -307,6 +308,18 @@ tools:
         text:
           not:
             type: integer
+  tools_a7861137bdb03589:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+      - path
+      - content
   tools_686a0bb91b79903e:
   - name: schema_probe
     parameters:
@@ -936,7 +949,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_9db8284c68087826: []
   tools_70f2b5e9ad67ba1e:
   - name: schema_probe
     parameters:
@@ -1013,6 +1025,15 @@ tools:
         city:
           type: string
           nullable: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_7ae123f7897654fb:
   - name: get_weather
     parameters:
@@ -1796,15 +1817,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_14bcb316cd445c47:
-  - name: write_file
-    parameters:
-      type: object
-      properties:
-        content:
-          type: string
-      required:
-      - content
 requests:
   00a9138c0ed26f32abc963e8a3e600c16fdca5b7e57832db350134c100a86329:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -2088,6 +2100,16 @@ requests:
 
       </rfl:parameter><|call|>'
     tools: tools_15d8cf86faa75ec3
+  0c4f66249b1e33cf4b40121b46055ac749dfa84be82efd21eb08fa0d83d0b9e8:
+    input: Let me think, this SQL fragment is '1'='1<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 108
+    finish_step: true
   0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe:
     init:
       starting_state: Response
@@ -2101,6 +2123,16 @@ requests:
     - 24
     - 11
     - 22
+    finish_step: true
+  0d125123b3255119dae876ccc92e735db0fe987d98ac012e9cc61eba251fb287:
+    input: '`name`''s path.<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
     finish_step: true
   0e01c0f26444bf5cc0876af3e196efd8816f592a7e728ff20e19f95270efa812:
     init:
@@ -2126,6 +2158,16 @@ requests:
     chunk_sizes:
     - 23
     - 8
+    finish_step: true
+  0e8ea222492942984e8915142b762370f12f2cd3ee2ee98ebd20a09f02841f7c:
+    input: Let me think, the reference is 80s' music<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 108
     finish_step: true
   0ea8a15f77bbfc8e5f51fd467e1d3f4e04667f7b1d3cb9d3c427ba7609439a48:
     input: '<|start|>assistant to=my-tool.v2<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
@@ -2410,6 +2452,24 @@ requests:
     - 76
     - 8
     finish_step: true
+  1388351c40896ea32ce3911f74af907b010a7e868c2dd686a17ab5a92fe83403:
+    input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="path">
+
+      /tmp/literal.txt
+
+      </rfl:parameter><rfl:parameter name="content">
+
+      <think></think>answer
+
+      </rfl:parameter><|call|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_a7861137bdb03589
+    chunk_sizes:
+    - 217
+    finish_step: true
   1435b8643582850d398b912f5f6c29db24caeef18c5c5a7a2a36bd7bf55ddf57:
     init:
       starting_state: None
@@ -2427,6 +2487,16 @@ requests:
     - 11
     - 23
     - 8
+    finish_step: true
+  1555e38d937cd90f659d8491e9bfdd534918c9592c1eb8bc4942619f64e54242:
+    input: Let me think, the year is 80s'<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 95
     finish_step: true
   155b271a99deb75482740cbb9139dead585a1dd76849c5fe0bc38621648d75b4:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -2885,6 +2955,26 @@ requests:
     - 3
     - 11
     finish_step: true
+  2e498278a70bd5cbd1fda2c0782f4b0e488b066969cc0e8ad6c826a0099fd760:
+    input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|return|><|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 170
+    finish_step: true
+  2f55f7108d54877204bd2549f82074309b77e5ed5b278c3e50d9d84e5dfedfdb:
+    input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|return|><|end|><|start|>assistant<|channel|>final<|message|>Answer<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 132
+    finish_step: true
   315f003941580adf1c6528d0a786071ab99b3da09379d27faf61d7f488e9e22b:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -2904,6 +2994,16 @@ requests:
     - 6
     - 16
     - 8
+    finish_step: true
+  31b05a2234f46b3dca89556abf4436506617593086530131486cd5a4970e1c4d:
+    input: '''90s<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 74
     finish_step: true
   324e2f4ddd6238d6a350a813879bb54d39f5cc82ab64267bbd3652e5b119192e:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -2934,6 +3034,16 @@ requests:
     - 4
     - 16
     - 8
+    finish_step: true
+  3420f89c80349efbce3003d17ddd43680d68d69953a7aee2fb033b4dd4130f66:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|end|>Answer<|return|>'
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 77
     finish_step: true
   344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12:
     init:
@@ -3189,6 +3299,16 @@ requests:
     - 8
     - 57
     finish_step: true
+  3ca79e581ef21dc2ed734727ac7c9b331ac0603c706bb9aa769bf15dfb5c1856:
+    input: Let me think, the marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 107
+    finish_step: true
   3cb028ea6a313dcefec538792809c8e22c4e4b59b632cbd44b794fae927ce05f:
     input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="object_text">
 
@@ -3304,6 +3424,19 @@ requests:
     - 4
     - 16
     - 8
+    finish_step: true
+  42fcf736846d710e825dd235e3289c8940d9c048b7ae978c8aacbd45e7cace61:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: analysis "<|end|><|start|>assistant<|channel|>final<|message|>Answer"<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 6
+    - 62
     finish_step: true
   433dc296568ed6bf2601f1ea0ee283e54202285f1957f07bab4c8706c500e2cd:
     input: '<|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
@@ -3947,6 +4080,16 @@ requests:
     - 16
     - 8
     finish_step: true
+  5f9f921ac4c573bd7a5938cab8817697775f941cb5a553a64be892c634576d08:
+    input: '`pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run `pytest`<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
+    finish_step: true
   603027979deb183ab2c4bc3e313846f95b41407e14b2f204fca98fbb330b761e:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
 
@@ -4041,6 +4184,16 @@ requests:
     - 7
     - 16
     - 8
+    finish_step: true
+  649b193c7b27aeb47358fbc1fe986b894cd2d6a4f7f243c2432ea688bcec27f6:
+    input: 27"<|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 73
     finish_step: true
   658f50bc4601547c7b08105fb8e484d3f4c81f078505a54395cb85348b868de1:
     input: '<|start|>assistant<|channel|>analysis<|message|>ok<|end|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
@@ -4301,6 +4454,16 @@ requests:
     - 9
     - 16
     - 8
+    finish_step: true
+  70fa6141bab2993f774552f030e804c62fd794c5a76f2956240eebab83f51527:
+    input: Let me think, I should try `pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run pytest<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 109
     finish_step: true
   71d940d659a6c1a474093b7de8c16a5ecba434ee4d071f515246401e7027cf32:
     input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="count">
@@ -4623,6 +4786,20 @@ requests:
     - 16
     - 8
     finish_step: true
+  7b2528d1820d4415e183b9afc7937fa4be9e0ce4f7dbc48feb6edb4b4e9c3c71:
+    input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
+
+      <think></think>answer
+
+      </rfl:parameter><|call|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 156
+    finish_step: true
   7c6b5c4b4a80be59c5cb79def8c3edc9e5fe8c93ebdae629cab276adc6d801c8:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
 
@@ -4701,6 +4878,22 @@ requests:
     - 7
     - 16
     - 8
+    finish_step: true
+  816999e18ba3eec7d8bbec9937e0c1b365152b1983d710d21bd68c7a54e209f3:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'Example: "<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+      Paris
+
+      </rfl:parameter><|call|><|start|>assistant<|channel|>final<|message|>".<|return|>'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 138
+    - 57
     finish_step: true
   81ba62e58959032750f4b2da25b54ebdb12f19910f84a8473ed3a3c75a3134f1:
     init:
@@ -4903,6 +5096,18 @@ requests:
     - 11
     - 12
     - 7
+    finish_step: true
+  88cbbcbded88c3cb413f3e6f263e6bcfb45afa1b161871cc024de39c418410ca:
+    input: 'f''" OR x -- ''
+
+      <|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
     finish_step: true
   8989e5a542c46e65a930808dd4adbd37d9e81fef5421a34c5c7346e0c6716c5e:
     init:
@@ -5322,6 +5527,16 @@ requests:
     - 16
     - 8
     finish_step: true
+  987baebdf838f32082c86ef89fac7b6a838291a9bff82da64f24038386c7fcfa:
+    input: Let me think, "The marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker"<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 109
+    finish_step: true
   9934491ace0b0f0a3ac05f5bea09d245c8dbfabebbef3eefd340873194078329:
     input: '<|start|>assistant to=echo<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
 
@@ -5334,7 +5549,6 @@ requests:
       </rfl:parameter><|call|>'
     tools: tools_81ef407beab6fe3e
   997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9:
-    input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}
     init:
       starting_state: None
       tool_output_mode: Native
@@ -5363,6 +5577,7 @@ requests:
         - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
         - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}
         - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
+    input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}
     tools: tools_9db8284c68087826
   999ab30618db5ea1da8591aa7238735bfe8b4cb9e9c23a907d4f57daae0d6fee:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -5413,6 +5628,16 @@ requests:
     - 9
     - 16
     - 8
+    finish_step: true
+  9a783a11157dd4e26d68a786f811da88d20e1b61793bfa849debbc5ccec17c3e:
+    input: Let me think, I should run this command "grep -v '<|end|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 57
     finish_step: true
   9b9fea2cee5f91aa598e1d8c86e8793cdfb4664d8541ce4d8cbf5b2d68320208:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -5536,6 +5761,16 @@ requests:
     - 16
     - 8
     finish_step: true
+  9d50545196129788019dcf8b8126b571be1af71caebbfff71075713d5f70443a:
+    input: '`name<|end|><|start|>assistant<|channel|>final<|message|>`Answer`<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 75
+    finish_step: true
   9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00:
     init:
       starting_state: None
@@ -5545,6 +5780,19 @@ requests:
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 23
+    finish_step: true
+  9deb0d9318d233457f706f8084aefa9cc79f92d8779427be3039356b6f3f13b5:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Use re.split(r'(\s)', text). Let's final.<|end|><|start|>assistant<|channel|>final<|message|>The code prints ['a', ' ', 'b'].<|return|>
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 6
+    - 87
     finish_step: true
   9e1a19daeaafd23e6350de1293fc705aaf869742a1213bdd216f0225280ccee6:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
@@ -5565,16 +5813,6 @@ requests:
     - 6
     - 16
     - 8
-    finish_step: true
-  9ebc6213101866307a4da2e32f371339b5e5cdd0bc566d39826dbb4bc6dd8cdf:
-    input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
-
-      <think></think>answer
-
-      </rfl:parameter><|call|>'
-    tools: tools_14bcb316cd445c47
-    chunk_sizes:
-    - 156
     finish_step: true
   9f4bf34b94f279f597d43b8c965e1915b730271068e1c3643472288a918f8954:
     init:
@@ -5953,6 +6191,16 @@ requests:
     - 6
     - 7
     - 57
+    finish_step: true
+  a989f8f104cba6071fb14284436dea1981c22975daa106e6553077696948844c:
+    input: The special "<|end|><|start|>assistant<|channel|>final<|message|>" marker is used to delineate parser paths<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 117
     finish_step: true
   a9ca03f63638d65ff0aa84cff905dd7cf36a76f4d4956942ba4c98152ff33677:
     init:
@@ -6538,6 +6786,16 @@ requests:
     - 6
     - 16
     - 8
+    finish_step: true
+  cc894a32bbc1d9430900b78317fcb49c2adb1bfb9f8d7d445e50c973cfbc4e7b:
+    input: Let me think, the TV size is 40"<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 97
     finish_step: true
   cd4fffdbd5afa55801184f2f51c1a0ae35bb9a9847031f73a3c809bea046b4bb:
     init:
@@ -7716,6 +7974,16 @@ requests:
     - 9
     - 10
     finish_step: true
+  fd0dfa139b742314566478a61c4be2f88d2a893afee2452531ea99e18f153d8a:
+    input: Let me think, I should run this command "grep -v '<|end|><|start|>assistant<|channel|>final<|message|>' ..."<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 118
+    finish_step: true
   fd13f6c5b20d6032a4c7fd3087dee77a42bd3845b2f51d6a552c1769f7774632:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -7756,6 +8024,16 @@ requests:
     - 16
     - 8
     finish_step: true
+  ffa90c4df91d3f5de40a1110f5b20fd9b303a978bde8b12805fc59c4ca14f721:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|end|>Yes<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 115
+    finish_step: true
   ffbf6441e3db11afa46f31fdd9aaa2732916a74041f26614b9ef8118fe67dd6f:
     input: '<|start|>assistant<|channel|>final<|message|>Pressing it now.
 
@@ -7794,171 +8072,6 @@ requests:
     - 11
     - 1
     - 10
-    finish_step: true
-  9d508acb3f9f8dae96403efd7792b5e069b4b0fe0bb73dbe97ee770d88418e81:
-    input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
-
-      <think></think>answer
-
-      </rfl:parameter><|call|>'
-    tools: tools_14bcb316cd445c47
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
     finish_step: true
 cases:
   arg_json_null:
@@ -8680,12 +8793,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-8
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: 0e01c0f26444bf5cc0876af3e196efd8816f592a7e728ff20e19f95270efa812
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|end|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -8695,12 +8810,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-9
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: c026bc86501596c8680536e9a4d6200d60abaff7708ea506f02727903be11103
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|end|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -8710,31 +8827,23 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.35-3
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 3cbe14bfaf981e3fee34b2983e9f37a5058ed9f3f1322308cbe8a5620c0e551e
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-    - kind: tool_call
-      name: get_weather
-      arguments:
-        city: Paris
+      text: The literal "
   guided_response_quoted_control_braces_required:
     policy:
     - I7
     historical_ids:
     - UNIFIED.35-4
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: ad7195c2008c1e9cf2a0344b74e0a8b55d7e05769b94565de81135c2a4f1556e
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-    - kind: tool_call
-      name: get_weather
-      arguments:
-        city: Paris
+      text: The literal "
   interstitial_text:
     historical_ids:
     - UNIFIED.11-5
@@ -8802,7 +8911,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-5
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: 8ddd4c75add7f9f77d183170caf043cfc2a4bae4010e2687b434bff625941256
     golden:
@@ -8814,7 +8923,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf
     golden:
@@ -8826,7 +8935,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-8
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 560e7d752f4478e521fc8ef4bbf7e6a9cf6ce33dd6f36e29495c747a4b290402
     golden:
@@ -8842,7 +8951,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-10
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: 672343531fd29fcf7564c381cd935d4354b0652a8690af477956df7437699c21
     golden:
@@ -8854,7 +8963,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 5cace03c987a90f7aa69a5f40b633e2e18204780b5d533fb7b8753666966e67a
     golden:
@@ -8866,7 +8975,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-11
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe
     golden:
@@ -8878,7 +8987,7 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.8-7
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: 344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12
     golden:
@@ -11953,10 +12062,10 @@ cases:
       arguments:
         city: Paris
   structured_response_after_reasoning:
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     policy:
     - P5
     - I5
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9
     golden:
@@ -11964,14 +12073,304 @@ cases:
       text: Check London météo🙂 before answering; this is prose, not JSON.
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    scenario: native_quoted_reasoning_closer_default
+    policy:
+    - I2
+    - I5
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 42fcf736846d710e825dd235e3289c8940d9c048b7ae978c8aacbd45e7cace61
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    scenario: native_raw_string_before_reasoning_closer
+    policy:
+    - I2
+    - I5
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 9deb0d9318d233457f706f8084aefa9cc79f92d8779427be3039356b6f3f13b5
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+  UNIFIED.8-native_quoted_complete_call_default:
+    scenario: native_quoted_complete_call_default
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+    request: 816999e18ba3eec7d8bbec9937e0c1b365152b1983d710d21bd68c7a54e209f3
+    golden:
+    - kind: text
+      text: 'Example: "'
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '".'
+  inch_mark_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer
+    request: cc894a32bbc1d9430900b78317fcb49c2adb1bfb9f8d7d445e50c973cfbc4e7b
+    golden:
+    - kind: reasoning
+      text: Let me think, the TV size is 40"
+    - kind: text
+      text: 'Yes'
+  decade_apostrophe_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    request: 1555e38d937cd90f659d8491e9bfdd534918c9592c1eb8bc4942619f64e54242
+    golden:
+    - kind: reasoning
+      text: Let me think, the year is 80s'
+    - kind: text
+      text: 'Yes'
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+    request: 0e8ea222492942984e8915142b762370f12f2cd3ee2ee98ebd20a09f02841f7c
+    golden:
+    - kind: reasoning
+      text: Let me think, the reference is 80s' music
+    - kind: text
+      text: '''Yes'''
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first the native reasoning closer could be a literal mention in the question; only the second closer would end reasoning, leaving text=Yes.'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+    request: 2e498278a70bd5cbd1fda2c0782f4b0e488b066969cc0e8ad6c826a0099fd760
+    golden:
+    - kind: reasoning
+      text: 'Let me think, user is asking if '
+    - kind: text
+      text: ' is specialYes'
+  native_unquoted_reasoning_closer_in_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: even without quotation marks, the wording mentions the marker as a subject. A reader could expect the whole sentence to remain reasoning.'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    request: 3ca79e581ef21dc2ed734727ac7c9b331ac0603c706bb9aa769bf15dfb5c1856
+    golden:
+    - kind: reasoning
+      text: 'Let me think, the marker '
+    - kind: text
+      text: ' is a special marker'
+  native_reasoning_closer_in_quoted_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the whole quotation discusses the marker. A reader could expect the complete quoted sentence to remain reasoning.'
+    display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    request: 987baebdf838f32082c86ef89fac7b6a838291a9bff82da64f24038386c7fcfa
+    golden:
+    - kind: reasoning
+      text: 'Let me think, "The marker '
+    - kind: text
+      text: ' is a special marker"'
+  closed_command_quote_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the grep command quotes a literal search pattern. A reader could expect the entire command, including the native reasoning closer, to remain reasoning.'
+    display_id: UNIFIED.40-closed_command_quote_before_reasoning_closer
+    request: fd0dfa139b742314566478a61c4be2f88d2a893afee2452531ea99e18f153d8a
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    - kind: text
+      text: ''' ..."'
+  unclosed_command_quote_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the unfinished grep command may be quoting a literal the native reasoning closer search pattern. A reader could retain the entire unfinished command in reasoning through EOF.'
+    display_id: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+    request: 9a783a11157dd4e26d68a786f811da88d20e1b61793bfa849debbc5ccec17c3e
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+  unclosed_command_backtick_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this could be an unfinished code snippet containing a literal the native reasoning closer. The unfinished backtick does not by itself establish which boundary was intended.'
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: 70fa6141bab2993f774552f030e804c62fd794c5a76f2956240eebab83f51527
+    golden:
+    - kind: reasoning
+      text: Let me think, I should try `pytest -x
+    - kind: text
+      text: Run pytest
+  sql_fragment_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: a reader treating the fragment as quoted SQL data could keep the native reasoning closer inside reasoning. The incomplete SQL and quotation make intent uncertain.'
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 0c4f66249b1e33cf4b40121b46055ac749dfa84be82efd21eb08fa0d83d0b9e8
+    golden:
+    - kind: reasoning
+      text: Let me think, this SQL fragment is '1'='1
+    - kind: text
+      text: '''Yes'''
+  quoted_name_possessive_inline_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: 0d125123b3255119dae876ccc92e735db0fe987d98ac012e9cc61eba251fb287
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+  inch_mark_before_reasoning_closer_quoted_answer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+    request: 649b193c7b27aeb47358fbc1fe986b894cd2d6a4f7f243c2432ea688bcec27f6
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+  unclosed_backtick_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the backtick that closes after the marker could make the native reasoning closer literal code within reasoning.'
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: 9d50545196129788019dcf8b8126b571be1af71caebbfff71075713d5f70443a
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+    request: 31b05a2234f46b3dca89556abf4436506617593086530131486cd5a4970e1c4d
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the later backtick could close a code span containing the native reasoning closer, keeping that marker in reasoning.'
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+    request: 5f9f921ac4c573bd7a5938cab8817697775f941cb5a553a64be892c634576d08
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+  mixed_quotes_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this code-shaped fragment could be read as quoted reasoning data containing the native reasoning closer, rather than a channel boundary.'
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: 88cbbcbded88c3cb413f3e6f263e6bcfb45afa1b161871cc024de39c418410ca
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+  native_quoted_reasoning_closer_then_answer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first quoted the native reasoning closer could be literal reasoning data; only the second closer would end reasoning, leaving text=Answer.'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: 2f55f7108d54877204bd2549f82074309b77e5ed5b278c3e50d9d84e5dfedfdb
+    golden:
+    - kind: reasoning
+      text: ''''
+    - kind: text
+      text: '''Answer'
+  native_quoted_reasoning_closer_in_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the sentence explicitly discusses the marker. A reader could expect the entire sentence, including the quoted the native reasoning closer, to remain reasoning.'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: a989f8f104cba6071fb14284436dea1981c22975daa106e6553077696948844c
+    golden:
+    - kind: reasoning
+      text: The special "
+    - kind: text
+      text: '" marker is used to delineate parser paths'
   reason_markup_in_arg_empty_span_then_text:
     policy:
     - I7
-    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
     display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
-    request: 9ebc6213101866307a4da2e32f371339b5e5cdd0bc566d39826dbb4bc6dd8cdf
+    request: 7b2528d1820d4415e183b9afc7937fa4be9e0ce4f7dbc48feb6edb4b4e9c3c71
     golden:
     - kind: tool_call
       name: write_file
       arguments:
+        content: <think></think>answer
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    policy:
+    - I7
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+    request: 1388351c40896ea32ce3911f74af907b010a7e868c2dd686a17ab5a92fe83403
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        path: /tmp/literal.txt
         content: <think></think>answer

@@ -219,6 +219,8 @@ struct JinjaEnvironment {
 /// separate instead of being reshaped for a rule it does not have.
 #[derive(Debug, Default, Clone, Copy)]
 struct SystemNormalization {
+    /// Template accepts `system` but rejects the equivalent `developer` turn.
+    fallback_developer: bool,
     /// Template raises on a `system` turn that is not first.
     demote_nonleading_system: bool,
     /// Template raises on two adjacent `user` turns.
@@ -227,7 +229,7 @@ struct SystemNormalization {
 
 impl SystemNormalization {
     fn is_required(&self) -> bool {
-        self.demote_nonleading_system || self.coalesce_consecutive_users
+        self.fallback_developer || self.demote_nonleading_system || self.coalesce_consecutive_users
     }
 }
 
@@ -242,6 +244,11 @@ impl SystemNormalization {
 struct HfTokenizerConfigJsonFormatter {
     env: Environment<'static>,
     config: ChatTemplate,
+    /// The model's control-token spellings. They are shielded in request text
+    /// so only template-owned markers encode as control tokens, unless
+    /// [`ChatTemplate::with_request_control_tokens_as_text`] turns that off
+    /// for a template without Harmony framing.
+    control_markers: oai::ControlMarkers,
     mixins: Arc<ContextMixins>,
     supports_add_generation_prompt: bool,
     /// How message content is shaped for the template. `Auto` uses

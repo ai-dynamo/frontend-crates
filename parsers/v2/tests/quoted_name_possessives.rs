@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#[path = "support/quote_policy.rs"]
+mod quote_policy;
+
 use dynamo_parsers_v2::{
     Tool, ToolParseResult, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
     UnifiedParserStartingState, UnifiedToolOutputMode, assemble, create_tool_parser_for_family,
@@ -113,16 +116,29 @@ fn check_reasoning_closer(quote: char) {
 
 #[test]
 fn possessive_after_code_does_not_hide_the_reasoning_closer() {
+    if !quote_policy::quote_aware_process(
+        "possessive_after_code_does_not_hide_the_reasoning_closer",
+    ) {
+        return;
+    }
     check_reasoning_closer('`');
 }
 
 #[test]
 fn possessive_after_double_quoted_name_does_not_hide_the_reasoning_closer() {
+    if !quote_policy::quote_aware_process(
+        "possessive_after_double_quoted_name_does_not_hide_the_reasoning_closer",
+    ) {
+        return;
+    }
     check_reasoning_closer('"');
 }
 
 #[test]
 fn possessives_do_not_hide_native_or_guided_calls() {
+    if !quote_policy::quote_aware_process("possessives_do_not_hide_native_or_guided_calls") {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             let prefix = format!("{quote}café{quote}'s check uses `open('/tmp/x')`. ");
@@ -160,6 +176,9 @@ fn possessives_do_not_hide_native_or_guided_calls() {
 
 #[test]
 fn suffix_boundary_resolves_at_the_next_control() {
+    if !quote_policy::quote_aware_process("suffix_boundary_resolves_at_the_next_control") {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             for suffix in ['s', 'S'] {
@@ -202,6 +221,11 @@ fn suffix_boundary_resolves_at_the_next_control() {
 
 #[test]
 fn contractions_and_genuine_quotes_after_possessives_keep_their_rules() {
+    if !quote_policy::quote_aware_process(
+        "contractions_and_genuine_quotes_after_possessives_keep_their_rules",
+    ) {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             for tail in [
@@ -226,6 +250,11 @@ fn contractions_and_genuine_quotes_after_possessives_keep_their_rules() {
 
 #[test]
 fn non_possessive_and_separated_single_quotes_still_protect_controls() {
+    if !quote_policy::quote_aware_process(
+        "non_possessive_and_separated_single_quotes_still_protect_controls",
+    ) {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             for word in ["some", "s_name", "s2", "sβ"] {
@@ -271,6 +300,11 @@ fn non_possessive_and_separated_single_quotes_still_protect_controls() {
 
 #[test]
 fn escaped_quote_endings_do_not_establish_possessive_context() {
+    if !quote_policy::quote_aware_process(
+        "escaped_quote_endings_do_not_establish_possessive_context",
+    ) {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             let thought = format!("name\\{quote}'s {closer}'");
@@ -289,6 +323,10 @@ fn escaped_quote_endings_do_not_establish_possessive_context() {
 
 #[test]
 fn suffix_eof_and_reset_preserve_bytes_and_release_context() {
+    if !quote_policy::quote_aware_process("suffix_eof_and_reset_preserve_bytes_and_release_context")
+    {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             for suffix in ["", "'", "'s", "'S"] {
@@ -325,6 +363,9 @@ fn suffix_eof_and_reset_preserve_bytes_and_release_context() {
 
 #[test]
 fn reasoning_boundary_clears_closed_span_context() {
+    if !quote_policy::quote_aware_process("reasoning_boundary_clears_closed_span_context") {
+        return;
+    }
     for (family, closer) in FAMILIES {
         for quote in ['`', '"'] {
             let thought = format!("{quote}name{quote}");
@@ -360,6 +401,11 @@ fn quoted_names_and_markers_inside_tool_arguments_remain_data() {
 
 #[test]
 fn shared_tool_only_scanners_extract_calls_after_possessives() {
+    if !quote_policy::quote_aware_process(
+        "shared_tool_only_scanners_extract_calls_after_possessives",
+    ) {
+        return;
+    }
     for family in ["qwen3_coder", "minimax_m2"] {
         for quote in ['`', '"'] {
             let prefix = format!("{quote}café{quote}'s check uses `open('/tmp/x')`. ");

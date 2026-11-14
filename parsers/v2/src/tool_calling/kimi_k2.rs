@@ -266,6 +266,7 @@ struct K2Boundary {
 struct K2RecoveryBoundary {
     cursor: Option<usize>,
     quoted: crate::tool_calling::scan::JsonStringState,
+    outside_escaped: bool,
     next_call: Option<usize>,
     raw_end: Option<usize>,
     structural_end: Option<usize>,
@@ -295,7 +296,18 @@ impl K2RecoveryBoundary {
             }
             #[cfg(test)]
             crate::tool_calling::kimi_progress::count_work(1, ch.len_utf8());
-            let quoted = self.quoted.advance(ch);
+            // JSON-escaped prose may contain `\"` outside a real string.
+            // It cannot open argument-string ownership and hide the native
+            // closer. Keep lexical ownership inside genuine strings even
+            // when malformed arguments contain an invalid JSON escape.
+            let quoted = if !self.quoted.is_inside() && ch == '\\' {
+                self.outside_escaped = !self.outside_escaped;
+                false
+            } else {
+                let quoted = !(self.outside_escaped && ch == '"') && self.quoted.advance(ch);
+                self.outside_escaped = false;
+                quoted
+            };
             if ch == '<' {
                 if tail.starts_with(CALL_START) {
                     self.next_call.get_or_insert(cursor);
@@ -485,6 +497,44 @@ mod boundary_tests {
 
         assert!(boundary.opens(CALL_START, 0));
         assert_eq!(boundary.holdback("ordinary text"), 0);
+    }
+
+    #[test]
+    fn recovery_quote_opening_respects_outside_backslash_parity() {
+        for backslashes in 0..=5 {
+            let text = format!(
+                "{CALL_START}functions.lookup:0{ARGUMENT_BEGIN}{{{}\"München {CALL_END} literal\"}}{CALL_END}",
+                "\\".repeat(backslashes)
+            );
+            let expected = if backslashes % 2 == 0 {
+                text.len()
+            } else {
+                text.find(CALL_END).unwrap() + CALL_END.len()
+            };
+            let args_at = text.find(ARGUMENT_BEGIN).unwrap() + ARGUMENT_BEGIN.len();
+            for split in (args_at..=text.len()).filter(|at| text.is_char_boundary(*at)) {
+                let mut boundary = K2Boundary::default();
+                boundary.end_append(&text[..split], &text[..split], false, 0);
+                assert_eq!(
+                    boundary.end_append(&text, &text[split..], false, 0),
+                    Some(expected),
+                    "backslashes {backslashes}, split {split}"
+                );
+                boundary.reset();
+                assert_eq!(boundary.end_append(&text, &text, false, 0), Some(expected));
+            }
+            let mut boundary = K2Boundary::default();
+            let mut end = None;
+            for (at, ch) in text.char_indices().filter(|(at, _)| *at >= args_at) {
+                end = boundary.end_append(
+                    &text[..at + ch.len_utf8()],
+                    &text[at..at + ch.len_utf8()],
+                    false,
+                    0,
+                );
+            }
+            assert_eq!(end, Some(expected), "backslashes {backslashes}, characters");
+        }
     }
 }
 

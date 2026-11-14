@@ -3490,6 +3490,180 @@ mod tests {
         }
     }
 
+    fn check_guided_response_envelope_deliveries(
+        input: &str,
+        named: bool,
+        policy: crate::unified::InvalidGuidedPayloadPolicy,
+        expected: &[UnifiedEvent],
+        expected_error: Option<crate::unified::InvalidGuidedPayloadKind>,
+    ) {
+        use crate::unified::{InvalidGuidedPayload, InvalidGuidedPayloadPolicy};
+
+        let prefix = "The literal \"";
+        let ids = encode_harmony(input).unwrap();
+        let prefix_ids = encode_harmony(prefix).unwrap();
+        assert!(ids.starts_with(&prefix_ids));
+        let expected_error = expected_error.map(|kind| InvalidGuidedPayload {
+            kind,
+            choice: if named { "named" } else { "required" },
+        });
+        let mut parser = gpt_oss_unified(&[]);
+        for tokens in [false, true] {
+            let length = if tokens { ids.len() } else { input.len() };
+            let prefix_len = if tokens {
+                prefix_ids.len()
+            } else {
+                prefix.len()
+            };
+            let boundaries = (0..=length)
+                .filter(|at| tokens || input.is_char_boundary(*at))
+                .collect::<Vec<_>>();
+            let mut schedules = vec![vec![(0, length)]];
+            schedules.push(
+                boundaries
+                    .windows(2)
+                    .map(|pair| (pair[0], pair[1]))
+                    .collect(),
+            );
+            schedules.extend(boundaries.into_iter().map(|at| vec![(0, at), (at, length)]));
+            for schedule in schedules {
+                // Reuse after both successful finish and transactional failure.
+                for reuse in 0..2 {
+                    parser.reset();
+                    parser
+                        .initialize_request(UnifiedParserInit {
+                            starting_state: UnifiedParserStartingState::Response,
+                            tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                                named_tool: named.then(|| "get_weather".into()),
+                            },
+                            invalid_guided_payload: policy,
+                            ..Default::default()
+                        })
+                        .unwrap();
+                    let mut output = UnifiedParserOutput::default();
+                    let mut error = None;
+                    for &(start, end) in &schedule {
+                        let result = if tokens {
+                            parser.parse_token_ids_into(&ids[start..end], &mut output)
+                        } else {
+                            parser.parse_into(&input[start..end], &mut output)
+                        };
+                        if start == 0 && end == prefix_len {
+                            let progress = if policy == InvalidGuidedPayloadPolicy::Reject {
+                                Vec::new()
+                            } else {
+                                vec![UnifiedEvent::Text {
+                                    text: prefix.into(),
+                                }]
+                            };
+                            assert_eq!(
+                                crate::unified::assemble(&output.events),
+                                progress,
+                                "definite prefix progress: tokens={tokens} named={named} {policy:?}"
+                            );
+                        }
+                        if let Err(failure) = result {
+                            error = Some(*failure.downcast_ref::<InvalidGuidedPayload>().unwrap());
+                            break;
+                        }
+                    }
+                    if error.is_none() {
+                        match parser.finish() {
+                            Ok(mut finished) => output.append(&mut finished),
+                            Err(failure) => {
+                                error =
+                                    Some(*failure.downcast_ref::<InvalidGuidedPayload>().unwrap());
+                            }
+                        }
+                    }
+                    assert_eq!(
+                        (crate::unified::assemble(&output.events), error),
+                        (expected.to_vec(), expected_error),
+                        "tokens={tokens} named={named} {policy:?} reuse={reuse} {schedule:?}: {input}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_native_unterminated_envelope_preserves_only_preceding_response_prose() {
+        use crate::unified::{InvalidGuidedPayloadKind, InvalidGuidedPayloadPolicy};
+
+        let prefix = "The literal \"";
+        let header = concat!(
+            "<|start|>assistant<|channel|>commentary to=functions.get_weather ",
+            "<|constrain|>json<|message|>"
+        );
+        for named in [false, true] {
+            let payload = if named {
+                r#"{"city": "Paris"}"#
+            } else {
+                r#"{"name": "get_weather", "arguments": {"city": "Paris"}}"#
+            };
+            let input = format!("{prefix}{header} {{ example }}\" stays visible. {payload}");
+            for policy in [
+                InvalidGuidedPayloadPolicy::RecoverAsText,
+                InvalidGuidedPayloadPolicy::StreamBestEffort,
+                InvalidGuidedPayloadPolicy::Reject,
+            ] {
+                let rejected = policy == InvalidGuidedPayloadPolicy::Reject;
+                let expected = if rejected {
+                    Vec::new()
+                } else {
+                    vec![UnifiedEvent::Text {
+                        text: prefix.into(),
+                    }]
+                };
+                check_guided_response_envelope_deliveries(
+                    &input,
+                    named,
+                    policy,
+                    &expected,
+                    rejected.then_some(InvalidGuidedPayloadKind::InvalidJson),
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn guided_native_completed_envelope_preserves_argument_marker_ownership() {
+        use crate::unified::InvalidGuidedPayloadPolicy;
+
+        let body = r#"{"city":"café <|call|> <|start|>assistant<|channel|>analysis<|message|>inner<|end|>"}"#;
+        for named in [false, true] {
+            let payload = if named {
+                r#"{"city": "Paris"}"#
+            } else {
+                r#"{"name": "get_weather", "arguments": {"city": "Paris"}}"#
+            };
+            let input = format!(
+                "The literal \"{START}assistant{CHANNEL}commentary to=functions.get_weather {FORMAT}json{MESSAGE}{body}{HANDOFF}{payload}"
+            );
+            for policy in [
+                InvalidGuidedPayloadPolicy::RecoverAsText,
+                InvalidGuidedPayloadPolicy::StreamBestEffort,
+                InvalidGuidedPayloadPolicy::Reject,
+            ] {
+                check_guided_response_envelope_deliveries(
+                    &input,
+                    named,
+                    policy,
+                    &[
+                        UnifiedEvent::Text {
+                            text: "The literal \"".into(),
+                        },
+                        UnifiedEvent::ToolCall {
+                            name: "get_weather".into(),
+                            arguments: serde_json::json!({"city":"Paris"}),
+                        },
+                    ],
+                    None,
+                );
+            }
+        }
+    }
+
     #[test]
     fn guided_native_json_owns_reasoning_markers_until_handoff() {
         let input = concat!(

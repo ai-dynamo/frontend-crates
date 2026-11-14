@@ -285,6 +285,15 @@ tools:
           type: array
           items:
             type: integer
+  tools_ac03f4607c61c9ce:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+      required:
+      - cmd
   tools_4ce5fbd93f1be6e2:
   - name: schema_probe
     parameters:
@@ -824,6 +833,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_f2b0f8beaa119e52:
   - name: schema_probe
     parameters:
@@ -1583,6 +1601,18 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_a7861137bdb03589:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+      - path
+      - content
   tools_d8f16597f742e3d4:
   - name: schema_probe
     parameters:
@@ -1829,24 +1859,6 @@ tools:
         count:
           type: integer
           $id: https://example.com/count
-  tools_ac03f4607c61c9ce:
-  - name: run
-    parameters:
-      type: object
-      properties:
-        cmd:
-          type: string
-      required:
-      - cmd
-  tools_14bcb316cd445c47:
-  - name: write_file
-    parameters:
-      type: object
-      properties:
-        content:
-          type: string
-      required:
-      - content
 requests:
   024ccbd7f1b61f9e545108ea6e7f7643e4c26fa153e674756026d99d4ce174a3:
     input: '<|start|>assistant to=capture_payload<|message|><atem:function_calls>
@@ -2483,6 +2495,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  109fe08ddea2dba048b958ec655f379e96f586f269360794585b381fce919c6f:
+    input: The special "<|eom|><|start|>assistant to=user<|message|>" marker is used to delineate parser paths<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 106
+    finish_step: true
   11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358:
     init:
       starting_state: None
@@ -2592,6 +2614,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  141068340412bd82d2a99f1777f02f215584f63d63b18a36b8f3aff4e72876a0:
+    input: Let me think, this SQL fragment is '1'='1<|eom|><|start|>assistant to=user<|message|>'Yes'<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 97
+    finish_step: true
   1447934da8b72d1104019357268cdad660e37ee322bddbc3246dc22a457a7b3c:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -2619,6 +2651,16 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  14ba04ade6882b81aaf7d0df2e78109027afefd0d170aedd9c12ad95ce7091f0:
+    input: Let me think, "The marker <|eom|><|start|>assistant to=user<|message|> is a special marker"<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 98
     finish_step: true
   14f684c1955adc9d51673da59bb0272e14bf135da74cd4d3e56c9e59122f2761:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
@@ -2853,6 +2895,26 @@ requests:
     - 7
     - 194
     - 77
+  18ed0ae6a95a766f30da0c2d4e2769c3b4b433251373caa07656b5211b6ed867:
+    input: 'The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation. <|start|>assistant to=run<|message|><atem:function_calls>
+
+      <atem:invoke name="run">
+
+      <atem:parameter name="cmd">Paris</atem:parameter>
+
+      </atem:invoke>
+
+      </atem:function_calls><|eom|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 94
+    - 110
+    - 67
+    finish_step: true
   1b9ff96f3c2aefc2c27d3bef046ec7e5a433499f406b4f51271335a9fe91ccbe:
     input: '<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">doc: </atem:invoke><atem:invoke name="rm_rf"><atem:parameter name="path">/</atem:parameter></atem:invoke><|eot|>'
     tools: tools_cbf47ccf5fd2ef00
@@ -3053,6 +3115,16 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  1eac2de167e0fab0ddbecc13f4baf0c58bbd44f771fd610437ae662c2b70e13c:
+    input: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 63
     finish_step: true
   1ebbe77387a073e3d087b5b4ed5feabc4d6a11dc49e60a5c12413e0184e8f994:
     input: '<|start|>assistant to=record<|message|><atem:function_calls>
@@ -3501,6 +3573,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  2f3a8ed4a7b009739e568784819cf4398ded1a00d1f275ed0070f9ebfd46e5a7:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Let me think, user is asking if <|eom|><|start|>assistant to=user<|message|> is special<|eom|>Yes<|eom|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 104
+    finish_step: true
   2fde160ed1dec6fb0cb956fb79ee600550fc52cbc3411836c4871f7bb616510c:
     input: '<|start|>assistant to=f<|message|><atem:function_calls>
 
@@ -3645,6 +3727,16 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  34227c88e88b6d4ecb3db6cba64e066988de737068285b63a4f7c2640a22d95a:
+    input: Let me think, user is asking if <|eom|><|start|>assistant to=user<|message|> is special<|eom|><|eom|><|start|>assistant to=user<|message|>Yes<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 148
     finish_step: true
   3455e47ff6f83e438e1eff9fef2328ee8426e8b29fb52a42e8e368c853e3fbca:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
@@ -3917,6 +4009,21 @@ requests:
     - 1
     - 28
     - 36
+    finish_step: true
+  39bd5da3ded3a4954b879bd584970952b2b0d23f9b4087f05d3bd49ac0617b60:
+    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+      <|eom|><|start|>assistant to=user<|message|>
+
+
+      I''ve found the bug in `app.py`.<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 144
     finish_step: true
   39f98eba514a990b0d70831a59ff35346064c62ad0e43abb80a566c1dd1b0642:
     input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
@@ -4240,6 +4347,16 @@ requests:
     - 17
     - 7
     finish_step: true
+  4786e70616f95966e8853b7845cec8051d69c9fe7b3f7a8d2696d088c7a69d86:
+    input: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 64
+    finish_step: true
   48c0bdb9e8e946eab34bbe8f34b33c79919a7ca96595df13062ecb4d093290e3:
     init:
       starting_state: Response
@@ -4253,6 +4370,16 @@ requests:
     - 24
     - 11
     - 36
+    finish_step: true
+  48e4e4053a6541b06e119a584dc52bf06daa45c1c96a3089f9daae33327c8de8:
+    input: Let me think, the reference is 80s' music<|eom|><|start|>assistant to=user<|message|>'Yes'<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 97
     finish_step: true
   496f3a93f5db16fd116b06e489a566b2664e2b1b46734332437d0b37e1b2e14b:
     init:
@@ -4820,6 +4947,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  5c47759c129366419dd971158d4197ea6095c8021247c6251338163b1d1d2791:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '''<|eom|><|start|>assistant to=user<|message|>''<|eom|>Answer<|eom|>'
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 66
+    finish_step: true
   5d3d2adb68b1f5d0657f128811a74bf8132b3b86cad4bfe92389b84502a51875:
     init:
       starting_state: None
@@ -4902,6 +5039,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  606ba5c797cc7ac187141a258f0d817b8a631a73e492ebfc281ad499ab222f97:
+    input: '`name`''s path.<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 73
+    finish_step: true
   61c0d13626723287cfa70829714f913feb015d5e3e0695d506ca472592adfae7:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -4924,6 +5071,24 @@ requests:
 
       </atem:function_calls><|eom|>'
     tools: tools_87f9a4e69313cc76
+  61f00c20a6d6fcb2155b96255b50d636065d1fc4b77fda810782a6ff67ea42cb:
+    input: '<|start|>assistant to=write_file<|message|><atem:function_calls>
+
+      <atem:invoke name="write_file">
+
+      <atem:parameter name="content"><think></think>answer</atem:parameter>
+
+      </atem:invoke>
+
+      </atem:function_calls><|eom|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 211
+    finish_step: true
   625602f9f5b1ec7586ed450f311243ac2e96f1b7d872f52db652dbc38d2e0ec7:
     init:
       starting_state: Reasoning
@@ -5822,6 +5987,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  7d15466f6329126a62c892b3cc8fffdcf28f14f85fee57ef4cd6c2d34297766b:
+    input: Let me think, I should try `pytest -x<|eom|><|start|>assistant to=user<|message|>Run pytest<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 98
+    finish_step: true
   7ef1b4a84ab872172073e26ca69b63f477642fe8826edfa6e89eaea493d36344:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -6277,6 +6452,16 @@ requests:
     - 1
     - 7
     finish_step: true
+  87de091809cde924fd7ba8c66d8453918e44811430c1e5b17857fdde0d5773f8:
+    input: '''<|eom|><|start|>assistant to=user<|message|>''<|eom|><|eom|><|start|>assistant to=user<|message|>Answer<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 110
+    finish_step: true
   8b611579b746b4e2867477b6c12c16a91eab5fe97104c056d1f17196d59cfda9:
     input: <|start|>assistant to=self<|message|>first thought<|eom|><|start|>assistant to=user<|message|>interlude <|eom|><|start|>assistant to=self<|message|>second thought<|eom|><|start|>assistant to=user<|message|>done<|eom|>
     tools: tools_cbf47ccf5fd2ef00
@@ -6369,6 +6554,18 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  8e9a268b77e813613311e64c37be896c0849d371c1206710b40b2d39613ea134:
+    input: 'f''" OR x -- ''
+
+      <|eom|><|start|>assistant to=user<|message|>"Answer"<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 73
     finish_step: true
   8ead35b22972449a30d89fcbcab03ed9a0973ec61b25fc35e58c72aa7f85b566:
     input: '<|start|>assistant to=self<|message|>I should check. to=get_weather<|message|><atem:function_calls>
@@ -6488,6 +6685,16 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  935c8c476e435faf0e8d05f6eefaa92b2efc648008384ea57098aa5bc4228cb2:
+    input: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`<|eom|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 73
     finish_step: true
   93715bae77a52af679015933aa7d2bd6717ad2c960ad737adb1d458b2f0c90c7:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
@@ -6728,6 +6935,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  97ae6828a7c37ae883915f8a17af70ea63264cad2c347380fea9871ce025ef56:
+    input: Let me think, the marker <|eom|><|start|>assistant to=user<|message|> is a special marker<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 96
+    finish_step: true
   98040e8c80f4e3d4311a17ea4736297c5de01fa8ec33c77cb6e3046e2ae8cb85:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -6916,6 +7133,19 @@ requests:
     - 11
     - 24
     finish_step: true
+  9fea628cb7102f0c302ea23039d511db5454ee5d78c0abeb3cf3eb9fe50fb30b:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: analysis "<|eom|><|start|>assistant to=user<|message|>Answer"<|eom|>
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 6
+    - 51
+    finish_step: true
   a19e5a94ba157525fcc1c63697e22590ab45dc17c557c793a76dd2d96c878157:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -6954,6 +7184,16 @@ requests:
     chunk_sizes:
     - 76
     - 7
+    finish_step: true
+  a443024a24ff51ceb31df9716d6a9419748771e10207edbe03ae6ba2739828ed:
+    input: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 62
     finish_step: true
   a5212f3418bf2b0a6757e079f45c12b34916a8f5cd7215007a7182e2d6026cd1:
     input: '<|start|>assistant to=user<|message|>Sure, one sec. <|eom|><|start|>assistant to=self<|message|>checking the forecast<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
@@ -7472,6 +7712,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  b01b79fccc66158c3ed5142ebc439c8af6e398a759bc554f188730545826de4b:
+    input: Let me think, the year is 80s'<|eom|><|start|>assistant to=user<|message|>Yes<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
+    finish_step: true
   b026868cfd7a436f3649f81a89b9cae9d106ed53b0d7276b144028dd1ae27534:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -7760,6 +8010,19 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  b9fb73f64aa0e6be0a1cf5e7152680a7f712ea99e7802796226155b91bd895dc:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Use re.split(r'(\s)', text). Let's final.<|eom|><|start|>assistant to=user<|message|>The code prints ['a', ' ', 'b'].<|eom|>
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 6
+    - 76
     finish_step: true
   bab3cf004ca61a574d665b7ec59e94645f837ab8481e207d70c8420abb6820f6:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
@@ -8227,6 +8490,16 @@ requests:
     - 47
     - 7
     finish_step: true
+  c989c0da87283dd099b05b52bccd7c2d33cea2e01f4fe41289bb077e9f4d81fc:
+    input: Let me think, I should run this command "grep -v '<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 57
+    finish_step: true
   ca139a21762b287e1dd421d2ed2c5f32654b6655c0142500abe4066a8337822a:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -8490,6 +8763,26 @@ requests:
     - 1
     - 22
     - 7
+    finish_step: true
+  d8209f3b154494f4b0d7cf16715d5088d3aaed79d9894b6c4a394b689b48369b:
+    input: '<|start|>assistant to=write_file<|message|><atem:function_calls>
+
+      <atem:invoke name="write_file">
+
+      <atem:parameter name="path">/tmp/literal.txt</atem:parameter>
+
+      <atem:parameter name="content"><think></think>answer</atem:parameter>
+
+      </atem:invoke>
+
+      </atem:function_calls><|eom|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_a7861137bdb03589
+    chunk_sizes:
+    - 273
     finish_step: true
   d883002e7e34cea579d32cbbf4066070470b5615adaf07765526648e952b758c:
     init:
@@ -8974,6 +9267,16 @@ requests:
     - 22
     - 7
     finish_step: true
+  e0581e98a6e58ccf24d711bbcd7883a38f2674be0d5c97117a7ebc62642763c3:
+    input: Let me think, the TV size is 40"<|eom|><|start|>assistant to=user<|message|>Yes<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 86
+    finish_step: true
   e075d804cde076cb6a312e7dd8c43d930bfb1dcdce64d1843cfb573a5df3570f:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -9305,6 +9608,16 @@ requests:
     - 1
     - 45
     - 84
+  eb7b6de8f53bb857c54112e4267329cad88325760099d2bee21929899bd7e4f3:
+    input: Let me think, I should run this command "grep -v '<|eom|><|start|>assistant to=user<|message|>' ..."<|eom|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 107
+    finish_step: true
   ecb3e5a854cb5070157463717ace718f8c2ab1651dc54c2cf017813a28945b47:
     init:
       starting_state: Reasoning
@@ -9774,6 +10087,26 @@ requests:
     - 22
     - 7
     finish_step: true
+  f8a5702f5a8ff859feea6bcafa3e0dd9417d8468db3898479b8edbaef4af1371:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'Example: "<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+      <atem:invoke name="get_weather">
+
+      <atem:parameter name="city">Paris</atem:parameter>
+
+      </atem:invoke>
+
+      </atem:function_calls><|eom|><|start|>assistant to=user<|message|>".<|eom|>'
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 194
+    - 46
+    finish_step: true
   f9a08cc1748fb89014bc57a7a8df49f61c7663fa4db9810fc6bf582436a58300:
     input: '<|start|>assistant to=schema_probe<|message|><atem:function_calls>
 
@@ -9955,1502 +10288,6 @@ requests:
     - 1
     - 22
     - 7
-    finish_step: true
-  0eb31926bbbbc4bb5ad29927a45c90bb8bcf11922bb784a385a974e214a9375a:
-    input: '<|start|>assistant to=user<|message|>The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation. <|eom|><|start|>assistant to=run<|message|><atem:function_calls>
-
-      <atem:invoke name="run">
-
-      <atem:parameter name="cmd">Paris</atem:parameter>
-
-      </atem:invoke>
-
-      </atem:function_calls><|eom|>'
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_ac03f4607c61c9ce
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  294c474404375567bfd9e9cee91debe4f3944db1d17a4d05648488c0682e5e5f:
-    input: '<|start|>assistant to=write_file<|message|><atem:function_calls>
-
-      <atem:invoke name="write_file">
-
-      <atem:parameter name="content"><think></think>answer</atem:parameter>
-
-      </atem:invoke>
-
-      </atem:function_calls><|eom|>'
-    tools: tools_14bcb316cd445c47
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  51ad1e94b6bcf544d6190b795ecbde586552a1ed184f063b397ff6978c6e492f:
-    input: '"The special <|eom|> marker ..."'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  584309b83ffd7491c89b6f5759c6a390007fdb02f47134b1fc1ab849ac9cc6b2:
-    input: '`name`''s path.<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  7125cddee61e61da3d5f80992e992e5f22626aa7883eabd729196e844484e37c:
-    input: '''1''=''1<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  7bd4b3e469887cb51e77838794590fc0637ee1221e56cb9c55023e26ef965f88:
-    input: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  87267a69f019235b8d748a71b62f6ea5b0dd3e15016bc20f3831197a54035b7a:
-    input: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  8d4a434a97c4d4e54cfb115dc532bf311ae9bb654cced7c4f51f96b4712cb36d:
-    input: The special <|eom|> marker is used to delineate parser paths
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  afd8444652bfb2fe8e79c56f64ddd3365048071d5d57b4f7cddb8a103945e036:
-    input: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"<|eom|>
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  b04362f2eecc35bcfbc9e5bc7b0196baf46bf0ba221502d95f2cba8716090743:
-    input: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  d6e7e7304caebb30e5dd3c47b1a1b616cda58e9fc620463e8b9b6563ac8e6cdf:
-    input: The special "<|eom|>" marker is used to delineate parser paths
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  e722c34b893a2aee7bec180be795755b5473520ac4cfadc5f9d758baf498fb60:
-    input: '''<|eom|>''<|eom|><|start|>assistant to=user<|message|>Answer<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  f4ab4bd23467d875c2cf1d4af2c2d2656b85975fe6db84d5c8731fe33104dd7f:
-    input: 'f''" OR x -- ''
-
-      <|eom|><|start|>assistant to=user<|message|>"Answer"<|eom|>'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    finish_step: true
-  0d2f49b4b96fa81e2970ee9477e7af68ba489acbb28816a844b74e3b69f93483:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 73
-    finish_step: true
-  57c6a3ab1a3e2d4f7c010323859763007a8770d3dc1f30a8f1b0110214ea70e2:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '"The special <|eom|> marker ..."'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 32
-    finish_step: true
-  5dbe8ad45188a102b71666c42eaa136e8aebd2a3fb4e302dedcf0e09fa5639e4:
-    input: '<|start|>assistant to=write_file<|message|><atem:function_calls>
-
-      <atem:invoke name="write_file">
-
-      <atem:parameter name="content"><think></think>answer</atem:parameter>
-
-      </atem:invoke>
-
-      </atem:function_calls><|eom|>'
-    tools: tools_14bcb316cd445c47
-    chunk_sizes:
-    - 211
-    finish_step: true
-  6c4c4b90d63a48a0311221cc632702bd3212609d7508481c58a92017896bdcc7:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-    input: '<|start|>assistant to=user<|message|>The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation. <|eom|><|start|>assistant to=run<|message|><atem:function_calls>
-
-      <atem:invoke name="run">
-
-      <atem:parameter name="cmd">Paris</atem:parameter>
-
-      </atem:invoke>
-
-      </atem:function_calls><|eom|>'
-    tools: tools_ac03f4607c61c9ce
-    chunk_sizes:
-    - 138
-    - 110
-    - 67
-    finish_step: true
-  83dd9816a16591a61cf6a0c465bc17ce239031d442e013f4e9ae7d8168be948a:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: 'f''" OR x -- ''
-
-      <|eom|><|start|>assistant to=user<|message|>"Answer"<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 73
-    finish_step: true
-  9be57db3cfcb479f7bbeddbbdfc569298b8385f4d0e9cc009fed385b6f168027:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 63
-    finish_step: true
-  c1268bac48b57eb6a85da44737b0ab5f3ccdd7ab85f4a5f117235d2eb82d8605:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: The special <|eom|> marker is used to delineate parser paths
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 60
-    finish_step: true
-  c4764b364c9fe9a775b96ae6b5adf602fcf1262a58af240f3a673c4ad6dce2ed:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: The special "<|eom|>" marker is used to delineate parser paths
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 62
-    finish_step: true
-  d02831b18101d50c954bd7c2180d9af4f30c1a45b7ab66c6480b584e5c0bf490:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '''1''=''1<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 65
-    finish_step: true
-  d3c8a58bfe0cd8eb26c85c23a878fe60b075e6405676da78a5cc24663c6f1912:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 64
-    finish_step: true
-  df00cbf06ed7257c16c70662971457748d10db304fd4f16a667701b012b096b8:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"<|eom|>
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 62
-    finish_step: true
-  ebb22f5933d2ffeebd8290dd64ef3997a4263c45ebba36e8a997e0eb2ad716e2:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '''<|eom|>''<|eom|><|start|>assistant to=user<|message|>Answer<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 66
-    finish_step: true
-  f146723657a8704d7153154527878b0404eb9437967e6408933152a58c935842:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-    input: '`name`''s path.<|eom|><|start|>assistant to=user<|message|>''Answer''<|eom|>'
-    tools: tools_cbf47ccf5fd2ef00
-    chunk_sizes:
-    - 73
     finish_step: true
 cases:
   tool_only:
@@ -13023,64 +11860,60 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-5
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: 6f75ed469619f443316bdd896b365abfbf9960a3e9aa538886d974a9042ce414
     golden:
     - kind: reasoning
-      text: The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation.
+      text: The literal "
   native_quoted_incomplete_header:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-10
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: 39a9c789aeedbb9c7604bc2a86989e31ff11458102bfcf99bcc46adac0273b84
     golden:
     - kind: text
-      text: 'The literal `<|start|>assistant to=get_weather<|message|><atem:function_calls>
-
-        <atem:invoke name="get_weather">
-
-        <atem:parameter name="city">` header is part of the explanation.'
+      text: The literal `
   native_quoted_control_in_response:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 48c0bdb9e8e946eab34bbe8f34b33c79919a7ca96595df13062ecb4d093290e3
     golden:
     - kind: text
-      text: The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation.
+      text: The literal "
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-7
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: b39af74534b89c4891e49f0cf0ceaff3b1a72017048d4105dc7d83c4f2cd2ff8
     golden:
     - kind: text
-      text: The literal 'example <|start|>assistant to=get_weather<|message|> marker' is part of the explanation.
+      text: 'The literal ''example '
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-8
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 87417644fbdfb59dc40c130e032847e68b4420a7e12d7d2fccb5c41f220f84d9
     golden:
     - kind: text
-      text: The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation.
+      text: The literal "
     - kind: tool_call
       name: get_weather
       arguments:
@@ -13145,12 +11978,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-8
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: f582c9b2e2d6145f7cacec2a416697e509730d1cb05832bcd9051c5dcd7cb6a6
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|eom|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -13160,12 +11995,14 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.34-9
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: ecb3e5a854cb5070157463717ace718f8c2ab1651dc54c2cf017813a28945b47
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|eom|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -13176,35 +12013,35 @@ cases:
     - P2
     historical_ids:
     - UNIFIED.40-6
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 625602f9f5b1ec7586ed450f311243ac2e96f1b7d872f52db652dbc38d2e0ec7
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|start|>assistant to=get_weather<|message|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
     historical_ids:
     - UNIFIED.8-11
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 34e524946dbff6033f75acefb08223b06f564ba2c2d320579eb2339e47c22684
     golden:
     - kind: text
-      text: The literal 'doesn't <|start|>assistant to=get_weather<|message|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
   guided_response_quoted_control_braces_named:
     policy:
     - I7
     historical_ids:
     - UNIFIED.35-3
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: ea4fbbf015c371203e74ff14a516e900f26b79cbdeb7290e4915263cb720214d
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|message|> { example }" stays visible. '
+      text: 'The literal "assistant to=get_weather{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -13214,12 +12051,12 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.35-4
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: e4cf6ec0478d651cf359ab658505ec4dbe3a360364983acc4df45da743b482dc
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|message|> { example }" stays visible. '
+      text: 'The literal "assistant to=get_weather{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -15000,11 +13837,14 @@ cases:
       arguments:
         value: '{"x":1}'
   muse_unterminated_parameter_then_call:
+    scenario: invoke_close_inside_open_parameter_then_call
     policy:
     - P2
     - I7
-    description: 'Muse: a parameter owns invocation-shaped text until its closer. Preserve the complete outer argument instead of treating the embedded declared tool as a new call.'
-    display_id: UNIFIED.muse-unterminated_parameter_then_call
+    historical_ids:
+    - UNIFIED.muse-unterminated_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
     request: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
     golden:
     - kind: tool_call
@@ -15012,10 +13852,13 @@ cases:
       arguments:
         x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_parameter_then_empty_call:
+    scenario: invoke_close_inside_open_parameter_then_empty_call
     policy:
     - P2
-    description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
-    display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
+    historical_ids:
+    - UNIFIED.muse-unterminated_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: ATEM parameters own invocation-shaped bytes through their parameter closer; discard the ambiguous invocation at EOF when no closer exists. The turn emits nothing. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
     request: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
     golden: []
   guided_json_native_parameter_string_before_payload:
@@ -15902,9 +14745,9 @@ cases:
     - I2
     - I5
     - I7
-    description: A possessive apostrophe immediately after a closed quoted name is prose, not a new single quotation; preserve the real channel or tool boundary. The chunk schedule separates the closed name, apostrophe and suffix.
+    description: '#595: Native output starting in Reasoning, no offered tools, one content chunk and EOF. Preserve the original public possessive reproduction and its reasoning/text split.'
     display_id: UNIFIED.40-quoted_name_backtick_possessive_reasoning
-    request: ea74e94f73844db29218237b37544479834c032edcc74aa9fcc74327b24d9757
+    request: 39bd5da3ded3a4954b879bd584970952b2b0d23f9b4087f05d3bd49ac0617b60
     golden:
     - kind: reasoning
       text: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
@@ -15958,14 +14801,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_some
     request: 31dec252c664b84d4b29325101d1774b203ef124d0db28b46ec04d8549d60f69
     golden:
     - kind: reasoning
-      text: '`load_config`''some <|eom|> marker'' stays quoted.'
+      text: '`load_config`''some '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -15973,14 +14816,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
     request: af670bdb79ba46bb2e013a3a68612619babf2664eb08f863a61298e81a761f41
     golden:
     - kind: reasoning
-      text: '`load_config`''s_name <|eom|> marker'' stays quoted.'
+      text: '`load_config`''s_name '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -16045,14 +14888,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
     request: 37a2e33be31d671acc2e558880faa5471b6132e415851b12ae175fde3f736d3b
     golden:
     - kind: reasoning
-      text: '"load_config"''some <|eom|> marker'' stays quoted.'
+      text: '"load_config"''some '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -16060,14 +14903,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
     request: ada6231f6e46de82970f4302264ab03ab2839941e95fdeac0dda081625f5e682
     golden:
     - kind: reasoning
-      text: '"load_config"''s_name <|eom|> marker'' stays quoted.'
+      text: '"load_config"''s_name '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -16091,163 +14934,324 @@ cases:
     - I7
     historical_ids:
     - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
-    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    description: A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: 4fd54360f61ed1a83035422a20f655c00cb8c1287a5a7c6040db225867a48bb0
     golden:
     - kind: text
-      text: '"<|start|>assistant to=lookup<|message|><atem:function_calls>\n<atem:invoke name=\"lookup\">\n<atem:parameter name=\"q\">x</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>" trailing'
-  quoted_name_possessive_inline_closer:
+      text: '"" trailing'
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    scenario: native_quoted_reasoning_closer_default
     policy:
     - I2
     - I5
-    - P6
-    description: '#595 unquoted native closer ends prefilled reasoning; following prose belongs to visible text. A closed quoted name plus possessive suffix does not open a new quote.'
-    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
-    request: f146723657a8704d7153154527878b0404eb9437967e6408933152a58c935842
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 9fea628cb7102f0c302ea23039d511db5454ee5d78c0abeb3cf3eb9fe50fb30b
     golden:
     - kind: reasoning
-      text: '`name`''s path.'
+      text: analysis "
     - kind: text
-      text: '''Answer'''
+      text: Answer"
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    scenario: native_raw_string_before_reasoning_closer
+    policy:
+    - I2
+    - I5
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: b9fb73f64aa0e6be0a1cf5e7152680a7f712ea99e7802796226155b91bd895dc
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+  UNIFIED.8-native_quoted_complete_call_default:
+    scenario: native_quoted_complete_call_default
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+    request: f8a5702f5a8ff859feea6bcafa3e0dd9417d8468db3898479b8edbaef4af1371
+    golden:
+    - kind: text
+      text: 'Example: "'
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '".'
   inch_mark_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
     display_id: UNIFIED.40-inch_mark_before_reasoning_closer
-    request: df00cbf06ed7257c16c70662971457748d10db304fd4f16a667701b012b096b8
+    request: e0581e98a6e58ccf24d711bbcd7883a38f2674be0d5c97117a7ebc62642763c3
     golden:
     - kind: reasoning
-      text: 27"<|eom|><|start|>assistant to=user<|message|>"Answer"
-  unclosed_backtick_before_reasoning_closer:
-    policy:
-    - I2
-    - I5
-    - P6
-    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
-    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
-    request: d3c8a58bfe0cd8eb26c85c23a878fe60b075e6405676da78a5cc24663c6f1912
-    golden:
-    - kind: reasoning
-      text: '`name<|eom|><|start|>assistant to=user<|message|>`Answer`'
+      text: Let me think, the TV size is 40"
+    - kind: text
+      text: 'Yes'
   decade_apostrophe_before_reasoning_closer:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
     display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
-    request: 9be57db3cfcb479f7bbeddbbdfc569298b8385f4d0e9cc009fed385b6f168027
+    request: b01b79fccc66158c3ed5142ebc439c8af6e398a759bc554f188730545826de4b
     golden:
     - kind: reasoning
-      text: '''90s<|eom|><|start|>assistant to=user<|message|>''Answer'''
-  unclosed_command_backtick_before_reasoning_closer:
-    policy:
-    - I2
-    - I5
-    - P6
-    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
-    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
-    request: 0d2f49b4b96fa81e2970ee9477e7af68ba489acbb28816a844b74e3b69f93483
-    golden:
-    - kind: reasoning
-      text: '`pytest -x<|eom|><|start|>assistant to=user<|message|>Run `pytest`'
-  sql_fragment_before_reasoning_closer:
-    policy:
-    - I2
-    - I5
-    - P6
-    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
-    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
-    request: d02831b18101d50c954bd7c2180d9af4f30c1a45b7ab66c6480b584e5c0bf490
-    golden:
-    - kind: reasoning
-      text: '''1''=''1<|eom|><|start|>assistant to=user<|message|>''Answer'''
-  mixed_quotes_before_reasoning_closer:
-    policy:
-    - I2
-    - I5
-    - P6
-    description: '#595 quote ownership: a completed quoted span protects the native reasoning closer and its enclosed native response opener. Native terminal framing remains structural during EOF recovery. Customer-requested splitting is an alternative policy, documented separately.'
-    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
-    request: 83dd9816a16591a61cf6a0c465bc17ce239031d442e013f4e9ae7d8168be948a
-    golden:
-    - kind: reasoning
-      text: 'f''" OR x -- ''
-
-        <|eom|><|start|>assistant to=user<|message|>"Answer"'
-  native_quoted_reasoning_closer_then_answer:
-    policy:
-    - I2
-    - I5
-    - P6
-    description: '#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.'
-    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
-    request: ebb22f5933d2ffeebd8290dd64ef3997a4263c45ebba36e8a997e0eb2ad716e2
-    golden:
-    - kind: reasoning
-      text: '''<|eom|>'''
+      text: Let me think, the year is 80s'
     - kind: text
-      text: Answer
+      text: 'Yes'
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+    request: 48e4e4053a6541b06e119a584dc52bf06daa45c1c96a3089f9daae33327c8de8
+    golden:
+    - kind: reasoning
+      text: Let me think, the reference is 80s' music
+    - kind: text
+      text: '''Yes'''
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first the native reasoning closer could be a literal mention in the question; only the second closer would end reasoning, leaving text=Yes.'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+    request: 34227c88e88b6d4ecb3db6cba64e066988de737068285b63a4f7c2640a22d95a
+    golden:
+    - kind: reasoning
+      text: 'Let me think, user is asking if '
+    - kind: text
+      text: ' is specialYes'
   native_unquoted_reasoning_closer_in_sentence:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 unquoted native closer ends prefilled reasoning; following prose belongs to visible text. A closed quoted name plus possessive suffix does not open a new quote.'
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: even without quotation marks, the wording mentions the marker as a subject. A reader could expect the whole sentence to remain reasoning.'
     display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
-    request: c1268bac48b57eb6a85da44737b0ab5f3ccdd7ab85f4a5f117235d2eb82d8605
+    request: 97ae6828a7c37ae883915f8a17af70ea63264cad2c347380fea9871ce025ef56
     golden:
     - kind: reasoning
-      text: 'The special '
+      text: 'Let me think, the marker '
     - kind: text
-      text: ' marker is used to delineate parser paths'
-  native_quoted_reasoning_closer_in_sentence:
-    policy:
-    - I2
-    - I5
-    - P6
-    description: '#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.'
-    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
-    request: c4764b364c9fe9a775b96ae6b5adf602fcf1262a58af240f3a673c4ad6dce2ed
-    golden:
-    - kind: reasoning
-      text: The special "<|eom|>" marker is used to delineate parser paths
+      text: ' is a special marker'
   native_reasoning_closer_in_quoted_sentence:
     policy:
     - I2
     - I5
     - P6
-    description: '#595 quote ownership: preserve the complete quoted mention in reasoning. A subsequent unquoted closer, when supplied, ends reasoning.'
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the whole quotation discusses the marker. A reader could expect the complete quoted sentence to remain reasoning.'
     display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
-    request: 57c6a3ab1a3e2d4f7c010323859763007a8770d3dc1f30a8f1b0110214ea70e2
+    request: 14ba04ade6882b81aaf7d0df2e78109027afefd0d170aedd9c12ad95ce7091f0
     golden:
     - kind: reasoning
-      text: '"The special <|eom|> marker ..."'
+      text: 'Let me think, "The marker '
+    - kind: text
+      text: ' is a special marker"'
+  closed_command_quote_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the grep command quotes a literal search pattern. A reader could expect the entire command, including the native reasoning closer, to remain reasoning.'
+    display_id: UNIFIED.40-closed_command_quote_before_reasoning_closer
+    request: eb7b6de8f53bb857c54112e4267329cad88325760099d2bee21929899bd7e4f3
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    - kind: text
+      text: ''' ..."'
+  unclosed_command_quote_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the unfinished grep command may be quoting a literal the native reasoning closer search pattern. A reader could retain the entire unfinished command in reasoning through EOF.'
+    display_id: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+    request: c989c0da87283dd099b05b52bccd7c2d33cea2e01f4fe41289bb077e9f4d81fc
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+  unclosed_command_backtick_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this could be an unfinished code snippet containing a literal the native reasoning closer. The unfinished backtick does not by itself establish which boundary was intended.'
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: 7d15466f6329126a62c892b3cc8fffdcf28f14f85fee57ef4cd6c2d34297766b
+    golden:
+    - kind: reasoning
+      text: Let me think, I should try `pytest -x
+    - kind: text
+      text: Run pytest
+  sql_fragment_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: a reader treating the fragment as quoted SQL data could keep the native reasoning closer inside reasoning. The incomplete SQL and quotation make intent uncertain.'
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 141068340412bd82d2a99f1777f02f215584f63d63b18a36b8f3aff4e72876a0
+    golden:
+    - kind: reasoning
+      text: Let me think, this SQL fragment is '1'='1
+    - kind: text
+      text: '''Yes'''
+  quoted_name_possessive_inline_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: 606ba5c797cc7ac187141a258f0d817b8a631a73e492ebfc281ad499ab222f97
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+  inch_mark_before_reasoning_closer_quoted_answer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+    request: a443024a24ff51ceb31df9716d6a9419748771e10207edbe03ae6ba2739828ed
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+  unclosed_backtick_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the backtick that closes after the marker could make the native reasoning closer literal code within reasoning.'
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: 4786e70616f95966e8853b7845cec8051d69c9fe7b3f7a8d2696d088c7a69d86
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+    request: 1eac2de167e0fab0ddbecc13f4baf0c58bbd44f771fd610437ae662c2b70e13c
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the later backtick could close a code span containing the native reasoning closer, keeping that marker in reasoning.'
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+    request: 935c8c476e435faf0e8d05f6eefaa92b2efc648008384ea57098aa5bc4228cb2
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+  mixed_quotes_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this code-shaped fragment could be read as quoted reasoning data containing the native reasoning closer, rather than a channel boundary.'
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: 8e9a268b77e813613311e64c37be896c0849d371c1206710b40b2d39613ea134
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+  native_quoted_reasoning_closer_then_answer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first quoted the native reasoning closer could be literal reasoning data; only the second closer would end reasoning, leaving text=Answer.'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: 87de091809cde924fd7ba8c66d8453918e44811430c1e5b17857fdde0d5773f8
+    golden:
+    - kind: reasoning
+      text: ''''
+    - kind: text
+      text: '''Answer'
+  native_quoted_reasoning_closer_in_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the sentence explicitly discusses the marker. A reader could expect the entire sentence, including the quoted the native reasoning closer, to remain reasoning.'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: 109fe08ddea2dba048b958ec655f379e96f586f269360794585b381fce919c6f
+    golden:
+    - kind: reasoning
+      text: The special "
+    - kind: text
+      text: '" marker is used to delineate parser paths'
   reason_markup_in_arg_empty_span_then_text:
     policy:
     - I7
-    description: '#595 output-parser fidelity: a complete native call preserves the exact argument <think></think>answer. This does not test input tokenization or establish that a model emitted these bytes.'
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
     display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
-    request: 5dbe8ad45188a102b71666c42eaa136e8aebd2a3fb4e302dedcf0e09fa5639e4
+    request: 61f00c20a6d6fcb2155b96255b50d636065d1fc4b77fda810782a6ff67ea42cb
     golden:
     - kind: tool_call
       name: write_file
       arguments:
         content: <think></think>answer
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    policy:
+    - I7
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+    request: d8209f3b154494f4b0d7cf16715d5088d3aaed79d9894b6c4a394b689b48369b
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        path: /tmp/literal.txt
+        content: <think></think>answer
   native_quoted_control_then_call_progress:
     policy:
-    - I2
-    - I5
+    - I3
     - I7
-    description: '#595 / #326 agent finding: quoted native marker followed by a real run(cmd=Paris) call. Pause after prose and before the argument value, then deliver the completed call and finish separately to distinguish pre-EOF progress from whole-response buffering.'
+    - P2
+    description: '#595: start in Response with Native output and offered run(cmd:string). The structural prose opener owns and drops its incomplete body; recover the following complete call. Three content chunks expose pre-EOF progress. A literal reading would instead retain the quoted marker and explanation.'
     display_id: UNIFIED.8-native_quoted_control_then_call_progress
-    request: 6c4c4b90d63a48a0311221cc632702bd3212609d7508481c58a92017896bdcc7
+    request: 18ed0ae6a95a766f30da0c2d4e2769c3b4b433251373caa07656b5211b6ed867
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant to=get_weather<|message|>" marker is part of the explanation. '
+      text: The literal "
     - kind: tool_call
       name: run
       arguments:

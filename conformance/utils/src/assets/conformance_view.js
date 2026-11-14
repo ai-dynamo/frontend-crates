@@ -210,10 +210,6 @@
   // --- Output block rendering (mirrors _format_output_block_html) ------------
   function outputBlock(b, family, ctx, goldenKinds) {
     if (!b) { return '—'; }
-    const producerNote = b.producer_origin
-      ? '\n<span class="expl">Producer: ' + escapeHtml(JSON.stringify(b.producer_origin)) + '</span>'
-        + (b.inherited_from ? '\n<span class="expl">Inherited observation from ' + escapeHtml(b.inherited_from) + '</span>' : '')
-      : '';
     if (b.unavailable != null) {
       const unavailable = b.unavailable;
       const detail = unavailable && typeof unavailable === 'object' ? unavailable.detail : null;
@@ -224,16 +220,16 @@
             : typeof detail === 'string' && detail ? detail
               : unavailable && typeof unavailable === 'object' ? String(code || 'Output not yet captured')
                 : String(unavailable);
-      return '<span class="expl">' + (code === 'missing_capture' ? '' : 'unavailable: ') + escapeHtml(reason) + '</span>' + producerNote;
+      return '<span class="expl">' + (code === 'missing_capture' ? '' : 'unavailable: ') + escapeHtml(reason) + '</span>';
     }
     if (b.exception != null) {
       // The parser ran and threw; surface the exception verbatim (e.g. the named
       // vLLM Rust crate variant `ToolParserError::ParsingFailed (...)`).
-      return 'exception: ' + escapeHtml(String(b.exception)) + producerNote;
+      return 'exception: ' + escapeHtml(String(b.exception));
     }
     if (b.error != null) {
       var e = (typeof b.error === 'string') ? b.error : window.__formatConformanceValue(b.error, 0);
-      return 'error: ' + escapeHtml(e) + producerNote;
+      return 'error: ' + escapeHtml(e);
     }
     if (b.batch_final != null) {
       const fields = b.batch_final;
@@ -242,7 +238,7 @@
         + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(fields.calls, 0), ctx)
         + '\n\n<span class="expl">Batch output is compared with ordered GOLDEN.</span>'
         + (b.verdict && b.verdict !== 'MATCH' ? '\n<span class="expl">diverges: ' + escapeHtml(b.verdict) + '</span>' : '')
-        + producerNote;
+       ;
     }
     // Message boundaries must survive both assembled and per-chunk rendering.
     if (b.events != null) {
@@ -283,14 +279,14 @@
       if (expl.length) {
         uout += '\n\n' + expl.map(function (x) { return '<span class="expl">' + x + '</span>'; }).join('\n');
       }
-      return uout + producerNote;
+      return uout;
     }
     // Unified tab: vLLM column is a documented expectation (no live events yet).
     if (b.expected != null) {
       var xout = '<span class="fldl">expected: </span>' + escapeHtml(b.expected)
         + ' <span class="parser-base">(live capture pending — U1)</span>';
       if (b.note) { xout += '\n<span class="expl">' + escapeHtml(String(b.note)) + '</span>'; }
-      return xout + producerNote;
+      return xout;
     }
     var out;
     if (b.reasoning_text != null) {
@@ -311,7 +307,7 @@
       // JSON, so a long note read as a continuation of the data rather than a note.
       out += '\n\n<span class="expl">explanation: ' + escapeHtml(String(b.explanation)) + '</span>';
     }
-    return out + producerNote;
+    return out;
   }
 
   // --- Candidate chart (the popup grid) --------------------------------------

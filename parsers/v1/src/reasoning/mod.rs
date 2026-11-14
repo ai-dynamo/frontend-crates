@@ -206,6 +206,12 @@ pub trait ReasoningParser: Send + std::fmt::Debug {
     /// like `<think>` or `</think>`. At EOF, no next chunk is coming, so the
     /// parser must flush the undecided bytes as normal or reasoning text based
     /// on its current state.
+    ///
+    /// Callers must call this once the stream ends, including when the last
+    /// chunk carries a `finish_reason` such as `length` or `stop`. Inside
+    /// reasoning, a chunk ending in any prefix of the close marker, even a
+    /// single `<` for `</think>` or `[` for `[/THINK]`, is held back, and that
+    /// text is only returned here.
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         ParserResult::default()
     }
@@ -2059,12 +2065,30 @@ mod tests {
         let mut parser = ReasoningParserType::get_reasoning_parser_from_name("qwen3");
         parser.set_in_reasoning(true);
 
+        // Inside reasoning a trailing `<` may start `</think>` (#446), so it
+        // is held for one chunk and released at EOF; the concatenated output
+        // is unchanged.
         let streamed = parser.parse_reasoning_streaming_incremental("literal<", &[]);
         let finished = parser.finish_reasoning_stream();
 
-        assert_eq!(streamed.reasoning_text, "literal<");
+        assert_eq!(streamed.reasoning_text, "literal");
         assert_eq!(streamed.normal_text, "");
-        assert_eq!(finished.reasoning_text, "");
+        assert_eq!(finished.reasoning_text, "<");
+        assert_eq!(finished.normal_text, "");
+    }
+
+    #[test]
+    fn test_final_chunk_ending_in_close_marker_prefix_needs_finish() {
+        // `[` may start `[/THINK]`, so it is held until EOF.
+        let mut parser = ReasoningParserType::get_reasoning_parser_from_name("mistral");
+        parser.set_in_reasoning(true);
+
+        let streamed = parser.parse_reasoning_streaming_incremental("Compare a [", &[]);
+        assert_eq!(streamed.reasoning_text, "Compare a ");
+        assert_eq!(streamed.normal_text, "");
+
+        let finished = parser.finish_reasoning_stream();
+        assert_eq!(finished.reasoning_text, "[");
         assert_eq!(finished.normal_text, "");
     }
 

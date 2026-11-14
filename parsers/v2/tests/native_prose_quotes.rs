@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#[path = "support/quote_policy.rs"]
+mod quote_policy;
+
 use dynamo_parsers_v2::{
     InvalidGuidedPayloadPolicy, Tool, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
     UnifiedParserStartingState, UnifiedToolOutputMode, assemble, create_unified_parser_for_family,
@@ -112,6 +115,11 @@ fn every_split(
 
 #[test]
 fn quoted_native_controls_remain_prose_in_both_channels_at_every_split() {
+    if !quote_policy::quote_aware_process(
+        "quoted_native_controls_remain_prose_in_both_channels_at_every_split",
+    ) {
+        return;
+    }
     for (family, marker, _) in FAMILIES {
         // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
         // a quotation never keeps a control literal there (see the beam unit tests).
@@ -143,6 +151,11 @@ fn quoted_native_controls_remain_prose_in_both_channels_at_every_split() {
 
 #[test]
 fn literal_controls_do_not_hide_following_calls_or_argument_bytes() {
+    if !quote_policy::quote_aware_process(
+        "literal_controls_do_not_hide_following_calls_or_argument_bytes",
+    ) {
+        return;
+    }
     for (family, marker, _) in FAMILIES {
         // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
         // a quotation never keeps a control literal there (see the beam unit tests).
@@ -169,6 +182,9 @@ fn literal_controls_do_not_hide_following_calls_or_argument_bytes() {
 
 #[test]
 fn unmatched_quote_cannot_hide_the_real_reasoning_closer() {
+    if !quote_policy::quote_aware_process("unmatched_quote_cannot_hide_the_real_reasoning_closer") {
+        return;
+    }
     for (family, _, closer) in FAMILIES {
         for quote in ['"', '\'', '`'] {
             let reasoning = format!("He said {quote}maybe");
@@ -193,6 +209,11 @@ fn unmatched_quote_cannot_hide_the_real_reasoning_closer() {
 
 #[test]
 fn definite_prose_progresses_and_reset_returns_the_ambiguous_control() {
+    if !quote_policy::quote_aware_process(
+        "definite_prose_progresses_and_reset_returns_the_ambiguous_control",
+    ) {
+        return;
+    }
     for (family, marker, _) in FAMILIES {
         let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
         parser
@@ -231,6 +252,11 @@ fn definite_prose_progresses_and_reset_returns_the_ambiguous_control() {
 
 #[test]
 fn unmatched_quote_cannot_hide_a_real_call_with_quoted_attributes() {
+    if !quote_policy::quote_aware_process(
+        "unmatched_quote_cannot_hide_a_real_call_with_quoted_attributes",
+    ) {
+        return;
+    }
     for (family, _, _) in FAMILIES {
         let prefix = "He said \"maybe";
         let input = format!("{prefix}{}", native_call(family, "Paris"));
@@ -253,6 +279,11 @@ fn unmatched_quote_cannot_hide_a_real_call_with_quoted_attributes() {
 
 #[test]
 fn inactive_muse_invoke_attributes_keep_the_same_marker_recovery_at_every_split() {
+    if !quote_policy::quote_aware_process(
+        "inactive_muse_invoke_attributes_keep_the_same_marker_recovery_at_every_split",
+    ) {
+        return;
+    }
     let input = r#"<atem:invoke name="<|eom|>[{"name":"f","arguments":{"x":"ok"}}]"#;
     let expected = parse(
         "muse_glimmer",
@@ -270,6 +301,9 @@ fn inactive_muse_invoke_attributes_keep_the_same_marker_recovery_at_every_split(
 
 #[test]
 fn single_quoted_words_own_their_embedded_control() {
+    if !quote_policy::quote_aware_process("single_quoted_words_own_their_embedded_control") {
+        return;
+    }
     for (family, marker, _) in FAMILIES {
         // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
         // a quotation never keeps a control literal there (see the beam unit tests).
@@ -290,6 +324,9 @@ fn single_quoted_words_own_their_embedded_control() {
 
 #[test]
 fn contractions_do_not_close_single_quoted_controls() {
+    if !quote_policy::quote_aware_process("contractions_do_not_close_single_quoted_controls") {
+        return;
+    }
     for (family, marker, closer) in FAMILIES {
         // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
         // a quotation never keeps a control literal there (see the beam unit tests).
@@ -322,6 +359,11 @@ fn contractions_do_not_close_single_quoted_controls() {
 
 #[test]
 fn guided_quoted_reasoning_controls_preserve_the_channel_at_every_split() {
+    if !quote_policy::quote_aware_process(
+        "guided_quoted_reasoning_controls_preserve_the_channel_at_every_split",
+    ) {
+        return;
+    }
     for (family, marker, closer) in FAMILIES {
         for quote in ['"', '\'', '`'] {
             for control in [marker, closer] {
@@ -374,6 +416,11 @@ fn guided_quoted_reasoning_controls_preserve_the_channel_at_every_split() {
 
 #[test]
 fn muse_parameter_quotes_preserve_literals_and_unmatched_quotes_keep_channel_recovery() {
+    if !quote_policy::quote_aware_process(
+        "muse_parameter_quotes_preserve_literals_and_unmatched_quotes_keep_channel_recovery",
+    ) {
+        return;
+    }
     for marker in ["<|eom|>", "<|eot|>", "<|start|>"] {
         let value = format!("a\"{marker}\"b");
         let input = native_call("muse_glimmer", &value);
@@ -400,6 +447,11 @@ fn muse_parameter_quotes_preserve_literals_and_unmatched_quotes_keep_channel_rec
 
 #[test]
 fn rejected_gemma_call_header_does_not_turn_attribute_quotes_into_prose() {
+    if !quote_policy::quote_aware_process(
+        "rejected_gemma_call_header_does_not_turn_attribute_quotes_into_prose",
+    ) {
+        return;
+    }
     let input = r#"call:f"<tool_call|>[{"name":"f","arguments":{"x":"ok"}}]"#;
     let expected = parse("gemma4", input, UnifiedParserStartingState::Response, 0);
     every_split(
@@ -412,6 +464,9 @@ fn rejected_gemma_call_header_does_not_turn_attribute_quotes_into_prose() {
 
 #[test]
 fn guided_visible_quote_owns_braces_before_the_payload() {
+    if !quote_policy::quote_aware_process("guided_visible_quote_owns_braces_before_the_payload") {
+        return;
+    }
     for (family, marker, _) in FAMILIES {
         for quote in ['"', '\'', '`'] {
             for value in ["{ example }", "[ example ]", "é🙂 \\\"escaped\\\" value"] {
@@ -462,6 +517,11 @@ fn guided_visible_quote_owns_braces_before_the_payload() {
 
 #[test]
 fn guided_rejected_header_quotes_do_not_shield_parameter_markup() {
+    if !quote_policy::quote_aware_process(
+        "guided_rejected_header_quotes_do_not_shield_parameter_markup",
+    ) {
+        return;
+    }
     let tool = Tool {
         name: "f".into(),
         description: None,
@@ -501,6 +561,9 @@ fn guided_rejected_header_quotes_do_not_shield_parameter_markup() {
 
 #[test]
 fn reject_guided_preserves_quoted_complete_native_calls() {
+    if !quote_policy::quote_aware_process("reject_guided_preserves_quoted_complete_native_calls") {
+        return;
+    }
     // The corpus Init schema cannot select Reject, so exercise its transactional policy here.
     for (family, _, _) in FAMILIES {
         let prose = format!(
@@ -549,6 +612,11 @@ fn reject_guided_preserves_quoted_complete_native_calls() {
 
 #[test]
 fn malformed_response_candidate_has_chunk_independent_provisional_fate() {
+    if !quote_policy::quote_aware_process(
+        "malformed_response_candidate_has_chunk_independent_provisional_fate",
+    ) {
+        return;
+    }
     // Corpus Init cannot select StreamBestEffort or observe provisional call fate.
     for tail in [
         r#"{"cmd":"x{"cmd":"ok"}"#,
@@ -581,6 +649,11 @@ fn malformed_response_candidate_has_chunk_independent_provisional_fate() {
 
 #[test]
 fn response_resynchronization_respects_earlier_provisional_ownership() {
+    if !quote_policy::quote_aware_process(
+        "response_resynchronization_respects_earlier_provisional_ownership",
+    ) {
+        return;
+    }
     // Corpus Init cannot select StreamBestEffort or assert provisional call fate.
     for (family, _, _) in FAMILIES {
         for named in [false, true] {

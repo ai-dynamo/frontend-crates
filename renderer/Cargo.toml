@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-renderer"
 readme = "README.md"
-version = "10.4.1"
+version = "10.4.3"
 edition.workspace = true
 description = "Standalone OpenAI chat-template / prompt formatting (HF chat_template via minijinja)."
 authors.workspace = true
@@ -20,9 +20,11 @@ keywords = ["llm", "chat-template", "prompt", "jinja", "inference"]
 dynamo-protocols = { workspace = true }
 dynamo-tokenizers = { workspace = true }
 
+aho-corasick = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 either = { workspace = true }
+memchr = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order", "raw_value"] }
 tracing = { workspace = true }

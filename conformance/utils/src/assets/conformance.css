@@ -1191,7 +1191,7 @@ body.view-details .case-schema-indicator { display: inline; }
   --page-bg: #f6f7f9; --panel-bg: #fff; --panel-alt: #f1f3f6; --ink: #111827;
   --ink-muted: #596575; --ink-soft: #8a94a3; --line: #e2e6eb; --line-strong: #cfd5dc;
   --card-shadow: 0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.06);
-  --status-pass: #3fa34d; --status-documented: #7fa8e8; --status-diverge: #f0a92a;
+  --status-pass: #3fa34d; --status-documented: #7fa8e8; --status-diverge: var(--status-leak);
   --status-leak: #e0484b; --status-error: #9b4fd6; --status-expected: #7353ba;
   --status-unsupported: repeating-linear-gradient(135deg,#e7eaee 0 3px,#f4f5f7 3px 6px);
   --status-missing: #fff;
@@ -1200,7 +1200,7 @@ body.view-details .case-schema-indicator { display: inline; }
   --page-bg: #0d1014; --panel-bg: #151a20; --panel-alt: #1b2128; --ink: #e8edf3;
   --ink-muted: #a5b0bd; --ink-soft: #788391; --line: #262d36; --line-strong: #38414d;
   --card-shadow: 0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
-  --status-pass: #3f9e4c; --status-documented: #5b86c9; --status-diverge: #d9952a;
+  --status-pass: #3f9e4c; --status-documented: #5b86c9; --status-diverge: var(--status-leak);
   --status-leak: #d9474a; --status-error: #a465dc; --status-expected: #8768d0;
   --status-unsupported: repeating-linear-gradient(135deg,#232a33 0 3px,#1a1f26 3px 6px);
   --status-missing: #151a20;
@@ -1255,14 +1255,14 @@ body.view-details .case-schema-indicator { display: inline; }
 
 /* Unified capture matrix: light grid, compact labels, and one rounded segment per output. */
 #tab-unified {
-  --status-pass: #3fa34d; --status-documented: #7fa8e8; --status-diverge: #f0a92a;
+  --status-pass: #3fa34d; --status-documented: #7fa8e8; --status-diverge: var(--status-leak);
   --status-leak: #e0484b; --status-error: #9b4fd6; --status-expected: #7353ba;
   --status-unsupported: repeating-linear-gradient(135deg,#cbd2dc 0 3px,#f4f5f7 3px 6px);
   --status-missing: #fff;
   --status-blocked: #64748b;
 }
 :root[data-theme="dark"] #tab-unified {
-  --status-pass: #3f9e4c; --status-documented: #5b86c9; --status-diverge: #d9952a;
+  --status-pass: #3f9e4c; --status-documented: #5b86c9; --status-diverge: var(--status-leak);
   --status-leak: #d9474a; --status-error: #a465dc; --status-expected: #8768d0;
   --status-unsupported: repeating-linear-gradient(135deg,#465267 0 3px,#1a1f26 3px 6px);
   --status-missing: #151a20;

@@ -273,3 +273,20 @@ def test_current_capture_uses_only_crate_version():
     for invalid in [label, "0.9.7+source.a", "0.9.7+other." + "a" * 64]:
         with pytest.raises(ValueError):
             capture_release_sort_key(invalid)
+
+
+def test_capture_family_requires_authored_native_inputs_and_skips_noncanonical_aliases():
+    registry = {
+        "glm47": {"native": True},
+        "qwen3_coder": {"native": True, "registry": "qwen3_coder", "scenario_profile": "native"},
+        "nemotron_v3": {"native": True, "registry": "qwen3_coder"},
+        "qwen3": {"native": True, "registry": "qwen3_coder"},
+        "deepseek_v3": {"native": False},
+    }
+    assert explode._has_authored_family("glm47", {"glm47"}, registry)
+    assert not explode._has_authored_family("qwen3_coder", {"qwen3"}, registry)
+    assert not explode._has_authored_family("deepseek_v3", {"glm47"}, registry)
+    with pytest.raises(ValueError, match="independently authored canonical input"):
+        explode._has_authored_family("glm47", set(), registry)
+    with pytest.raises(ValueError, match="independently authored canonical input"):
+        explode._has_authored_family("nemotron_v3", {"qwen3"}, registry)

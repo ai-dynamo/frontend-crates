@@ -523,6 +523,28 @@ def current_source_catalog(split_evidence):
     return root, catalog
 
 
+def test_retained_native_index_has_fragment_for_every_checkpoint(
+    historical_unified_sources: tuple[Path, list[dict]],
+    native_publisher: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, resources = historical_unified_sources
+    monkeypatch.setenv("CONFORMANCE_PUBLISHER", str(native_publisher))
+    _inventory, _documents, indexed = viewer_catalog._native_catalog_document_index(
+        root,
+        conversion_context={"dataset": "retained", "metadata": viewer_catalog._source_metadata()},
+    )
+    expected = {(row["family"], row["implementation"], row["version"])
+                for row in resources if row["kind"] == "history"}
+    actual = set()
+    for (family, implementation), rows in indexed["snapshots"].items():
+        for row in rows:
+            checkpoint = family, implementation, row["runtime_version"]
+            actual.add(checkpoint)
+            assert isinstance(row.get("fragment"), str) and row["fragment"], checkpoint
+    assert actual == expected
+
+
 def test_history_generation_pairs_latest_readers_without_ci_copy(history_source, tmp_path, monkeypatch):
     root = Path(sources.__file__).resolve().parents[3]
     output = tmp_path / "generated/viewer-catalog.json"
@@ -1219,3 +1241,51 @@ def test_published_latest_downloads_its_complete_source_and_keeps_producer(split
     assert latest["records"]["text_only"]["member"] == published["source"]
     assert unified_history.typed_equal(latest["records"]["text_only"]["value"]["document"], before)
     assert latest["records"]["text_only"]["value"]["document"]["captured_with"]["dynamo_v2"] == "0.5.0"
+
+
+def test_latest_refresh_rejects_release_and_invalid_source_before_writes(tmp_path, monkeypatch):
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance",
+                        lambda root, provenance: {"crate_version": "0.10.7"})
+    with pytest.raises(ValueError, match="explicitly unpublished"):
+        publish_current_capture.refresh_unpublished_latest(tmp_path, tmp_path, {"kind": "release"})
+    def reject_source(root, provenance):
+        raise ValueError("capture feed source identity differs")
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", reject_source)
+    with pytest.raises(ValueError, match="source identity differs"):
+        publish_current_capture.refresh_unpublished_latest(tmp_path, tmp_path, {"kind": "unpublished"})
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_latest_records_reject_missing_cases_stale_origin_and_stale_request():
+    request = {"input": "hello", "init": {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None}, "tools": [], "chunks": [{"delta_text": "hello"}], "finish_reason": "stop"}
+    family = SimpleNamespace(cases={"case": {"lifecycle": "active", "request": request}})
+    origin = {"crate_version": "0.10.7", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    record = {"document": {"capture_origin": origin, "captured_with": {"dynamo_v2": "0.10.7"}},
+              "stimulus": {"ref": "current", "semantic_sha256": unified_history._request_digest(request)}}
+    publish_current_capture.require_current_records({"case": record}, family, origin, "dynamo_v2", "0.10.7")
+    with pytest.raises(ValueError, match="every active case"):
+        publish_current_capture.require_current_records({}, family, origin, "dynamo_v2", "0.10.7")
+    stale = {**record, "document": {**record["document"], "capture_origin": {**origin, "source_sha256": "c" * 64}}}
+    with pytest.raises(ValueError, match="record source differs"):
+        publish_current_capture.require_current_records({"case": stale}, family, origin, "dynamo_v2", "0.10.7")
+    stale = {**record, "stimulus": {"inline": {**request, "input": "old"}, "semantic_sha256": "d" * 64}}
+    with pytest.raises(ValueError, match="record request differs"):
+        publish_current_capture.require_current_records({"case": stale}, family, origin, "dynamo_v2", "0.10.7")
+
+
+@pytest.mark.parametrize("incoming", [{"glm47"}, {"glm47", "beam", "extra"}])
+def test_latest_refresh_rejects_missing_or_extra_native_families(tmp_path, monkeypatch, incoming):
+    root = tmp_path / "repo"
+    loose = tmp_path / "loose"
+    for family in incoming:
+        (loose / "dynamo_v2-0.10.7" / family).mkdir(parents=True)
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance",
+                        lambda root, provenance: {"crate_version": "0.10.7"})
+    monkeypatch.setattr(unified_history, "load_authored_store", lambda root: SimpleNamespace())
+    monkeypatch.setattr(sources, "current", lambda root: {"captures": [
+        {"family": family, "surface": "unified", "implementation": "dynamo_v2"}
+        for family in ("glm47", "beam")
+    ]})
+    with pytest.raises(ValueError, match="family set differs"):
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert not root.exists()

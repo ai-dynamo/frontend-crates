@@ -3,9 +3,10 @@
 
 //! Hermes JSON envelopes use the wrapped scanner and the guided JSON lexer.
 
+use crate::tool_calling::json_prefix::JsonPrefixState;
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
-    InvokeEmitter, JsonValueBoundary, ReasoningSpec, WrappedBlockScanner, WrappedBlockSpec,
+    InvokeEmitter, JsonStringState, ReasoningSpec, WrappedBlockScanner, WrappedBlockSpec,
     marker_prefix_suffix_len,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
@@ -42,7 +43,9 @@ impl PayloadStart {
 #[derive(Default)]
 struct HermesBoundary {
     scanned: usize,
-    json: JsonValueBoundary,
+    json: JsonPrefixState,
+    json_started: bool,
+    string: JsonStringState,
     value_end: Option<usize>,
     guided_prefix: PayloadStart,
 }
@@ -71,7 +74,7 @@ impl InvokeBoundary for HermesBoundary {
         }
         while self.scanned < candidate.len() {
             let tail = &candidate[self.scanned..];
-            if !self.json.inside_string() {
+            if !self.string.is_inside() {
                 if tail.starts_with(END) {
                     return Some(self.scanned + END.len());
                 }
@@ -87,7 +90,31 @@ impl InvokeBoundary for HermesBoundary {
             }
             let ch = tail.chars().next().expect("nonempty candidate suffix");
             self.scanned += ch.len_utf8();
-            if self.json.advance(ch) {
+            let owned_string = self.string.is_inside();
+            if owned_string {
+                // Syntax errors do not release bytes from an already-owned
+                // argument string. Keep tracking its lexical closing quote even
+                // when the prefix validator has stopped after an invalid escape.
+                self.string.advance(ch);
+            }
+            if !self.json_started {
+                if !ch.is_whitespace() {
+                    self.json_started = true;
+                    if ch == '{' {
+                        self.json = JsonPrefixState::new(ch);
+                    } else {
+                        // Hermes admits one object per envelope, not a scalar
+                        // whose quotation could hide a subsequent real call.
+                        self.json.invalid = true;
+                    }
+                }
+            } else {
+                self.json.consume(ch);
+            }
+            if !owned_string && !self.json.invalid && self.json.in_string() {
+                self.string.advance(ch);
+            }
+            if self.value_end.is_none() && self.json.complete && !self.json.invalid {
                 self.value_end = Some(self.scanned);
             }
         }
