@@ -12,7 +12,7 @@ initializeDevelopmentParser();
 import { expandFamily, expandSnapshot, isNormalized } from './normalization.js';
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
-import { selectedCellOutcome } from './model.js';
+import { selectedCellOutcome, selectedUnifiedFamilies, tabCandidates } from './model.js';
 import { leafCells, isApplicableCell, validateCaseCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
@@ -209,7 +209,10 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
     for (const spec of selected) {
       const tab = await buildTab(catalog, reader, spec.id);
-      if (options.knownDivergences && tab.id === 'tab-unified') validateUnifiedKnownDivergences({ tabs: [tab] }, known, Object.keys(catalog.metadata.unified_presentation.parser_generations), catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
+      if (options.knownDivergences && tab.id === 'tab-unified') {
+        const displayFamilies = [...selectedUnifiedFamilies(catalog, tabCandidates(catalog, spec))];
+        validateUnifiedKnownDivergences({ tabs: [tab] }, known, displayFamilies, catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
+      }
       status.reports.push(...buildStatus(page, [tab], options.models, status.html).reports);
     }
     const totals = statusTotals(status);
