@@ -12,7 +12,7 @@ use super::resize::resize_rgba;
 use crate::{MmError, Result};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 const COLUMNS: [&str; 4] = [
@@ -140,6 +140,7 @@ fn decode_entry_points_match_pillow() {
         "a row per corpus image"
     );
     let mut failures = Vec::new();
+    let mut crate_pixels: BTreeMap<&str, BTreeMap<&str, Value>> = BTreeMap::new();
     for (name, row) in rows {
         let data = image(name);
         let decoder = image::guess_format(&data).is_ok_and(|format| format.reading_enabled());
@@ -150,10 +151,39 @@ fn decode_entry_points_match_pillow() {
             "{name}"
         );
         for (column, cell) in row {
-            if let Err(error) = check(cell, decode(column, &data), decoder) {
+            let actual = decode(column, &data);
+            if let (Some(_), Ok(pixels)) = (cell.get("diverges"), &actual) {
+                let hash = pixels
+                    .get("rgb_sha256")
+                    .or(pixels.get("rgba_sha256"))
+                    .unwrap();
+                crate_pixels
+                    .entry(name)
+                    .or_default()
+                    .insert(column, hash.clone());
+            }
+            if let Err(error) = check(cell, actual, decoder) {
                 failures.push(format!("{name} {column}: {error}"));
             }
         }
+    }
+    // A `diverges` cell pins the crate's own pixels too, so a change to them fails.
+    let path = fixtures().join("decode_crate.json");
+    let crate_pixels = json!(crate_pixels);
+    if std::env::var_os("MM_DECODE_RECORD_CRATE").is_some() {
+        let rows = crate_pixels.as_object().unwrap().iter();
+        let rows: Vec<String> = rows
+            .map(|(name, cells)| format!("  {}: {cells}", json!(name)))
+            .collect();
+        std::fs::write(&path, format!("{{\n{}\n}}\n", rows.join(",\n"))).unwrap();
+    } else if crate_pixels
+        != serde_json::from_str::<Value>(&std::fs::read_to_string(&path).unwrap()).unwrap()
+    {
+        failures.push(
+            "the crate's pixels in `diverges` cells differ from decode_crate.json; \
+             MM_DECODE_RECORD_CRATE=1 records them and git diff names the cells"
+                .into(),
+        );
     }
     assert!(failures.is_empty(), "\n{}", failures.join("\n"));
 }

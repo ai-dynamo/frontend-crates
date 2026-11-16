@@ -48,7 +48,10 @@ A cell is one of:
 - `{"diverges", "rgb_sha256", "width", "height"}`: the crate decodes other
   pixels than Pillow at Pillow's size, with no error, for the reason in
   `diverges`. The test fails when the crate starts to match Pillow: then remove
-  the entry from `DIVERGES`.
+  the entry from `DIVERGES`. `decode_crate.json` holds the crate's own pixels
+  for each such cell, and the test also fails when they change.
+  `MM_DECODE_RECORD_CRATE=1 cargo test -p dynamo-multimodal --lib image::decode_table`
+  records them.
 
 `resize_rgba` rows hold Pillow's `resize(size, BICUBIC).convert("RGBA")` of an
 RGBA or LA corpus image. Pillow resizes RGBA and LA premultiplied. The crate's
