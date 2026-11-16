@@ -227,20 +227,9 @@ def interlace_text_png(width, height, seed):
 def bmp(width, height, bits, rows, compression=0, masks=(), palette=b"", colors=0):
     """A BMP form Pillow does not write: a 40-byte header, or BITMAPV4HEADER
     for 4 masks."""
-    header = struct.pack(
-        "<IiiHHIIiiII",
-        108 if len(masks) == 4 else 40,
-        width,
-        height,
-        1,
-        bits,
-        compression,
-        len(rows),
-        2835,
-        2835,
-        colors,
-        0,
-    )
+    size = 108 if len(masks) == 4 else 40
+    fields = (size, width, height, 1, bits, compression, len(rows), 2835, 2835, colors, 0)
+    header = struct.pack("<IiiHHIIiiII", *fields)
     header += struct.pack(f"<{len(masks)}I", *masks)
     if len(masks) == 4:
         header += b"BGRs" + bytes(48)
@@ -502,115 +491,49 @@ REJECTED = {
 
 # Pillow decodes and the crate refuses: image -> [(columns, error kind, reason)].
 # The `decode_native` reasons are the decode gate's refusals.
+def gate(reason):
+    return [(["decode_native"], "Unsupported", reason)]
+
+
 KNOWN_GAPS = {
     "gray16_40x30.png": [
-        (
-            ALL_COLUMNS,
-            "InvalidInput",
-            "Dynamo rejects 16-bit samples, which PIL's convert('RGB') clips",
-        ),
+        (ALL_COLUMNS, "InvalidInput", "Dynamo rejects 16-bit samples, which PIL's convert('RGB') clips")
     ],
     "rgb_32x24.tiff": [
-        (
-            RGB_COLUMNS,
-            "InvalidInput",
-            "Dynamo decodes JPEG, PNG, GIF, WebP and BMP only, and TIFF when another crate "
-            "in the build turns on the image crate's tiff feature",
-        ),
+        (RGB_COLUMNS, "InvalidInput", "Dynamo decodes JPEG, PNG, GIF, WebP and BMP only, and TIFF when "
+         "another crate in the build turns on the image crate's tiff feature"),
         (["decode_native"], "Unsupported", "Dynamo decodes JPEG, PNG, GIF, WebP and BMP only"),
     ],
-    "gray4_trns_64x48.png": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses tRNS on 2-bit or 4-bit grayscale; Pillow compares the "
-            "unscaled tRNS sample with the scaled pixels",
-        ),
-    ],
-    "bilevel_trns2_64x48.png": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses a tRNS sample over the bit depth; Pillow reads 2 as white",
-        ),
-    ],
-    **{
-        name: [
-            (
-                ["decode_native"],
-                "Unsupported",
-                "Dynamo refuses 16-bit BMP; the image crate rounds 5-bit and 6-bit "
-                "fields where Pillow truncates, and reads an alpha mask Pillow ignores",
-            )
-        ]
-        for name in ["bmp16_555_50x40.bmp", "bmp16_565_50x40.bmp", "bmp16_alpha_mask_50x40.bmp"]
-    },
-    **{
-        name: [
-            (
-                ["decode_native"],
-                "Unsupported",
-                "Dynamo refuses palette BMP as a category; Pillow fills RLE gaps with "
-                "palette entry 0 and reads a black and white palette as mode 1",
-            )
-        ]
-        for name in ["palette_64x48.bmp", "rle8_gap_40x30.bmp", "two_color_8bit_40x30.bmp"]
-    },
-    **{
-        name: [
-            (
-                ["decode_native"],
-                "Unsupported",
-                "Dynamo refuses animated WebP as a category; image-webp blends a "
-                "lossless first frame that libwebp does not",
-            )
-        ]
-        for name in [
-            "animated_48x40.webp",
-            "animated_alpha_blend_48x40.webp",
-            "animated_lossless_blend_48x40.webp",
-        ]
-    },
-    "local_ramp_table_40x30.gif": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses a gray-ramp local color table beside a global table; "
-            "Pillow paints the frame with the global table",
-        ),
-    ],
-    "two_controls_40x30.gif": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses a second Graphic Control Extension before the image; "
-            "Pillow keeps a transparent index that the second one clears",
-        ),
-    ],
-    "palette_trns_newline_40x30.png": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses palette alpha FF* 00 FF* 0A; Pillow reads it as one "
-            "transparent entry and drops the last alpha",
-        ),
-    ],
-    "interlace_text_1x32.png": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses a text chunk named interlace before IDAT; Pillow reads "
-            "the keyword back as its deinterlace switch",
-        ),
-    ],
-    "libvpx_filter_below0_96x80.webp": [
-        (
-            ["decode_native"],
-            "Unsupported",
-            "Dynamo refuses a segment filter level outside 0..63 that a loop-filter "
-            "delta moves; libwebp clamps after the deltas and image-webp before them",
-        ),
-    ],
+    "gray4_trns_64x48.png": gate("Dynamo refuses tRNS on 2-bit or 4-bit grayscale; Pillow compares "
+                                 "the unscaled tRNS sample with the scaled pixels"),
+    "bilevel_trns2_64x48.png": gate("Dynamo refuses a tRNS sample over the bit depth; Pillow reads 2 "
+                                    "as white"),
+    **dict.fromkeys(
+        ["bmp16_555_50x40.bmp", "bmp16_565_50x40.bmp", "bmp16_alpha_mask_50x40.bmp"],
+        gate("Dynamo refuses 16-bit BMP; the image crate rounds 5-bit and 6-bit fields where Pillow "
+             "truncates, and reads an alpha mask Pillow ignores"),
+    ),
+    **dict.fromkeys(
+        ["palette_64x48.bmp", "rle8_gap_40x30.bmp", "two_color_8bit_40x30.bmp"],
+        gate("Dynamo refuses palette BMP as a category; Pillow fills RLE gaps with palette entry 0 "
+             "and reads a black and white palette as mode 1"),
+    ),
+    **dict.fromkeys(
+        ["animated_48x40.webp", "animated_alpha_blend_48x40.webp", "animated_lossless_blend_48x40.webp"],
+        gate("Dynamo refuses animated WebP as a category; image-webp blends a lossless first frame "
+             "that libwebp does not"),
+    ),
+    "local_ramp_table_40x30.gif": gate("Dynamo refuses a gray-ramp local color table beside a global "
+                                       "table; Pillow paints the frame with the global table"),
+    "two_controls_40x30.gif": gate("Dynamo refuses a second Graphic Control Extension before the image; "
+                                   "Pillow keeps a transparent index that the second one clears"),
+    "palette_trns_newline_40x30.png": gate("Dynamo refuses palette alpha FF* 00 FF* 0A; Pillow reads it "
+                                           "as one transparent entry and drops the last alpha"),
+    "interlace_text_1x32.png": gate("Dynamo refuses a text chunk named interlace before IDAT; Pillow "
+                                    "reads the keyword back as its deinterlace switch"),
+    "libvpx_filter_below0_96x80.webp": gate("Dynamo refuses a segment filter level outside 0..63 that a "
+                                            "loop-filter delta moves; libwebp clamps after the deltas "
+                                            "and image-webp before them"),
 }
 
 # Known gaps that close in a build with the image crate's decoder for the format, such
@@ -618,80 +541,44 @@ KNOWN_GAPS = {
 DECODER_GAPS = {("rgb_32x24.tiff", column) for column in RGB_COLUMNS}
 
 # The crate decodes other pixels than Pillow, with no error: image -> [(columns, reason)].
+SMART = ["decode_rgb_smart"]
 DIVERGES = {
-    **{
-        name: [
-            (
-                RGB_COLUMNS,
-                "image-webp blends a lossless frame that asks for it; libwebp does not "
-                "blend a first frame",
-            )
-        ]
-        for name in ["animated_alpha_blend_48x40.webp", "animated_lossless_blend_48x40.webp"]
-    },
-    "bmp16_555_50x40.bmp": [
-        (RGB_COLUMNS, "the image crate rounds 5-bit fields where Pillow truncates"),
-    ],
+    **dict.fromkeys(
+        ["animated_alpha_blend_48x40.webp", "animated_lossless_blend_48x40.webp"],
+        [(RGB_COLUMNS, "image-webp blends a lossless frame that asks for it; libwebp does not blend "
+                       "a first frame")],
+    ),
+    "bmp16_555_50x40.bmp": [(RGB_COLUMNS, "the image crate rounds 5-bit fields where Pillow truncates")],
     "bmp16_565_50x40.bmp": [
-        (RGB_COLUMNS, "the image crate rounds 5-bit and 6-bit fields where Pillow truncates"),
+        (RGB_COLUMNS, "the image crate rounds 5-bit and 6-bit fields where Pillow truncates")
     ],
     "bmp16_alpha_mask_50x40.bmp": [
-        (
-            ["decode_rgb", "decode_rgb_exif_transposed"],
-            "the image crate rounds 5-bit fields where Pillow truncates",
-        ),
-        (
-            ["decode_rgb_smart"],
-            "the image crate reads an alpha mask Pillow ignores; the mask is 0 in "
-            "every pixel of this file",
-        ),
+        (["decode_rgb", "decode_rgb_exif_transposed"],
+         "the image crate rounds 5-bit fields where Pillow truncates"),
+        (SMART, "the image crate reads an alpha mask Pillow ignores; the mask is 0 in every pixel "
+                "of this file"),
     ],
-    "rle8_gap_40x30.bmp": [
-        (RGB_COLUMNS, "Pillow fills RLE gaps with palette entry 0"),
-    ],
+    "rle8_gap_40x30.bmp": [(RGB_COLUMNS, "Pillow fills RLE gaps with palette entry 0")],
     "two_color_8bit_40x30.bmp": [
-        (RGB_COLUMNS, "Pillow reads an 8-bit BMP with a black and white palette as mode 1"),
+        (RGB_COLUMNS, "Pillow reads an 8-bit BMP with a black and white palette as mode 1")
     ],
-    "interlace_text_1x32.png": [
-        (
-            RGB_COLUMNS,
-            "Pillow reads a text chunk named interlace back as its deinterlace switch, "
-            "and reads the rows of this plain file in Adam7 order",
-        ),
-    ],
-    "libvpx_filter_below0_96x80.webp": [
-        (
-            RGB_COLUMNS,
-            "libwebp adds the loop-filter deltas to a segment's filter level before it "
-            "clamps; image-webp clamps first",
-        ),
-    ],
+    "interlace_text_1x32.png": [(RGB_COLUMNS, "Pillow reads a text chunk named interlace back as its "
+                                 "deinterlace switch, and reads the rows of this plain file in Adam7 "
+                                 "order")],
+    "libvpx_filter_below0_96x80.webp": [(RGB_COLUMNS, "libwebp adds the loop-filter deltas to a segment's "
+                                         "filter level before it clamps; image-webp clamps first")],
     "local_ramp_table_40x30.gif": [
-        (
-            RGB_COLUMNS,
-            "Pillow paints a first frame whose own table is a gray ramp with the global table",
-        ),
+        (RGB_COLUMNS, "Pillow paints a first frame whose own table is a gray ramp with the global table")
     ],
-    "bilevel_trns2_64x48.png": [
-        (["decode_rgb_smart"], "Pillow reads a 1-bit tRNS sample above 1 as white"),
-    ],
+    "bilevel_trns2_64x48.png": [(SMART, "Pillow reads a 1-bit tRNS sample above 1 as white")],
     "gray4_trns_64x48.png": [
-        (
-            ["decode_rgb_smart"],
-            "Pillow compares the unscaled tRNS sample with the scaled pixels at 2 and 4 bits",
-        ),
+        (SMART, "Pillow compares the unscaled tRNS sample with the scaled pixels at 2 and 4 bits")
     ],
     "palette_trns_newline_40x30.png": [
-        (
-            ["decode_rgb_smart"],
-            "Pillow reads palette alpha FF* 00 FF* 0A as one transparent entry",
-        ),
+        (SMART, "Pillow reads palette alpha FF* 00 FF* 0A as one transparent entry")
     ],
     "two_controls_40x30.gif": [
-        (
-            ["decode_rgb_smart"],
-            "Pillow keeps a transparent index that a second Graphic Control Extension clears",
-        ),
+        (SMART, "Pillow keeps a transparent index that a second Graphic Control Extension clears")
     ],
 }
 
