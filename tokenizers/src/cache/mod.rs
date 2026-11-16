@@ -1030,6 +1030,41 @@ mod tests {
     }
 
     #[test]
+    fn views_never_outlive_their_owner() {
+        // Owners rejected or evicted by a tight budget must take their views along, even
+        // when maintenance runs on another thread in the middle of an extending hit.
+        let tok = inner();
+        let cached = CachedTokenizer::new(tok, specials(), 64 * 1024)
+            .expect("TinyLlama must support prefix caching")
+            .with_extend(true);
+        let words = |c: usize, t: usize| format!("{c} {t} ").repeat(60);
+        let done = std::sync::atomic::AtomicBool::new(false);
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                while !done.load(Ordering::Relaxed) {
+                    cached.l1.run_pending_tasks();
+                }
+            });
+            let mut history = vec![String::new(); 40];
+            for turn in 0..10 {
+                for (c, past) in history.iter_mut().enumerate() {
+                    let user = words(c, turn);
+                    let system = words(99, 0);
+                    let prompt =
+                        format!("<s>system\n{system}</s>{past}<s>user\n{user}</s><s>assistant\n");
+                    cached.encode(&prompt).unwrap();
+                    // The next turn rewrites this user message before appending to it.
+                    let kept = &user[..user.len() - 20];
+                    let answer = words(c, turn + 100);
+                    past.push_str(&format!("<s>user\n{kept}</s><s>assistant\n{answer}</s>"));
+                }
+            }
+            done.store(true, Ordering::Relaxed);
+        });
+        assert_eq!(cached.l1.orphaned_views(), 0);
+    }
+
+    #[test]
     fn decode_passes_through() {
         let tok = inner();
         let cached = CachedTokenizer::new(tok.clone(), specials(), 4096)

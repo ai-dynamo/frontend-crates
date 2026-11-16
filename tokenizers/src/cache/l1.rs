@@ -25,7 +25,7 @@
 
 use std::{
     hash::BuildHasherDefault,
-    mem::size_of_val,
+    mem::{size_of, size_of_val},
     ops::Deref,
     sync::{
         Arc,
@@ -129,7 +129,11 @@ pub struct SharedTokenizerCacheStats {
 
 impl SharedTokenizerCache {
     pub fn new(max_memory_bytes: usize) -> Self {
-        let views: ViewIndex = Cache::builder().build_with_hasher(PrefixHasher::default());
+        // Every view needs a live owner, and every owner charges at least one token id.
+        let max_views = (max_memory_bytes / size_of::<TokenIdType>()) as u64;
+        let views: ViewIndex = Cache::builder()
+            .max_capacity(max_views)
+            .build_with_hasher(PrefixHasher::default());
         let index = views.clone();
         Self {
             cache: Cache::builder()
@@ -158,15 +162,15 @@ impl SharedTokenizerCache {
         (len <= buf.len()).then_some(PrefixTokens { buf, len })
     }
 
-    /// Bytes of the distinct token buffers the entries keep alive.
-    pub fn resident_token_bytes(&self) -> usize {
+    /// After maintenance, the number of views whose owner is not cached.
+    #[cfg(test)]
+    pub(crate) fn orphaned_views(&self) -> usize {
         self.cache.run_pending_tasks();
-        let mut seen = std::collections::HashSet::new();
-        (&self.cache)
+        self.views.run_pending_tasks();
+        (&self.views)
             .into_iter()
-            .filter(|(_, e)| seen.insert(e.tokens.as_ptr() as usize))
-            .map(|(_, e)| size_of_val(e.tokens.as_ref()))
-            .sum()
+            .filter(|(_, (owner, _))| !self.cache.contains_key(owner))
+            .count()
     }
 
     /// Combined token-ID byte budget for all namespaces.
@@ -373,6 +377,16 @@ impl L1Cache {
 
     fn hasher(&self) -> blake3::Hasher {
         namespace_hasher(&self.namespace)
+    }
+
+    #[cfg(test)]
+    pub(super) fn orphaned_views(&self) -> usize {
+        self.cache.orphaned_views()
+    }
+
+    #[cfg(test)]
+    pub(super) fn run_pending_tasks(&self) {
+        self.cache.cache.run_pending_tasks();
     }
 
     fn hash_prefix(&self, prefix: &[u8]) -> Blake3Hash {
@@ -691,6 +705,11 @@ impl L1Cache {
         // Copy only the populated prefix, excluding capacity reserved for the tail. The
         // trailing-message key indexes into this buffer instead of copying it.
         let view = trailing_cut.map(|(_, hash)| hash);
+        // Index the view first: if admission rejects the owner, its removal notice
+        // must find the view to drop it.
+        if let Some(view) = view {
+            self.cache.views.insert(view, (hash_bytes, trailing_len));
+        }
         self.cache.cache.insert(
             hash_bytes,
             CachedPrefix {
@@ -699,9 +718,6 @@ impl L1Cache {
                 view,
             },
         );
-        if let Some(view) = view {
-            self.cache.views.insert(view, (hash_bytes, trailing_len));
-        }
         cumulative.extend_from_slice(seg_b.token_ids());
         Ok(cumulative)
     }
