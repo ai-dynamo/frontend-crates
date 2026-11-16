@@ -1,0 +1,64 @@
+{
+"model_dir": "hf-expectations/unigram",
+"vocab_size": 9,
+"token_id_bound": 9,
+"special_token_ids": [8],
+"special_tokens": ["<special>"],
+"num_special_tokens_added": 0,
+"validate_prefix_cache": true,
+"validate_segment_prefix_cache": true,
+"fast_loads": false,
+"token_to_id": {"":null," ":3,"<missing>":null,"<special>":8,"He":null,"hello":1,"world":2},
+"added_tokens": [
+{"id":8,"content":"<special>","special":true,"encode":{"ids":[8]},"decode":["<special>",""]}
+],
+"texts": [
+{"text":"","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""]},
+{"text":" ","ids":[3],"decode":[" "," "],"stream":[{"steps":[" "],"finish":null},{"steps":[" "],"finish":null}],"special_ids":[3],"special_decode":[" "," "]},
+{"text":"hello world","ids":[1,3,2],"decode":["hello world","hello world"],"stream":[{"steps":["hello"," ","world"],"finish":null},{"steps":["hello"," ","world"],"finish":null}],"special_ids":[1,3,2],"special_decode":["hello world","hello world"]},
+{"text":"hello worlds","ids":[1,3,2,0],"decode":["hello world<unk>","hello world<unk>"],"stream":[{"steps":["hello"," ","world","<unk>"],"finish":null},{"steps":["hello"," ","world","<unk>"],"finish":null}],"special_ids":[1,3,2,0],"special_decode":["hello world<unk>","hello world<unk>"]},
+{"text":"Hello, world!","ids":[0,3,2,0],"decode":["<unk> world<unk>","<unk> world<unk>"],"stream":[{"steps":["<unk>"," ","world","<unk>"],"finish":null},{"steps":["<unk>"," ","world","<unk>"],"finish":null}],"special_ids":[0,3,2,0],"special_decode":["<unk> world<unk>","<unk> world<unk>"]},
+{"text":"  leading and trailing  ","ids":[3,3,0,3,0,3,0,3,3],"decode":["  <unk> <unk> <unk>  ","  <unk> <unk> <unk>  "],"stream":[{"steps":[" "," ","<unk>"," ","<unk>"," ","<unk>"," "," "],"finish":null},{"steps":[" "," ","<unk>"," ","<unk>"," ","<unk>"," "," "],"finish":null}],"special_ids":[3,3,0,3,0,3,0,3,3],"special_decode":["  <unk> <unk> <unk>  ","  <unk> <unk> <unk>  "]},
+{"text":"café 北京 😀","ids":[4,3,5,6,3,7],"decode":["café 北京 😀","café 北京 😀"],"stream":[{"steps":["café"," ","北","京"," ","😀"],"finish":null},{"steps":["café"," ","北","京"," ","😀"],"finish":null}],"special_ids":[4,3,5,6,3,7],"special_decode":["café 北京 😀","café 北京 😀"]},
+{"text":"é\n\t","ids":[0],"decode":["<unk>","<unk>"],"stream":[{"steps":["<unk>"],"finish":null},{"steps":["<unk>"],"finish":null}],"special_ids":[0],"special_decode":["<unk>","<unk>"]},
+{"text":"naïve façade — “quotes” …","ids":[0,3,0,3,0,3,0,3,0],"decode":["<unk> <unk> <unk> <unk> <unk>","<unk> <unk> <unk> <unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,0,3,0,3,0],"special_decode":["<unk> <unk> <unk> <unk> <unk>","<unk> <unk> <unk> <unk> <unk>"]},
+{"text":"The quick brown fox jumps over the lazy dog.","ids":[0,3,0,3,0,3,0,3,0,3,0,3,0,3,0,3,0],"decode":["<unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk>","<unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,0,3,0,3,0,3,0,3,0,3,0,3,0],"special_decode":["<unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk>","<unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk>"]},
+{"text":"1234567890 3.14159 -42","ids":[0,3,0,3,0],"decode":["<unk> <unk> <unk>","<unk> <unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,0],"special_decode":["<unk> <unk> <unk>","<unk> <unk> <unk>"]},
+{"text":"fn main() {\n    println!(\"hi\");\n}\n","ids":[0,3,0,3,0,3,3,3,3,0],"decode":["<unk> <unk> <unk>    <unk>","<unk> <unk> <unk>    <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","<unk>"," "," "," "," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","<unk>"," "," "," "," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,0,3,3,3,3,0],"special_decode":["<unk> <unk> <unk>    <unk>","<unk> <unk> <unk>    <unk>"]},
+{"text":"line1\nline2\r\nline3","ids":[0],"decode":["<unk>","<unk>"],"stream":[{"steps":["<unk>"],"finish":null},{"steps":["<unk>"],"finish":null}],"special_ids":[0],"special_decode":["<unk>","<unk>"]},
+{"text":"tabs\tand nbsp","ids":[0],"decode":["<unk>","<unk>"],"stream":[{"steps":["<unk>"],"finish":null},{"steps":["<unk>"],"finish":null}],"special_ids":[0],"special_decode":["<unk>","<unk>"]},
+{"text":"مرحبا بالعالم","ids":[0,3,0],"decode":["<unk> <unk>","<unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0],"special_decode":["<unk> <unk>","<unk> <unk>"]},
+{"text":"こんにちは世界","ids":[0],"decode":["<unk>","<unk>"],"stream":[{"steps":["<unk>"],"finish":null},{"steps":["<unk>"],"finish":null}],"special_ids":[0],"special_decode":["<unk>","<unk>"]},
+{"text":"👩‍👩‍👧‍👦 family 🇺🇸","ids":[0,3,0,3,0],"decode":["<unk> <unk> <unk>","<unk> <unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,0],"special_decode":["<unk> <unk> <unk>","<unk> <unk> <unk>"]},
+{"text":"� replacement","ids":[0,3,0],"decode":["<unk> <unk>","<unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0],"special_decode":["<unk> <unk>","<unk> <unk>"]},
+{"text":"<special>hello<special>","ids":[8,1,8],"decode":["<special>hello<special>","hello"],"stream":[{"steps":["<special>","hello","<special>"],"finish":null},{"steps":[null,"hello",null],"finish":null}],"special_ids":[8,1,8],"special_decode":["<special>hello<special>","hello"]},
+{"text":"a<|x|>b","ids":[0],"decode":["<unk>","<unk>"],"stream":[{"steps":["<unk>"],"finish":null},{"steps":["<unk>"],"finish":null}],"special_ids":[0],"special_decode":["<unk>","<unk>"]},
+{"text":"UPPER lower MiXeD","ids":[0,3,0,3,0],"decode":["<unk> <unk> <unk>","<unk> <unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,0],"special_decode":["<unk> <unk> <unk>","<unk> <unk> <unk>"]},
+{"text":"hello 😀 北京!","ids":[1,3,7,3,5,6,0],"decode":["hello 😀 北京<unk>","hello 😀 北京<unk>"],"stream":[{"steps":["hello"," ","😀"," ","北","京","<unk>"],"finish":null},{"steps":["hello"," ","😀"," ","北","京","<unk>"],"finish":null}],"special_ids":[1,3,7,3,5,6,0],"special_decode":["hello 😀 北京<unk>","hello 😀 北京<unk>"]},
+{"text":"He said hello, world. The lot.","ids":[0,3,0,3,1,0,3,2,0,3,0,3,0],"decode":["<unk> <unk> hello<unk> world<unk> <unk> <unk>","<unk> <unk> hello<unk> world<unk> <unk> <unk>"],"stream":[{"steps":["<unk>"," ","<unk>"," ","hello","<unk>"," ","world","<unk>"," ","<unk>"," ","<unk>"],"finish":null},{"steps":["<unk>"," ","<unk>"," ","hello","<unk>"," ","world","<unk>"," ","<unk>"," ","<unk>"],"finish":null}],"special_ids":[0,3,0,3,1,0,3,2,0,3,0,3,0],"special_decode":["<unk> <unk> hello<unk> world<unk> <unk> <unk>","<unk> <unk> hello<unk> world<unk> <unk> <unk>"]},
+{"text":"<special>","ids":[8],"decode":["<special>",""],"stream":[{"steps":["<special>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[8],"special_decode":["<special>",""]},
+{"text":"<special>","ids":[8],"decode":["<special>",""],"stream":[{"steps":["<special>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[8],"special_decode":["<special>",""]},
+{"text":"<special>hello world<special>","ids":[8,1,3,2,8],"decode":["<special>hello world<special>","hello world"],"stream":[{"steps":["<special>","hello"," ","world","<special>"],"finish":null},{"steps":[null,"hello"," ","world",null],"finish":null}],"special_ids":[8,1,3,2,8],"special_decode":["<special>hello world<special>","hello world"]},
+{"text":" <special> ","ids":[3,8,3],"decode":[" <special> ","  "],"stream":[{"steps":[" ","<special>"," "],"finish":null},{"steps":[" ",null," "],"finish":null}],"special_ids":[3,8,3],"special_decode":[" <special> ","  "]}
+],
+"prefixes": [
+{"text":"hello 😀 北京!","ids":[1,3,7,3,5,6,0],"prefixes":[{"decode":"hello","partial":false,"unstable":false},{"decode":"hello ","partial":false,"unstable":false},{"decode":"hello 😀","partial":false,"unstable":false},{"decode":"hello 😀 ","partial":false,"unstable":false},{"decode":"hello 😀 北","partial":false,"unstable":false},{"decode":"hello 😀 北京","partial":false,"unstable":false},{"decode":"hello 😀 北京<unk>","partial":false,"unstable":false}],"streams":[{"steps":["hello"," ","😀"," ","北","京","<unk>"],"finish":null},{"steps":[" ","😀"," ","北","京","<unk>"],"finish":null},{"steps":["😀"," ","北","京","<unk>"],"finish":null},{"steps":[" ","北","京","<unk>"],"finish":null},{"steps":["北","京","<unk>"],"finish":null},{"steps":["京","<unk>"],"finish":null},{"steps":["<unk>"],"finish":null}]},
+{"text":"café 北京 😀","ids":[4,3,5,6,3,7],"prefixes":[{"decode":"café","partial":false,"unstable":false},{"decode":"café ","partial":false,"unstable":false},{"decode":"café 北","partial":false,"unstable":false},{"decode":"café 北京","partial":false,"unstable":false},{"decode":"café 北京 ","partial":false,"unstable":false},{"decode":"café 北京 😀","partial":false,"unstable":false}],"streams":[{"steps":["café"," ","北","京"," ","😀"],"finish":null},{"steps":[" ","北","京"," ","😀"],"finish":null},{"steps":["北","京"," ","😀"],"finish":null},{"steps":["京"," ","😀"],"finish":null},{"steps":[" ","😀"],"finish":null},{"steps":["😀"],"finish":null}]}
+],
+"segments": [
+{"segments":[],"plain":{"ids":[]},"special":{"ids":[]},"fast":null},
+{"segments":[["<special>hello",true],[" world<special>",true]],"plain":{"ids":[8,1,3,2,8]},"special":{"ids":[8,1,3,2,8]},"fast":null},
+{"segments":[["<special>hello",true],[" world<special>",false]],"plain":{"ids":[8,1,3,2,0]},"special":{"ids":[8,1,3,2,0]},"fast":null},
+{"segments":[["hello world",true]],"plain":{"ids":[1,3,2]},"special":{"ids":[1,3,2]},"fast":null},
+{"segments":[["hello world",false]],"plain":{"ids":[1,3,2]},"special":{"ids":[1,3,2]},"fast":null},
+{"segments":[["He said hello",false],[" world",true]],"plain":{"ids":[0,3,0,3,1,3,2]},"special":{"ids":[0,3,0,3,1,3,2]},"fast":null},
+{"segments":[["<special>",true]],"plain":{"ids":[8]},"special":{"ids":[8]},"fast":null},
+{"segments":[["<special>",false]],"plain":{"ids":[0]},"special":{"ids":[0]},"fast":null},
+{"segments":[["café 北京 😀",false],["",true],["!",false]],"plain":{"ids":[4,3,5,6,3,7,0]},"special":{"ids":[4,3,5,6,3,7,0]},"fast":null}
+],
+"sequences": [
+{"ids":[0,1,2,3,4,5,6,7,8],"decode":["<unk>helloworld café北京😀<special>","<unk>helloworld café北京😀"],"unstable":[false,false],"stream":[{"steps":["<unk>","hello","world"," ","café","北","京","😀","<special>"],"finish":null},{"steps":["<unk>","hello","world"," ","café","北","京","😀",null],"finish":null}]},
+{"ids":[8,7,6,5,4,3,2,1,0],"decode":["<special>😀京北café worldhello<unk>","😀京北café worldhello<unk>"],"unstable":[false,false],"stream":[{"steps":["<special>","😀","京","北","café"," ","world","hello","<unk>"],"finish":null},{"steps":[null,"😀","京","北","café"," ","world","hello","<unk>"],"finish":null}]}
+],
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}

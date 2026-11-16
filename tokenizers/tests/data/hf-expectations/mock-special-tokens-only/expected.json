@@ -1,0 +1,5 @@
+{
+"model_dir": "sample-models/mock-special-tokens-only",
+"load_error": "Error loading tokenizer: missing field `single_word` at line 4 column 52",
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}

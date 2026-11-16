@@ -1,0 +1,67 @@
+{
+"model_dir": "hf-expectations/overlapping-specials-wordlevel",
+"vocab_size": 5,
+"token_id_bound": 17,
+"special_token_ids": [0,2,14,15],
+"special_tokens": ["<unk>","|〉","〈|","〈|EOS|〉"],
+"num_special_tokens_added": 0,
+"validate_prefix_cache": true,
+"validate_segment_prefix_cache": true,
+"fast_loads": false,
+"token_to_id": {"":null," ":null,"<missing>":null,"<special>":null,"<unk>":0,"He":null,"hello":null,"world":null,"|〉":15,"〈|":14,"〈|EOS|〉":2},
+"added_tokens": [
+{"id":0,"content":"<unk>","special":true,"encode":{"ids":[0]},"decode":["<unk>",""]},
+{"id":2,"content":"〈|EOS|〉","special":true,"encode":{"ids":[2]},"decode":["〈|EOS|〉",""]},
+{"id":14,"content":"〈|","special":true,"encode":{"ids":[14]},"decode":["〈|",""]},
+{"id":15,"content":"|〉","special":true,"encode":{"ids":[15]},"decode":["|〉",""]}
+],
+"texts": [
+{"text":"","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""]},
+{"text":" ","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"hello world","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"hello worlds","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"Hello, world!","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"  leading and trailing  ","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"café 北京 😀","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"é\n\t","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"naïve façade — “quotes” …","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"The quick brown fox jumps over the lazy dog.","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"1234567890 3.14159 -42","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"fn main() {\n    println!(\"hi\");\n}\n","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"line1\nline2\r\nline3","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"tabs\tand nbsp","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"مرحبا بالعالم","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"こんにちは世界","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"👩‍👩‍👧‍👦 family 🇺🇸","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"� replacement","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"<special>hello<special>","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"a<|x|>b","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"UPPER lower MiXeD","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"hello 😀 北京!","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"He said hello, world. The lot.","ids":[0],"decode":["<unk>",""],"stream":[{"steps":["<unk>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[0],"special_decode":["<unk>",""]},
+{"text":"<unk>〈|EOS|〉〈||〉","ids":[0,2,14,15],"decode":["<unk> 〈|EOS|〉 〈| |〉",""],"stream":[{"steps":["<unk>"," 〈|EOS|〉"," 〈|"," |〉"],"finish":null},{"steps":[null,null,null,null],"finish":null}],"special_ids":[0,2,14,15],"special_decode":["<unk> 〈|EOS|〉 〈| |〉",""]},
+{"text":"<unk> hello 〈|EOS|〉 hello 〈| hello |〉","ids":[0,0,2,0,14,0,15],"decode":["<unk> <unk> 〈|EOS|〉 <unk> 〈| <unk> |〉",""],"stream":[{"steps":["<unk>"," <unk>"," 〈|EOS|〉"," <unk>"," 〈|"," <unk>"," |〉"],"finish":null},{"steps":[null,null,null,null,null,null,null],"finish":null}],"special_ids":[0,0,2,0,14,0,15],"special_decode":["<unk> <unk> 〈|EOS|〉 <unk> 〈| <unk> |〉",""]},
+{"text":"<unk>hello world<unk>","ids":[0,0,0],"decode":["<unk> <unk> <unk>",""],"stream":[{"steps":["<unk>"," <unk>"," <unk>"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[0,0,0],"special_decode":["<unk> <unk> <unk>",""]},
+{"text":" <unk> ","ids":[0,0,0],"decode":["<unk> <unk> <unk>",""],"stream":[{"steps":["<unk>"," <unk>"," <unk>"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[0,0,0],"special_decode":["<unk> <unk> <unk>",""]}
+],
+"prefixes": [
+{"text":"hello 😀 北京!","ids":[0],"prefixes":[{"decode":"<unk>","partial":false,"unstable":false}],"streams":[{"steps":["<unk>"],"finish":null}]},
+{"text":"café 北京 😀","ids":[0],"prefixes":[{"decode":"<unk>","partial":false,"unstable":false}],"streams":[{"steps":["<unk>"],"finish":null}]}
+],
+"segments": [
+{"segments":[],"plain":{"ids":[]},"special":{"ids":[]},"fast":null},
+{"segments":[["<unk>hello",true],[" world<unk>",true]],"plain":{"ids":[0,0,0,0]},"special":{"ids":[0,0,0,0]},"fast":null},
+{"segments":[["<unk>hello",true],[" world<unk>",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["hello world",true]],"plain":{"ids":[0]},"special":{"ids":[0]},"fast":null},
+{"segments":[["hello world",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["He said hello",false],[" world",true]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["<unk>〈|EOS|〉〈||〉",true]],"plain":{"ids":[0,2,14,15]},"special":{"ids":[0,2,14,15]},"fast":null},
+{"segments":[["<unk>〈|EOS|〉〈||〉",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["café 北京 😀",false],["",true],["!",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null}
+],
+"sequences": [
+{"ids":[0,1,2,3,4,5,6,7,8,9,10,11],"decode":["<unk> 〈|EOS|〉",""],"unstable":[false,false],"stream":[{"steps":["<unk>",null," 〈|EOS|〉",null,null,null,null,null,null,null,null,null],"finish":null},{"steps":[null,null,null,null,null,null,null,null,null,null,null,null],"finish":null}]},
+{"ids":[11,10,9,8,7,6,5,4,3,2,1,0],"decode":["〈|EOS|〉 <unk>",""],"unstable":[false,false],"stream":[{"steps":[null,null,null,null,null,null,null,null,null,"〈|EOS|〉",null," <unk>"],"finish":null},{"steps":[null,null,null,null,null,null,null,null,null,null,null,null],"finish":null}]}
+],
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}

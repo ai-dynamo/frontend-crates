@@ -1,0 +1,66 @@
+{
+"model_dir": "hf-expectations/bert-wordpiece",
+"vocab_size": 18,
+"token_id_bound": 18,
+"special_token_ids": [0,1,2],
+"special_tokens": ["[CLS]","[SEP]","[UNK]"],
+"num_special_tokens_added": 2,
+"validate_prefix_cache": true,
+"validate_segment_prefix_cache": true,
+"fast_loads": false,
+"token_to_id": {"":null," ":null,"<missing>":null,"<special>":null,"He":null,"[CLS]":1,"[SEP]":2,"[UNK]":0,"hello":3,"world":4},
+"added_tokens": [
+{"id":0,"content":"[UNK]","special":true,"encode":{"ids":[0]},"decode":["[UNK]",""]},
+{"id":1,"content":"[CLS]","special":true,"encode":{"ids":[1]},"decode":["[CLS]",""]},
+{"id":2,"content":"[SEP]","special":true,"encode":{"ids":[2]},"decode":["[SEP]",""]}
+],
+"texts": [
+{"text":"","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[1,2],"special_decode":["[CLS] [SEP]",""]},
+{"text":" ","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[1,2],"special_decode":["[CLS] [SEP]",""]},
+{"text":"hello world","ids":[3,4],"decode":["hello world","hello world"],"stream":[{"steps":["hello"," world"],"finish":null},{"steps":["hello"," world"],"finish":null}],"special_ids":[1,3,4,2],"special_decode":["[CLS] hello world [SEP]","hello world"]},
+{"text":"hello worlds","ids":[3,4,6],"decode":["hello worlds","hello worlds"],"stream":[{"steps":["hello"," world","s"],"finish":null},{"steps":["hello"," world","s"],"finish":null}],"special_ids":[1,3,4,6,2],"special_decode":["[CLS] hello worlds [SEP]","hello worlds"]},
+{"text":"Hello, world!","ids":[3,9,4,10],"decode":["hello, world!","hello, world!"],"stream":[{"steps":["hello",","," world","!"],"finish":null},{"steps":["hello",","," world","!"],"finish":null}],"special_ids":[1,3,9,4,10,2],"special_decode":["[CLS] hello, world! [SEP]","hello, world!"]},
+{"text":"  leading and trailing  ","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[1,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"café 北京 😀","ids":[5,7,8,0],"decode":["cafe 北 京 [UNK]","cafe 北 京"],"stream":[{"steps":["cafe"," 北"," 京"," [UNK]"],"finish":null},{"steps":["cafe"," 北"," 京",null],"finish":null}],"special_ids":[1,5,7,8,0,2],"special_decode":["[CLS] cafe 北 京 [UNK] [SEP]","cafe 北 京"]},
+{"text":"é\n\t","ids":[0],"decode":["[UNK]",""],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[1,0,2],"special_decode":["[CLS] [UNK] [SEP]",""]},
+{"text":"naïve façade — “quotes” …","ids":[0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null,null,null,null,null],"finish":null}],"special_ids":[1,0,0,0,0,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"The quick brown fox jumps over the lazy dog.","ids":[15,16,0,0,0,0,15,0,17,11],"decode":["the quick [UNK] [UNK] [UNK] [UNK] the [UNK] dog.","the quick the dog."],"stream":[{"steps":["the"," quick"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," the"," [UNK]"," dog","."],"finish":null},{"steps":["the"," quick",null,null,null,null," the",null," dog","."],"finish":null}],"special_ids":[1,15,16,0,0,0,0,15,0,17,11,2],"special_decode":["[CLS] the quick [UNK] [UNK] [UNK] [UNK] the [UNK] dog. [SEP]","the quick the dog."]},
+{"text":"1234567890 3.14159 -42","ids":[0,0,11,0,0,0],"decode":["[UNK] [UNK]. [UNK] [UNK] [UNK]","."],"stream":[{"steps":["[UNK]"," [UNK]","."," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,".",null,null,null],"finish":null}],"special_ids":[1,0,0,11,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK]. [UNK] [UNK] [UNK] [SEP]","."]},
+{"text":"fn main() {\n    println!(\"hi\");\n}\n","ids":[0,0,0,0,0,0,10,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]! [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","!"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]","!"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null,null,null,null,"!",null,null,null,null,null,null,null],"finish":null}],"special_ids":[1,0,0,0,0,0,0,10,0,0,0,0,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]! [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [SEP]","!"]},
+{"text":"line1\nline2\r\nline3","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[1,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"tabs\tand nbsp","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[1,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"مرحبا بالعالم","ids":[0,0],"decode":["[UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"],"finish":null},{"steps":[null,null],"finish":null}],"special_ids":[1,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [SEP]",""]},
+{"text":"こんにちは世界","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[1,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"👩‍👩‍👧‍👦 family 🇺🇸","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[1,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"� replacement","ids":[0],"decode":["[UNK]",""],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[1,0,2],"special_decode":["[CLS] [UNK] [SEP]",""]},
+{"text":"<special>hello<special>","ids":[0,0,0,3,0,0,0],"decode":["[UNK] [UNK] [UNK] hello [UNK] [UNK] [UNK]","hello"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," hello"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null,"hello",null,null,null],"finish":null}],"special_ids":[1,0,0,0,3,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] hello [UNK] [UNK] [UNK] [SEP]","hello"]},
+{"text":"a<|x|>b","ids":[0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]",""],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[null,null,null,null,null,null,null],"finish":null}],"special_ids":[1,0,0,0,0,0,0,0,2],"special_decode":["[CLS] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [SEP]",""]},
+{"text":"UPPER lower MiXeD","ids":[12,13,14],"decode":["upper lower mixed","upper lower mixed"],"stream":[{"steps":["upper"," lower"," mixed"],"finish":null},{"steps":["upper"," lower"," mixed"],"finish":null}],"special_ids":[1,12,13,14,2],"special_decode":["[CLS] upper lower mixed [SEP]","upper lower mixed"]},
+{"text":"hello 😀 北京!","ids":[3,0,7,8,10],"decode":["hello [UNK] 北 京!","hello 北 京!"],"stream":[{"steps":["hello"," [UNK]"," 北"," 京","!"],"finish":null},{"steps":["hello",null," 北"," 京","!"],"finish":null}],"special_ids":[1,3,0,7,8,10,2],"special_decode":["[CLS] hello [UNK] 北 京! [SEP]","hello 北 京!"]},
+{"text":"He said hello, world. The lot.","ids":[0,0,3,9,4,11,15,0,11],"decode":["[UNK] [UNK] hello, world. the [UNK].","hello, world. the."],"stream":[{"steps":["[UNK]"," [UNK]"," hello",","," world","."," the"," [UNK]","."],"finish":null},{"steps":[null,null,"hello",","," world","."," the",null,"."],"finish":null}],"special_ids":[1,0,0,3,9,4,11,15,0,11,2],"special_decode":["[CLS] [UNK] [UNK] hello, world. the [UNK]. [SEP]","hello, world. the."]},
+{"text":"[UNK][CLS][SEP]","ids":[0,1,2],"decode":["[UNK] [CLS] [SEP]",""],"stream":[{"steps":["[UNK]"," [CLS]"," [SEP]"],"finish":null},{"steps":[null,null,null],"finish":null}],"special_ids":[1,0,1,2,2],"special_decode":["[CLS] [UNK] [CLS] [SEP] [SEP]",""]},
+{"text":"[UNK] hello [CLS] hello [SEP]","ids":[0,3,1,3,2],"decode":["[UNK] hello [CLS] hello [SEP]","hello hello"],"stream":[{"steps":["[UNK]"," hello"," [CLS]"," hello"," [SEP]"],"finish":null},{"steps":[null,"hello",null," hello",null],"finish":null}],"special_ids":[1,0,3,1,3,2,2],"special_decode":["[CLS] [UNK] hello [CLS] hello [SEP] [SEP]","hello hello"]},
+{"text":"[UNK]hello world[UNK]","ids":[0,3,4,0],"decode":["[UNK] hello world [UNK]","hello world"],"stream":[{"steps":["[UNK]"," hello"," world"," [UNK]"],"finish":null},{"steps":[null,"hello"," world",null],"finish":null}],"special_ids":[1,0,3,4,0,2],"special_decode":["[CLS] [UNK] hello world [UNK] [SEP]","hello world"]},
+{"text":" [UNK] ","ids":[0],"decode":["[UNK]",""],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[1,0,2],"special_decode":["[CLS] [UNK] [SEP]",""]}
+],
+"prefixes": [
+{"text":"hello 😀 北京!","ids":[3,0,7,8,10],"prefixes":[{"decode":"hello","partial":false,"unstable":false},{"decode":"hello [UNK]","partial":false,"unstable":false},{"decode":"hello [UNK] 北","partial":false,"unstable":false},{"decode":"hello [UNK] 北 京","partial":false,"unstable":false},{"decode":"hello [UNK] 北 京!","partial":false,"unstable":false}],"streams":[{"steps":["hello"," [UNK]"," 北"," 京","!"],"finish":null},{"steps":[" [UNK]"," 北"," 京","!"],"finish":null},{"steps":[" 北"," 京","!"],"finish":null},{"steps":[" 京","!"],"finish":null},{"steps":["!"],"finish":null}]},
+{"text":"café 北京 😀","ids":[5,7,8,0],"prefixes":[{"decode":"cafe","partial":false,"unstable":false},{"decode":"cafe 北","partial":false,"unstable":false},{"decode":"cafe 北 京","partial":false,"unstable":false},{"decode":"cafe 北 京 [UNK]","partial":false,"unstable":false}],"streams":[{"steps":["cafe"," 北"," 京"," [UNK]"],"finish":null},{"steps":[" 北"," 京"," [UNK]"],"finish":null},{"steps":[" 京"," [UNK]"],"finish":null},{"steps":[" [UNK]"],"finish":null}]}
+],
+"segments": [
+{"segments":[],"plain":{"ids":[]},"special":{"ids":[1,2]},"fast":null},
+{"segments":[["[UNK]hello",true],[" world[UNK]",true]],"plain":{"ids":[0,3,4,0]},"special":{"ids":[1,0,3,4,0,2]},"fast":null},
+{"segments":[["[UNK]hello",true],[" world[UNK]",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["hello world",true]],"plain":{"ids":[3,4]},"special":{"ids":[1,3,4,2]},"fast":null},
+{"segments":[["hello world",false]],"plain":{"ids":[3,4]},"special":{"ids":[1,3,4,2]},"fast":null},
+{"segments":[["He said hello",false],[" world",true]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["[UNK][CLS][SEP]",true]],"plain":{"ids":[0,1,2]},"special":{"ids":[1,0,1,2,2]},"fast":null},
+{"segments":[["[UNK][CLS][SEP]",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null},
+{"segments":[["café 北京 😀",false],["",true],["!",false]],"plain":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"special":{"error":"ordinary segment encoded to control-token id 0; this tokenizer cannot keep request text out of the control vocabulary"},"fast":null}
+],
+"sequences": [
+{"ids":[0,1,2,3,4,5,6,7,8,9,10,11],"decode":["[UNK] [CLS] [SEP] hello world cafes 北 京,!.","hello world cafes 北 京,!."],"unstable":[false,false],"stream":[{"steps":["[UNK]"," [CLS]"," [SEP]"," hello"," world"," cafe","s"," 北"," 京",",","!","."],"finish":null},{"steps":[null,null,null,"hello"," world"," cafe","s"," 北"," 京",",","!","."],"finish":null}]},
+{"ids":[11,10,9,8,7,6,5,4,3,2,1,0],"decode":[".!, 京 北s cafe world hello [SEP] [CLS] [UNK]",".!, 京 北s cafe world hello"],"unstable":[false,false],"stream":[{"steps":[".","!",","," 京"," 北","s"," cafe"," world"," hello"," [SEP]"," [CLS]"," [UNK]"],"finish":null},{"steps":[".","!",","," 京"," 北","s"," cafe"," world"," hello",null,null,null],"finish":null}]}
+],
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}

@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "truncation": null,
+  "padding": null,
+  "normalizer": null,
+  "pre_tokenizer": null,
+  "post_processor": null,
+  "decoder": {
+    "type": "Fuse"
+  },
+  "added_tokens": [
+    {
+      "id": 1,
+      "content": "<think>",
+      "special": false,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    }
+  ],
+  "model": {
+    "type": "BPE",
+    "merges": [],
+    "unk_token": "<unk>",
+    "vocab": {
+      "<unk>": 0,
+      "<think>": 1,
+      "<": 2,
+      "t": 3,
+      "h": 4,
+      "i": 5,
+      "n": 6,
+      "k": 7,
+      ">": 8
+    }
+  }
+}

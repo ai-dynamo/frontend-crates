@@ -1,0 +1,72 @@
+{
+"model_dir": "hf-expectations/byte-fallback-bpe-partial-alphabet",
+"vocab_size": 7,
+"token_id_bound": 7,
+"special_token_ids": [6],
+"special_tokens": ["<eos>"],
+"num_special_tokens_added": 0,
+"validate_prefix_cache": true,
+"validate_segment_prefix_cache": true,
+"fast_loads": true,
+"token_to_id": {"":null," ":null,"<eos>":6,"<missing>":null,"<special>":null,"He":null,"hello":null,"world":null},
+"added_tokens": [
+{"id":6,"content":"<eos>","special":true,"encode":{"ids":[6]},"decode":["<eos>",""]}
+],
+"texts": [
+{"text":"","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":" ","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"hello world","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"hello worlds","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"Hello, world!","ids":[5],"decode":["!","!"],"stream":[{"steps":["!"],"finish":null},{"steps":["!"],"finish":null}],"special_ids":[5],"special_decode":["!","!"],"fast":{"ids":[5],"decode":["!","!"],"stream":[{"steps":["!"],"finish":null},{"steps":["!"],"finish":null}]}},
+{"text":"  leading and trailing  ","ids":[0,0,0],"decode":["aaa","aaa"],"stream":[{"steps":[null,null,null],"finish":"aaa"},{"steps":[null,null,null],"finish":"aaa"}],"special_ids":[0,0,0],"special_decode":["aaa","aaa"],"fast":{"ids":[0,0,0],"decode":["aaa","aaa"],"stream":[{"steps":[null,null,null],"finish":"aaa"},{"steps":[null,null,null],"finish":"aaa"}]}},
+{"text":"café 北京 😀","ids":[0,2,3],"decode":["aé","aé"],"stream":[{"steps":[null,null,null],"finish":"aé"},{"steps":[null,null,null],"finish":"aé"}],"special_ids":[0,2,3],"special_decode":["aé","aé"],"fast":{"ids":[0,2,3],"decode":["aé","aé"],"stream":[{"steps":[null,null,null],"finish":"aé"},{"steps":[null,null,null],"finish":"aé"}]}},
+{"text":"é\n\t","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"naïve façade — “quotes” …","ids":[0,0,0],"decode":["aaa","aaa"],"stream":[{"steps":[null,null,null],"finish":"aaa"},{"steps":[null,null,null],"finish":"aaa"}],"special_ids":[0,0,0],"special_decode":["aaa","aaa"],"fast":{"ids":[0,0,0],"decode":["aaa","aaa"],"stream":[{"steps":[null,null,null],"finish":"aaa"},{"steps":[null,null,null],"finish":"aaa"}]}},
+{"text":"The quick brown fox jumps over the lazy dog.","ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}],"special_ids":[0],"special_decode":["a","a"],"fast":{"ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}]}},
+{"text":"1234567890 3.14159 -42","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"fn main() {\n    println!(\"hi\");\n}\n","ids":[0,5],"decode":["a!","a!"],"stream":[{"steps":[null,"a!"],"finish":null},{"steps":[null,"a!"],"finish":null}],"special_ids":[0,5],"special_decode":["a!","a!"],"fast":{"ids":[0,5],"decode":["a!","a!"],"stream":[{"steps":[null,"a!"],"finish":null},{"steps":[null,"a!"],"finish":null}]}},
+{"text":"line1\nline2\r\nline3","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"tabs\tand nbsp","ids":[0,0],"decode":["aa","aa"],"stream":[{"steps":[null,null],"finish":"aa"},{"steps":[null,null],"finish":"aa"}],"special_ids":[0,0],"special_decode":["aa","aa"],"fast":{"ids":[0,0],"decode":["aa","aa"],"stream":[{"steps":[null,null],"finish":"aa"},{"steps":[null,null],"finish":"aa"}]}},
+{"text":"مرحبا بالعالم","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"こんにちは世界","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"👩‍👩‍👧‍👦 family 🇺🇸","ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}],"special_ids":[0],"special_decode":["a","a"],"fast":{"ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}]}},
+{"text":"� replacement","ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}],"special_ids":[0],"special_decode":["a","a"],"fast":{"ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}]}},
+{"text":"<special>hello<special>","ids":[0,0],"decode":["aa","aa"],"stream":[{"steps":[null,null],"finish":"aa"},{"steps":[null,null],"finish":"aa"}],"special_ids":[0,0],"special_decode":["aa","aa"],"fast":{"ids":[0,0],"decode":["aa","aa"],"stream":[{"steps":[null,null],"finish":"aa"},{"steps":[null,null],"finish":"aa"}]}},
+{"text":"a<|x|>b","ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}],"special_ids":[0],"special_decode":["a","a"],"fast":{"ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}]}},
+{"text":"UPPER lower MiXeD","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""],"fast":{"ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}]}},
+{"text":"hello 😀 北京!","ids":[5],"decode":["!","!"],"stream":[{"steps":["!"],"finish":null},{"steps":["!"],"finish":null}],"special_ids":[5],"special_decode":["!","!"],"fast":{"ids":[5],"decode":["!","!"],"stream":[{"steps":["!"],"finish":null},{"steps":["!"],"finish":null}]}},
+{"text":"He said hello, world. The lot.","ids":[0],"decode":["a","a"],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}],"special_ids":[0],"special_decode":["a","a"],"fast":{"ids":[0,4],"decode":["a hello","a hello"],"stream":[{"steps":[null,"a hello"],"finish":null},{"steps":[null,"a hello"],"finish":null}]}},
+{"text":"<eos>","ids":[6],"decode":["<eos>",""],"stream":[{"steps":["<eos>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[6],"special_decode":["<eos>",""],"fast":{"ids":[6],"decode":["<eos>",""],"stream":[{"steps":["<eos>"],"finish":null},{"steps":[null],"finish":null}]}},
+{"text":"<eos>","ids":[6],"decode":["<eos>",""],"stream":[{"steps":["<eos>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[6],"special_decode":["<eos>",""],"fast":{"ids":[6],"decode":["<eos>",""],"stream":[{"steps":["<eos>"],"finish":null},{"steps":[null],"finish":null}]}},
+{"text":"<eos>hello world<eos>","ids":[6,6],"decode":["<eos><eos>",""],"stream":[{"steps":["<eos>","<eos>"],"finish":null},{"steps":[null,null],"finish":null}],"special_ids":[6,6],"special_decode":["<eos><eos>",""],"fast":{"ids":[6,6],"decode":["<eos><eos>",""],"stream":[{"steps":["<eos>","<eos>"],"finish":null},{"steps":[null,null],"finish":null}]}},
+{"text":" <eos> ","ids":[6],"decode":["<eos>",""],"stream":[{"steps":["<eos>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[6],"special_decode":["<eos>",""],"fast":{"ids":[6],"decode":["<eos>",""],"stream":[{"steps":["<eos>"],"finish":null},{"steps":[null],"finish":null}]}}
+],
+"prefixes": [
+{"text":"hello 😀 北京!","ids":[5],"prefixes":[{"decode":"!","partial":false,"unstable":false}],"streams":[{"steps":["!"],"finish":null}]},
+{"text":"café 北京 😀","ids":[0,2,3],"prefixes":[{"decode":"a","partial":false,"unstable":true},{"decode":"��","partial":true,"unstable":true},{"decode":"aé","partial":false,"unstable":true}],"streams":[{"steps":[null,null,null],"finish":"aé"},{"steps":[null,null],"finish":"é"},{"steps":[null],"finish":null}]}
+],
+"segments": [
+{"segments":[],"plain":{"ids":[]},"special":{"ids":[]},"fast":{"ids":[]}},
+{"segments":[["<eos>hello",true],[" world<eos>",true]],"plain":{"ids":[6,6]},"special":{"ids":[6,6]},"fast":{"ids":[6,6]}},
+{"segments":[["<eos>hello",true],[" world<eos>",false]],"plain":{"ids":[6]},"special":{"ids":[6]},"fast":{"error":"ordinary segment encoded to control-token id 6; this tokenizer cannot keep request text out of the control vocabulary"}},
+{"segments":[["hello world",true]],"plain":{"ids":[]},"special":{"ids":[]},"fast":{"ids":[]}},
+{"segments":[["hello world",false]],"plain":{"ids":[]},"special":{"ids":[]},"fast":{"ids":[]}},
+{"segments":[["He said hello",false],[" world",true]],"plain":{"ids":[0]},"special":{"ids":[0]},"fast":{"ids":[0,4]}},
+{"segments":[["<eos>",true]],"plain":{"ids":[6]},"special":{"ids":[6]},"fast":{"ids":[6]}},
+{"segments":[["<eos>",false]],"plain":{"ids":[]},"special":{"ids":[]},"fast":{"error":"ordinary segment encoded to control-token id 6; this tokenizer cannot keep request text out of the control vocabulary"}},
+{"segments":[["café 北京 😀",false],["",true],["!",false]],"plain":{"ids":[0,2,3,5]},"special":{"ids":[0,2,3,5]},"fast":{"ids":[0,2,3,5]}}
+],
+"sequences": [
+{"ids":[0,1,2,3,4,5,6],"decode":["���� hello!<eos>","���� hello!"],"unstable":[false,false],"stream":[{"steps":[null,null,null,null,"���� hello","!","<eos>"],"finish":null},{"steps":[null,null,null,null,"���� hello","!",null],"finish":null}]},
+{"ids":[6,5,4,3,2,1,0],"decode":["<eos>! hello����","! hello����"],"unstable":[true,true],"stream":[{"steps":["<eos>","!"," hello",null,null,null,null],"finish":"����"},{"steps":[null,"!"," hello",null,null,null,null],"finish":"����"}]},
+{"ids":[0,1,4],"decode":["�� hello","�� hello"],"unstable":[false,false],"stream":[{"steps":[null,null,"�� hello"],"finish":null},{"steps":[null,null,"�� hello"],"finish":null}]},
+{"ids":[2,3,1,4],"decode":["��� hello","��� hello"],"unstable":[false,false],"stream":[{"steps":[null,null,null,"��� hello"],"finish":null},{"steps":[null,null,null,"��� hello"],"finish":null}]},
+{"ids":[2,3,5],"decode":["é!","é!"],"unstable":[false,false],"stream":[{"steps":[null,null,"é!"],"finish":null},{"steps":[null,null,"é!"],"finish":null}]},
+{"ids":[0],"decode":["a","a"],"unstable":[true,true],"stream":[{"steps":[null],"finish":"a"},{"steps":[null],"finish":"a"}]},
+{"ids":[2,3],"decode":["é","é"],"unstable":[true,true],"stream":[{"steps":[null,null],"finish":"é"},{"steps":[null,null],"finish":"é"}]},
+{"ids":[2],"decode":["�","�"],"unstable":[true,true],"stream":[{"steps":[null],"finish":"�"},{"steps":[null],"finish":"�"}]},
+{"ids":[0,1],"decode":["��","��"],"unstable":[true,true],"stream":[{"steps":[null,null],"finish":"��"},{"steps":[null,null],"finish":"��"}]},
+{"ids":[0,6,1,4],"decode":["a<eos>� hello","�� hello"],"unstable":[false,false],"stream":[{"steps":[null,"a<eos>",null,"� hello"],"finish":null},{"steps":[null,null,null,"�� hello"],"finish":null}]}
+],
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}

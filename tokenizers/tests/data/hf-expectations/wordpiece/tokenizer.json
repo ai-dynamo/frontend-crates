@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "truncation": null,
+  "padding": null,
+  "added_tokens": [
+    {
+      "id": 8,
+      "content": "<special>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    }
+  ],
+  "normalizer": null,
+  "pre_tokenizer": {
+    "type": "Whitespace"
+  },
+  "post_processor": null,
+  "decoder": {
+    "type": "WordPiece",
+    "prefix": "##",
+    "cleanup": true
+  },
+  "model": {
+    "type": "WordPiece",
+    "unk_token": "[UNK]",
+    "continuing_subword_prefix": "##",
+    "max_input_chars_per_word": 100,
+    "vocab": {
+      "[UNK]": 0,
+      "hello": 1,
+      "world": 2,
+      "##s": 3,
+      "café": 4,
+      "北": 5,
+      "京": 6,
+      "😀": 7
+    }
+  }
+}
