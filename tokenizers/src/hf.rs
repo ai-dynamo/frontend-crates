@@ -1,31 +1,54 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashSet, path::Path, sync::OnceLock};
+//! Hugging Face `tokenizer.json` backend, on the `tokenizers` 1.x pipeline.
+//!
+//! The 1.x [`PipelineTokenizer`] is read-only: it encodes and decodes what a `tokenizer.json`
+//! describes and cannot be changed after it is built. Everything this backend adjusts is
+//! therefore done to the JSON before the pipeline is read from it.
 
-use tokenizers::pre_tokenizers::{PreTokenizerWrapper, metaspace::PrependScheme};
-use tokenizers::tokenizer::{
-    AddedToken, AddedVocabulary, PostProcessor as _, Tokenizer as HfTokenizer,
+use std::{collections::HashSet, path::Path};
+
+use anyhow::{Context as _, ensure};
+use serde_json::Value;
+use tokenizers::{
+    DecoderRuntime,
+    normalizers::metaspace::PrependBehavior,
+    pipeline::{
+        EncodeOptions, Encoding as PipelineEncoding, Inputs, Override, PipelineModel,
+        PipelineNormalizer, PipelineToken, PipelineTokenizer,
+    },
 };
 
 use super::{
-    Encoding, Error, Result, TokenIdType, TokenizerOptions,
+    EncodeSegment, Encoding, Error, Result, TokenIdType, TokenizerOptions,
     traits::{DecodeResult, Decoder, Encoder, PrefixSplitRules, Tokenizer},
 };
 
+/// The library that reads, encodes and decodes, as errors name it.
+const RUNTIME: &str = "Hugging Face tokenizers 1.x";
+
 pub struct HuggingFaceTokenizer {
-    tokenizer: HfTokenizer,
-    segment_tokenizers: OnceLock<(HfTokenizer, HfTokenizer)>,
+    pipeline: PipelineTokenizer,
+    /// The same configuration with no added vocabulary, which encodes the ordinary segments of
+    /// [`Encoder::encode_segments`]. `None` on a tokenizer loaded only to decode.
+    ordinary: Option<PipelineTokenizer>,
+    /// `<0xNN>` ids under a ByteFallback decoder. A trailing run of them can still decode
+    /// differently once the next byte arrives.
     byte_fallback_ids: HashSet<u32>,
     special_ids: HashSet<u32>,
     /// Every added-token id, `special: true` or not. An ordinary segment of
     /// [`Encoder::encode_segments`] must never produce one of these; see
     /// that method.
     added_ids: HashSet<u32>,
+    special_tokens: Vec<String>,
+    token_id_bound: Option<usize>,
     /// Construction-time options; see [`TokenizerOptions`]. Defaults preserve
     /// the historical behavior (e.g. `add_special_tokens: false`). Set via
     /// [`Tokenizer::with_options`].
     options: TokenizerOptions,
+    /// Where the configuration came from, for errors.
+    source: String,
 }
 
 impl HuggingFaceTokenizer {
@@ -38,84 +61,236 @@ impl HuggingFaceTokenizer {
     /// a sibling `tokenizer_config.json`'s `added_tokens_decoder`. Without
     /// this, some releases (Qwen2-VL-2B's `<|image_pad|>`) BPE-shatter and
     /// silently break MM-aware routing. The merge is idempotent.
-    pub fn from_file(model_name: &str) -> Result<Self> {
-        let mut tokenizer = HfTokenizer::from_file(model_name)
-            .map_err(|err| Error::msg(format!("Error loading tokenizer: {}", err)))?;
-
-        if let Some(parent) = Path::new(model_name).parent() {
-            merge_special_tokens_from_config(&mut tokenizer, parent);
-        }
-
-        Ok(Self::from_tokenizer(tokenizer))
+    ///
+    /// The file's `truncation` and `padding` blocks are never applied, as Python
+    /// `transformers` ignores them unless a call asks for them.
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self> {
+        Self::load(path.as_ref(), true)
     }
 
-    pub fn from_tokenizer(tokenizer: HfTokenizer) -> Self {
+    /// [`Self::from_file`] for a tokenizer that only decodes and answers vocabulary lookups, as
+    /// [`FastTokenizer`](crate::FastTokenizer) uses it. It skips the second pipeline that
+    /// segmented encoding needs.
+    pub(crate) fn decoder_from_file(path: &Path) -> Result<Self> {
+        Self::load(path, false)
+    }
+
+    /// Build from a parsed `tokenizer.json`. No `tokenizer_config.json` is consulted; apply
+    /// [`merge_special_tokens_from_config`] first if the model has one.
+    pub fn from_json(config: Value) -> Result<Self> {
+        Self::build(config, "tokenizer configuration".to_string(), true)
+    }
+
+    fn load(path: &Path, segments: bool) -> Result<Self> {
+        let source = path.display().to_string();
+        let contents = std::fs::read_to_string(path)
+            .map_err(|err| Error::msg(format!("Error loading tokenizer {source}: {err}")))?;
+        let mut config: Value = serde_json::from_str(&contents).map_err(|err| {
+            crate::log_json_err(&source, &contents, &err);
+            Error::msg(format!("Error loading tokenizer {source}: {err}"))
+        })?;
+        if let Some(parent) = path.parent() {
+            merge_special_tokens_from_config(&mut config, parent);
+        }
+        Self::build(config, source, segments)
+    }
+
+    fn build(mut config: Value, source: String, segments: bool) -> Result<Self> {
+        let added_contents: Vec<String> = config
+            .get("added_tokens")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(|token| token.get("content").and_then(Value::as_str))
+            .filter(|content| !content.is_empty())
+            .map(str::to_owned)
+            .collect();
+
+        tokenizers::canonicalize_value(&mut config)
+            .with_context(|| format!("failed to convert {source} for {RUNTIME}"))?;
+        let pipeline = read_pipeline(&config, &source)?;
+
+        // Every added token must keep its spelling. The pipeline keys a normalized added token
+        // by its normalized form: the original spelling has no id, and a special one is skipped
+        // on decode where its text used to be kept. Reject that rather than change the ids sent
+        // to the model or the text returned.
+        let added_vocabulary = pipeline.get_added_vocabulary();
+        for content in &added_contents {
+            let round_trips = pipeline.token_to_id(content).is_some_and(|id| {
+                added_vocabulary
+                    .id_to_token_bytes(id)
+                    .is_some_and(|(bytes, _)| bytes == content.as_bytes())
+            });
+            ensure!(
+                round_trips,
+                "unsupported added token {content:?} in {source}: {RUNTIME} changes its id or decoded form"
+            );
+        }
+
+        // The pipeline decodes byte-level BPE straight from bytes, bypassing the decoder.
+        // Only accept configurations for which that shortcut preserves the decoded text.
+        if matches!(pipeline.get_model(), PipelineModel::BPE(bpe) if bpe.is_byte_level()) {
+            let supported = match pipeline.get_decoder() {
+                Some(DecoderRuntime::ByteLevel(_)) => true,
+                Some(DecoderRuntime::Sequence(decoders)) => {
+                    matches!(decoders.as_slice(), [DecoderRuntime::ByteLevel(_)])
+                }
+                _ => false,
+            };
+            ensure!(
+                supported,
+                "unsupported byte-level BPE decoder in {source}: {RUNTIME} requires a direct ByteLevel decoder or a sequence containing only that decoder"
+            );
+        }
+
+        if pipeline.get_truncation().is_some() {
+            tracing::warn!(
+                target: "tokenizer",
+                source = %source,
+                "tokenizer.json declares a truncation config; ignoring it so prompts are not silently clipped"
+            );
+        }
+        if pipeline.get_padding().is_some() {
+            tracing::warn!(
+                target: "tokenizer",
+                source = %source,
+                "tokenizer.json declares a padding config; ignoring it for online tokenization"
+            );
+        }
+
         // ByteFallback decodes a contiguous run atomically: one invalid byte
         // replaces the entire run, including previously valid ASCII/UTF-8.
         // Discover the at-most-256 byte IDs once, not on the request hot path.
-        let has_byte_fallback = tokenizer.get_decoder().is_some_and(|decoder| {
-            fn contains(value: &serde_json::Value) -> bool {
-                value["type"] == "ByteFallback"
-                    || value["decoders"]
-                        .as_array()
-                        .is_some_and(|items| items.iter().any(contains))
+        fn has_byte_fallback(decoder: &DecoderRuntime) -> bool {
+            match decoder {
+                DecoderRuntime::ByteFallback(_) => true,
+                DecoderRuntime::Sequence(decoders) => decoders.iter().any(has_byte_fallback),
+                _ => false,
             }
-            serde_json::to_value(decoder).is_ok_and(|value| contains(&value))
-        });
-        let byte_fallback_ids = if has_byte_fallback {
-            tokenizer
-                .get_vocab(true)
-                .into_iter()
-                .filter_map(|(token, id)| {
-                    (token.len() == 6
-                        && token.starts_with("<0x")
-                        && token.ends_with('>')
-                        && u8::from_str_radix(&token[3..5], 16).is_ok())
-                    .then_some(id)
-                })
-                .collect()
-        } else {
-            HashSet::new()
-        };
-        let added_tokens = tokenizer.get_added_tokens_decoder();
+        }
+        let has_byte_fallback = pipeline.get_decoder().is_some_and(has_byte_fallback);
+        let mut byte_fallback_ids = HashSet::new();
+        let mut token_id_bound = None;
+        for (token, id) in pipeline.get_vocab(true) {
+            token_id_bound = token_id_bound.max(Some(id as usize + 1));
+            if has_byte_fallback
+                && token.len() == 6
+                && token.starts_with("<0x")
+                && token.ends_with('>')
+                && u8::from_str_radix(&token[3..5], 16).is_ok()
+            {
+                byte_fallback_ids.insert(id);
+            }
+        }
+
+        let added_tokens = added_vocabulary.get_added_tokens_decoder();
         let special_ids = added_tokens
             .iter()
             .filter_map(|(id, token)| token.special.then_some(*id))
             .collect();
+        let mut special_tokens: Vec<String> = added_tokens
+            .values()
+            .filter(|token| token.special)
+            .map(|token| token.content.clone())
+            .collect();
+        special_tokens.sort();
+        special_tokens.dedup();
         let added_ids = added_tokens.into_keys().collect();
-        HuggingFaceTokenizer {
-            tokenizer,
-            segment_tokenizers: OnceLock::new(),
+
+        let ordinary = if segments {
+            config["added_tokens"] = Value::Array(Vec::new());
+            Some(read_pipeline(&config, &source).with_context(|| {
+                format!("failed to build the pipeline for ordinary segments of {source}")
+            })?)
+        } else {
+            None
+        };
+
+        Ok(HuggingFaceTokenizer {
+            pipeline,
+            ordinary,
             byte_fallback_ids,
             special_ids,
             added_ids,
+            special_tokens,
+            token_id_bound,
             options: TokenizerOptions::default(),
+            source,
+        })
+    }
+
+    /// The contents of the added tokens marked `special`, sorted: the strings a prefix cache
+    /// must treat as atomic. See [`CachedTokenizer`](crate::CachedTokenizer).
+    pub fn special_tokens(&self) -> &[String] {
+        &self.special_tokens
+    }
+
+    /// One more than the largest token id, added tokens included. Ids can have gaps, so
+    /// [`Tokenizer::vocab_size`] is not this bound.
+    pub fn token_id_bound(&self) -> Option<usize> {
+        self.token_id_bound
+    }
+
+    /// Truncation and padding stay off: they belong to a batching layer, and the prefix cache
+    /// would otherwise apply them to each separately encoded piece.
+    fn encode_options(&self, add_special_tokens: bool) -> EncodeOptions {
+        EncodeOptions {
+            add_special_tokens,
+            encode_special_tokens: false,
+            padding: Override::Off,
+            truncation: Override::Off,
         }
     }
 
-    /// Wrap an already-loaded `HfTokenizer` and merge in the sibling
-    /// `tokenizer_config.json` special tokens; see [`Self::from_file`].
-    pub fn from_tokenizer_with_model_dir(tokenizer: HfTokenizer, model_dir: &Path) -> Self {
-        let mut tokenizer = tokenizer;
-        merge_special_tokens_from_config(&mut tokenizer, model_dir);
-        Self::from_tokenizer(tokenizer)
+    fn encode_with(
+        &self,
+        pipeline: &PipelineTokenizer,
+        inputs: impl Into<Inputs>,
+        expected: usize,
+        options: &EncodeOptions,
+    ) -> Result<Vec<PipelineEncoding>> {
+        let batch = pipeline
+            .encode(inputs, options)
+            .wait()
+            .map_err(|err| Error::msg(format!("Error tokenizing input: {err}")))
+            .with_context(|| self.source.clone())?;
+        ensure!(
+            batch.len() == expected,
+            "{RUNTIME} returned {} encodings for {expected} inputs for {}",
+            batch.len(),
+            self.source
+        );
+        Ok(batch)
     }
 }
 
+fn read_pipeline(config: &Value, source: &str) -> Result<PipelineTokenizer> {
+    let json =
+        serde_json::to_string(config).with_context(|| format!("failed to serialize {source}"))?;
+    tokenizers::from_json(&json)
+        .map_err(|err| Error::msg(format!("Error loading tokenizer: {err}")))
+        .with_context(|| format!("failed to construct a {RUNTIME} tokenizer from {source}"))
+}
+
 /// Promote `tokenizer_config.json`'s `special: true` `added_tokens_decoder`
-/// entries onto `tokenizer`. Missing-file / parse errors are swallowed since
+/// entries into a parsed `tokenizer.json`. Missing-file / parse errors are swallowed since
 /// the file is optional. See [`HuggingFaceTokenizer::from_file`].
 ///
-/// `pub` so downstream crates (e.g. `dynamo-llm`'s model_card) can apply
-/// the same promotion before extracting the special-token boundary list
-/// for the L1 prefix cache — otherwise the cache and the wrapped
-/// tokenizer would disagree on which strings are atomic specials.
-pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: &Path) {
+/// A token that `tokenizer.json` already lists takes the config's flags; any other is appended
+/// to `added_tokens`. The tokenizer reuses the vocabulary id of a token the model already has
+/// and numbers the rest after the vocabulary, so the config's id is informational.
+///
+/// `pub` so a caller that reads `tokenizer.json` itself applies the same promotion as every
+/// backend here; otherwise the tokenizer and a prefix cache built around it would disagree on
+/// which strings are atomic specials.
+pub fn merge_special_tokens_from_config(config: &mut Value, model_dir: &Path) {
+    const FLAGS: [&str; 4] = ["single_word", "lstrip", "rstrip", "normalized"];
+
     let cfg_path = model_dir.join("tokenizer_config.json");
     let Ok(raw) = std::fs::read_to_string(&cfg_path) else {
         return;
     };
-    let cfg: serde_json::Value = match serde_json::from_str(&raw) {
+    let cfg: Value = match serde_json::from_str(&raw) {
         Ok(v) => v,
         Err(e) => {
             tracing::debug!(
@@ -127,74 +302,78 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
             return;
         }
     };
-    let Some(decoder) = cfg.get("added_tokens_decoder").and_then(|v| v.as_object()) else {
+    let Some(decoder) = cfg.get("added_tokens_decoder").and_then(Value::as_object) else {
+        return;
+    };
+    let Some(root) = config.as_object_mut() else {
+        return;
+    };
+    let Some(added_tokens) = root
+        .entry("added_tokens")
+        .or_insert_with(|| Value::Array(Vec::new()))
+        .as_array_mut()
+    else {
         return;
     };
 
-    let mut to_add: Vec<AddedToken> = Vec::new();
-    for (_id, spec) in decoder {
-        let obj = match spec.as_object() {
-            Some(o) => o,
-            None => continue,
-        };
-        // The id is informational — `add_special_tokens` reuses the existing
-        // vocab id via `Model::token_to_id` on the content string.
-        if obj.get("special").and_then(|v| v.as_bool()) != Some(true) {
-            continue;
-        }
-        let Some(content) = obj.get("content").and_then(|v| v.as_str()) else {
+    let mut promoted: Vec<&str> = Vec::new();
+    for (id, spec) in decoder {
+        let Ok(id) = id.parse::<u32>() else {
             continue;
         };
-        if content.is_empty() {
+        let Some(spec) = spec.as_object() else {
+            continue;
+        };
+        if spec.get("special").and_then(Value::as_bool) != Some(true) {
             continue;
         }
-        let single_word = obj
-            .get("single_word")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-        let lstrip = obj.get("lstrip").and_then(|v| v.as_bool()).unwrap_or(false);
-        let rstrip = obj.get("rstrip").and_then(|v| v.as_bool()).unwrap_or(false);
-        let normalized = obj
-            .get("normalized")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-        let token = AddedToken::from(content.to_string(), true)
-            .single_word(single_word)
-            .lstrip(lstrip)
-            .rstrip(rstrip)
-            .normalized(normalized);
-        to_add.push(token);
+        let Some(content) = spec
+            .get("content")
+            .and_then(Value::as_str)
+            .filter(|content| !content.is_empty())
+        else {
+            continue;
+        };
+        let mut token = serde_json::Map::from_iter([
+            ("content".to_string(), Value::from(content)),
+            ("special".to_string(), Value::Bool(true)),
+        ]);
+        for flag in FLAGS {
+            let value = spec.get(flag).and_then(Value::as_bool).unwrap_or(false);
+            token.insert(flag.to_string(), Value::Bool(value));
+        }
+
+        let existing = added_tokens
+            .iter_mut()
+            .find(|token| token.get("content").and_then(Value::as_str) == Some(content));
+        match existing.and_then(Value::as_object_mut) {
+            Some(existing) => {
+                let unchanged = token
+                    .iter()
+                    .all(|(key, value)| existing.get(key).unwrap_or(&Value::Bool(false)) == value);
+                if unchanged {
+                    continue;
+                }
+                existing.extend(token);
+            }
+            None => {
+                token.insert("id".to_string(), Value::from(id));
+                added_tokens.push(Value::Object(token));
+            }
+        }
+        promoted.push(content);
     }
 
-    if to_add.is_empty() {
-        return;
-    }
-    // Dedups against existing added-tokens, so this is a no-op when
-    // tokenizer.json already had them. Return value = net-new count.
-    let added = match tokenizer.add_special_tokens(to_add.iter().cloned()) {
-        Ok(added) => added,
-        Err(e) => {
-            tracing::warn!(
-                target: "tokenizer",
-                path = %cfg_path.display(),
-                error = %e,
-                "special-token merge from tokenizer_config.json failed; skipping"
-            );
-            return;
-        }
-    };
-    if added > 0 {
+    if !promoted.is_empty() {
         // Warn (not debug) when the merge actually promotes anything —
         // intentionally loud so accidental promotion of a previously-
         // non-special token shows up immediately in worker logs. Lists
         // the literal token strings so debugging doesn't require a
         // second pass through `added_tokens_decoder`.
-        let promoted: Vec<&str> = to_add.iter().map(|t| t.content.as_str()).collect();
         tracing::warn!(
             target: "tokenizer",
             path = %cfg_path.display(),
-            added,
-            candidates = to_add.len(),
+            added = promoted.len(),
             promoted = ?promoted,
             "merged additional special tokens from tokenizer_config.json"
         );
@@ -203,72 +382,60 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
 
 impl Encoder for HuggingFaceTokenizer {
     fn encode(&self, input: &str) -> Result<Encoding> {
-        // This self.tokenizer is the library
-        let encoding = self
-            .tokenizer
-            .encode(input, self.options.add_special_tokens)
-            .map_err(|err| Error::msg(format!("Error tokenizing input: {err}")))?;
-
-        Ok(Encoding::Hf(Box::new(encoding)))
+        let options = self.encode_options(self.options.add_special_tokens);
+        let batch = self.encode_with(&self.pipeline, input, 1, &options)?;
+        Ok(Encoding::Sp(
+            PipelineToken::cast_slice(batch[0].ids()).to_vec(),
+        ))
     }
 
-    fn encode_segments(&self, segments: &[super::EncodeSegment<'_>]) -> Result<Encoding> {
-        let (trusted, ordinary) = self.segment_tokenizers.get_or_init(|| {
-            let mut trusted = self.tokenizer.clone();
-            // Apply padding, truncation and post-processing once to the joined
-            // sequence, rather than independently at every trust boundary.
-            trusted.with_padding(None);
-            trusted
-                .with_truncation(None)
-                .expect("removing truncation cannot fail");
-            trusted.with_post_processor(None::<tokenizers::processors::PostProcessorWrapper>);
-            // No added vocabulary at all: `encode_special_tokens` skips only
-            // `special: true` entries, and chat markers such as Qwen3's
+    fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
+        let Some(ordinary) = &self.ordinary else {
+            return Err(Error::msg(
+                "this Hugging Face tokenizer was loaded to decode only",
+            ));
+        };
+        // Post-processing applies once to the joined sequence, rather than independently at
+        // every trust boundary.
+        let options = self.encode_options(false);
+        let mut ids = Vec::new();
+        for segment in segments {
+            // No added vocabulary at all for an ordinary segment: `encode_special_tokens`
+            // skips only `special: true` entries, and chat markers such as Qwen3's
             // `<think>` are `special: false`.
-            let mut ordinary = trusted.clone();
-            ordinary.with_added_vocabulary(AddedVocabulary::new());
-            (trusted, ordinary)
-        });
-        let encodings = segments
-            .iter()
-            .map(|segment| {
-                let tokenizer = if segment.allow_special {
-                    trusted
-                } else {
-                    ordinary
-                };
-                let encoding = tokenizer
-                    .encode(segment.text, false)
-                    .map_err(|error| Error::msg(format!("Error tokenizing segment: {error}")))?;
-                if !segment.allow_special {
-                    crate::reject_control_ids_in_ordinary_segment(
-                        encoding.get_ids(),
-                        &self.added_ids,
-                    )?;
-                }
-                Ok(encoding)
-            })
-            .collect::<Result<Vec<_>>>()?;
-        let merged = tokenizers::Encoding::merge(encodings, true);
-        let encoding = self
-            .tokenizer
-            .post_process(merged, None, self.options.add_special_tokens)
-            .map_err(|error| Error::msg(format!("Error post-processing segments: {error}")))?;
-        Ok(Encoding::Hf(Box::new(encoding)))
+            let pipeline = if segment.allow_special {
+                &self.pipeline
+            } else {
+                ordinary
+            };
+            let batch = self.encode_with(pipeline, segment.text, 1, &options)?;
+            let segment_ids = batch[0].ids();
+            if !segment.allow_special {
+                crate::reject_control_ids_in_ordinary_segment(
+                    PipelineToken::cast_slice(segment_ids),
+                    &self.added_ids,
+                )?;
+            }
+            ids.extend_from_slice(segment_ids);
+        }
+        if self.options.add_special_tokens {
+            let processed = self
+                .pipeline
+                .get_post_processor()
+                .single
+                .post_process::<true>(ids, None);
+            ids = processed.ids().to_vec();
+        }
+        Ok(Encoding::Sp(PipelineToken::cast_slice(&ids).to_vec()))
     }
 
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
-        let hf_encodings = self
-            .tokenizer
-            .encode_batch(inputs.to_vec(), self.options.add_special_tokens)
-            .map_err(|err| Error::msg(format!("Error batch tokenizing input: {err}")))?;
-
-        let encodings = hf_encodings
-            .into_iter()
-            .map(|enc| Encoding::Hf(Box::new(enc)))
-            .collect();
-
-        Ok(encodings)
+        let options = self.encode_options(self.options.add_special_tokens);
+        Ok(self
+            .encode_with(&self.pipeline, inputs, inputs.len(), &options)?
+            .iter()
+            .map(|encoding| Encoding::Sp(PipelineToken::cast_slice(encoding.ids()).to_vec()))
+            .collect())
     }
 }
 
@@ -282,26 +449,22 @@ impl Decoder for HuggingFaceTokenizer {
     }
 
     fn decode(&self, token_ids: &[TokenIdType], skip_special_tokens: bool) -> Result<DecodeResult> {
-        // This calls into the library
-        let text = self
-            .tokenizer
+        self.pipeline
             .decode(token_ids, skip_special_tokens)
-            .map_err(|err| Error::msg(format!("Error de-tokenizing input: {err}")))?;
-
-        Ok(text.into())
+            .map(DecodeResult::from_decoded)
+            .map_err(|err| Error::msg(format!("Error de-tokenizing input: {err}")))
+            .with_context(|| self.source.clone())
     }
 }
 
-/// The Metaspace marker when it is prepended only to text at offset 0 of the input.
-fn first_word_marker(pre_tokenizer: &PreTokenizerWrapper) -> Option<char> {
-    match pre_tokenizer {
-        PreTokenizerWrapper::Metaspace(metaspace)
-            if metaspace.get_prepend_scheme() == PrependScheme::First =>
+/// The Metaspace marker when it is prepended only to text at offset 0 of the input. The 1.x
+/// pipeline runs Metaspace as a normalizer, and a sequence arrives already flattened.
+fn first_word_marker(normalizer: &PipelineNormalizer) -> Option<char> {
+    match normalizer {
+        PipelineNormalizer::Metaspace(metaspace)
+            if metaspace.prepend() == PrependBehavior::First =>
         {
-            Some(metaspace.get_replacement())
-        }
-        PreTokenizerWrapper::Sequence(sequence) => {
-            sequence.as_ref().iter().find_map(first_word_marker)
+            Some(metaspace.delimiter())
         }
         _ => None,
     }
@@ -314,19 +477,16 @@ impl Tokenizer for HuggingFaceTokenizer {
                 "HuggingFace tokenizers configured with add_special_tokens=true must remain uncached",
             ));
         }
-        // The cache joins separately encoded pieces, so per-call truncation or padding
-        // would apply to each piece instead of the whole input.
-        if self.tokenizer.get_truncation().is_some() || self.tokenizer.get_padding().is_some() {
-            return Err(Error::msg(
-                "HuggingFace tokenizers with truncation or padding must remain uncached",
-            ));
-        }
         Ok(())
     }
 
     fn prefix_split_rules(&self) -> PrefixSplitRules {
         let mut rules = PrefixSplitRules::default();
-        for token in self.tokenizer.get_added_tokens_decoder().into_values() {
+        let added_tokens = self
+            .pipeline
+            .get_added_vocabulary()
+            .get_added_tokens_decoder();
+        for token in added_tokens.into_values() {
             if token.rstrip {
                 rules.rstrip.push(token.content.clone());
             }
@@ -335,14 +495,15 @@ impl Tokenizer for HuggingFaceTokenizer {
             }
         }
         rules.first_word_marker = self
-            .tokenizer
-            .get_pre_tokenizer()
-            .and_then(first_word_marker);
+            .pipeline
+            .get_normalizers()
+            .iter()
+            .find_map(first_word_marker);
         rules
     }
 
-    /// Without added special tokens, truncation or padding, a segment that allows
-    /// special tokens goes through the pipeline `encode` runs.
+    /// Without added special tokens, a segment that allows special tokens goes through the
+    /// pipeline `encode` runs.
     fn validate_segment_prefix_cache(&self) -> Result<()> {
         self.validate_prefix_cache()
     }
@@ -355,35 +516,25 @@ impl Tokenizer for HuggingFaceTokenizer {
     }
 
     fn vocab_size(&self) -> Option<usize> {
-        Some(self.tokenizer.get_vocab_size(true))
+        Some(self.pipeline.get_vocab_size(true))
     }
 
     fn token_to_id(&self, token: &str) -> Result<Option<TokenIdType>> {
-        Ok(self.tokenizer.token_to_id(token))
+        // The pipeline resolves the empty string to an added token's id.
+        if token.is_empty() {
+            return Ok(None);
+        }
+        Ok(self.pipeline.token_to_id(token))
     }
 
     fn special_token_ids(&self) -> Result<Vec<TokenIdType>> {
-        let mut ids: Vec<TokenIdType> = self
-            .tokenizer
-            .get_added_tokens_decoder()
-            .into_iter()
-            .filter_map(|(id, token)| token.special.then_some(id))
-            .collect();
+        let mut ids: Vec<TokenIdType> = self.special_ids.iter().copied().collect();
         ids.sort_unstable();
         Ok(ids)
     }
 
     fn num_special_tokens_added(&self) -> Result<usize> {
-        Ok(self
-            .tokenizer
-            .get_post_processor()
-            .map_or(0, |processor| processor.added_tokens(false)))
-    }
-}
-
-impl From<HfTokenizer> for HuggingFaceTokenizer {
-    fn from(tokenizer: HfTokenizer) -> Self {
-        Self::from_tokenizer(tokenizer)
+        Ok(self.pipeline.get_post_processor().single.n_special())
     }
 }
 
@@ -391,20 +542,33 @@ impl From<HfTokenizer> for HuggingFaceTokenizer {
 mod byte_fallback_stream_tests {
     use super::*;
 
+    // `<0xNN>` is id NN: the reader requires every byte token of a byte-fallback vocabulary.
+    const A: u32 = 0x61;
+    const INVALID: u32 = 0xF5;
+    const LEAD: u32 = 0xC3;
+    const TAIL: u32 = 0xA9;
+    const HELLO: u32 = 256;
+    const BANG: u32 = 257;
+    const EOS: u32 = 258;
+
     fn tokenizer() -> super::super::Tokenizer {
-        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+        let mut vocab = serde_json::Map::new();
+        for byte in 0..=255u32 {
+            vocab.insert(format!("<0x{byte:02X}>"), byte.into());
+        }
+        vocab.insert(" hello".into(), HELLO.into());
+        vocab.insert("!".into(), BANG.into());
+        vocab.insert("<eos>".into(), EOS.into());
+        let config = serde_json::json!({
             "version": "1.0", "truncation": null, "padding": null,
-            "added_tokens": [{"id": 6, "content": "<eos>", "special": true,
+            "added_tokens": [{"id": EOS, "content": "<eos>", "special": true,
                 "single_word": false, "lstrip": false, "rstrip": false, "normalized": false}],
             "normalizer": null, "pre_tokenizer": null, "post_processor": null,
             "decoder": {"type": "Sequence", "decoders": [
                 {"type": "ByteFallback"}, {"type": "Fuse"}]},
-            "model": {"type": "BPE", "vocab": {
-                "<0x61>": 0, "<0xF5>": 1, "<0xC3>": 2, "<0xA9>": 3,
-                " hello": 4, "!": 5, "<eos>": 6}, "merges": [], "byte_fallback": true}
-        }))
-        .unwrap();
-        std::sync::Arc::new(HuggingFaceTokenizer::from_tokenizer(hf)).into()
+            "model": {"type": "BPE", "vocab": vocab, "merges": [], "byte_fallback": true}
+        });
+        std::sync::Arc::new(HuggingFaceTokenizer::from_json(config).unwrap()).into()
     }
 
     #[test]
@@ -414,15 +578,15 @@ mod byte_fallback_stream_tests {
         // or a complete multibyte character. Valid, incomplete and literal
         // replacement output must all survive a terminal flush unchanged.
         for (ids, skip) in [
-            (vec![0, 1, 4], false),
-            (vec![2, 3, 1, 4], false),
-            (vec![2, 3, 5], false),
-            (vec![0], false),
-            (vec![2, 3], false),
-            (vec![2], false),
-            (vec![0, 1], false),
-            (vec![0, 6, 1, 4], false),
-            (vec![0, 6, 1, 4], true),
+            (vec![A, INVALID, HELLO], false),
+            (vec![LEAD, TAIL, INVALID, HELLO], false),
+            (vec![LEAD, TAIL, BANG], false),
+            (vec![A], false),
+            (vec![LEAD, TAIL], false),
+            (vec![LEAD], false),
+            (vec![A, INVALID], false),
+            (vec![A, EOS, INVALID, HELLO], false),
+            (vec![A, EOS, INVALID, HELLO], true),
         ] {
             let expected: String = tokenizer.decode(&ids, skip).unwrap().into();
             let mut stream = tokenizer.decode_stream(&[], skip);
@@ -439,11 +603,11 @@ mod byte_fallback_stream_tests {
     #[test]
     fn only_byte_suffix_is_delayed_and_prompt_is_not_emitted() {
         let tokenizer = tokenizer();
-        let mut stream = tokenizer.decode_stream(&[4], true);
-        assert_eq!(stream.step(5).unwrap().as_deref(), Some("!"));
-        assert_eq!(stream.step(0).unwrap(), None);
-        assert_eq!(stream.step(1).unwrap(), None);
-        assert_eq!(stream.step(4).unwrap().as_deref(), Some("�� hello"));
+        let mut stream = tokenizer.decode_stream(&[HELLO], true);
+        assert_eq!(stream.step(BANG).unwrap().as_deref(), Some("!"));
+        assert_eq!(stream.step(A).unwrap(), None);
+        assert_eq!(stream.step(INVALID).unwrap(), None);
+        assert_eq!(stream.step(HELLO).unwrap().as_deref(), Some("�� hello"));
         assert_eq!(stream.finish().unwrap(), None);
     }
 }
@@ -510,38 +674,30 @@ mod tests {
         )
         .unwrap();
 
-        let mut tokenizer = HfTokenizer::from_file(dir.path().join("tokenizer.json")).unwrap();
-        merge_special_tokens_from_config(&mut tokenizer, dir.path());
+        let tokenizer =
+            HuggingFaceTokenizer::from_file(dir.path().join("tokenizer.json").to_str().unwrap())
+                .unwrap();
 
         // Registry assertion: only the special:true entry was promoted.
-        let specials: Vec<String> = {
-            let mut v: Vec<String> = tokenizer
-                .get_added_tokens_decoder()
-                .values()
-                .filter(|t| t.special)
-                .map(|t| t.content.clone())
-                .collect();
-            v.sort();
-            v
-        };
         assert_eq!(
-            specials,
-            vec!["<unk>".to_string(), "<|special_kept|>".to_string()],
+            tokenizer.special_tokens(),
+            ["<unk>".to_string(), "<|special_kept|>".to_string()],
             "<|special_kept|> promoted; <|special_dropped|> stayed non-special"
         );
 
         // Decode round-trip assertion (the layer parser tests cannot
         // reach): the registry mutation actually changes downstream
         // decode behavior in the expected direction.
-        let enc_kept = tokenizer.encode("<|special_kept|>", false).unwrap();
-        let decoded_strip = tokenizer.decode(enc_kept.get_ids(), true).unwrap();
+        let enc_kept = tokenizer.encode("<|special_kept|>").unwrap();
+        assert_eq!(enc_kept.token_ids(), [3]);
+        let decoded_strip: String = tokenizer.decode(enc_kept.token_ids(), true).unwrap().into();
         assert!(
             !decoded_strip.contains("<|special_kept|>"),
             "promoted special:true token must be stripped under skip_special_tokens=true; got {decoded_strip:?}"
         );
 
-        let enc_drop = tokenizer.encode("<|special_dropped|>", false).unwrap();
-        let decoded_keep = tokenizer.decode(enc_drop.get_ids(), true).unwrap();
+        let enc_drop = tokenizer.encode("<|special_dropped|>").unwrap();
+        let decoded_keep: String = tokenizer.decode(enc_drop.token_ids(), true).unwrap().into();
         assert!(
             decoded_keep.contains("<|special_dropped|>"),
             "non-promoted special:false token must survive skip_special_tokens=true; got {decoded_keep:?}"
@@ -592,10 +748,7 @@ mod tests {
         let path = dir.path().join("tokenizer.json");
         let path = path.to_str().unwrap();
 
-        let ids = |enc: &Encoding| match enc {
-            Encoding::Hf(e) => e.get_ids().to_vec(),
-            _ => panic!("expected Hf encoding"),
-        };
+        let ids = |enc: &Encoding| enc.token_ids().to_vec();
 
         // Default: unchanged historical behavior — no BOS.
         let plain = HuggingFaceTokenizer::from_file(path).unwrap();
@@ -630,24 +783,39 @@ mod tests {
     }
 
     #[test]
-    fn truncation_or_padding_blocks_prefix_cache() {
-        let path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
+    fn truncation_and_padding_blocks_are_never_applied() {
+        // A truncation block clips every prompt and a padding block pads it; Python
+        // `transformers` applies neither unless a call asks. The blocks stay in the file and
+        // are ignored, so the tokenizer remains safe to wrap in the prefix cache.
+        let tokenizer = HuggingFaceTokenizer::from_json(serde_json::json!({
+            "version": "1.0",
+            "truncation": {"direction": "Right", "max_length": 2, "strategy": "LongestFirst", "stride": 0},
+            "padding": {"strategy": {"Fixed": 4}, "direction": "Right", "pad_to_multiple_of": null,
+                "pad_id": 3, "pad_type_id": 0, "pad_token": "[PAD]"},
+            "added_tokens": [{"id": 3, "content": "[PAD]", "special": true, "single_word": false,
+                "lstrip": false, "rstrip": false, "normalized": false}],
+            "normalizer": null, "pre_tokenizer": {"type": "Whitespace"}, "post_processor": null,
+            "decoder": null,
+            "model": {"type": "WordLevel", "unk_token": "[UNK]",
+                "vocab": {"[UNK]": 0, "hello": 1, "world": 2, "[PAD]": 3}}
+        }))
+        .unwrap();
+        assert!(tokenizer.validate_prefix_cache().is_ok());
+        assert_eq!(tokenizer.encode("hello").unwrap().token_ids(), [1]);
+        assert_eq!(
+            tokenizer.encode("hello world hello").unwrap().token_ids(),
+            [1, 2, 1]
         );
-        let mut truncated = HfTokenizer::from_file(path).unwrap();
-        truncated
-            .with_truncation(Some(tokenizers::TruncationParams::default()))
-            .unwrap();
-        let mut padded = HfTokenizer::from_file(path).unwrap();
-        padded.with_padding(Some(tokenizers::PaddingParams::default()));
-        for hf in [truncated, padded] {
-            assert!(
-                HuggingFaceTokenizer::from_tokenizer(hf)
-                    .validate_prefix_cache()
-                    .is_err()
-            );
-        }
+        assert_eq!(
+            tokenizer
+                .encode_segments(&[
+                    crate::EncodeSegment::control("hello world"),
+                    crate::EncodeSegment::ordinary("hello"),
+                ])
+                .unwrap()
+                .token_ids(),
+            [1, 2, 1]
+        );
     }
 
     #[test]
@@ -737,7 +905,7 @@ mod segmented_tests {
             let id = vocab.as_object().unwrap().len();
             vocab[ch.to_string()] = serde_json::json!(id);
         }
-        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+        let config = serde_json::json!({
             "version":"1.0", "truncation":null, "padding":null,
             "normalizer":null, "pre_tokenizer":null, "decoder":{"type":"Fuse"},
             "added_tokens":[{"id":1,"content":"<|call|>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false},
@@ -745,9 +913,10 @@ mod segmented_tests {
             "post_processor":{"type":"TemplateProcessing","single":[{"SpecialToken":{"id":"<bos>","type_id":0}},{"Sequence":{"id":"A","type_id":0}}],
                 "pair":[{"Sequence":{"id":"A","type_id":0}},{"Sequence":{"id":"B","type_id":1}}],"special_tokens":{"<bos>":{"id":"<bos>","ids":[2],"tokens":["<bos>"]}}},
             "model":{"type":"BPE","vocab":vocab,"merges":[],"unk_token":"<unk>"}
-        })).unwrap();
+        });
         for add_special_tokens in [false, true] {
-            let tokenizer = HuggingFaceTokenizer::from_tokenizer(hf.clone())
+            let tokenizer = HuggingFaceTokenizer::from_json(config.clone())
+                .unwrap()
                 .with_options(TokenizerOptions { add_special_tokens });
             let encoding = tokenizer
                 .encode_segments(&[
@@ -777,20 +946,20 @@ mod segmented_tests {
     }
     #[test]
     fn segmented_hf_encodes_non_special_added_tokens_as_text() {
-        // HF's `set_encode_special_tokens` skips only `special: true` entries;
+        // HF's `encode_special_tokens` skips only `special: true` entries;
         // chat markers such as Qwen3's `<think>` are registered `special: false`.
         let mut vocab = serde_json::json!({"<unk>":0,"<think>":1});
         for ch in "<think>".chars() {
             let id = vocab.as_object().unwrap().len();
             vocab[ch.to_string()] = serde_json::json!(id);
         }
-        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+        let config = serde_json::json!({
             "version":"1.0", "truncation":null, "padding":null,
             "normalizer":null, "pre_tokenizer":null, "post_processor":null, "decoder":{"type":"Fuse"},
             "added_tokens":[{"id":1,"content":"<think>","special":false,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false}],
             "model":{"type":"BPE","vocab":vocab,"merges":[],"unk_token":"<unk>"}
-        })).unwrap();
-        let tokenizer = HuggingFaceTokenizer::from_tokenizer(hf);
+        });
+        let tokenizer = HuggingFaceTokenizer::from_json(config).unwrap();
         let ids = |segment| {
             tokenizer
                 .encode_segments(&[segment])
@@ -825,7 +994,7 @@ mod segmented_tests {
             "normalized": false,
             "special": true
         }]);
-        let tokenizer = HuggingFaceTokenizer::from_tokenizer(serde_json::from_value(json).unwrap());
+        let tokenizer = HuggingFaceTokenizer::from_json(json).unwrap();
         let control = tokenizer
             .encode_segments(&[EncodeSegment::control("He")])
             .unwrap();

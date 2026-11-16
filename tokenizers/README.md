@@ -12,6 +12,27 @@ encode/decode/sequence API designed for streaming detokenization.
 - **Prefix caching.** `CachedTokenizer` records prefix tokenizations at special-token boundaries; repeated prompts that share a system prefix re-encode only the trailing suffix, turning O(N) work into O(suffix_len).
 - **Hash verification.** Detect tokenizer drift across model versions.
 
+## Hugging Face backend
+
+`HuggingFaceTokenizer` reads a `tokenizer.json` with the Hugging Face `tokenizers` 1.0 release
+candidate, pinned to an exact version. `FastTokenizer` encodes with `fastokens` and decodes
+through the same backend, so the two return the same text for the same ids.
+
+- Special tokens declared only in a sibling `tokenizer_config.json` are merged in at load.
+- A `truncation` or `padding` block in `tokenizer.json` is ignored, as Python `transformers`
+  ignores it unless a call asks for it.
+- `special_tokens()` gives the strings a prefix cache must treat as atomic, and
+  `token_id_bound()` one more than the largest token id.
+
+A configuration the 1.x pipeline cannot serve with the same ids and text is refused at load:
+
+| Configuration | Why |
+|---------------|-----|
+| An added token with `normalized: true` whose normalized form differs from its content | The pipeline keys it by the normalized form, so the original spelling has no id |
+| A byte-level BPE model whose decoder is not `ByteLevel` alone | The pipeline decodes byte-level BPE straight from bytes and skips the other decoders |
+| A byte-fallback BPE vocabulary without all 256 `<0xNN>` tokens | The reader requires the complete byte alphabet |
+| Anything the 1.x converter refuses, such as a `ByteLevel` pre-tokenizer with `add_prefix_space: true` | The converter does not guess |
+
 ## Segmented prompts
 
 `BasetenTokenizer` supports segmented encoding for renderers such as Kimi K3's

@@ -43,8 +43,8 @@ derive_builder = "0.20"
 dynamo-parsers = { path = "parsers/v1", version = "11.0.13" }
 dynamo-protocols = { path = "protocols", version = "10.0.2" }
 dynamo-decisions = { path = "decisions", version = "0.1.1" }
-dynamo-renderer = { path = "renderer", version = "10.5.0" }
-dynamo-tokenizers = { path = "tokenizers", version = "4.3.2" }
+dynamo-renderer = { path = "renderer", version = "11.0.0" }
+dynamo-tokenizers = { path = "tokenizers", version = "5.0.0" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.4"
 futures = "0.3"
@@ -85,7 +85,10 @@ thiserror = "2.0.17"
 tiktoken-rs = { version = "0.9", default-features = false }
 tokio = "1.48"
 tokio-test = "0.4.4"
-tokenizers = { version = "0.23.2", default-features = false }
+# Hugging Face tokenizers 1.x release candidate, pinned exactly: a newer candidate can change
+# what a tokenizer.json encodes or decodes to. `regex` reads fancy-regex `Split` and `Replace`
+# patterns; every model and normalizer is behind the default features.
+tokenizers = { version = "=1.0.0-rc.4", features = ["regex"] }
 tracing = "0.1"
 # Built from source; SIMD is used when nasm is present and never changes output.
 turbojpeg = { version = "1.5", default-features = false, features = ["cmake"] }

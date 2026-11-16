@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [5.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.3.2...dynamo-tokenizers-v5.0.0) - 2026-11-16
+
+### Breaking changes
+
+- *(tokenizers)* The Hugging Face backend runs on `tokenizers` 1.0.0-rc.4. The `tokenizers` 0.23
+  dependency is removed, and `FastTokenizer` decodes through the same backend.
+- `HuggingFaceTokenizer::from_tokenizer`, `from_tokenizer_with_model_dir` and
+  `From<tokenizers::Tokenizer>` are removed. Use `from_file`, or `from_json` with a parsed
+  `tokenizer.json`; both return a `Result`.
+- `hf::merge_special_tokens_from_config` takes the parsed `tokenizer.json`
+  (`&mut serde_json::Value`) instead of a `tokenizers::Tokenizer`. `BasetenTokenizer` uses the same
+  function, so a token both files list now takes the config's flags there too.
+- `Encoding::Hf` is removed. Every backend returns `Encoding::Sp`.
+- A `tokenizer.json` `truncation` or `padding` block is never applied, and no longer makes
+  `validate_prefix_cache` fail.
+- Configurations the 1.x pipeline cannot serve unchanged are refused at load: an added token
+  with `normalized: true` whose normalized form differs from its content, a byte-level BPE
+  decoder other than `ByteLevel`, a byte-fallback BPE vocabulary without all 256 byte tokens,
+  and anything the 1.x converter refuses (for example a `ByteLevel` pre-tokenizer with
+  `add_prefix_space: true`).
+
+### Features
+
+- *(tokenizers)* `special_tokens()` and `token_id_bound()` on `HuggingFaceTokenizer`,
+  `FastTokenizer` and `BasetenTokenizer`.
+- *(tokenizers)* `HuggingFaceTokenizer::from_file` takes any `AsRef<Path>`, so a path need not
+  be UTF-8.
+
 ## [4.3.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-tokenizers-v4.3.1...dynamo-tokenizers-v4.3.2) - 2026-11-20
 
 ### Bug fixes

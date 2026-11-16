@@ -21,6 +21,8 @@ pub struct BasetenTokenizer {
     /// Every added-token id, `special: true` or not; see
     /// [`crate::reject_control_ids_in_ordinary_segment`].
     added_ids: HashSet<u32>,
+    special_tokens: Vec<String>,
+    token_id_bound: Option<usize>,
 }
 
 impl BasetenTokenizer {
@@ -32,8 +34,9 @@ impl BasetenTokenizer {
         let mut json: serde_json::Value = serde_json::from_str(&raw)
             .map_err(|e| Error::msg(format!("Error parsing Baseten tokenizer: {e}")))?;
         if let Some(parent) = path.parent() {
-            merge_special_tokens_from_config(&mut json, parent);
+            crate::hf::merge_special_tokens_from_config(&mut json, parent);
         }
+        let token_id_bound = declared_token_id_bound(&json);
         let tokenizer = basetenkenizer::Tokenizer::from_json(json)
             .map_err(|e| Error::msg(format!("Error loading Baseten tokenizer: {e}")))?;
         let added_ids = tokenizer
@@ -41,91 +44,62 @@ impl BasetenTokenizer {
             .into_iter()
             .flat_map(|added| added.iter().map(|info| info.id))
             .collect();
+        let mut special_tokens: Vec<String> = tokenizer
+            .added_tokens()
+            .into_iter()
+            .flat_map(|added| added.iter())
+            .filter(|info| info.special)
+            .map(|info| info.content.to_string())
+            .collect();
+        special_tokens.sort();
+        special_tokens.dedup();
         Ok(Self {
             tokenizer,
             options: TokenizerOptions::default(),
             added_ids,
+            special_tokens,
+            token_id_bound,
         })
+    }
+
+    /// The contents of the added tokens marked `special`, sorted: the strings a prefix cache
+    /// must treat as atomic. See [`CachedTokenizer`](crate::CachedTokenizer).
+    pub fn special_tokens(&self) -> &[String] {
+        &self.special_tokens
+    }
+
+    /// One more than the largest token id `tokenizer.json` declares, added tokens included.
+    /// Ids can have gaps, so [`Tokenizer::vocab_size`] is not this bound.
+    pub fn token_id_bound(&self) -> Option<usize> {
+        self.token_id_bound
     }
 }
 
-fn merge_special_tokens_from_config(json: &mut serde_json::Value, model_dir: &Path) {
-    let config_path = model_dir.join("tokenizer_config.json");
-    let Ok(raw) = std::fs::read_to_string(&config_path) else {
-        return;
+/// One more than the largest id a parsed `tokenizer.json` declares, added tokens included.
+/// A model vocabulary is a `token -> id` object, or for Unigram a list indexed by id.
+fn declared_token_id_bound(json: &serde_json::Value) -> Option<usize> {
+    let model = match json.get("model").and_then(|model| model.get("vocab")) {
+        Some(serde_json::Value::Object(vocab)) => vocab
+            .values()
+            .filter_map(serde_json::Value::as_u64)
+            .max()
+            .map(|id| id + 1),
+        Some(serde_json::Value::Array(pieces)) if !pieces.is_empty() => Some(pieces.len() as u64),
+        _ => None,
     };
-    let config: serde_json::Value = match serde_json::from_str(&raw) {
-        Ok(value) => value,
-        Err(error) => {
-            tracing::debug!(
-                target: "tokenizer",
-                path = %config_path.display(),
-                error = %error,
-                "tokenizer_config.json parse failed; skipping special-token merge"
-            );
-            return;
-        }
-    };
-    let Some(decoder) = config
-        .get("added_tokens_decoder")
-        .and_then(serde_json::Value::as_object)
-    else {
-        return;
-    };
-
-    if json.get("added_tokens").is_none() {
-        json["added_tokens"] = serde_json::json!([]);
-    }
-    let Some(added_tokens) = json
-        .get_mut("added_tokens")
-        .and_then(serde_json::Value::as_array_mut)
-    else {
-        return;
-    };
-
-    for (id, spec) in decoder {
-        let Some(id) = id.parse::<u32>().ok() else {
-            continue;
-        };
-        let Some(spec) = spec.as_object() else {
-            continue;
-        };
-        if spec.get("special").and_then(serde_json::Value::as_bool) != Some(true) {
-            continue;
-        }
-        let Some(content) = spec
-            .get("content")
-            .and_then(serde_json::Value::as_str)
-            .filter(|content| !content.is_empty())
-        else {
-            continue;
-        };
-
-        if let Some(existing) = added_tokens
-            .iter_mut()
-            .find(|token| token.get("content").and_then(serde_json::Value::as_str) == Some(content))
-        {
-            existing["special"] = serde_json::Value::Bool(true);
-            continue;
-        }
-
-        let mut token = serde_json::Map::from_iter([
-            ("id".to_string(), serde_json::json!(id)),
-            ("content".to_string(), serde_json::json!(content)),
-            ("special".to_string(), serde_json::Value::Bool(true)),
-        ]);
-        for field in ["single_word", "lstrip", "rstrip", "normalized"] {
-            token.insert(
-                field.to_string(),
-                serde_json::Value::Bool(
-                    spec.get(field)
-                        .and_then(serde_json::Value::as_bool)
-                        .unwrap_or(false),
-                ),
-            );
-        }
-        added_tokens.push(serde_json::Value::Object(token));
-    }
+    let added = json
+        .get("added_tokens")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|token| token.get("id").and_then(serde_json::Value::as_u64))
+        .max()
+        .map(|id| id + 1);
+    model
+        .into_iter()
+        .chain(added)
+        .max()
+        .map(|bound| bound as usize)
 }
 
 impl Encoder for BasetenTokenizer {
