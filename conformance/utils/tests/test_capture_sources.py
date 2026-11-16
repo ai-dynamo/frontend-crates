@@ -1292,6 +1292,158 @@ def test_latest_refresh_rejects_missing_or_extra_native_families(tmp_path, monke
     assert not root.exists()
 
 
+def _seed_unpublished_latest(root, source, latest, origin):
+    snapshot = unified_history.load_yaml(source)
+    snapshot["provenance"] = {"status": "captured", "origin": copy.deepcopy(origin)}
+    for wrapped in snapshot["records"].values():
+        wrapped["value"]["document"].update(
+            capture_origin=copy.deepcopy(origin), captured_with={"dynamo_v2": origin["crate_version"]})
+    logical = f"{sources.STORE}/families/gemma4/dynamo_v2-{origin['crate_version']}.yaml"
+    row = {"source": logical, "surface": "unified", "mode": "unified", "family": "gemma4",
+           "implementation": "dynamo_v2", "version": origin["crate_version"]}
+    family = unified_history.load_authored_store(root / sources.STORE).families["gemma4"]
+    lineage = [{"path": logical, **unified_history.source_identity(logical.removeprefix(sources.STORE + "/"))}]
+    (root / latest).write_bytes(sources.selected_bytes(
+        unified_history.dump_yaml(snapshot).encode(), row, lineage, authored=family.document))
+
+
+@pytest.mark.parametrize("change", ["output", "origin", "request", "referenced_request", "missing", "newer_version", "member"])
+def test_latest_refresh_rejects_conflicting_unpublished_recapture_without_writes(split_evidence, monkeypatch, change):
+    root, history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    _seed_unpublished_latest(root, source, latest, origin)
+    if change == "member":
+        retained = unified_history.load_yaml(root / latest)
+        selection = retained.pop(sources.SELECTION)
+        member = f"{sources.STORE}/families/gemma4/dynamo_v2-0.5.2.yaml"
+        retained["records"]["text_only"]["member"] = member
+        selection["lineage"].append({"path": member, **unified_history.source_identity(member.removeprefix(sources.STORE + "/"))})
+        (root / latest).write_bytes(sources.selected_bytes(
+            unified_history.dump_yaml(retained).encode(), selection, selection["lineage"]))
+    if change == "referenced_request":
+        retained = unified_history.load_yaml(root / latest)
+        current = unified_history.load_authored_store(root / sources.STORE).families["gemma4"].cases["text_only"]
+        retained["records"]["text_only"]["value"]["stimulus"] = {
+            "ref": "current", "semantic_sha256": unified_history._request_digest(current["request"])}
+        selection = retained.pop(sources.SELECTION)
+        (root / latest).write_bytes(sources.selected_bytes(
+            unified_history.dump_yaml(retained).encode(), selection, selection["lineage"]))
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    record_path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+    record = unified_history.load_yaml(record_path)
+    case_id = next(iter(record["cases"]))
+    if change == "output":
+        record["cases"][case_id]["assembled"] = [{"kind": "text", "text": "changed"}]
+        record["cases"][case_id]["chunks"][0]["expected"] = [{"kind": "text", "text": "changed"}]
+    elif change == "origin":
+        origin["git_commit"] = "c" * 40
+        record["capture_origin"] = copy.deepcopy(origin)
+    elif change == "newer_version":
+        origin["crate_version"] = "0.5.4"
+        (loose / "dynamo_v2-0.5.3").rename(loose / "dynamo_v2-0.5.4")
+        record_path = loose / "dynamo_v2-0.5.4/gemma4" / record_path.name
+        record["capture_origin"] = copy.deepcopy(origin)
+        record["captured_with"] = {"dynamo_v2": "0.5.4"}
+    elif change in {"request", "referenced_request"}:
+        def mutate(store):
+            request = store.families["gemma4"].cases["text_only"]["request"]
+            request.update(input="changed", chunks=[{"delta_text": "changed"}])
+        unified_history.mutate_authored_store(root / sources.STORE, mutate)
+        record["cases"][case_id]["capture_input"].update(input="changed", chunks=[{"delta_text": "changed"}])
+    elif change == "missing":
+        record["cases"] = {}
+    record_path.write_text(unified_history.dump_yaml(record))
+    before = {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")}
+    before_history = {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()}
+    with pytest.raises(ValueError, match="cannot replace retained|missing active cases|every active case|stimulus digest differs"):
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")} == before
+    assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
+
+
+def test_latest_refresh_preservation_uses_the_fingerprinted_snapshot_bytes(split_evidence, monkeypatch):
+    root, _history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64}
+    _seed_unpublished_latest(root, source, latest, origin)
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    record_path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+    record = unified_history.load_yaml(record_path)
+    value = next(iter(record["cases"].values()))
+    changed = [{"kind": "text", "text": "replacement"}]
+    value["assembled"] = changed
+    value["chunks"][0]["expected"] = changed
+    record_path.write_text(unified_history.dump_yaml(record))
+    raced = unified_history.load_yaml(root / latest)
+    observation = raced["records"]["text_only"]["value"]["observation"]["value"]
+    observation["assembled"] = changed
+    observation["chunks"][0]["expected"] = changed
+    load = unified_history.load_yaml
+    monkeypatch.setattr(unified_history, "load_yaml", lambda path:
+                        copy.deepcopy(raced) if path == root / latest else load(path))
+    before = (root / latest).read_bytes()
+    with pytest.raises(ValueError, match="cannot replace retained"):
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert (root / latest).read_bytes() == before
+
+
+@pytest.mark.parametrize("append_case", [False, True])
+def test_latest_refresh_preserves_same_identity_and_allows_only_new_cases(split_evidence, monkeypatch, append_case):
+    root, history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    _seed_unpublished_latest(root, source, latest, origin)
+    before_snapshot = unified_history.load_yaml(root / latest)
+    selection = before_snapshot.pop(sources.SELECTION)
+    prior_member = f"{sources.STORE}/families/gemma4/dynamo_v2-0.5.2.yaml"
+    selection["lineage"].append({"path": prior_member, **unified_history.source_identity(prior_member.removeprefix(sources.STORE + "/"))})
+    (root / latest).write_bytes(sources.selected_bytes(
+        unified_history.dump_yaml(before_snapshot).encode(), selection, selection["lineage"]))
+    before_history = {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()}
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    if append_case:
+        def append(store):
+            case = copy.deepcopy(store.families["gemma4"].cases["text_only"])
+            case.update(scenario="reason_then_content", display_id=unified_history.unified_taxonomy.numbered_id("reason_then_content"))
+            case["request"].update(input="new", chunks=[{"delta_text": "new"}])
+            case["golden"] = {"assembled": [{"kind": "text", "text": "new"}]}
+            store.families["gemma4"].cases["reason_then_content"] = case
+        unified_history.mutate_authored_store(root / sources.STORE, append)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    if append_case:
+        path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+        document = unified_history.load_yaml(path)
+        case = store.families["gemma4"].cases["reason_then_content"]
+        record = copy.deepcopy(next(iter(document["cases"].values())))
+        record["capture_input"] = case["request"]
+        record["assembled"] = case["golden"]["assembled"]
+        record["chunks"] = [{"delta_text": "new", "expected": record["assembled"]}]
+        document["cases"] = {case["display_id"]: record}
+        (path.parent / (case["display_id"] + ".yaml")).write_text(unified_history.dump_yaml(document))
+    retained_files = {p.relative_to(root): p.read_bytes()
+                      for p in (root / sources.STORE).rglob("*.yaml") if p != root / latest}
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    after = unified_history.load_yaml(root / latest)
+    assert after["records"]["text_only"]["value"] == before_snapshot["records"]["text_only"]["value"]
+    assert set(after["records"]) == ({"text_only", "reason_then_content"} if append_case else {"text_only"})
+    assert after[sources.SELECTION]["lineage"] == sorted(selection["lineage"], key=lambda row: row["path"])
+    stable = (root / latest).read_bytes()
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert (root / latest).read_bytes() == stable
+    assert {p.relative_to(root): p.read_bytes()
+            for p in (root / sources.STORE).rglob("*.yaml") if p != root / latest} == retained_files
+    assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
+
+
 @pytest.mark.parametrize("append_case,relative_root", [(False, False), (True, False), (False, True)])
 def test_latest_refresh_binds_the_authored_snapshot_before_ingestion(split_evidence, monkeypatch, append_case, relative_root):
     root, _history, source, latest = split_evidence
@@ -1300,8 +1452,9 @@ def test_latest_refresh_binds_the_authored_snapshot_before_ingestion(split_evide
                         lambda _root, _provenance: origin)
     loose = root / "loose"
     (loose / "dynamo_v2-0.5.3/gemma4").mkdir(parents=True)
-    snapshot = unified_history.load_yaml(source)
-    snapshot["provenance"] = {"status": "captured", "origin": origin}
+    _seed_unpublished_latest(root, source, latest, origin)
+    snapshot = unified_history.load_yaml(root / latest)
+    snapshot.pop(sources.SELECTION)
     record = snapshot["records"]["text_only"]["value"]
     record["document"]["capture_origin"] = origin
     record["document"]["captured_with"] = {"dynamo_v2": "0.5.3"}

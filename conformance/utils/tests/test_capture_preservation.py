@@ -16,6 +16,7 @@ import resolve_fixtures
 import resolve_reasoning_fixtures
 import resolve_stream_fixtures
 import unified_history
+import normalized_yaml
 from viewer_codec import typed_equal
 import yaml
 import shutil
@@ -50,6 +51,52 @@ def test_retained_possessive_captures_keep_their_published_request():
         changed["request"]["chunks"] = [{"delta_text": changed["request"]["input"]}]
         with pytest.raises(ValueError, match="digest differs from the canonical request"):
             unified_history._validate_stimulus(stimulus, changed, str(path))
+
+
+def _assert_authored_additions_preserve_existing(previous, current, where):
+    old_family = normalized_yaml.expand_family(previous)
+    new_family = normalized_yaml.expand_family(current)
+    for header in ("input_document", "golden_document"):
+        assert typed_equal(old_family[header], new_family[header]), where
+    if previous.get("schema_version") == normalized_yaml.SCHEMA:
+        old_requests = normalized_yaml.expand_requests(previous)
+        new_requests = normalized_yaml.expand_requests(current)
+        assert all(key in new_requests and typed_equal(value, new_requests[key])
+                   for key, value in old_requests.items()), where
+    assert all(key in new_family["cases"] and typed_equal(value, new_family["cases"][key])
+               for key, value in old_family["cases"].items()), where
+
+
+@pytest.mark.parametrize("section", ["request_defaults", "tools"])
+def test_authored_preservation_rejects_changed_shared_request_definitions(tmp_path, section):
+    root = _store(tmp_path / "store")
+    family = unified_history.load_authored_store(root).families["gemma4"].document
+    family["cases"]["text_only"]["request"]["tools"] = [{"name": "run", "parameters": {"type": "object"}}]
+    previous = normalized_yaml.encode_family(family)
+    current = copy.deepcopy(previous)
+    if section == "request_defaults":
+        current[section]["finish_reason"] = "length"
+    else:
+        next(iter(current[section].values()))[0]["parameters"]["type"] = "string"
+    with pytest.raises((AssertionError, ValueError)):
+        _assert_authored_additions_preserve_existing(previous, current, "authored.yaml")
+
+
+def test_authored_preservation_allows_appended_cases_and_equivalent_defaults(tmp_path):
+    root = _store(tmp_path / "store")
+    family = unified_history.load_authored_store(root).families["gemma4"].document
+    previous = normalized_yaml.encode_family(family)
+    added = copy.deepcopy(family["cases"]["text_only"])
+    added.update(scenario="new", display_id="UNIFIED.new")
+    added["request"].update(input="new", chunks=[{"delta_text": "new"}])
+    family["cases"]["new"] = added
+    current = normalized_yaml.encode_family(family)
+    _assert_authored_additions_preserve_existing(previous, current, "authored.yaml")
+    default = current["request_defaults"]["finish_reason"]
+    for request in current["requests"].values():
+        request.setdefault("finish_reason", default)
+    current["request_defaults"]["finish_reason"] = "length"
+    _assert_authored_additions_preserve_existing(previous, current, "authored.yaml")
 
 
 def test_preserved_history_matches_committed_baseline(history_source):
@@ -103,15 +150,8 @@ def test_preserved_history_matches_committed_baseline(history_source):
                 if hashlib.sha256(baseline).hexdigest() != row["sha256"]:
                     previous = yaml.safe_load(baseline)
                     current = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
-                    if previous.get("family") == current.get("family"):
-                        old_requests = previous.get("requests", {})
-                        new_requests = current.get("requests", {})
-                        assert all(new_requests.get(key) == value for key, value in old_requests.items()), row["path"]
-                        old_cases = previous.get("cases", {})
-                        new_cases = current.get("cases", {})
-                        assert all(new_cases.get(key) == value for key, value in old_cases.items()), row["path"]
-                        continue
-                    assert hashlib.sha256(baseline).hexdigest() == row["sha256"], row["path"]
+                    _assert_authored_additions_preserve_existing(previous, current, row["path"])
+                    continue
                 continue
             if remaining != row["size"]:
                 assert remaining < 1024, row["path"]

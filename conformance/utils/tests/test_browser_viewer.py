@@ -1730,6 +1730,51 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
         server.server_close()
 
 
+def test_status_palette_preserves_distinct_outcome_meanings(published_viewer):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        _ready(driver, "tab-unified")
+        expected = {
+            "light": {"diverge": "rgb(240, 169, 42)", "leak": "rgb(224, 72, 75)", "error": "rgb(155, 79, 214)"},
+            "dark": {"diverge": "rgb(217, 149, 42)", "leak": "rgb(217, 71, 74)", "error": "rgb(164, 101, 220)"},
+        }
+        colors = driver.execute_script("""
+          const root = document.documentElement, prior = root.getAttribute('data-theme');
+          const colors = {};
+          try {
+            for (const theme of ['light', 'dark']) {
+              root.setAttribute('data-theme', theme);
+              colors[theme] = {};
+              for (const scope of [document.body, document.getElementById('tab-unified')]) {
+                const key = scope.id || 'body', host = document.createElement('div');
+                scope.append(host);
+                try {
+                  colors[theme][key] = {};
+                  for (const status of ['diverge', 'leak', 'error']) {
+                    const swatch = document.createElement('i');
+                    swatch.className = 'legend-swatch matrix-status status-' + status;
+                    host.append(swatch);
+                    colors[theme][key][status] = getComputedStyle(swatch).backgroundColor;
+                  }
+                } finally { host.remove(); }
+              }
+            }
+          } finally {
+            if (prior === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', prior);
+          }
+          return colors;
+        """)
+        for theme, scopes in colors.items():
+            for scope, palette in scopes.items():
+                assert palette == expected[theme], (theme, scope, palette)
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def test_checkout_case_hints_fit_both_orientations_and_themes(current_source_view):
     server, _ = _server(root=current_source_view, missing_paths=('/conformance/viewer-publication.json',))
     driver = _driver()

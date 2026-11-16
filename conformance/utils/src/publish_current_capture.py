@@ -4,6 +4,7 @@
 """Archive immutable capture evidence before publishing one latest YAML."""
 import argparse
 import base64
+import copy
 import fcntl
 import json
 import os
@@ -21,6 +22,7 @@ from capture_versions import capture_release_sort_key
 import unified_archives
 import unified_history
 import migrate_capture_sources
+import normalized_yaml
 
 
 def choose_current(rows, candidate):
@@ -190,7 +192,10 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             target = root / sources.latest_path("unified", family, implementation)
             require_current_records(capture.resolve(directory), store.families[family], origin, implementation, version)
             previous = target.read_bytes()
-            prior_snapshot = unified_history.load_yaml(target)
+            authored_path = store.families[family].path
+            authored_storage = unified_history._parse_yaml_raw(authored_path, authored_sources[authored_path])
+            prior_snapshot = normalized_yaml.expand_snapshot(
+                unified_history._parse_yaml_raw(target, previous), authored_storage)
             if prior_snapshot.get("execution_proof") or prior_snapshot.get("historical_evidence") or any(
                 set(record["value"]["document"].get("record_metadata", {})) - {"parser_path"}
                 for record in prior_snapshot["records"].values()
@@ -200,12 +205,28 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             selection = json.loads(previous.split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
             if capture_release_sort_key(version) < capture_release_sort_key(selection["version"]):
                 raise ValueError("latest refresh cannot move to an older producer version")
-            authored_path = store.families[family].path
-            authored_storage = unified_history._parse_yaml_raw(authored_path, authored_sources[authored_path])
+            unified_history._validate_complete_snapshot(
+                target, prior_snapshot, store.families[family], implementation, selection["version"])
             document = capture.complete_snapshot(directory)
-            unified_history._validate_complete_snapshot(target, document, store.families[family], implementation, version)
             logical = f"{sources.STORE}/families/{family}/{directory}.yaml"
-            lineage = [{"path": logical, **unified_history.source_identity(logical.removeprefix(sources.STORE + "/"))}]
+            for case_id, retained in prior_snapshot["records"].items():
+                incoming = document["records"].get(case_id)
+                case = store.families[family].cases.get(case_id)
+                if retained["member"] != logical or incoming is None or case is None or not unified_history.typed_equal(
+                    unified_history.materialized_record(case, retained["value"]),
+                    unified_history.materialized_record(case, incoming["value"]),
+                ):
+                    raise ValueError(
+                        "latest refresh cannot replace retained observations, requests or producer identity; "
+                        "conflicting native captures require archival support"
+                    )
+                # Loose ingestion may enrich bindings or rewrite display aliases;
+                # neither permits replacing the original evidence or its metadata.
+                document["records"][case_id] = copy.deepcopy(retained)
+            unified_history._validate_complete_snapshot(target, document, store.families[family], implementation, version)
+            lineage = copy.deepcopy(selection["lineage"])
+            if not any(row["path"] == logical for row in lineage):
+                lineage.append({"path": logical, **unified_history.source_identity(logical.removeprefix(sources.STORE + "/"))})
             row = {"source": logical, "surface": "unified", "mode": "unified", "family": family,
                    "implementation": implementation, "version": version}
             data = sources.selected_bytes(unified_history.dump_yaml(document).encode(), row, lineage,
