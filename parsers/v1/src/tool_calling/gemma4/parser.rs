@@ -564,12 +564,15 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
 }
 
 fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
-    let bytes = cur.src.as_bytes();
     let start = cur.pos;
-    while cur.pos < bytes.len() {
-        let b = bytes[cur.pos];
-        if b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.' {
-            cur.pos += 1;
+    while let Some(ch) = cur.rest().chars().next() {
+        // Argument keys may contain Unicode, unlike the ASCII call-name grammar.
+        // Preserve the existing ASCII punctuation and reject whitespace/controls.
+        if ch.is_ascii_alphanumeric()
+            || matches!(ch, '_' | '-' | '.')
+            || (!ch.is_ascii() && !ch.is_whitespace() && !ch.is_control())
+        {
+            cur.pos += ch.len_utf8();
         } else {
             break;
         }
@@ -720,6 +723,46 @@ mod tests {
         assert_eq!(calls.len(), 1, "expected exactly one tool call");
         let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
         (calls[0].function.name.clone(), args)
+    }
+
+    #[test]
+    fn unicode_argument_keys_preserve_the_entire_object() {
+        for key in [
+            "remarks",
+            "備考",
+            "café",
+            "cafe\u{301}",
+            "𐐀",
+            "🔑",
+            "field_日本語.v2-1",
+        ] {
+            let input = format!(
+                "<|tool_call>call:update_customer_remarks{{custom_fields:{{{key}:<|\"|>Prefers email contact<|\"|>}},count:2,items:[{{{key}:true}}]}}<tool_call|>"
+            );
+            let (name, arguments) = extract_first(&input);
+            assert_eq!(name, "update_customer_remarks");
+            assert_eq!(
+                arguments,
+                serde_json::json!({
+                    "custom_fields": {key: "Prefers email contact"},
+                    "count": 2,
+                    "items": [{key: true}],
+                }),
+                "key={key:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_argument_key_characters_keep_malformed_object_fallback() {
+        for key in ["bad/key", "bad?key", "bad\u{2003}key", "bad\u{85}key"] {
+            let input = format!("<|tool_call>call:f{{{key}:true}}<tool_call|>");
+            assert_eq!(
+                extract_first(&input).1,
+                serde_json::json!({}),
+                "key={key:?}"
+            );
+        }
     }
 
     #[test] // detection helper

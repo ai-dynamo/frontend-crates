@@ -158,6 +158,70 @@ fn drained_identifier_cannot_turn_prose_into_a_bare_call() {
     }
 }
 
+#[test]
+fn unicode_argument_keys_preserve_the_entire_object_at_every_split() {
+    for key in [
+        "remarks",
+        "備考",
+        "café",
+        "cafe\u{301}",
+        "𐐀",
+        "🔑",
+        "field_日本語.v2-1",
+    ] {
+        for strict in [false, true] {
+            let tools = [Tool {
+                name: "update_customer_remarks".into(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "custom_fields": {"type": "object", "additionalProperties": {"type": "string"}},
+                        "count": {"type": "integer"},
+                        "items": {"type": "array", "items": {"type": "object", "additionalProperties": {"type": "boolean"}}},
+                    },
+                    "required": ["custom_fields", "count", "items"],
+                    "additionalProperties": false,
+                }),
+                strict: Some(strict),
+            }];
+            let input = format!(
+                "<|tool_call>call:update_customer_remarks{{custom_fields:{{{key}:<|\"|>Prefers email contact<|\"|>}},count:2,items:[{{{key}:true}}]}}<tool_call|>"
+            );
+            let expected = serde_json::json!({
+                "custom_fields": {key: "Prefers email contact"},
+                "count": 2,
+                "items": [{key: true}],
+            });
+            for chunks in chunkings(&input) {
+                assert_adapters(
+                    "gemma4",
+                    &tools,
+                    &chunks,
+                    "",
+                    &[("update_customer_remarks", expected.clone())],
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn invalid_argument_key_characters_keep_malformed_object_fallback() {
+    for key in ["bad/key", "bad?key", "bad\u{2003}key", "bad\u{85}key"] {
+        let input = format!("<|tool_call>call:get_weather{{{key}:true}}<tool_call|>");
+        for chunks in chunkings(&input) {
+            assert_adapters(
+                "gemma4",
+                &weather_tools(),
+                &chunks,
+                "",
+                &[("get_weather", serde_json::json!({}))],
+            );
+        }
+    }
+}
+
 fn assert_both_adapters(input: &str, expected_text: &str) {
     for chunks in chunkings(input) {
         assert_adapters(

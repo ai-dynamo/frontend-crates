@@ -265,12 +265,12 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
 }
 
 fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
-    let bytes = cur.src.as_bytes();
     let start = cur.pos;
-    while cur.pos < bytes.len() {
-        let b = bytes[cur.pos];
-        if is_call_name_char(char::from(b)) {
-            cur.pos += 1;
+    while let Some(ch) = cur.rest().chars().next() {
+        // Argument keys may contain Unicode, unlike the ASCII call-name grammar.
+        // Preserve the existing ASCII punctuation and reject whitespace/controls.
+        if is_call_name_char(ch) || (!ch.is_ascii() && !ch.is_whitespace() && !ch.is_control()) {
+            cur.pos += ch.len_utf8();
         } else {
             break;
         }
