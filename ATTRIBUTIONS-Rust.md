@@ -25,6 +25,19 @@ Apache License, Version 2.0, reproduced in this repository's `LICENSE`.
 
 ---
 
+## `dynamo-multimodal` — the parity image corpus adapted from SGLang
+
+The image recipes of `multimodal/tests/fixtures/mm_parity/corpus.py` for the
+files that SGLang's corpus has at the commits below are adapted from SGLang's
+`rust/sglang-processor/tests/scripts/generate_mm_parity.py`: the format corpus
+at commit `a2ffd214696ea7144d3c237133a15df3315d900b`, and the transparent GIF,
+the PNG with an EXIF text profile and the BMP with an alpha bitmask at
+[SGLang PR #46563](https://github.com/sgl-project/sglang/pull/46563) commit
+`916577f5450a0475807c3a07b0b5b8377708935c`. SGLang is distributed under
+Apache License, Version 2.0, reproduced in this repository's `LICENSE`.
+
+---
+
 ## `dynamo-multimodal` — DSV4.1 geometry adapted from SGLang
 
 The geometry math in `multimodal/src/models/deepseek_v41.rs` is adapted from

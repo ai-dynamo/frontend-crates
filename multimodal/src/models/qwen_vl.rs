@@ -231,7 +231,9 @@ impl MmFamilyProcessor for QwenVlProcessor {
     }
 
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem> {
-        let DecodedMedia::Image { rgb, height, width } = media;
+        let DecodedMedia::Image { rgb, height, width } = media else {
+            return Err(MmError::unsupported("qwen_vl: expects an RGB image"));
+        };
         let (h, w) = (*height, *width);
         if h.checked_mul(w).and_then(|n| n.checked_mul(3)) != Some(rgb.len()) {
             return Err(MmError::invalid_input(
@@ -1142,6 +1144,19 @@ mod tests {
                 Err(MmError::InvalidInput { .. })
             ));
         }
+    }
+
+    #[test]
+    fn process_item_refuses_rgba() {
+        let proc = QwenVlProcessor::new(valid_spec()).unwrap();
+        assert!(matches!(
+            proc.process_item(&DecodedMedia::ImageRgba {
+                rgba: vec![7u8; 112 * 84 * 4],
+                height: 112,
+                width: 84,
+            }),
+            Err(MmError::Unsupported { .. })
+        ));
     }
 
     #[test]
