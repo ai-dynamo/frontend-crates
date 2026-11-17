@@ -11,8 +11,9 @@ from frameworks import hf
 FILE = "glm-5.3-flash.json"
 TARGET = "sglang"
 TARGET_REASON = (
-    "SGLang serves M-RoPE positions (HF's model counts 1-D positions) and puts alpha over "
-    "a gray or white chosen from the edges (HF's load_image drops it)."
+    "SGLang puts alpha over a gray or white chosen from the edges (HF's load_image drops it). "
+    "Its processor also gives M-RoPE positions by GLM-4V's rule; the model reads 1-D "
+    "positions, so these have no effect."
 )
 ID_MAP = {}
 

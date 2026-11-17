@@ -15,7 +15,7 @@ prompt, `offsets` the feature spans, `grid` the patch grid, `shapes` and
 
 ## zai-org/GLM-5.3-Flash
 
-Revision `46a050bec13002ad29ee795c16e61cf4fa3c4a9c`. Baseline: `Glm5NextProcessor`, transformers 5.19.0, `torchvision` backend, `transformers.image_utils.load_image`. Target: `sglang`: SGLang serves M-RoPE positions (HF's model counts 1-D positions) and puts alpha over a gray or white chosen from the edges (HF's load_image drops it).
+Revision `46a050bec13002ad29ee795c16e61cf4fa3c4a9c`. Baseline: `Glm5NextProcessor`, transformers 5.19.0, `torchvision` backend, `transformers.image_utils.load_image`. Target: `sglang`: SGLang puts alpha over a gray or white chosen from the edges (HF's load_image drops it). Its processor also gives M-RoPE positions by GLM-4V's rule; the model reads 1-D positions, so these have no effect.
 
 | framework | version | libraries | source | omits |
 | --- | --- | --- | --- | --- |

@@ -24,9 +24,8 @@ cases as known gaps.
 The target is the column that the crate must equal. Use `hf`. Use the serving
 engine's column (for example `sglang`) only when that engine serves other
 values for the model, and give the reason in `TARGET_REASON`, which
-`PARITY.md` shows. GLM-5.3-Flash is the example: SGLang serves M-RoPE positions and
-puts alpha over a background chosen from the image edges; HF counts 1-D
-positions and drops alpha.
+`PARITY.md` shows. GLM-5.3-Flash is the example: SGLang puts alpha over a
+background chosen from the image edges, and HF drops alpha.
 
 Pause for human review of the case list and the target before you implement.
 
