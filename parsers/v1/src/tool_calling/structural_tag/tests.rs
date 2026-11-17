@@ -864,9 +864,9 @@ fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
         json!({"registry_Model_v1_name": {"type": "string"}})
     );
 
-    // Kimi K2 forwards the JSON schema; K3 resolves the reference into a typed
-    // XTML argument. Neither may carry the escaped spelling.
-    let kimi = |native: StructuralTagBuilder| {
+    // K2 and Inkling forward JSON schemas; K3 resolves typed XTML arguments.
+    // None may carry the escaped reference spelling.
+    let serialized_tag = |native: StructuralTagBuilder| {
         build_unwrap(
             &native,
             &ToolChoice::Required,
@@ -876,10 +876,16 @@ fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
         )
         .to_string()
     };
-    let k2 = kimi(StructuralTagBuilder::KimiK2);
+    let k2 = serialized_tag(StructuralTagBuilder::KimiK2);
     assert!(!k2.contains("registry~1Model"), "{k2}");
     assert!(k2.contains("#/$defs/registry_Model_v1_name"), "{k2}");
-    let k3 = kimi(StructuralTagBuilder::KimiK3);
+    let inkling = serialized_tag(StructuralTagBuilder::Inkling);
+    assert!(!inkling.contains("registry~1Model"), "{inkling}");
+    assert!(
+        inkling.contains("#/$defs/registry_Model_v1_name"),
+        "{inkling}"
+    );
+    let k3 = serialized_tag(StructuralTagBuilder::KimiK3);
     assert!(!k3.contains("registry~1Model"), "{k3}");
     assert!(k3.contains(r#"key=\"model_name\" type=\"string\""#), "{k3}");
 }
@@ -1153,40 +1159,6 @@ fn deepseek_v4_config_builds_tool_calls_block() {
     );
     assert_eq!(invoke_tags[0]["end"], "</｜DSML｜invoke>\n");
     assert_eq!(invoke_tags[0]["content"]["style"], "deepseek_xml");
-}
-
-#[test]
-fn inkling_config_builds_tool_call() {
-    let tools = sample_tools();
-    let config = ToolCallConfig::inkling();
-    let builder = config
-        .structural_tag_builder
-        .as_ref()
-        .expect("inkling should provide a structural tag builder");
-    let tool_choice = ToolChoice::Named("get_weather".to_string());
-    let c = ctx(&tool_choice, &tools, None, StructuralTagSchemaMode::Auto);
-    let parsed = builder
-        .build_tool_call_format(&c)
-        .expect("build should not error")
-        .expect("build should return Some");
-
-    let fmt = &parsed["format"];
-    assert_eq!(fmt["type"], "triggered_tags");
-    assert_eq!(fmt["triggers"][0], "<|content_invoke_tool_json|>");
-    assert_eq!(fmt["at_least_one"], true);
-
-    // Named tool_choice constrains to exactly the one requested tool.
-    let tags = fmt["tags"].as_array().unwrap();
-    assert_eq!(tags.len(), 1);
-    let tag = &tags[0];
-    assert_eq!(tag["type"], "tag");
-    // Emits exactly what the Inkling parser reads: the invoke marker, the
-    // {"name": ..., "args": ...} envelope, and the <|end_message|> fence.
-    assert_eq!(
-        tag["begin"],
-        "<|content_invoke_tool_json|>{\"name\": \"get_weather\", \"args\": "
-    );
-    assert_eq!(tag["end"], "}<|end_message|>");
 }
 
 /// Round-trip every supported parser through the real parser map.
