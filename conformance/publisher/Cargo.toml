@@ -10,7 +10,7 @@ name = "conformance-publish"
 path = "src/main.rs"
 
 [dependencies]
-dynamo-conformance-fixtures-v2 = { path = "..", default-features = false }
+dynamo-conformance-fixtures-v2 = { path = "..", version = "0.1.0", default-features = false }
 anyhow.workspace = true
 base64.workspace = true
 chrono.workspace = true
