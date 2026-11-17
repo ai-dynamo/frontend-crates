@@ -21,6 +21,7 @@
 //! `<|media_end|>`), so the spec carries the token ids of that text; see
 //! [`SizeTokens`].
 
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use crate::image::decode::{DecodeLimits, decode_native};
@@ -417,11 +418,24 @@ impl MmFamilyProcessor for KimiK3Processor {
         let (width, height) = (side(w)?, side(h)?);
         let plan = self.plan(width, height)?;
         let (nh, nw) = (plan.new_height as usize, plan.new_width as usize);
-        let rgb = if channels == 4 {
-            let resized = resize::resize_rgba(pixels, h, w, nh, nw);
-            composite(&resized, nh, nw, self.spec.transparent_bg_config)
-        } else {
-            resize::resize_rgb(pixels, h, w, nh, nw, Resample::Pil(Filter::Bicubic))
+        let bg = self.spec.transparent_bg_config;
+        let rgb = match (channels, (nh, nw) == (h, w)) {
+            (4, true) => Cow::Owned(composite(pixels, nh, nw, bg)),
+            (4, false) => Cow::Owned(composite(
+                &resize::resize_rgba(pixels, h, w, nh, nw),
+                nh,
+                nw,
+                bg,
+            )),
+            (_, true) => Cow::Borrowed(pixels.as_slice()),
+            (_, false) => Cow::Owned(resize::resize_rgb(
+                pixels,
+                h,
+                w,
+                nh,
+                nw,
+                Resample::Pil(Filter::Bicubic),
+            )),
         };
         let ps = self.spec.patch_size as usize;
         let gh = (nh + plan.pad_height as usize) / ps;
