@@ -80,6 +80,7 @@ impl TransparentBgConfig {
 /// with the model's tokenizer and checks that rule; the crate can only check
 /// the table's shape.
 #[derive(Clone, Debug, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SizeTokens {
     begin: Vec<i32>,
     by: Vec<i32>,
@@ -126,6 +127,7 @@ impl SizeTokens {
 /// The `media_proc_cfg` image knobs, plus the pad token id and the size
 /// header's token table.
 #[derive(Clone, Debug, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct KimiK3Spec {
     pub image_token_id: i32,
     pub patch_size: u32,
@@ -147,7 +149,6 @@ pub struct KimiK3Spec {
 }
 
 impl KimiK3Spec {
-    /// Refuse what the pipeline cannot honor exactly.
     pub(crate) fn validate(&self) -> Result<()> {
         if self.fixed_output_tokens.is_some() {
             return Err(MmError::unsupported(
@@ -714,11 +715,9 @@ mod tests {
             "transparent_bg_fill_stage": "after_resize",
             "fixed_output_tokens": null
         });
-        let build = |spec: serde_json::Value| {
-            serde_json::from_value::<KimiK3Spec>(spec)
-                .map_err(|error| MmError::invalid_input_with_source("spec", error))
-                .and_then(KimiK3Processor::new)
-                .map(|_| ())
+        let build = |mut spec: serde_json::Value| {
+            spec["family"] = "kimi_k3".into();
+            crate::registry::processor_from_spec(&spec.to_string()).map(|_| ())
         };
         assert!(build(shipped.clone()).is_ok());
 
@@ -731,7 +730,15 @@ mod tests {
             .remove("transparent_bg_fill_stage");
         let mut white = shipped.clone();
         white["transparent_bg_config"]["pattern"] = "white".into();
-        for spec in [before_resize, no_stage, white] {
+        let mut unknown = shipped.clone();
+        unknown["resample"] = "nearest".into();
+        let tokens = size_tokens();
+        let mut nested_unknown = shipped.clone();
+        nested_unknown["size_tokens"] = serde_json::json!({
+            "begin": tokens.begin, "by": tokens.by, "content": tokens.content,
+            "end": tokens.end, "digits": tokens.digits, "pad": [1]
+        });
+        for spec in [before_resize, no_stage, white, unknown, nested_unknown] {
             assert!(matches!(build(spec), Err(MmError::InvalidInput { .. })));
         }
         let mut fixed = shipped;

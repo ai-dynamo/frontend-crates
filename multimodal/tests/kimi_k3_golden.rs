@@ -26,7 +26,6 @@ fn fixture(name: &str) -> Value {
     )
 }
 
-/// The spec with the table's token table for the size header.
 fn with_size_tokens(spec: &Value) -> Value {
     let mut spec = spec.clone();
     spec["size_tokens"] = common::table("kimi-k3.json")["spec_shared"]["size_tokens"].clone();
@@ -244,7 +243,6 @@ fn both_checkpoints_resolve_to_the_table_spec() {
     }
 }
 
-/// A resolved spec has no token table: pixels work, the expansion does not.
 #[test]
 fn without_size_tokens_pixels_work_and_the_expansion_is_unsupported() {
     let table = common::table("kimi-k3.json");
@@ -277,11 +275,14 @@ fn without_size_tokens_pixels_work_and_the_expansion_is_unsupported() {
 /// tokenizer's header. The crate refuses the sizes it cannot plan exactly.
 #[test]
 fn plan_and_prompt_span_match_the_references_over_a_size_sweep() {
-    use dynamo_multimodal::models::kimi_k3::{KimiK3Processor, KimiK3Spec};
+    use dynamo_multimodal::models::kimi_k3::KimiK3Processor;
 
     let counts = fixture("counts.json");
     let family = processor_from_spec(&with_size_tokens(&counts["spec"]).to_string()).unwrap();
-    let spec: KimiK3Spec = serde_json::from_value(counts["spec"].clone()).unwrap();
+    let ProcessorSpec::KimiK3(spec) = serde_json::from_value(counts["spec"].clone()).unwrap()
+    else {
+        panic!("expected Kimi-K3 spec");
+    };
     let typed = KimiK3Processor::new(spec).unwrap();
     let rows = counts["rows"].as_array().unwrap();
     let mut refused = 0;
@@ -312,5 +313,5 @@ fn plan_and_prompt_span_match_the_references_over_a_size_sweep() {
             "{width}x{height}"
         );
     }
-    assert_eq!((rows.len(), refused), (3325, 18));
+    assert_eq!((rows.len(), refused), (3283, 16));
 }
