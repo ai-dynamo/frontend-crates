@@ -181,6 +181,7 @@ struct HarmonyRuntime {
     encoding: HarmonyEncoding,
     allow_implicit_channel_header: bool,
     legacy_tool_compatibility: bool,
+    raw_string_tools: HashSet<String>,
     parser: DeltaReader,
     marker_ids: HashMap<u32, &'static str>,
     start_id: u32,
@@ -214,6 +215,7 @@ impl HarmonyRuntime {
             encoding: self.encoding.clone(),
             allow_implicit_channel_header: self.allow_implicit_channel_header,
             legacy_tool_compatibility: self.legacy_tool_compatibility,
+            raw_string_tools: self.raw_string_tools.clone(),
             parser: self.parser.fork_continuation(),
             marker_ids: self.marker_ids.clone(),
             start_id: self.start_id,
@@ -246,6 +248,7 @@ impl HarmonyRuntime {
             parser: DeltaReader::new(encoding.clone())?,
             allow_implicit_channel_header,
             legacy_tool_compatibility,
+            raw_string_tools: HashSet::new(),
             start_id: token_id(START)?,
             message_id: token_id(MESSAGE)?,
             handoff_id: token_id(HANDOFF)?,
@@ -524,6 +527,7 @@ impl HarmonyRuntime {
             && self.in_body
             && matches!(self.route, Some(Route::Tool(_)))
             && marker_text == Some(CHANNEL)
+            && !matches!(&self.route, Some(Route::Tool(name)) if self.raw_string_tools.contains(name))
             && !self.call_json.inside_string()
         {
             let content = self.call_content.view();
@@ -639,7 +643,9 @@ impl HarmonyRuntime {
             {
                 self.active_call_index = self.next_call_index;
                 self.next_call_index += 1;
-                self.call_cursor = Some(super::GuidedJsonCursor::named(name));
+                if !self.raw_string_tools.contains(name) {
+                    self.call_cursor = Some(super::GuidedJsonCursor::named(name));
+                }
             }
             self.call_content.clear();
             self.call_json = Default::default();
@@ -708,6 +714,9 @@ impl HarmonyRuntime {
     }
 
     fn advance_call_json(&mut self, text: &str) {
+        if matches!(&self.route, Some(Route::Tool(name)) if self.raw_string_tools.contains(name)) {
+            return;
+        }
         for character in text.chars() {
             self.call_json.advance(character);
         }
@@ -931,6 +940,16 @@ impl HarmonyRuntime {
 
     fn finish_tool_call(&mut self, name: &str, output: &mut UnifiedParserOutput) {
         let content = self.call_content.view();
+        if self.raw_string_tools.contains(name) {
+            output.push_call(ToolCallDelta {
+                tool_index: self.active_call_index,
+                name: Some(name.to_string()),
+                arguments: serde_json::to_string(&content.slice(0..content.len()))
+                    .expect("string JSON encoding"),
+                complete: true,
+            });
+            return;
+        }
         let empty = content.is_whitespace();
         if !empty && !valid_json_reader(content.reader()) && !self.legacy_tool_compatibility {
             tracing::warn!(
@@ -1075,6 +1094,7 @@ struct HarmonyNative {
     pending_token_bytes: Vec<u8>,
     allow_implicit_channel_header: bool,
     legacy_tool_compatibility: bool,
+    raw_string_tools: HashSet<String>,
 }
 
 impl HarmonyNative {
@@ -1092,6 +1112,7 @@ impl HarmonyNative {
             pending_token_bytes: Vec::new(),
             allow_implicit_channel_header,
             legacy_tool_compatibility,
+            raw_string_tools: HashSet::new(),
         }
     }
 
@@ -1107,6 +1128,7 @@ impl HarmonyNative {
             self.allow_implicit_channel_header,
             self.legacy_tool_compatibility,
         )?;
+        runtime.raw_string_tools = self.raw_string_tools.clone();
         if init.prompt_token_ids.is_empty() {
             runtime.begin_prefilled_message(init.starting_state)?;
         } else {
@@ -1223,6 +1245,7 @@ impl NativeUnified for HarmonyNative {
             pending_token_bytes: self.pending_token_bytes.clone(),
             allow_implicit_channel_header: self.allow_implicit_channel_header,
             legacy_tool_compatibility: self.legacy_tool_compatibility,
+            raw_string_tools: self.raw_string_tools.clone(),
         }))
     }
 
@@ -1396,9 +1419,20 @@ impl NativeUnified for HarmonyNative {
     }
 }
 
-pub(crate) fn gpt_oss_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
+pub(crate) fn gpt_oss_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     // Published GPT-OSS fixtures use channel-first headers without an explicit role.
-    Box::new(GuidedRouted::new(HarmonyNative::new(true, false)))
+    let mut native = HarmonyNative::new(true, false);
+    native.raw_string_tools = tools
+        .iter()
+        .filter(|tool| {
+            tool.parameters
+                .get("type")
+                .and_then(serde_json::Value::as_str)
+                == Some("string")
+        })
+        .map(|tool| tool.name.clone())
+        .collect();
+    Box::new(GuidedRouted::new(native))
 }
 
 // Native-only lifecycle keeps unrelated guided state out of the legacy auto-trait contract.
@@ -3913,6 +3947,82 @@ mod tests {
                 crate::unified::assemble(&events),
                 expected,
                 "token split={split}"
+            );
+        }
+    }
+
+    #[test]
+    fn string_schema_raw_bodies_preserve_bytes_and_message_lifecycle() {
+        let tools = [Tool {
+            name: "python".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"string"}),
+            strict: None,
+        }];
+        for body in [
+            "",
+            " \n\t",
+            "print(1)",
+            "雪 = 'é'\n",
+            "\"unterminated",
+            "{\"key\":",
+            "[1, 2]",
+            "\"json string\"",
+        ] {
+            for ending in [HANDOFF, MESSAGE_END, TURN_END] {
+                let input = format!(
+                    "{START}assistant to=python{CHANNEL}analysis{MESSAGE}{body}{ending}{START}assistant to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"q\":1}}{HANDOFF}{START}assistant{CHANNEL}final{MESSAGE}done{TURN_END}"
+                );
+                let expected = [
+                    UnifiedEvent::ToolCall {
+                        name: "python".into(),
+                        arguments: serde_json::json!(body),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments: serde_json::json!({"q":1}),
+                    },
+                    UnifiedEvent::Text {
+                        text: "done".into(),
+                    },
+                ];
+                assert_parser_splits(gpt_oss_unified(&tools), &input, &expected);
+                let mut parser = gpt_oss_unified(&tools);
+                parser.initialize(&[]).unwrap();
+                let mut events = Vec::new();
+                for ch in input.chars() {
+                    events.extend(parser.push(&ch.to_string()).unwrap());
+                }
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(crate::unified::assemble(&events), expected);
+            }
+            let prefix = format!("{START}assistant to=python{CHANNEL}analysis{MESSAGE}{body}");
+            let mut parser = gpt_oss_unified(&tools);
+            parser.initialize(&[]).unwrap();
+            assert!(parser.push(&prefix).unwrap().is_empty());
+            assert!(parser.finish().unwrap().events.is_empty());
+        }
+        let mut native = HarmonyNative::new(true, false);
+        native.raw_string_tools.insert("python".into());
+        let mut runtime = native.make_runtime(&UnifiedParserInit::default()).unwrap();
+        let mut ignored = UnifiedParserOutput::default();
+        runtime
+            .feed_text(
+                &format!("{START}assistant to=python{CHANNEL}analysis{MESSAGE}\"雪"),
+                &mut ignored,
+            )
+            .unwrap();
+        runtime.checkpoint();
+        let mut fork = runtime.fork_continuation();
+        for runtime in [&mut runtime, &mut fork] {
+            let mut output = UnifiedParserOutput::default();
+            runtime.feed_text(HANDOFF, &mut output).unwrap();
+            assert_eq!(
+                output.assembled(),
+                [UnifiedEvent::ToolCall {
+                    name: "python".into(),
+                    arguments: serde_json::json!("\"雪")
+                }]
             );
         }
     }

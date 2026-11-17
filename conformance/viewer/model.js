@@ -45,11 +45,35 @@ export function canonicalUnifiedEvents(events) {
 
 export function classifyUnified(family, golden, observed, leakMarkers) {
   if (!Array.isArray(golden) || !Array.isArray(observed) || ![...golden, ...observed].every(isMapping)) throw new Error('Unified events must be lists of mappings');
-  golden = canonicalUnifiedEvents(golden);
-  observed = canonicalUnifiedEvents(observed);
-  if (sameValue(golden, observed)) return 'MATCH';
+  if (sameValue(canonicalUnifiedEvents(golden), canonicalUnifiedEvents(observed))) return 'MATCH';
   const markers = [...leakMarkers.common, ...(getField(leakMarkers.families, family) || [])];
   if (observed.some((event) => ['text', 'reasoning'].includes(getField(event, 'kind')) && markers.some((marker) => String(getField(event, 'text') || '').includes(marker)))) return 'LEAK';
+  const decodedArguments = call => {
+    const value = getField(call, 'arguments');
+    if (typeof value !== 'string') return value;
+    try { return parseJson(value); }
+    catch (error) { if (!(error instanceof SyntaxError)) throw error; return value; }
+  };
+  const expectedCallsForLeaks = golden.filter(event => getField(event, 'kind') === 'tool_call');
+  const unexpectedArgumentMarker = (actual, expected) => {
+    if (typeof actual === 'string') return markers.some(marker => {
+      const occurrences = value => typeof value === 'string' ? value.split(marker).length - 1 : 0;
+      return occurrences(actual) > occurrences(expected);
+    });
+    if (Array.isArray(actual)) return actual.some((value, index) => unexpectedArgumentMarker(value, Array.isArray(expected) ? expected[index] : undefined));
+    if (isMapping(actual)) return mappingEntries(actual).some(([key, value]) => unexpectedArgumentMarker(key, isMapping(expected) && hasField(expected, key) ? key : undefined) || unexpectedArgumentMarker(value, isMapping(expected) ? getField(expected, key) : undefined));
+    return false;
+  };
+  const callOccurrences = new Map();
+  if (observed.filter(event => getField(event, 'kind') === 'tool_call').some(call => {
+    const name = getField(call, 'name');
+    const occurrence = callOccurrences.get(name) || 0;
+    callOccurrences.set(name, occurrence + 1);
+    const expected = expectedCallsForLeaks.filter(candidate => getField(candidate, 'name') === name)[occurrence];
+    return unexpectedArgumentMarker(decodedArguments(call), expected && getField(expected, 'name') === getField(call, 'name') ? decodedArguments(expected) : undefined);
+  })) return 'LEAK';
+  golden = canonicalUnifiedEvents(golden);
+  observed = canonicalUnifiedEvents(observed);
   const count = (events, kind) => events.filter((event) => getField(event, 'kind') === kind).length;
   if (count(observed, 'reasoning') < count(golden, 'reasoning')) return 'MERGE';
   const calls = (events) => events.filter((event) => getField(event, 'kind') === 'tool_call');

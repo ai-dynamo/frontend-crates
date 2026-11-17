@@ -1293,6 +1293,10 @@ def test_latest_refresh_rejects_missing_or_extra_native_families(tmp_path, monke
 
 
 def _seed_unpublished_latest(root, source, latest, origin):
+    for name in ("conformance/tests/unified_render.rs", "conformance/tests/common/unified_capture.rs", "conformance/tests/common/mod.rs"):
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes((Path(__file__).resolve().parents[3] / name).read_bytes())
     snapshot = unified_history.load_yaml(source)
     snapshot["provenance"] = {"status": "captured", "origin": copy.deepcopy(origin)}
     for wrapped in snapshot["records"].values():
@@ -1308,7 +1312,7 @@ def _seed_unpublished_latest(root, source, latest, origin):
 
 
 @pytest.mark.parametrize("change", ["output", "origin", "request", "referenced_request", "missing", "newer_version", "member"])
-def test_latest_refresh_rejects_conflicting_unpublished_recapture_without_writes(split_evidence, monkeypatch, change):
+def test_latest_refresh_archives_new_execution_and_rejects_invalid_requests(split_evidence, monkeypatch, change):
     root, history, source, latest = split_evidence
     origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
     _seed_unpublished_latest(root, source, latest, origin)
@@ -1359,9 +1363,31 @@ def test_latest_refresh_rejects_conflicting_unpublished_recapture_without_writes
     record_path.write_text(unified_history.dump_yaml(record))
     before = {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")}
     before_history = {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()}
-    with pytest.raises(ValueError, match="cannot replace retained|missing active cases|every active case|stimulus digest differs"):
+    if change in {"output", "origin", "newer_version"}:
         publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
-    assert {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")} == before
+        updated = unified_history.load_yaml(root / latest)
+        original = unified_history._parse_yaml_raw(root / latest, before[Path(latest)])
+        for key, wrapped in original["records"].items():
+            retained = updated["records"][key]["value"]
+            assert retained["observation"] == wrapped["value"]["observation"]
+            assert retained["stimulus"] == wrapped["value"]["stimulus"]
+            supplement = retained["document"]["record_metadata"]["verified_recapture"]
+            assert supplement["provenance"]["git_commit"] == origin["git_commit"]
+        stable = (root / latest).read_bytes()
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        assert (root / latest).read_bytes() == stable
+        previous_active = copy.deepcopy(updated["records"]["text_only"]["value"]["document"]["record_metadata"]["verified_recapture"])
+        record["cases"][case_id]["assembled"] = [{"kind": "text", "text": "another execution"}]
+        record["cases"][case_id]["chunks"][0]["expected"] = record["cases"][case_id]["assembled"]
+        record_path.write_text(unified_history.dump_yaml(record))
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        archived = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]["document"]["record_metadata"]
+        assert archived["verified_recaptures"] == [previous_active]
+        assert archived["verified_recapture"]["result"]["assembled"] == record["cases"][case_id]["assembled"]
+    else:
+        with pytest.raises(ValueError, match="cannot replace retained|missing active cases|every active case|stimulus digest differs"):
+            publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        assert {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")} == before
     assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
 
 
@@ -1389,9 +1415,11 @@ def test_latest_refresh_preservation_uses_the_fingerprinted_snapshot_bytes(split
     monkeypatch.setattr(unified_history, "load_yaml", lambda path:
                         copy.deepcopy(raced) if path == root / latest else load(path))
     before = (root / latest).read_bytes()
-    with pytest.raises(ValueError, match="cannot replace retained"):
-        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
-    assert (root / latest).read_bytes() == before
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    updated = unified_history._parse_yaml_raw(root / latest, (root / latest).read_bytes())
+    original = unified_history._parse_yaml_raw(root / latest, before)
+    assert updated["records"]["text_only"]["value"]["observation"] == original["records"]["text_only"]["value"]["observation"]
+    assert updated["records"]["text_only"]["value"]["document"]["record_metadata"]["verified_recapture"]["result"]["assembled"] == changed
 
 
 @pytest.mark.parametrize("append_case", [False, True])

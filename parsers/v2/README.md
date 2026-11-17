@@ -76,6 +76,14 @@ Under the default policy, a quoted reasoning closer such as `"</think>"` can end
 
 This setting belongs to v2 scanners. The v1 `BasicReasoningParser` already ends an open reasoning span at its closer despite surrounding prose quotes; this flag does not change v1 behavior.
 
+## MiniMax M3 parameter progress
+
+MiniMax M3 releases each string parameter after its matching parameter closer, before invocation completion. An unfinished string remains buffered so recovery can discard it without retracting argument bytes. Completed preceding parameters and invocation names survive recovery according to the native grammar.
+
+## GPT-OSS raw tool bodies
+
+GPT-OSS uses an offered tool's string parameter schema to encode its raw message body as one JSON string argument, preserving body whitespace and Unicode. Object schemas retain JSON argument parsing. A truncated message without its terminating frame does not complete a call.
+
 ## Numeric values and Serde consumers
 
 The default build keeps `serde_json` numbers compatible with independent Serde serializers such as Pythonizer, MessagePack, and YAML. Parser argument deltas and `tool_arguments_raw()` preserve exact numeric JSON tokens, including large integers, fractions, and exponents, through the shared raw-argument representation. `UnifiedEvent.arguments` is a lossy `serde_json::Value` projection; use the raw accessor for serving exact argument text.

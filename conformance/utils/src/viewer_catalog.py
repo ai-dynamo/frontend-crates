@@ -87,18 +87,6 @@ VIEWER_TAB_SPECS = (
 
 UNIFIED_LEAK_MARKERS = ("<|", "|>", "<think>", "</think>", "◁", "<channel", "channel|>")
 
-UNIFIED_FAMILY_LEAK_MARKERS = {
-    "gemma4": ("thought\n",),
-    "qwen3": (
-        "<tool_call>",
-        "</tool_call>",
-        "<function=",
-        "</function>",
-        "<parameter=",
-        "</parameter>",
-    ),
-}
-
 
 def generation_metadata(revision: str, catalog_revision: str, command: str, output: str) -> dict:
     return {
@@ -371,8 +359,8 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
         "unified_leak_markers": {
             "common": list(UNIFIED_LEAK_MARKERS),
             "families": {
-                family: list(markers)
-                for family, markers in UNIFIED_FAMILY_LEAK_MARKERS.items()
+                family: list(spec["leak_markers"])
+                for family, spec in parser_declarations["unified"].items()
             },
         },
         "implementations": implementations,

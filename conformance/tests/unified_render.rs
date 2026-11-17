@@ -1617,3 +1617,49 @@ print(g.emit_yaml("glm47"))
     let input_case: InputCase = serde_json::from_value(json!({"tools":case.tools})).unwrap();
     assert_eq!(input_case.tools, case.tools);
 }
+
+#[test]
+fn approved_argument_regressions() {
+    let dir = common::ensure_unified_golden();
+    let mut failures = Vec::new();
+    for (family, scenario) in [
+        (
+            "minimax_m3",
+            "invoke_close_inside_open_parameter_then_empty_call",
+        ),
+        ("nemotron_v3", "enum_contradicting_declared_type"),
+        ("qwen3", "enum_contradicting_declared_type"),
+        ("gpt_oss", "gpt_oss_native_builtin_python_raw"),
+    ] {
+        let path = dir.join(common::unified_family(family).golden_spec);
+        let file: GoldenFile =
+            serde_yaml::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let (id, case) = file
+            .cases
+            .iter()
+            .find(|(id, _)| *id == &format!("UNIFIED.{scenario}.{family}"))
+            .unwrap();
+        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+        let mut schedules = vec![
+            capture::input_chunks(&case.input, case.input_chunks.as_deref()),
+            vec![case.input.clone()],
+            case.input.chars().map(|ch| ch.to_string()).collect(),
+        ];
+        for (at, _) in case.input.char_indices().skip(1) {
+            schedules.push(vec![
+                case.input[..at].to_string(),
+                case.input[at..].to_string(),
+            ]);
+        }
+        for (schedule, chunks) in schedules.iter().enumerate() {
+            let (got, _, _) = capture_native_case(family, chunks, &case.init, &tools).unwrap();
+            if got != case.golden {
+                failures.push(format!(
+                    "{family}/{id} schedule={schedule}: input={:?}; measured={got:?}; desired={:?}",
+                    case.input, case.golden
+                ));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
