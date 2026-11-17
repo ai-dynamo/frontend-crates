@@ -5,8 +5,8 @@
   "manifest_sha256": "35b17476ba6d2a5c0491c2357aefdb85510d250cf49a290f7af6f72b864a2e9a",
   "producer": {
     "implementation": "dynamo",
-    "version": "10.3.2",
-    "source_sha256": "1e6b631a4b39f19f4e1c037a69a360fdb4530d1d232293c8cc6deffb02b5b7b8",
+    "version": "10.4.3",
+    "source_sha256": "8cbc9f9eb939ea665275c2826d4100033d42087fb502f74cf842470ba63df185",
     "adapter_source_sha256": "f65b3f0209a203ff55e4885a2431a6d04a0c1d88f88b64bc9f8fa6954a5604ea",
     "scope": "public dynamo-renderer API; downstream normalization is not exercised"
   },
