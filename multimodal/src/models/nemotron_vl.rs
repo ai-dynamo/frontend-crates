@@ -337,16 +337,20 @@ impl NemotronVlProcessor {
     }
 
     /// `resize_image_to_pixels` then `.to(torch.bfloat16)`: `[1, 3, H, W]`, planar.
-    fn pixels(&self, media: &DecodedMedia, plan: &NemotronVlImagePlan) -> Result<ProcessedItem> {
-        let DecodedMedia::Image { rgb, height, width } = media else {
-            return Err(MmError::unsupported("nemotron_vl: expects an RGB image"));
-        };
+    /// `process_items` checks that `rgb` holds `width * height` pixels.
+    fn pixels(
+        &self,
+        rgb: &[u8],
+        (width, height): (u32, u32),
+        plan: &NemotronVlImagePlan,
+    ) -> Result<ProcessedItem> {
+        let (height, width) = (height as usize, width as usize);
         let (out_h, out_w) = (plan.resized_height as usize, plan.resized_width as usize);
         let resized;
-        let tile = if (out_h, out_w) != (*height, *width) {
+        let tile = if (out_h, out_w) != (height, width) {
             let resample = Resample::Pil(Filter::Bicubic);
-            resized = resize_rgb(rgb, *height, *width, out_h, out_w, resample);
-            &resized
+            resized = resize_rgb(rgb, height, width, out_h, out_w, resample);
+            resized.as_slice()
         } else {
             rgb
         };
@@ -452,7 +456,7 @@ impl MmFamilyProcessor for NemotronVlProcessor {
                 media.len()
             )));
         }
-        let sizes = media
+        let images = media
             .iter()
             .map(|item| {
                 let DecodedMedia::Image { rgb, height, width } = item else {
@@ -460,18 +464,21 @@ impl MmFamilyProcessor for NemotronVlProcessor {
                 };
                 let pixels = height.checked_mul(*width).and_then(|n| n.checked_mul(3));
                 match (u32::try_from(*width), u32::try_from(*height)) {
-                    (Ok(width), Ok(height)) if pixels == Some(rgb.len()) => Ok((width, height)),
+                    (Ok(width), Ok(height)) if pixels == Some(rgb.len()) => {
+                        Ok((rgb.as_slice(), (width, height)))
+                    }
                     _ => Err(MmError::invalid_input(
                         "nemotron_vl: invalid RGB dimensions or buffer length",
                     )),
                 }
             })
             .collect::<Result<Vec<_>>>()?;
+        let sizes: Vec<_> = images.iter().map(|&(_, size)| size).collect();
         let plans = self.plan_images(input_ids, &sizes)?;
-        media
+        images
             .iter()
             .zip(&plans)
-            .map(|(item, plan)| self.pixels(item, plan))
+            .map(|(&(rgb, size), plan)| self.pixels(rgb, size, plan))
             .collect()
     }
 
