@@ -229,7 +229,9 @@ otherwise; the column's `source` names the decoders that ran.
 Without `--check`, each script writes its files. `--frameworks sglang,vllm`
 runs only the named columns (and `hf`); the others keep their committed cells.
 The driver stops when the baseline's result for a case changed or the case is
-new, because a kept cell is then not valid: run that column again.
+new, because a kept cell is then not valid: run that column again. The driver
+does not see a change of the checkpoint or of a case's request that leaves the
+baseline's result the same, so after such a change run every column again.
 `corpus.py` needs SGLang only for `smart_to_rgb`.
 
 ## Add an image preprocessor
