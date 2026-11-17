@@ -23,7 +23,8 @@ pub(crate) struct NativeImage {
 }
 
 /// `Image.open(...)`, then `convert("RGBA")` when `alpha`, else `convert("RGB")`.
-/// `Unsupported` for the forms known to differ from Pillow; an unknown one decodes.
+/// `Unsupported` for a format other than JPEG, PNG, GIF, BMP and WebP, and for the
+/// forms known to differ from Pillow; an unknown form decodes.
 pub(crate) fn decode_native(data: &[u8], limits: &DecodeLimits) -> Result<NativeImage> {
     let format = format(data)?;
     // The mode of a PNG, and the refusals a header decides, before any decode.
@@ -64,7 +65,6 @@ pub(crate) fn decode_native(data: &[u8], limits: &DecodeLimits) -> Result<Native
             ));
         }
         ImageFormat::Bmp | ImageFormat::WebP => None,
-        // Other formats decode when a consumer's build enables them in `image`.
         other => {
             return Err(MmError::unsupported(format!(
                 "{other:?} images are not mirrored"

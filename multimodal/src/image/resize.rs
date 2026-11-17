@@ -255,7 +255,14 @@ pub fn resize_rgb(
     out_w: usize,
     resample: Resample,
 ) -> Vec<u8> {
-    execution::in_pool(move || resize_passes::<3>(src, h, w, out_h, out_w, resample))
+    execution::in_pool(move || {
+        let fixed = match resample {
+            Resample::Pil(filter) => FixedPoint::Pil(filter),
+            Resample::AtenU8 => FixedPoint::AtenU8,
+            Resample::AtenF32Bilinear => return f32_bilinear(src, h, w, out_h, out_w),
+        };
+        resize_passes::<3>(src, h, w, out_h, out_w, fixed)
+    })
 }
 
 /// PIL `Image.resize(..., BICUBIC)` of a flat HWC RGBA buffer. Pillow resizes
@@ -276,7 +283,7 @@ pub fn resize_rgba(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -
                 }
             }
         });
-        let bicubic = Resample::Pil(Filter::Bicubic);
+        let bicubic = FixedPoint::Pil(Filter::Bicubic);
         let mut out = resize_passes::<4>(&premultiplied, h, w, out_h, out_w, bicubic);
         execution::for_chunks_mut(&mut out, out_w * 4, |_, row| {
             for px in row.chunks_exact_mut(4) {
@@ -298,16 +305,8 @@ fn resize_passes<const C: usize>(
     w: usize,
     out_h: usize,
     out_w: usize,
-    resample: Resample,
+    fixed: FixedPoint,
 ) -> Vec<u8> {
-    let fixed = match resample {
-        Resample::Pil(filter) => FixedPoint::Pil(filter),
-        Resample::AtenU8 => FixedPoint::AtenU8,
-        Resample::AtenF32Bilinear => {
-            debug_assert_eq!(C, 3, "the f32 bilinear path resizes RGB only");
-            return f32_bilinear(src, h, w, out_h, out_w);
-        }
-    };
     let coeffs = |in_size, out_size| precompute_coeffs(in_size, out_size, fixed);
     match (out_w != w, out_h != h) {
         (true, true) if fixed.vertical_first(h, w, out_h) => {
