@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.7...dynamo-multimodal-v0.2.8) - 2026-11-17
+
+### Features
+
+- *(multimodal)* Add RGBA decode and a decode parity table ([#593](https://github.com/ai-dynamo/frontend-crates/pull/593))
+
 ## [0.2.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.6...dynamo-multimodal-v0.2.7) - 2026-11-13
 
 ### Features
