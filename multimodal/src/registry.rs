@@ -42,7 +42,7 @@ pub enum ProcessorSpec {
 impl TryFrom<Value> for ProcessorSpec {
     type Error = serde_json::Error;
 
-    fn try_from(value: Value) -> std::result::Result<Self, Self::Error> {
+    fn try_from(mut value: Value) -> std::result::Result<Self, Self::Error> {
         match value.get("family").and_then(Value::as_str) {
             Some("qwen_vl") => serde_json::from_value(value).map(Self::QwenVl),
             Some("deepseek_v41") => serde_json::from_value(value).map(Self::DeepseekV41),
@@ -54,7 +54,13 @@ impl TryFrom<Value> for ProcessorSpec {
                 serde_json::from_value(value).map(Self::Glm5NextImage)
             }
             Some("glm5_next") => serde_json::from_value(value).map(Self::Glm5Next),
-            Some("kimi_k3") => serde_json::from_value(value).map(Self::KimiK3),
+            Some("kimi_k3") => {
+                // `KimiK3Spec` refuses unknown keys, the tag included.
+                if let Some(spec) = value.as_object_mut() {
+                    spec.remove("family");
+                }
+                serde_json::from_value(value).map(Self::KimiK3)
+            }
             _ => Err(serde::de::Error::custom(
                 "unknown or missing processor family",
             )),

@@ -236,7 +236,7 @@ def sweep_sizes():
         near += [(abs(v - round(v)), w, h) for v in (w * scale, h * scale)]
     near.sort()
     sizes += [(w, h) for _, w, h in near[:120]]
-    return [(max(1, w), max(1, h)) for w, h in sizes]
+    return list(dict.fromkeys((max(1, w), max(1, h)) for w, h in sizes))
 
 
 def references(table):
