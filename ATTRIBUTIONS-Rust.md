@@ -38,6 +38,23 @@ Apache License, Version 2.0, reproduced in this repository's `LICENSE`.
 
 ---
 
+## `dynamo-multimodal` — Kimi-K3 image processing adapted from SGLang
+
+The composite, normalize and patchify code in
+`multimodal/src/models/kimi_k3.rs` is adapted from
+[SGLang PR #34188](https://github.com/sgl-project/sglang/pull/34188) at commit
+`bd09a3d36c2f306773e459bfe6d74c02045ac3a6`, authored by Kan Wu. The Kimi-K3
+adapters of `multimodal/tests/fixtures/mm_parity/families/kimi_k3.py` (the
+`KimiK3ImageProcessor` CPU path and the shared `size_tokens` in
+`spec_shared`) are adapted from SGLang's
+`rust/sglang-processor/tests/scripts/generate_mm_parity.py` at commit
+`a2ffd214696ea7144d3c237133a15df3315d900b`. The image path mirrors the
+Kimi-K3 checkpoint's `kimi_k3_vision_processing.py` and `media_utils.py`.
+SGLang is distributed under Apache License, Version 2.0, reproduced in this
+repository's `LICENSE`.
+
+---
+
 ## `dynamo-multimodal` — DSV4.1 geometry adapted from SGLang
 
 The geometry math in `multimodal/src/models/deepseek_v41.rs` is adapted from
@@ -50,6 +67,29 @@ commit `ffac53d779c08dcdab2d07e5e2a41dba83f0e65c`.
 
 The Rust adaptation adds configuration and input validation, checked output
 dimensions, typed geometry results, and Python-derived parity fixtures.
+
+---
+
+## `dynamo-multimodal` — Nemotron 3.5 Super VL size math adapted from SGLang and the model's processor
+
+The tile size math in `multimodal/src/models/nemotron_vl.rs` is adapted from
+SGLang's `python/sglang/srt/multimodal/internvl_utils.py` at commit
+`a2ffd214696ea7144d3c237133a15df3315d900b` (`sizing = sglang`), and from
+`image_processing_nemotron_h_omni.py` of
+`nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16` at revision
+`fb0ee0bc6b3f70342afd8d84cb80dbadbaa8a1fe` (`sizing = hf`).
+
+- **Project**: [SGLang](https://github.com/sgl-project/sglang)
+- **Source**: [Pinned size helpers](https://github.com/sgl-project/sglang/blob/a2ffd214696ea7144d3c237133a15df3315d900b/python/sglang/srt/multimodal/internvl_utils.py)
+- **License**: [Apache License, Version 2.0](https://github.com/sgl-project/sglang/blob/a2ffd214696ea7144d3c237133a15df3315d900b/LICENSE), also reproduced in this repository's `LICENSE`.
+
+- **Project**: [NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16)
+- **Source**: [Pinned image processor](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16/blob/fb0ee0bc6b3f70342afd8d84cb80dbadbaa8a1fe/image_processing_nemotron_h_omni.py)
+- **License**: Apache License, Version 2.0, as the header of that file states; also reproduced in this repository's `LICENSE`.
+
+The Rust adaptation adds spec validation, checked output dimensions, a
+fail-closed limit where Python's integer division is not an `f64` division,
+and Python-derived parity fixtures.
 
 ---
 

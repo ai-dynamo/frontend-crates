@@ -81,7 +81,7 @@ const INV_RESCALE: f32 = 255.0;
 /// u8 → normalized f32, rounded as the mirrored processor rounds. The slow one
 /// rescales then normalizes; the fast one folds the rescale into mean/std first
 /// (`_fuse_mean_std_and_rescale_factor`), which differs on 128 of the 256 inputs.
-fn normalize_lut(resample: Resampler, mean: f32, std: f32) -> [f32; 256] {
+pub(crate) fn normalize_lut(resample: Resampler, mean: f32, std: f32) -> [f32; 256] {
     match resample {
         Resampler::Pil => core::array::from_fn(|v| (v as f32 / INV_RESCALE - mean) / std),
         Resampler::AtenU8 => {
@@ -302,7 +302,7 @@ impl MmFamilyProcessor for QwenVlProcessor {
                     end,
                     grid: *grid,
                 }),
-                None => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
+                _ => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
             })
             .collect::<Result<Vec<_>>>()?;
         let (positions, delta) = mrope_image_only(input_len, &mrope_items, self.spec.merge_size)?;
