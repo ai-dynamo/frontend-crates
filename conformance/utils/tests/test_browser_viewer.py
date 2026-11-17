@@ -517,11 +517,11 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert not any(node.is_displayed() for node in driver.find_elements('css selector', '.generated-command'))
         assert driver.find_element('css selector', '.case-descriptions').is_displayed()
-        labels = driver.find_elements("css selector", ".capture-slot-selected-label")
+        labels = driver.find_elements("css selector", "#tab-unified .capture-slot-selected-label")
         assert labels and all(driver.execute_script("return arguments[0].scrollHeight <= arguments[0].clientHeight", label) for label in labels)
-        slot_tops = [slot.rect["y"] for slot in driver.find_elements("css selector", ".capture-slot")]
+        slot_tops = [slot.rect["y"] for slot in driver.find_elements("css selector", "#tab-unified .capture-slot")]
         assert max(slot_tops) - min(slot_tops) < 1
-        dynamo_options = driver.find_elements("css selector", '[data-slot-capture="0"] option')
+        dynamo_options = driver.find_elements("css selector", '#tab-unified [data-slot-capture="0"] option')
         v1_values = [option.get_attribute("value") for option in dynamo_options
                      if option.get_attribute("value").startswith("dynamo_v1")]
         assert v1_values
@@ -1439,7 +1439,7 @@ def test_unified_slots_migrate_legacy_comparison_url_and_fit_mobile(historical_p
         boxes = [slot.rect for slot in slots]
         assert all(box['x'] >= 0 and box['x'] + box['width'] <= 390 for box in boxes)
         assert all(driver.execute_script("return arguments[0].scrollHeight <= arguments[0].clientHeight", label)
-                   for label in driver.find_elements('css selector', '.capture-slot-selected-label'))
+                   for label in driver.find_elements('css selector', '#tab-unified .capture-slot-selected-label'))
         assert 'keep=1' in driver.current_url and driver.current_url.endswith('#saved')
         params = dict(parse_qsl(urlsplit(driver.current_url).query))
         assert params['slots_tab-unified'].split(',')[0] == 'sglang_python@0.5.21'
