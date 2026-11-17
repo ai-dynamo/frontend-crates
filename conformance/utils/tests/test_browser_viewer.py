@@ -1151,7 +1151,7 @@ def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer
             };
         """, stale_failure)
         capture_select = _choose_engine(driver, 1, 'vllm')
-        capture_select.send_keys(Keys.ESCAPE)
+        driver.execute_script("arguments[0].blur();", capture_select)
         rust = next(option.get_attribute('value') for option in capture_select.find_elements('tag name', 'option')
                     if option.get_attribute('value').startswith('vllm_rust@'))
         driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", capture_select, rust)
