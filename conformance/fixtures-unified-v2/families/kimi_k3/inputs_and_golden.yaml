@@ -17037,11 +17037,11 @@ cases:
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
   invoke_close_inside_open_parameter_then_call:
-    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
-    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
     policy:
     - I7
     - P2
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete invocation with a parameter. Replay the authored chunks, then finish. Family oracle: The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_empty_call tests the other following-call shape.'
     request: 5647aaa9e6417e61de7a31256c047f21c14e74684e32be427395fdb837e3fd2b
     golden:
     - kind: tool_call
@@ -17049,11 +17049,11 @@ cases:
       arguments:
         city: Paris
   invoke_close_inside_open_parameter_then_empty_call:
-    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
-    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
     policy:
     - I7
     - P2
+    display_id: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
+    description: 'Native mode, default initialization: an invocation-closing marker occurs while a parameter remains open, followed by a complete parameterless invocation. Replay the authored chunks, then finish. Family oracle: The typed argument is incomplete at its call boundary; discard that call and recover the later complete typed call. Related: missing_inner_closers_then_valid_call tests an outer-block closer; invoke_close_inside_open_parameter_then_call tests the other following-call shape.'
     request: 0c0084a7c438ee01936ed1b7cf431640519959209343536dc8f9d7d76f2a746e
     golden:
     - kind: tool_call

@@ -17,6 +17,7 @@ from contextlib import contextmanager
 import pytest
 
 import capture_sources as sources
+import capture_stimulus
 from publish_current_capture import choose_current
 import publish_current_capture
 import extract_fixtures
@@ -24,7 +25,7 @@ import unified_archives
 import unified_history
 import migrate_capture_sources
 import viewer_catalog
-from test_unified_history import _store
+from test_unified_history import _store, _write_capture, _change
 from fixture_test_support import publish, publisher_binary
 from fixture_test_support import prepare_isolated_publication, copy_publication_modules
 
@@ -89,6 +90,62 @@ def test_retained_inventory_requires_capture_evidence(tmp_path):
     (tmp_path / "conformance/fixtures-manifest.json").write_bytes(b"{}\n")
     with pytest.raises(ValueError, match="no retained historical captures"):
         sources.retained_inventory(tmp_path)
+
+
+def test_history_preparation_manifest_hashes_archive_members_in_the_logical_union(tmp_path, monkeypatch):
+    history = tmp_path / "history"
+    store = _store(history / sources.STORE)
+    _write_capture(store, "0.5.3", {"text_only": _change("new")})
+    unified_history.archive_versions(store)
+    manifest = {"shards": [{"format": "unified-history", "path": "fixtures-unified-v2", "sha256": "stale", "size": 0}]}
+    (history / "conformance/fixtures-manifest.json").write_bytes(sources.encoded(manifest))
+    root = tmp_path / "current"
+    sources.copy_authored(history, root / sources.STORE)
+    captured = unified_history.load_store(store).histories["gemma4", "dynamo_v2"]
+    row = {"surface": "unified", "family": "gemma4", "implementation": "dynamo_v2", "mode": "unified", "version": "0.5.3",
+           "source": sources.STORE + "/families/gemma4/dynamo_v2-0.5.3.yaml"}
+    (root / sources.STORE / "families/gemma4/dynamo_v2.yaml").write_bytes(sources.selected_bytes(
+        unified_history.dump_yaml(captured.complete_snapshot("dynamo_v2-0.5.3")).encode(), row, [], authored=captured.family.document))
+    (root / "conformance/fixtures-manifest.json").write_bytes(sources.encoded(manifest))
+    monkeypatch.setattr(sources, "publication_input_paths", lambda _root: ["conformance/fixtures-manifest.json"])
+    monkeypatch.setattr(sources, "publisher_binary", lambda *_args: Path("/unused-publisher"))
+    monkeypatch.setattr(sources.subprocess, "run", lambda *_args, **_kwargs: None)
+    view = tmp_path / "view"
+    sources.prepare(root, view, include_history=True, history_source=history)
+    resources = {row["path"]: {key: row[key] for key in ("path", "size", "sha256")}
+                 for row in unified_archives.inventory(store)}
+    resources.update({row["path"]: {key: row[key] for key in ("path", "size", "sha256")}
+                      for row in unified_archives.inventory(view / sources.STORE)})
+    rows = [resources[name] for name in sorted(resources)]
+    assert "families/gemma4/dynamo_v2-0.5.0.yaml" in resources
+    shard = json.loads((view / "conformance/fixtures-manifest.json").read_bytes())["shards"][0]
+    assert shard["size"] == sum(row["size"] for row in rows)
+    assert shard["sha256"] == sources.digest(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode())
+    sources.verify_prepared(view)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_logical_history_union_keeps_first_retained_authored_and_current_overrides(tmp_path, reverse):
+    authored = "families/hermes/inputs_and_golden.yaml"
+    captured = "families/hermes/dynamo_v1-3.0.0.yaml"
+    current_authored = "families/gemma4/inputs_and_golden.yaml"
+    current_capture = "families/gemma4/dynamo_v2-0.9.0.yaml"
+    datasets = [{"id": name, "root": name} for name in ("first", "second")]
+    for name in ("first", "second", ""):
+        for relative in (authored, captured, current_authored, current_capture):
+            if not name and relative in (authored, captured):
+                continue
+            path = tmp_path / name / sources.STORE / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(sources.encoded({"identity": name or "current"}))
+    if reverse:
+        datasets.reverse()
+    (tmp_path / sources.DATASETS).write_bytes(sources.encoded(datasets))
+    rows = {row["path"]: row for row in sources.logical_unified_inventory(tmp_path)}
+    assert rows[authored]["sha256"] == sources.digest(sources.encoded({"identity": datasets[0]["root"]}))
+    assert rows[captured]["sha256"] == sources.digest(sources.encoded({"identity": datasets[-1]["root"]}))
+    for name in (current_authored, current_capture):
+        assert rows[name]["sha256"] == sources.digest(sources.encoded({"identity": "current"}))
 
 
 def test_history_verifies_original_bytes_members_and_missing_versus_null(tmp_path):
@@ -1191,6 +1248,29 @@ def test_latest_parser_store_reads_versionless_files_without_staging(split_evide
     assert targets == {"dynamo_v2": "0.5.2"}
     assert set(store.histories) == {("gemma4", "dynamo_v2")}
     assert {path: path.read_bytes() for path in before} == before
+
+
+def test_selected_parser_inputs_exclude_history_only_families(split_evidence, tmp_path):
+    root, _history, _capture, _path = split_evidence
+    authored = root / sources.STORE / "families/gemma4/inputs_and_golden.yaml"
+    historical = authored.parent.parent / "qwen3_coder/inputs_and_golden.yaml"
+    historical.parent.mkdir()
+    document = unified_history.load_yaml(authored)
+    document["input_document"]["family"] = "qwen3_coder"
+    document["golden_document"]["family"] = "qwen3_coder"
+    historical.write_text(unified_history.dump_yaml(document))
+
+    store, _targets = unified_history.selected_materialization_store(root / sources.STORE, ["latest:dynamo_v2"])
+    assert set(store.families) == {"gemma4"}
+    output = tmp_path / "selected"
+    unified_history.materialize_store(root / sources.STORE, output, store=store)
+    assert {path.name for path in (output / "inputs").iterdir()} == {"gemma4"}
+    captures = output / "dynamo_v2-0.5.2"
+    assert capture_stimulus.validate_current_capture(captures, [output / "inputs"]) > 0
+    # Scoping families must not hide a missing record inside a selected family.
+    next((captures / "gemma4").glob("*.yaml")).unlink()
+    with pytest.raises(ValueError, match="current capture/input sets differ: missing="):
+        capture_stimulus.validate_current_capture(captures, [output / "inputs"])
 
 
 def test_explicit_alternate_dataset_has_its_own_pin(tmp_path):

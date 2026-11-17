@@ -172,6 +172,38 @@ impl Node {
         }
     }
 
+    /// Stable YAML identities retain scalar/key types while ignoring mapping order.
+    pub fn canonical_typed(&self) -> Result<Value> {
+        fn canonical(value: &mut Value) -> Result<()> {
+            let parts = value.as_array_mut().context("invalid typed YAML value")?;
+            match parts.first().and_then(Value::as_str) {
+                Some("object") => {
+                    let entries = parts[1].as_array_mut().context("invalid typed mapping")?;
+                    for entry in entries.iter_mut() {
+                        canonical(&mut entry[0])?;
+                        canonical(&mut entry[1])?;
+                    }
+                    let mut keyed = entries
+                        .drain(..)
+                        .map(|entry| Ok((serde_json::to_string(&entry[0])?, entry)))
+                        .collect::<Result<Vec<_>>>()?;
+                    keyed.sort_by(|left, right| left.0.cmp(&right.0));
+                    entries.extend(keyed.into_iter().map(|(_, entry)| entry));
+                }
+                Some("array") => {
+                    for child in parts[1].as_array_mut().context("invalid typed array")? {
+                        canonical(child)?;
+                    }
+                }
+                _ => {}
+            }
+            Ok(())
+        }
+        let mut value = self.typed();
+        canonical(&mut value)?;
+        Ok(value)
+    }
+
     pub fn from_typed(value: &Value) -> Result<Self> {
         use base64::{Engine, engine::general_purpose::STANDARD};
         let row = value.as_array().context("typed node is not an array")?;

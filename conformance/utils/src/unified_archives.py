@@ -308,6 +308,34 @@ def capture_archive_bytes(documents: dict[str, bytes]) -> bytes:
     return output.getvalue()
 
 
+def stage_changes(root: Path, staged: Path, changes: dict[str, bytes | None]) -> None:
+    shutil.copytree(root, staged, copy_function=os.link)
+    inventory_rows = {row["path"]: row for row in inventory(root)}
+    archived = defaultdict(dict)
+    for name, data in changes.items():
+        capture_sources.relative(name)
+        row = inventory_rows.get(name)
+        if row is not None and "archive" in row:
+            archived[row["archive"]["path"]][name] = data
+            continue
+        target = staged / name
+        target.unlink(missing_ok=True)
+        if data is not None:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+    for name, updates in archived.items():
+        documents = dict(members(root / name))
+        for member, data in updates.items():
+            if data is None:
+                documents.pop(member)
+            else:
+                documents[member] = data
+        target = staged / name
+        target.unlink()
+        if documents:
+            target.write_bytes(capture_archive_bytes(documents))
+
+
 def engine(implementation: str) -> str:
     source = impls.BATCH_SOURCE_IMPL.get(implementation, implementation)
     return next(spec.engine for spec in impls.IMPL_SPECS if spec.key == source)

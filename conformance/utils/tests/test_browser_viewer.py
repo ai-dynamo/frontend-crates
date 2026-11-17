@@ -33,6 +33,7 @@ if str(SRC) not in sys.path:
 
 import unified_history
 import capture_sources
+from capture_stimulus import select_peer_observation
 import ci_publication_cache
 from capture_versions import capture_release_sort_key, UNIFIED_VERSION_RE
 from browser_helpers import raw_view_download, settle
@@ -208,16 +209,17 @@ def _ready(driver, tab):
 
 
 @pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
-def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer, implementation):
-    catalog = _published_catalog(published_viewer)
+def test_batch_popup_shows_final_fields_and_inapplicable_chunks(historical_published_viewer, implementation):
+    catalog = _published_catalog(historical_published_viewer)
     version = max((source["version"] for source in catalog["sources"]["candidates"]
-                   if source["implementation"] == implementation), key=capture_release_sort_key)
+                   if source["implementation"] == implementation and source["version"].startswith("10.")),
+                  key=capture_release_sort_key)
     key = f"{implementation}@{version}"
-    server, _requests = _server(root=published_viewer)
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
-                           "search_tab-unified": "gpt_oss AND tool_only"})
+                           "search_tab-unified": "deepseek_v4 AND tool_only"})
         driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
         _ready(driver, "tab-unified")
         cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-id]")
@@ -244,27 +246,42 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
         server.shutdown()
 
 
-@pytest.mark.parametrize("implementation,scenario,has_origin", [
-    ("dynamo_v1", "tool_only", True),
-    ("dynamo_v1_jail", "tool_only", True),
-    # The latest native snapshot is a full fresh capture, without a verified
-    # recapture overlay. Historical v1 observations retain their overlay origin.
-    ("dynamo_v2", "tool_only", False),
-    *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
-      for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
+@pytest.mark.parametrize("implementation,family,scenario,retained_version", [
+    ("dynamo_v2", "gpt_oss", "tool_only", None),
+    ("dynamo_v2", "gpt_oss", "gpt_oss_assistant_default_channel_visible_response", None),
 ])
-def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, implementation, scenario, has_origin):
+def test_unified_popup_shows_actual_observation_producer(historical_published_viewer, history_source,
+                                                        implementation, family, scenario, retained_version):
     catalog = _published_catalog(historical_published_viewer)
     versions = {capture["version"] for capture in catalog["capture_generation"]["current"]
-                if capture["implementation"] == implementation and capture["family"] == "gpt_oss"}
+                if capture["implementation"] == implementation and capture["family"] == family}
     assert len(versions) == 1
-    version = versions.pop()
+    version = retained_version or versions.pop()
+    if retained_version:
+        with capture_sources.history_view(ROOT, history_source) as view:
+            owners = unified_history.original_stores(view, {(family, implementation): {version}})
+            _prefix, store, owner, identity = unified_history.original_capture(owners, family, implementation, version)
+            case = store.families[family].cases[scenario]
+            value = owner.resolve(identity)[scenario]
+    else:
+        path = ROOT / capture_sources.STORE / 'families' / family / f'{implementation}.yaml'
+        snapshot = unified_history.load_yaml(path)
+        assert snapshot['capture_selection']['version'] == version
+        authored = unified_history.load_yaml(path.parent / unified_history.FAMILY_DOCUMENT_NAME)
+        case = authored['cases'][scenario]
+        value = snapshot['records'][scenario]['value']
+    record, document = unified_history.materialized_record(case, value)
+    record.update(document.get('record_metadata', {}))
+    expected_origin = select_peer_observation(record, case['request'], implementation=implementation,
+                                              version=version).get('producer_origin')
+    if retained_version:
+        assert expected_origin, 'historical fixture must exercise a retained recapture origin'
     key = f"{implementation}@{version}"
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
-                           "search_tab-unified": f'model:gpt_oss AND "{scenario}"'})
+                           "search_tab-unified": f'model:{family} AND "{scenario}"'})
         driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
         _ready(driver, "tab-unified")
         selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
@@ -282,15 +299,15 @@ def test_unified_popup_shows_actual_observation_producer(historical_published_vi
         candidate = rendered["candidate"]
         assert candidate["version"] == version
         origin = candidate["block"].get("producer_origin")
-        assert bool(origin) == has_origin
+        assert origin == expected_origin
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
         output = popup.find_element(By.CSS_SELECTOR, f'.ttip-final td[data-cand="{key}"]')
         labels = [element.text for element in output.find_elements(By.CSS_SELECTOR, ".expl")
                   if element.text.startswith("Producer: ")]
-        expected = [rendered["expectedProducer"]] if has_origin else []
+        expected = [rendered["expectedProducer"]] if expected_origin else []
         assert labels == expected
-        if has_origin:
-            assert json.loads(labels[0].removeprefix("Producer: ")) == origin
+        if expected_origin:
+            assert json.loads(labels[0].removeprefix("Producer: ")) == expected_origin
     finally:
         driver.quit()
         server.shutdown()
@@ -603,10 +620,11 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         Select(third).select_by_value(jail_key)
         _ready(driver, "tab-unified")
         visible_families = set(driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label)"))
-        selected_sources = {selected_identity, identity_for_key(catalog, direct_key), identity_for_key(catalog, jail_key)}
+        selected_sources = {selected_identity, legacy_choices["dynamo_v1"]["id"], legacy_choices["dynamo_v1_jail"]["id"]}
         expected_families = {family for candidate in catalog["sources"]["candidates"]
                              if f"{candidate['implementation']}@{candidate['mode']}@{candidate['version']}" in selected_sources
-                             for family in candidate.get("native_unified_families", candidate["capture_families"])}
+                             for family in (candidate["capture_families"] if candidate["implementation"].startswith("dynamo_v1")
+                                            else candidate.get("native_unified_families", candidate["capture_families"]))}
         assert visible_families == expected_families
         assert {"qwen3", "muse_glimmer", "muse_spark"} <= visible_families
         driver.execute_script("""
@@ -1525,7 +1543,7 @@ def test_unavailable_jail_capture_deep_link_is_cleared(published_viewer):
         server.shutdown()
 
 
-@pytest.mark.parametrize("stale_capture", ["dynamo_v1@9.2.10", "dynamo_v1@5.0.1"])
+@pytest.mark.parametrize("stale_capture", ["dynamo_v1@9.2.13", "dynamo_v1@5.1.3"])
 def test_primary_v1_deep_link_preserves_available_capture(stale_capture, historical_published_viewer):
     producer, version = stale_capture.split("@")
     major = version.split(".")[0]
@@ -1644,7 +1662,8 @@ def test_unified_slots_migrate_legacy_stream_candidate_keys(published_viewer):
 # that failed in CI. Coverage comes from the catalog, not these release numbers;
 # generated presentation fixtures independently require each set relationship.
 @pytest.mark.parametrize("identities", [
-    ["dynamo_v1@10.0.1"],
+    ["dynamo_v1@3.0.0"],
+    ["dynamo_v1@5.1.3"],
     ["dynamo_v2@0.7.24", "dynamo_v1@10.2.2"],
     ["sglang_python@0.5.14"],
     ["dynamo_v1@9.2.13"],

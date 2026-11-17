@@ -29,7 +29,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from browser_helpers import raw_view_download, settle
 
-from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine, _assert_generation_provenance
+from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine, _assert_generation_provenance, _published_catalog
 from verify_publication_transport import publication_metadata, runtime_catalog, update_delivery_report, verify_http_publication, verify_http_publication_identity
 from unified_archives import read_source
 from fixture_test_support import (assert_viewer_data_matches_history, capture_releases,
@@ -41,6 +41,7 @@ import capture_sources
 import unified_history
 import verify_publication_transport as transport
 from capture_versions import capture_release_sort_key
+from v1_capture_retention import selected_targets
 
 # How long the delivery check may wait for a freshly deployed GitHub Pages site to
 # serve the new revision (main runs f9ea1b2e, 6252b6f4 and 7a2e8f96 saw HTTP 503
@@ -48,6 +49,58 @@ from capture_versions import capture_release_sort_key
 # transport through CONFORMANCE_PAGES_PROPAGATION_SECONDS and capped by the
 # delivery budget (CONFORMANCE_DELIVERY_DEADLINE).
 PAGES_PROPAGATION_SECONDS = 300.0
+
+
+@pytest.mark.parametrize("family", ["hermes", "llama3_json"])
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
+def test_legacy_family_history_retains_pre_11_releases_and_current_11_snapshot(historical_published_viewer, family, implementation):
+    versions = [version for version in capture_releases(historical_published_viewer, family=family).get(implementation, [])
+                if int(version.split(".")[0]) < 11]
+    expected = next(target["version"] for target in selected_targets(
+        unified_history.load_yaml(ROOT / "conformance/dynamo-capture-inventory.yaml")["targets"])
+        if target["implementation"] == "dynamo_v1")
+    assert expected == "11.0.13"
+    candidates = _published_catalog(historical_published_viewer)["sources"]["candidates"]
+    assert all(int(row["version"].split(".")[0]) < 11 for row in candidates
+               if row["implementation"] == implementation and family in row.get("capture_families", []))
+    latest = unified_history.load_yaml(
+        ROOT / capture_sources.STORE / "families" / family / f"{implementation}.yaml"
+    )
+    assert latest["capture_selection"]["version"] == expected
+    assert latest["records"]
+    if not versions:
+        return
+    keys = [f"{implementation}@{version}" for version in dict.fromkeys((versions[0], versions[-1]))]
+    query = urlencode({"tab": "tab-unified", "slots_tab-unified": ",".join([*keys, *(["none"] * (3 - len(keys)))]),
+                       "search_tab-unified": f"model:{family}"})
+    server, _ = _server(root=historical_published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?{query}")
+        _ready(driver, "tab-unified")
+        for _ in range(2):
+            observed = driver.execute_script("""
+                const comparison = window.__conformanceComparison;
+                const row = comparison.view.rows.find(row => row.family === arguments[0]);
+                const missingCases = Object.fromEntries(arguments[1].map(key => [key,
+                    Object.entries(row.cells).flatMap(([sub, cell]) => (cell.variants || [cell])
+                        .filter(leaf => leaf.tooltip?.candidates?.find(candidate => candidate.key === key)?.block?.unavailable_code === 'missing_capture')
+                        .map(leaf => leaf.sub || sub)).sort()]));
+                return {families: comparison.view.rows.map(row => row.family), counts: comparison.counts, missingCases};
+            """, family, keys)
+            assert observed["families"] == [family]
+            for key in keys:
+                assert observed["counts"][key]["total"] > 0
+                assert observed["counts"][key]["missing"] == 0
+                assert observed["missingCases"][key] == []
+            assert [Select(driver.find_element("css selector", f'[data-slot-capture="{slot}"]')).first_selected_option.get_attribute("value")
+                    for slot in range(len(keys))] == keys
+            driver.refresh()
+            _ready(driver, "tab-unified")
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
 
 
 def test_publication_delivery_matches_qualified_artifact(historical_published_viewer, request, monkeypatch, tmp_path):
@@ -403,11 +456,16 @@ def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_
     html = (historical_published_viewer / 'index.html').read_text()
     payload = json.loads(re.search(r'id="conformance-embedded">(.*?)</script>', html, re.S).group(1))
     embedded_catalog = json.loads(gzip.decompress(base64.b64decode(payload['catalog']['bytes'])))
-    versions = capture_releases(historical_published_viewer)
     current = sorted({(capture['implementation'], capture['version'])
-                      for capture in embedded_catalog['capture_generation']['current']})
+                      for capture in embedded_catalog['capture_generation']['current']
+                      if capture['implementation'] not in {'dynamo_v1', 'dynamo_v1_jail'}})
     assert payload['captures'] == [list(identity) for identity in current]
-    latest = sorted([implementation, releases[-1]] for implementation, releases in versions.items())
+    candidates = _published_catalog(historical_published_viewer)['sources']['candidates']
+    selectable = {}
+    for candidate in candidates:
+        selectable.setdefault(candidate['implementation'], set()).add(candidate['version'])
+    latest = sorted([implementation, max(releases, key=capture_release_sort_key)]
+                    for implementation, releases in selectable.items())
     server, requests = _server(prefix='/frontend-crates', root=historical_published_viewer)
     driver = _driver()
     base = f'http://127.0.0.1:{server.server_port}/frontend-crates/'

@@ -151,3 +151,12 @@ jobs:
           # No CARGO_REGISTRY_TOKEN — trusted publishing via OIDC is used
           # instead. release-plz exchanges the GitHub OIDC token for a
           # short-lived crates.io token automatically.
+
+  reconcile-captures:
+    needs: release
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/reconcile-captures.yml
+    permissions:
+      contents: write
+      pull-requests: write
+    secrets: inherit

@@ -27,6 +27,7 @@ from typing import Any
 
 import yaml
 import yaml_fast  # noqa: F401
+from packaging.version import Version
 import capture_sources
 import dynamo_version
 import unified_history
@@ -215,6 +216,18 @@ def _unified_records(root: Path = ROOT, unified: Path | None = None, *, store=No
             **({"receipts": receipts} if receipts is not None else {}),
         })
     return records
+
+
+def _selectable_v1_history(item: dict[str, Any]) -> bool:
+    if item["implementation"] not in {"dynamo_v1", "dynamo_v1_jail"}:
+        return True
+    if item.get("kind") == "history" and Version(item["version"]) >= Version("11.0.0"):
+        return False
+    if not item.get("archive"):
+        return True
+    archive_name = PurePosixPath(item["archive"]["path"]).name
+    archive_release = re.fullmatch(r"dynamo-([0-9][a-zA-Z0-9.-]*)\.tar\.gz", archive_name)
+    return not archive_release or item["version"] == archive_release[1]
 
 
 def _dynamo_v2_display_producer(root: Path) -> dict[str, str]:
@@ -549,6 +562,9 @@ def _index_unified_families(store: unified_history.Store, candidates: list[dict]
             eligible = [available for checkpoint, available in checkpoints if checkpoint <= version]
             if not eligible or eligible[-1]:
                 families.append(family)
+        families, candidate["has_captured_results"] = _archive_v1_families(
+            candidate, families, candidate["has_captured_results"]
+        )
         candidate["capture_families"] = families
         if candidate["implementation"] == "dynamo_v2":
             candidate["native_unified_families"] = [
@@ -595,6 +611,13 @@ def _native_catalog_document_index(unified_root: Path, *, generation=None, worke
     for rows in snapshots.values():
         rows.sort(key=lambda row: row["version"])
     return result["inventory"], result["documents"], {"families": result["families"], "snapshots": snapshots}
+
+
+def _archive_v1_families(candidate: dict, families: list[str], has_captured_results: bool) -> tuple[list[str], bool]:
+    archived_families = candidate.get("capture_families", [])
+    if candidate["implementation"] in {"dynamo_v1", "dynamo_v1_jail"} and archived_families:
+        return archived_families, True
+    return families, has_captured_results
 
 
 def _catalog_document_index(unified_root: Path, *, generation=None) -> tuple[list[dict], dict[str, dict], dict]:
@@ -695,9 +718,7 @@ def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, so
         resources = _unified_records(dataset_root, store_root, inventory=inventory, document_index=documents)
         for resource in resources:
             resource.update(dataset=identity, dataset_root=prefix)
-            # Families absent from latest still need their original request and GOLDEN.
-            if resource["kind"] != "inputs-and-golden" or resource["path"] not in selected:
-                selected[resource["path"]] = resource
+        capture_sources.merge_retained_unified(selected, resources)
         # Native indexing uses the same pre-envelope conversion cache as final
         # assembly, resolving each dataset against its own authored evidence.
         for (family, implementation), rows in indexed["snapshots"].items():
@@ -705,7 +726,7 @@ def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, so
                 snapshots[family, implementation, row["version"]] = row
         result.append({**dataset, "resources": resources, "checkpoints": [
             {"family": family, "implementation": implementation,
-             "version": row["runtime_version"], "fragment": row["fragment"], "capture": row["capture"]}
+             "version": row["runtime_version"], "fragment": row["fragment"], "capture_fragment": row["capture_fragment"]}
             for (family, implementation), rows in indexed["snapshots"].items() for row in rows]})
     metadata["snapshots"] = {}
     for (family, implementation, _version), row in snapshots.items():
@@ -775,6 +796,9 @@ def _index_snapshot_families(candidates: list[dict], metadata: dict, *,
                                and selected["record_count"] and not selected["route_recorded"])
             if selected["native"] or implicit_native:
                 native_families.append(family)
+        families, has_captured_results = _archive_v1_families(
+            candidate, families, has_captured_results
+        )
         candidate["has_captured_results"] = has_captured_results
         candidate["capture_families"] = families
         if implementation == "dynamo_v2":
@@ -904,6 +928,8 @@ def build_catalog(
     candidates = []
     for item in unified:
         if item["implementation"]:
+            if not _selectable_v1_history(item):
+                continue
             policy = source_metadata["unified_capture_policy"].get(
                 item["implementation"], {}
             )
@@ -917,9 +943,8 @@ def build_catalog(
                     "language": policy.get("language"),
                     "capture_mode": policy.get("mode"),
                     "producer": policy.get("producer"),
-                    "source_blocker": policy.get("source_blockers", {}).get(
-                        item["version"]
-                    ),
+                    "source_blocker": None if item.get("archive") and item["implementation"] in {"dynamo_v1", "dynamo_v1_jail"} else policy.get("source_blockers", {}).get(item["version"]),
+                    "capture_families": [item["family"]] if item.get("archive") else [],
                 }
             )
     unique_candidates = {}
@@ -934,10 +959,14 @@ def build_catalog(
                 **candidate,
                 "id": "@".join(identity),
                 "sources": [],
+                "capture_families": [],
             }
         unique_candidates[identity]["sources"].append(
             candidate.get("archive", candidate.get("source"))
         )
+        unique_candidates[identity]["capture_families"].extend(candidate["capture_families"])
+    for candidate in unique_candidates.values():
+        candidate["capture_families"] = sorted(set(candidate["capture_families"]))
     if unified:
         if snapshot_format:
             _index_snapshot_families(
