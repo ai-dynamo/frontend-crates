@@ -60,6 +60,12 @@ pub struct QwenVlVideoSpec {
     pub vision_end_token_id: i32,
     /// The model's `video_preprocessor_config.json`.
     pub processor: Qwen3VlVideo,
+    /// The host sized the frames already, for example with
+    /// `Qwen3VlVideoFit` under a request budget, so `process_item` takes
+    /// them as they are, as HF does with `do_resize=False`. Each side must be
+    /// a multiple of `patch_size * merge_size`.
+    #[serde(default)]
+    pub pre_resized: bool,
     pub image_mean: [f32; 3],
     pub image_std: [f32; 3],
 }
@@ -265,7 +271,17 @@ impl QwenVlProcessor {
             ));
         }
         let sizing = &video.processor;
-        let (th, tw) = sizing.resize(num_frames, h, w, &VideoPixelBudget::default())?;
+        let (th, tw) = if video.pre_resized {
+            let factor = sizing.patch_size * sizing.merge_size;
+            if h == 0 || w == 0 || h % factor != 0 || w % factor != 0 {
+                return Err(MmError::invalid_input(format!(
+                    "qwen_vl: pre-resized frame sides must be multiples of {factor}, got {h}x{w}"
+                )));
+            }
+            (h, w)
+        } else {
+            sizing.resize(num_frames, h, w, &VideoPixelBudget::default())?
+        };
         let frames: Vec<std::borrow::Cow<[u8]>> = rgb
             .chunks_exact(h * w * 3)
             .map(|frame| {
@@ -919,7 +935,9 @@ impl Qwen3VlVideo {
 /// `Qwen3VLVideoProcessor` sizing under a request budget, resampled as the
 /// torchvision-backed video processors do (bicubic on uint8 frames, before
 /// rescaling). Cosmos3-Nano / Super ship that processor unchanged, and
-/// Cosmos3-Edge the same sizing.
+/// Cosmos3-Edge the same sizing. Set [`QwenVlVideoSpec::pre_resized`] for
+/// its frames: HF resizes once, and a second resize under the model's
+/// default budget can change the size.
 #[cfg(feature = "video-decode")]
 #[derive(Clone, Copy, Debug)]
 pub struct Qwen3VlVideoFit<'a> {
@@ -1430,6 +1448,7 @@ mod tests {
                 vision_start_token_id: 3,
                 vision_end_token_id: 4,
                 processor: Qwen3VlVideo::new(2, 2, 2, 16, 1 << 20).unwrap(),
+                pre_resized: false,
                 image_mean: [0.0; 3],
                 image_std: [1.0; 3],
             }),
@@ -1484,6 +1503,34 @@ mod tests {
         let mut spec = video_spec();
         spec.video.as_mut().unwrap().processor = Qwen3VlVideo::new(2, 1, 2, 16, 1 << 20).unwrap();
         assert!(QwenVlProcessor::new(spec).is_err(), "merge sizes differ");
+    }
+
+    /// HF's `do_resize=False`: two 32x32 frames under Qwen3-VL's 4,096-pixel
+    /// clip minimum keep their size instead of growing to 64x64.
+    #[test]
+    fn pre_resized_frames_keep_their_size() {
+        let mut spec = video_spec();
+        spec.video.as_mut().unwrap().processor = qwen3_video(4096, 25_165_824);
+        let frames = |side: usize| DecodedMedia::Video {
+            rgb: vec![9; 2 * side * side * 3],
+            height: side,
+            width: side,
+            frame_indices: vec![0, 1],
+            fps: 2.0,
+        };
+        let grid = |spec: &QwenVlSpec, side: usize| {
+            let item = QwenVlProcessor::new(spec.clone())
+                .unwrap()
+                .process_item(&frames(side))?;
+            match item.geometry {
+                Some(Geometry::TimedGrid { grid, .. }) => Ok(grid),
+                _ => unreachable!(),
+            }
+        };
+        assert_eq!(grid(&spec, 32).unwrap(), [1, 4, 4]);
+        spec.video.as_mut().unwrap().pre_resized = true;
+        assert_eq!(grid(&spec, 32).unwrap(), [1, 2, 2]);
+        assert!(matches!(grid(&spec, 40), Err(MmError::InvalidInput { .. })));
     }
 
     /// A video layout needs the host's text encoder; items must come in
