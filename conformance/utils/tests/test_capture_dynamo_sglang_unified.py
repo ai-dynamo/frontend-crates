@@ -14,9 +14,13 @@ import sys
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+from peer_modules import AdapterContractError  # noqa: E402
 
 
 class _Processor:
@@ -46,24 +50,27 @@ def _stub(name, **attrs):
     return module
 
 
-def _load():
+def _load(processor_detectors=None):
     def make(**kwargs):
         PROCESSORS.append(_Processor(**kwargs))
         return PROCESSORS[-1]
 
-    prepost = _stub("dynamo.frontend.sglang_prepost", convert_tools=lambda tools: tools,
-                    create_parsers=lambda request, **kwargs: (None, None), SglangStreamingPostProcessor=make)
     detectors = {"ToolCallParserEnum": {}, "DetectorMap": {}}
+    function_call_parser, reasoning_parser = type("F", (), detectors), type("R", (), detectors)
+    processor_function_call_parser, processor_reasoning_parser = processor_detectors or (function_call_parser, reasoning_parser)
+    prepost = _stub("dynamo.frontend.sglang_prepost", convert_tools=lambda tools: tools,
+                    create_parsers=lambda request, **kwargs: (None, None), SglangStreamingPostProcessor=make,
+                    FunctionCallParser=processor_function_call_parser, ReasoningParser=processor_reasoning_parser)
     modules = {
         "dynamo": _stub("dynamo"), "dynamo.frontend": _stub("dynamo.frontend"),
         "dynamo.frontend.sglang_prepost": prepost,
         "sglang": _stub("sglang"), "sglang.srt": _stub("sglang.srt"),
         "sglang.srt.function_call": _stub("sglang.srt.function_call"),
         "sglang.srt.function_call.function_call_parser": _stub(
-            "sglang.srt.function_call.function_call_parser", FunctionCallParser=type("F", (), detectors)),
+            "sglang.srt.function_call.function_call_parser", FunctionCallParser=function_call_parser),
         "sglang.srt.parser": _stub("sglang.srt.parser"),
         "sglang.srt.parser.reasoning_parser": _stub(
-            "sglang.srt.parser.reasoning_parser", ReasoningParser=type("R", (), detectors)),
+            "sglang.srt.parser.reasoning_parser", ReasoningParser=reasoning_parser),
     }
     with mock.patch.dict(sys.modules, modules):
         sys.modules.pop("capture_dynamo_sglang_unified", None)
@@ -88,3 +95,10 @@ def test_terminal_step_flushes_with_an_empty_finishing_row():
     rows = _load()._stream_chunks("qwen3", ["a", "b"], terminal_step=True, finish_reason="length", tools=[])
     assert _texts(rows) == [["a"], ["b"], []]
     assert PROCESSORS[-1].finishes == [None, None, "length"]
+
+
+def test_gate_rejects_a_processor_built_on_other_detector_classes():
+    # The gate would otherwise judge support with classes the processor never uses.
+    other = type("Other", (), {"ToolCallParserEnum": {}, "DetectorMap": {}})
+    with pytest.raises(AdapterContractError, match="different SGLang detector classes"):
+        _load(processor_detectors=(other, other))

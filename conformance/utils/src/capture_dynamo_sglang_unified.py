@@ -20,11 +20,14 @@ from capture_stimulus import capture_peer_results, validate_family_scoped_cases
 from impls import DYNAMO_SGLANG_UNIFIED_PIPELINES as FAMILY_PARSERS
 from unified_tools import unified_tools
 
-from peer_modules import resolve_peer_module, parser_error_detail, peer_call
+from peer_modules import AdapterContractError, resolve_peer_module, parser_error_detail, peer_call
 
 processor = resolve_peer_module("dynamo_sglang", "processor")
 FunctionCallParser = resolve_peer_module("sglang", "tools").FunctionCallParser
 ReasoningParser = resolve_peer_module("sglang", "reasoning").ReasoningParser
+# The registration gate must inspect the classes the processor constructs.
+if processor.FunctionCallParser is not FunctionCallParser or processor.ReasoningParser is not ReasoningParser:
+    raise AdapterContractError("Dynamo processor uses different SGLang detector classes than the registration gate")
 
 TOOL_SCHEMAS = unified_tools()
 
@@ -46,10 +49,16 @@ class ChunkTokenizer:
         return []
 
 
+def _processor_name(name):
+    """Gate on the parser name the processor will construct, after its own normalization."""
+    normalize = getattr(processor, "_normalize_sglang_parser_name", None)
+    return normalize(name) if normalize is not None else name
+
+
 def _registration_unavailable(case):
     if case.get("finish_reason", "stop") not in {"stop", "length"}:
         return "peer_termination_unsupported", "Dynamo SGLang harness supports serving stop/length termination only"
-    rname, tname = FAMILY_PARSERS[case["family"]]
+    rname, tname = (_processor_name(name) for name in FAMILY_PARSERS[case["family"]])
     missing = []
     if rname not in ReasoningParser.DetectorMap:
         missing.append(f"ReasoningParser {rname}")
