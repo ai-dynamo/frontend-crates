@@ -367,9 +367,9 @@ impl MmFamilyProcessor for QwenVlProcessor {
                 frame_indices,
                 fps,
             } => self.process_video(rgb, (*height, *width), frame_indices, *fps),
-            DecodedMedia::ImageRgba { .. } | DecodedMedia::Audio { .. } => Err(MmError::unsupported(
-                "qwen_vl: expects an RGB image or video",
-            )),
+            DecodedMedia::ImageRgba { .. } | DecodedMedia::Audio { .. } => Err(
+                MmError::unsupported("qwen_vl: expects an RGB image or video"),
+            ),
         }
     }
 
