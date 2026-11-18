@@ -607,7 +607,7 @@ fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<boo
     }
 }
 
-fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
+pub(crate) fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
     ["$id", "$dynamicRef", "$recursiveRef"]
         .iter()
         .any(|keyword| schema.get(*keyword).and_then(Value::as_str).is_some())
@@ -793,6 +793,45 @@ fn schema_type_match(
         (Some(left), Some(right)) => Some(left && right),
         (left, right) => left.or(right),
     };
+    // enum/const-derived type hint: a parameter declared only by its allowed values
+    // (`{"enum": [1, 2, 4]}`, `{"const": true}`, pydantic Literal / zod literal unions)
+    // admits the JSON types of those values. Integral numbers count as integer and number.
+    let value_matches = |value: &Value| -> bool {
+        match value {
+            Value::Null => expected == "null",
+            Value::Bool(_) => expected == "boolean",
+            Value::Number(n) => {
+                expected == "number"
+                    || (expected == "integer" && n.as_f64().is_some_and(|f| f.fract() == 0.0))
+            }
+            Value::String(_) => expected == "string",
+            Value::Array(_) => expected == "array",
+            Value::Object(_) => expected == "object",
+        }
+    };
+    let enum_hint = match schema.get("enum").and_then(Value::as_array) {
+        Some(values) if !values.is_empty() => {
+            // Mixed enums keep their string fallback. A string hint must match
+            // raw text so it cannot shadow another union branch.
+            if expected == "string" {
+                values
+                    .iter()
+                    .any(|value| value.as_str() == Some(raw))
+                    .then_some(true)
+            } else {
+                values.iter().try_fold(false, |matched, value| {
+                    (!value.is_string()).then(|| matched || value_matches(value))
+                })
+            }
+        }
+        _ => None,
+    };
+    for literal_hint in [enum_hint, schema.get("const").map(value_matches)] {
+        hint = match (hint, literal_hint) {
+            (Some(left), Some(right)) => Some(left && right),
+            (left, right) => left.or(right),
+        };
+    }
     for keyword in ["anyOf", "oneOf", "allOf"] {
         let Some(options) = schema.get(keyword).and_then(Value::as_array) else {
             continue;
@@ -839,14 +878,18 @@ fn parse_tool_call_block(
         .strip_suffix(end_token.as_str())
         .unwrap_or(after_start);
 
-    // Extract function name (everything before first <arg_key> or end)
     let arg_key_start = &config.arg_key_start;
-    let function_name = if let Some(pos) = content.find(arg_key_start.as_str()) {
-        content[..pos].trim().to_string()
-    } else {
-        // No arguments, just function name
-        content.trim().to_string()
-    };
+    let header_end = content
+        .find(arg_key_start.as_str())
+        .unwrap_or(content.len());
+    // A second opener before any argument supersedes an unfinished header.
+    let content = content[..header_end]
+        .rfind(start_token.as_str())
+        .map_or(content, |at| &content[at + start_token.len()..]);
+    let args_start = content
+        .find(arg_key_start.as_str())
+        .unwrap_or(content.len());
+    let function_name = content[..args_start].trim().to_string();
 
     if function_name.is_empty() {
         anyhow::bail!("Empty function name in tool call");
@@ -855,7 +898,7 @@ fn parse_tool_call_block(
     // Parse key-value pairs, keeping the order the model emitted them in.
     let mut arguments: Vec<(String, ParsedValue)> = Vec::new();
     let mut argument_indices: HashMap<&str, usize> = HashMap::new();
-    let args_section = &content[function_name.len()..];
+    let args_section = &content[args_start..];
 
     // Build regex patterns
     let arg_key_start_escaped = regex::escape(&config.arg_key_start);
@@ -867,7 +910,7 @@ fn parse_tool_call_block(
     // (?s) enables dotall mode so (.*?) matches across newlines — required
     // because models often emit multi-line content in arg values.
     let pattern = format!(
-        r"(?s){}([^<]+){}{}(.*?){}",
+        r"(?s){}([^<]+){}\s*{}(.*?){}",
         arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped, arg_value_end_escaped
     );
 
@@ -916,6 +959,23 @@ fn parse_tool_call_block(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nested_openers_recover_only_within_the_function_header() {
+        let config = Glm47ParserConfig::default();
+        let value = "café <tool_call> is argument data";
+        for prefix in ["", "\" marker before <tool_call>"] {
+            let block = format!(
+                "<tool_call>{prefix} 外部.lookup-v2 <arg_key>cmd</arg_key><arg_value>{value}</arg_value></tool_call>"
+            );
+            let call = parse_tool_call_block(&block, &config, Some(&[])).unwrap();
+            assert_eq!(call.function.name, "外部.lookup-v2");
+            assert_eq!(
+                serde_json::from_str::<Value>(&call.function.arguments).unwrap(),
+                serde_json::json!({"cmd": value})
+            );
+        }
+    }
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
@@ -1576,6 +1636,25 @@ mod tests {
             args,
             serde_json::json!({"label": null, "note": null, "literal": "null"})
         );
+    }
+
+    #[test]
+    fn test_parse_newline_between_arg_tags() {
+        let config = get_test_config();
+        let message = "<tool_call>get_weather\n<arg_key>city</arg_key>\n<arg_value>Paris</arg_value>\n</tool_call>\n<tool_call>get_time\n<arg_key>city</arg_key>\n<arg_value>London</arg_value>\n</tool_call>";
+
+        let (calls, _) = try_tool_call_parse_glm47(message, &config, None).unwrap();
+
+        assert_eq!(calls.len(), 2);
+        for (call, (name, city)) in calls
+            .iter()
+            .zip([("get_weather", "Paris"), ("get_time", "London")])
+        {
+            assert_eq!(call.function.name, name);
+            let args: HashMap<String, Value> =
+                serde_json::from_str(&call.function.arguments).unwrap();
+            assert_eq!(args.get("city").unwrap().as_str().unwrap(), city);
+        }
     }
 
     #[test] // helper
@@ -2385,5 +2464,71 @@ mod tests {
                 serde_json::from_str(&calls[0].function.arguments).unwrap();
             assert_eq!(args["city"], expected, "{label}");
         }
+    }
+}
+
+#[cfg(test)]
+mod enum_const_type_hint {
+    use super::*;
+    fn run(parameter: Value, raw: &str) -> Value {
+        let tools = vec![ToolDefinition {
+            name: "probe".into(),
+            parameters: Some(
+                serde_json::json!({"type":"object","properties":{"value": parameter}}),
+            ),
+            strict: None,
+        }];
+        let wire = format!(
+            "<tool_call>probe<arg_key>value</arg_key><arg_value>{raw}</arg_value></tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_glm47(&wire, &Glm47ParserConfig::default(), Some(&tools)).unwrap();
+        let arguments: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        arguments["value"].clone()
+    }
+    #[test]
+    fn enum_and_const_without_type_are_typed_from_their_members() {
+        assert_eq!(
+            run(serde_json::json!({"enum":[1,2,4,8]}), "2"),
+            serde_json::json!(2)
+        );
+        assert_eq!(
+            run(serde_json::json!({"const":3}), "3"),
+            serde_json::json!(3)
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":[1.5,2.5,3.5]}), "2.5"),
+            serde_json::json!(2.5)
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":[true,false]}), "true"),
+            serde_json::json!(true)
+        );
+        assert_eq!(
+            run(
+                serde_json::json!({"anyOf":[{"enum":[1,2,4]},{"type":"null"}]}),
+                "4"
+            ),
+            serde_json::json!(4)
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":["{\"x\":1}"]}), "{\"x\":1}"),
+            serde_json::json!("{\"x\":1}")
+        );
+        assert_eq!(
+            run(serde_json::json!({"enum":[1,"a"]}), "1"),
+            serde_json::json!("1")
+        );
+    }
+
+    #[test]
+    fn string_enums_do_not_override_other_union_branches() {
+        assert_eq!(
+            run(
+                serde_json::json!({"anyOf":[{"enum":["auto"]},{"type":"integer"}]}),
+                "42"
+            ),
+            serde_json::json!(42)
+        );
     }
 }

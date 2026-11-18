@@ -1,0 +1,252 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from subprocess import CompletedProcess
+
+import pytest
+
+SRC = Path(__file__).resolve().parents[1] / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+import capture_dynamo_unified as unified_capture  # noqa: E402
+import capture_dynamo_unified_batch as capture  # noqa: E402
+from impls import batch_capture_label
+
+
+@pytest.mark.parametrize(
+    ("symbols", "legacy"),
+    [
+        ("", True),
+        ("pub use unified::tool_arguments_raw;", True),
+        ("pub use unified::assemble_with_tool_indices;", True),
+        ("pub use unified::{assemble_with_tool_indices, tool_arguments_raw};", False),
+    ],
+)
+def test_native_assembly_cfg_uses_available_source_capabilities(symbols: str, legacy: bool) -> None:
+    assert unified_capture.native_assembly_cfg(symbols) == (
+        ["conformance_legacy_indexed_assembly"] if legacy else []
+    )
+
+
+def test_probe_job_uses_registered_gpt_oss_pipeline_without_changing_request() -> None:
+    job = {"family": "gpt_oss", "cases": [{"id": "UNIFIED.example.gpt_oss", "request": {"input": "authored"}}]}
+
+    wrapped = capture._probe_job(job)
+
+    assert wrapped["reasoning_parser"] == "gpt_oss"
+    assert wrapped["tool_parser"] == "harmony"
+    assert wrapped["job"] is job
+
+
+def test_probe_job_rejects_unregistered_family() -> None:
+    with pytest.raises(ValueError, match="no Dynamo v1 batch pipeline"):
+        capture._probe_job({"family": "unknown", "cases": []})
+
+
+def test_crate_checksum_requires_exact_registry_package(tmp_path: Path) -> None:
+    lock = tmp_path / "Cargo.lock"
+    lock.write_text(
+        'version = 3\n\n[[package]]\nname = "dynamo-parsers"\nversion = "10.0.1"\n'
+        'source = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        f'checksum = "{"a" * 64}"\n'
+    )
+
+    assert capture._crate_checksum(lock, "10.0.1") == "a" * 64
+    with pytest.raises(ValueError, match="does not pin"):
+        capture._crate_checksum(lock, "9.2.13")
+
+
+def test_registered_source_blocker_binds_every_unattempted_request(tmp_path: Path) -> None:
+    job_path = tmp_path / "job.json"
+    output_path = tmp_path / "capture.json"
+    request = {
+        "input": "authored",
+        "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        "finish_reason": "stop",
+        "tools": [],
+        "chunks": [{"delta_text": "authored"}],
+    }
+    job = {"family": "gpt_oss", "cases": [{"id": "UNIFIED.example.gpt_oss", "request": request}]}
+    job_path.write_text(json.dumps(job))
+
+    provenance = capture.source_unavailable("9.2.13", job_path, output_path)
+    result = json.loads(output_path.read_text())
+
+    assert provenance["status"] == "source_unavailable"
+    assert "source_sha256" not in provenance
+    assert result["results"]["UNIFIED.example.gpt_oss"]["capture_input"] == request
+    assert result["results"]["UNIFIED.example.gpt_oss"]["capture_observation"]["unavailable"]["code"] == "source_unavailable"
+
+
+@pytest.mark.parametrize("jail_buffer", [False, True])
+@pytest.mark.parametrize("reasoning_context", [False, True])
+def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, jail_buffer: bool, reasoning_context: bool) -> None:
+    job_path = tmp_path / "job.json"
+    output_path = tmp_path / "capture.json"
+    work_dir = tmp_path / "producer"
+    target_dir = tmp_path / "target-10.0.1"
+    request = {
+        "input": "authored",
+        "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        "finish_reason": "stop",
+        "tools": [],
+        "chunks": [{"delta_text": "authored"}],
+    }
+    job = {"family": "gpt_oss", "cases": [{"id": "case", "request": request}]}
+    job_path.write_text(json.dumps(job))
+    calls = []
+
+    lock_text = (
+        'version = 3\n\n[[package]]\nname = "dynamo-parsers"\nversion = "10.0.1"\n'
+        'source = "registry+https://github.com/rust-lang/crates.io-index"\n'
+        f'checksum = "{"a" * 64}"\n'
+        '\n[[package]]\nname = "dynamo-protocols"\nversion = "8.1.0"\n'
+    )
+    reviewed_lock = tmp_path / "reviewed.lock"
+    reviewed_lock.write_text(lock_text)
+    published = tmp_path / "published"
+    (published / "src/tool_calling").mkdir(parents=True)
+    (published / "src/reasoning").mkdir()
+    (published / "src/tool_calling/parsers.rs").write_text("pub async fn detect_and_parse_tool_call_with_recovery; tools: Option<&[ToolDefinition]>")
+    (published / "src/tool_calling/mod.rs").write_text("ToolDefinition; pub strict:")
+    (published / "src/tool_calling/jail.rs").write_text("JailedStream")
+    (published / "src/reasoning/mod.rs").write_text("fn set_in_reasoning")
+
+    def fake_run(args, *, cwd, env, capture_output, check):
+        calls.append((args, cwd, env["CARGO_TARGET_DIR"]))
+        if "generate-lockfile" in args or "metadata" in args:
+            (cwd / "Cargo.lock").write_text(lock_text)
+            metadata = {"packages": [{"name": "dynamo-parsers", "version": "10.0.1", "manifest_path": str(published / "Cargo.toml")}]}
+            return CompletedProcess(args, 0, json.dumps(metadata).encode() if "metadata" in args else b"", b"")
+        if "check" in args:
+            if reasoning_context:
+                return CompletedProcess(args, 0, b"", b"")
+            diagnostic = {"reason": "compiler-message", "target": {
+                "src_path": str(cwd / "examples/reasoning_context_capability.rs")},
+                "message": {"level": "error", "code": {"code": "E0432"}}}
+            return CompletedProcess(args, 101, json.dumps(diagnostic).encode() + b"\n", b"missing context exports")
+        return CompletedProcess(
+            args,
+            0,
+            json.dumps({
+                "case": {
+                    "batch_final": {"reasoning_text": "", "normal_text": "authored", "calls": []},
+                    "capture_input": request,
+                }
+            }).encode(),
+            b"",
+        )
+
+    monkeypatch.setattr(capture.subprocess, "run", fake_run)
+    monkeypatch.setattr(capture, "PROBE", tmp_path / "legacy_batch_probe.rs")
+    capture.PROBE.write_text("probe")
+    monkeypatch.setattr(capture, "JAIL_PROBE", tmp_path / "legacy_jail_probe.rs")
+    capture.JAIL_PROBE.write_text("jail probe")
+
+    receipt = capture.capture("10.0.1", job_path, output_path, work_dir, target_dir=target_dir,
+                              lockfile=reviewed_lock if jail_buffer else None, jail_buffer=jail_buffer)
+
+    assert ("conformance_reasoning_context" in receipt["compatibility_flags"]) is reasoning_context
+    assert [call[2] for call in calls] == [str(target_dir)] * 4
+    assert receipt["job_sha256"] == capture._sha256(job_path.read_bytes())
+    result = json.loads(output_path.read_text())["results"]["case"]
+    assert result["capture_input"] == request
+    assert result["assembled"] == [{"kind": "text", "text": "authored"}]
+    assert receipt["implementation"] == ("dynamo_v1_jail" if jail_buffer else "dynamo_v1")
+    assert ("--features" in calls[-1][0]) is jail_buffer
+
+
+def test_jail_requires_the_reviewed_exact_release_lockfile(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="requires the reviewed release lockfile"):
+        capture.capture("3.0.0", tmp_path / "job.json", tmp_path / "output.json", tmp_path / "producer",
+                        jail_buffer=True)
+
+
+@pytest.mark.parametrize("version", ["9.2.13"])
+def test_jail_source_blockers_preserve_request_and_separate_identity(tmp_path: Path, version: str) -> None:
+    job = tmp_path / "job.json"
+    output = tmp_path / "result.json"
+    request = {"input": "authored"}
+    job.write_text(json.dumps({"family": "muse_glimmer", "cases": [{"id": "case", "request": request}]}))
+    receipt = capture.source_unavailable(version, job, output, jail_buffer=True)
+    result = json.loads(output.read_text())
+    assert receipt["implementation"] == "dynamo_v1_jail"
+    assert receipt["status"] == "source_unavailable"
+    assert result["results"]["case"]["capture_input"] == request
+    assert "source_sha256" not in receipt
+
+
+def test_published_release_without_jail_api_is_not_a_missing_source(tmp_path: Path) -> None:
+    assert "source unavailable" not in batch_capture_label("dynamo_v1_jail", "3.0.0")
+    with pytest.raises(ValueError, match="no explicit source blocker"):
+        capture.source_unavailable("3.0.0", tmp_path / "job.json", tmp_path / "result.json", jail_buffer=True)
+
+
+def test_dynamo_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):
+    job = tmp_path / "job.json"
+    job.write_text(json.dumps({"family": "gpt_oss", "cases": []}))
+    config = tmp_path / "parser_families.yaml"
+    config.write_text("first registry")
+    monkeypatch.setattr(capture, "parser_families_path", lambda: config)
+    before = capture.source_unavailable("9.2.13", job, tmp_path / "first.json")
+    config.write_text("changed registry")
+    after = capture.source_unavailable("9.2.13", job, tmp_path / "second.json")
+    assert before["adapter_sha256"] != after["adapter_sha256"]
+    assert before["job_sha256"] == after["job_sha256"]
+
+
+@pytest.mark.parametrize("override", [None, False, True])
+def test_gpt_oss_prefill_capability_checks_implementation_not_trait(tmp_path: Path, override) -> None:
+    reason = tmp_path / "src/reasoning"
+    tools = tmp_path / "src/tool_calling"
+    reason.mkdir(parents=True)
+    tools.mkdir(parents=True)
+    (reason / "mod.rs").write_text("fn set_in_reasoning(&mut self, _value: bool) {}")
+    (tools / "parsers.rs").write_text("detect_and_parse_tool_call_with_recovery")
+    (tools / "mod.rs").write_text("ToolDefinition pub strict:")
+    if override is not None:
+        (reason / "gpt_oss_parser.rs").write_text(
+            "fn set_in_reasoning(&mut self, _value: bool) {}" if override else "impl ReasoningParser for GptOssReasoningParser {}"
+        )
+    flags = capture.compatibility_flags(tmp_path, False)
+    assert "conformance_no_reasoning_init" not in flags
+    assert ("conformance_gpt_oss_no_reasoning_init" in flags) is (override is not True)
+
+
+@pytest.mark.parametrize("code", ["E0425", "E0432", "E0599", "E0603", "E0624"])
+def test_context_probe_preserves_legacy_for_missing_or_private_exports(tmp_path, monkeypatch, code):
+    def compiler(_cargo, args, *, work_dir, log, env, allow_failure):
+        assert allow_failure and "--example" in args and "json" in args
+        source = work_dir / "examples/reasoning_context_capability.rs"
+        assert "detect_and_parse_reasoning_with_context" in source.read_text()
+        diagnostics = [{"reason": "compiler-message", "target": {"src_path": str(source)},
+                        "message": {"level": "error", "code": {"code": code}}},
+                       {"reason": "compiler-message", "target": {"src_path": str(source)},
+                        "message": {"level": "error", "code": None, "spans": [], "message": "aborting due to 1 previous error"}}]
+        output = b"\n".join(json.dumps(row).encode() for row in diagnostics)
+        log.write_bytes(output)
+        return CompletedProcess(args, 101, output, b"")
+
+    monkeypatch.setattr(capture, "_cargo", compiler)
+    assert capture.reasoning_context_flags("cargo", work_dir=tmp_path, env={}, jail_buffer=False) == []
+
+
+@pytest.mark.parametrize("failure", ["dependency", "signature", "no_diagnostic", "malformed_output"])
+def test_context_probe_propagates_build_failures_instead_of_claiming_legacy(tmp_path, monkeypatch, failure):
+    def compiler(_cargo, args, *, work_dir, log, env, allow_failure):
+        source = work_dir / ("dependency.rs" if failure == "dependency" else "examples/reasoning_context_capability.rs")
+        diagnostic = {"reason": "compiler-message", "target": {"src_path": str(source)},
+                      "message": {"level": "error", "code": {"code": "E0308" if failure == "signature" else "E0432"}}}
+        output = b"" if failure == "no_diagnostic" else b"not JSON" if failure == "malformed_output" else json.dumps(diagnostic).encode()
+        log.write_bytes(output)
+        return CompletedProcess(args, 101, output, b"build failed")
+
+    monkeypatch.setattr(capture, "_cargo", compiler)
+    with pytest.raises(RuntimeError, match="context capability probe"):
+        capture.reasoning_context_flags("cargo", work_dir=tmp_path, env={}, jail_buffer=True)

@@ -1,0 +1,492 @@
+authored:
+  schema_version: 3
+  family: sample
+  request_defaults:
+    init:
+      starting_state: None
+    finish_reason: stop
+  tools:
+    tools_5ab0d46d41575417:
+    - name: f
+      parameters:
+        $ref: '#/$defs/Literal'
+  requests:
+    7e5052020142c1f20a8a52ccaa50e22182aca791b663def2ae18f9dcb431f530:
+      input: é🙂 literal $ref ‹finish›
+      tools: tools_5ab0d46d41575417
+      chunk_sizes:
+      - 1
+      - 15
+      - 0
+      - 8
+  cases:
+    one:
+      description: one
+      display_id: UNIFIED.one
+      request: 7e5052020142c1f20a8a52ccaa50e22182aca791b663def2ae18f9dcb431f530
+      golden: []
+snapshot:
+  document:
+    mode: unified
+  schema_version: 3
+  provenance:
+    status: captured
+    origin: origin_646c7f9faeeaf392
+  origins:
+    origin_646c7f9faeeaf392:
+      crate_version: 0.1.0
+      source_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  producers:
+    producer_10ad39c56305edda:
+      captured_with:
+        dynamo_v2: 0.1.0
+      capture_origin: origin_646c7f9faeeaf392
+  contexts:
+    context_e06993ac3286a122:
+      mode: unified
+      record_metadata:
+        typed:
+          1: integer
+          '1': string
+          null: false
+        nullable: null
+  record_defaults:
+    member: sample/0.1.0.yaml
+    producer: producer_10ad39c56305edda
+    context: context_e06993ac3286a122
+  records:
+    one:
+      case_key: UNIFIED.one
+      request: 7e5052020142c1f20a8a52ccaa50e22182aca791b663def2ae18f9dcb431f530
+      output:
+        assembled: []
+        chunks:
+        - expected: []
+expected_family:
+  input_document:
+    family: sample
+  golden_document:
+    family: sample
+  cases:
+    one:
+      lifecycle: active
+      scenario: one
+      description: one
+      policy: []
+      historical_ids: []
+      display_id: UNIFIED.one
+      request:
+        input: é🙂 literal $ref ‹finish›
+        init:
+          starting_state: None
+        finish_reason: stop
+        tools:
+        - name: f
+          parameters:
+            $ref: '#/$defs/Literal'
+        chunks:
+        - delta_text: é
+        - delta_text: '🙂 literal $ref '
+        - delta_text: ''
+        - delta_text: ‹finish›
+      golden:
+        assembled: []
+expected_snapshot:
+  schema_version: 2
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.1.0
+      source_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  document:
+    mode: unified
+  records:
+    one:
+      member: sample/0.1.0.yaml
+      value:
+        case_key: UNIFIED.one
+        document:
+          captured_with:
+            dynamo_v2: 0.1.0
+          capture_origin:
+            crate_version: 0.1.0
+            source_sha256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          mode: unified
+          record_metadata:
+            typed:
+              1: integer
+              '1': string
+              null: false
+            nullable: null
+        stimulus:
+          inline:
+            input: é🙂 literal $ref ‹finish›
+            init:
+              starting_state: None
+            finish_reason: stop
+            tools:
+            - name: f
+              parameters:
+                $ref: '#/$defs/Literal'
+            chunks:
+            - delta_text: é
+            - delta_text: '🙂 literal $ref '
+            - delta_text: ''
+            - delta_text: ‹finish›
+          semantic_sha256: 7e5052020142c1f20a8a52ccaa50e22182aca791b663def2ae18f9dcb431f530
+        observation:
+          value:
+            assembled: []
+            chunks:
+            - expected: []
+variants:
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      1a677dd1efb14c46750dbfb6cdd4f8dfc5a0dc10a1e20816ae16d1e8fb5917d0:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - delta_text: 42
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: 1a677dd1efb14c46750dbfb6cdd4f8dfc5a0dc10a1e20816ae16d1e8fb5917d0
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: 42
+        golden:
+          assembled: []
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      b39207c1e699f12917a72651b3434e078b7669456a153a6f54d459d05f8316a5:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - delta_text: 42.0
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: b39207c1e699f12917a72651b3434e078b7669456a153a6f54d459d05f8316a5
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: 42.0
+        golden:
+          assembled: []
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      e3e832dabf259d1cada42493e456e2eebff1a758bc2941dc93ffe1456245b9ed:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - delta_text: true
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: e3e832dabf259d1cada42493e456e2eebff1a758bc2941dc93ffe1456245b9ed
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: true
+        golden:
+          assembled: []
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      52deb0434d6b36a8bb95279bf25971a1568967328d2ea7b64b995cbcd2cf7147:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - delta_text: null
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: 52deb0434d6b36a8bb95279bf25971a1568967328d2ea7b64b995cbcd2cf7147
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: null
+        golden:
+          assembled: []
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      e0f575d468e0aee81d90fada8869950280a8f0a95737781e6436be748aeb6ad5:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - '42'
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: e0f575d468e0aee81d90fada8869950280a8f0a95737781e6436be748aeb6ad5
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: '42'
+        golden:
+          assembled: []
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      c304c2f598d8dd785b683d78ffe705fe38e1289d9b184bd2a2c3076c0e587600:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - 'on'
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: c304c2f598d8dd785b683d78ffe705fe38e1289d9b184bd2a2c3076c0e587600
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: 'on'
+        golden:
+          assembled: []
+- authored:
+    schema_version: 3
+    family: sample
+    request_defaults:
+      init:
+        starting_state: None
+      finish_reason: stop
+    tools:
+      tools_5ab0d46d41575417:
+      - name: f
+        parameters:
+          $ref: '#/$defs/Literal'
+    requests:
+      c2d1c1b9883d41bacbf3ce5f8db8efd233deb75ccaef99c61c2c42a5896abb53:
+        input: literal $ref ‹finish›
+        tools: tools_5ab0d46d41575417
+        chunks:
+        - 4.2e1
+    cases:
+      one:
+        description: one
+        display_id: UNIFIED.one
+        request: c2d1c1b9883d41bacbf3ce5f8db8efd233deb75ccaef99c61c2c42a5896abb53
+        golden: []
+  expected:
+    input_document:
+      family: sample
+    golden_document:
+      family: sample
+    cases:
+      one:
+        lifecycle: active
+        scenario: one
+        description: one
+        policy: []
+        historical_ids: []
+        display_id: UNIFIED.one
+        request:
+          input: literal $ref ‹finish›
+          init:
+            starting_state: None
+          finish_reason: stop
+          tools:
+          - name: f
+            parameters:
+              $ref: '#/$defs/Literal'
+          chunks:
+          - delta_text: 4.2e1
+        golden:
+          assembled: []

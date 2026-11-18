@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashSet, path::Path};
+use std::{collections::HashSet, path::Path, sync::OnceLock};
 
-use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
+use tokenizers::tokenizer::{
+    AddedToken, AddedVocabulary, PostProcessor as _, Tokenizer as HfTokenizer,
+};
 
 use super::{
     Encoding, Error, Result, TokenIdType, TokenizerOptions,
@@ -12,8 +14,13 @@ use super::{
 
 pub struct HuggingFaceTokenizer {
     tokenizer: HfTokenizer,
+    segment_tokenizers: OnceLock<(HfTokenizer, HfTokenizer)>,
     byte_fallback_ids: HashSet<u32>,
     special_ids: HashSet<u32>,
+    /// Every added-token id, `special: true` or not. An ordinary segment of
+    /// [`Encoder::encode_segments`] must never produce one of these; see
+    /// that method.
+    added_ids: HashSet<u32>,
     /// Construction-time options; see [`TokenizerOptions`]. Defaults preserve
     /// the historical behavior (e.g. `add_special_tokens: false`). Set via
     /// [`Tokenizer::with_options`].
@@ -21,6 +28,11 @@ pub struct HuggingFaceTokenizer {
 }
 
 impl HuggingFaceTokenizer {
+    /// Every added-token id of this vocabulary, `special: true` or not.
+    pub(crate) fn added_ids(&self) -> &HashSet<u32> {
+        &self.added_ids
+    }
+
     /// Load from `tokenizer.json`, merging in special tokens declared only in
     /// a sibling `tokenizer_config.json`'s `added_tokens_decoder`. Without
     /// this, some releases (Qwen2-VL-2B's `<|image_pad|>`) BPE-shatter and
@@ -64,15 +76,18 @@ impl HuggingFaceTokenizer {
         } else {
             HashSet::new()
         };
-        let special_ids = tokenizer
-            .get_added_tokens_decoder()
-            .into_iter()
-            .filter_map(|(id, token)| token.special.then_some(id))
+        let added_tokens = tokenizer.get_added_tokens_decoder();
+        let special_ids = added_tokens
+            .iter()
+            .filter_map(|(id, token)| token.special.then_some(*id))
             .collect();
+        let added_ids = added_tokens.into_keys().collect();
         HuggingFaceTokenizer {
             tokenizer,
+            segment_tokenizers: OnceLock::new(),
             byte_fallback_ids,
             special_ids,
+            added_ids,
             options: TokenizerOptions::default(),
         }
     }
@@ -155,7 +170,18 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
     }
     // Dedups against existing added-tokens, so this is a no-op when
     // tokenizer.json already had them. Return value = net-new count.
-    let added = tokenizer.add_special_tokens(&to_add);
+    let added = match tokenizer.add_special_tokens(to_add.iter().cloned()) {
+        Ok(added) => added,
+        Err(e) => {
+            tracing::warn!(
+                target: "tokenizer",
+                path = %cfg_path.display(),
+                error = %e,
+                "special-token merge from tokenizer_config.json failed; skipping"
+            );
+            return;
+        }
+    };
     if added > 0 {
         // Warn (not debug) when the merge actually promotes anything —
         // intentionally loud so accidental promotion of a previously-
@@ -182,6 +208,51 @@ impl Encoder for HuggingFaceTokenizer {
             .encode(input, self.options.add_special_tokens)
             .map_err(|err| Error::msg(format!("Error tokenizing input: {err}")))?;
 
+        Ok(Encoding::Hf(Box::new(encoding)))
+    }
+
+    fn encode_segments(&self, segments: &[super::EncodeSegment<'_>]) -> Result<Encoding> {
+        let (trusted, ordinary) = self.segment_tokenizers.get_or_init(|| {
+            let mut trusted = self.tokenizer.clone();
+            // Apply padding, truncation and post-processing once to the joined
+            // sequence, rather than independently at every trust boundary.
+            trusted.with_padding(None);
+            trusted
+                .with_truncation(None)
+                .expect("removing truncation cannot fail");
+            trusted.with_post_processor(None::<tokenizers::processors::PostProcessorWrapper>);
+            // No added vocabulary at all: `encode_special_tokens` skips only
+            // `special: true` entries, and chat markers such as Qwen3's
+            // `<think>` are `special: false`.
+            let mut ordinary = trusted.clone();
+            ordinary.with_added_vocabulary(AddedVocabulary::new());
+            (trusted, ordinary)
+        });
+        let encodings = segments
+            .iter()
+            .map(|segment| {
+                let tokenizer = if segment.allow_special {
+                    trusted
+                } else {
+                    ordinary
+                };
+                let encoding = tokenizer
+                    .encode(segment.text, false)
+                    .map_err(|error| Error::msg(format!("Error tokenizing segment: {error}")))?;
+                if !segment.allow_special {
+                    crate::reject_control_ids_in_ordinary_segment(
+                        encoding.get_ids(),
+                        &self.added_ids,
+                    )?;
+                }
+                Ok(encoding)
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let merged = tokenizers::Encoding::merge(encodings, true);
+        let encoding = self
+            .tokenizer
+            .post_process(merged, None, self.options.add_special_tokens)
+            .map_err(|error| Error::msg(format!("Error post-processing segments: {error}")))?;
         Ok(Encoding::Hf(Box::new(encoding)))
     }
 
@@ -227,7 +298,20 @@ impl Tokenizer for HuggingFaceTokenizer {
                 "HuggingFace tokenizers configured with add_special_tokens=true must remain uncached",
             ));
         }
+        // The cache joins separately encoded pieces, so per-call truncation or padding
+        // would apply to each piece instead of the whole input.
+        if self.tokenizer.get_truncation().is_some() || self.tokenizer.get_padding().is_some() {
+            return Err(Error::msg(
+                "HuggingFace tokenizers with truncation or padding must remain uncached",
+            ));
+        }
         Ok(())
+    }
+
+    /// Without added special tokens, truncation or padding, a segment that allows
+    /// special tokens goes through the pipeline `encode` runs.
+    fn validate_segment_prefix_cache(&self) -> Result<()> {
+        self.validate_prefix_cache()
     }
 
     /// HF honors [`TokenizerOptions::add_special_tokens`] (BOS/EOS per the
@@ -513,6 +597,27 @@ mod tests {
     }
 
     #[test]
+    fn truncation_or_padding_blocks_prefix_cache() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/data/sample-models/TinyLlama_v1.1/tokenizer.json"
+        );
+        let mut truncated = HfTokenizer::from_file(path).unwrap();
+        truncated
+            .with_truncation(Some(tokenizers::TruncationParams::default()))
+            .unwrap();
+        let mut padded = HfTokenizer::from_file(path).unwrap();
+        padded.with_padding(Some(tokenizers::PaddingParams::default()));
+        for hf in [truncated, padded] {
+            assert!(
+                HuggingFaceTokenizer::from_tokenizer(hf)
+                    .validate_prefix_cache()
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
     fn vocab_introspection_accessors() {
         const TOKENIZER_JSON: &str = r#"{
             "version": "1.0",
@@ -584,5 +689,120 @@ mod tests {
 
         let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
         assert_eq!(tokenizer.num_special_tokens_added().unwrap(), 1);
+    }
+}
+
+#[cfg(test)]
+mod segmented_tests {
+    use super::*;
+    use crate::EncodeSegment;
+
+    #[test]
+    fn segmented_hf_preserves_literal_controls_and_adds_bos_once() {
+        let mut vocab = serde_json::json!({"<unk>":0,"<|call|>":1,"<bos>":2});
+        for ch in "<|cal>".chars() {
+            let id = vocab.as_object().unwrap().len();
+            vocab[ch.to_string()] = serde_json::json!(id);
+        }
+        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+            "version":"1.0", "truncation":null, "padding":null,
+            "normalizer":null, "pre_tokenizer":null, "decoder":{"type":"Fuse"},
+            "added_tokens":[{"id":1,"content":"<|call|>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false},
+                {"id":2,"content":"<bos>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false}],
+            "post_processor":{"type":"TemplateProcessing","single":[{"SpecialToken":{"id":"<bos>","type_id":0}},{"Sequence":{"id":"A","type_id":0}}],
+                "pair":[{"Sequence":{"id":"A","type_id":0}},{"Sequence":{"id":"B","type_id":1}}],"special_tokens":{"<bos>":{"id":"<bos>","ids":[2],"tokens":["<bos>"]}}},
+            "model":{"type":"BPE","vocab":vocab,"merges":[],"unk_token":"<unk>"}
+        })).unwrap();
+        for add_special_tokens in [false, true] {
+            let tokenizer = HuggingFaceTokenizer::from_tokenizer(hf.clone())
+                .with_options(TokenizerOptions { add_special_tokens });
+            let encoding = tokenizer
+                .encode_segments(&[
+                    EncodeSegment::control("<|call|>"),
+                    EncodeSegment::ordinary("<|call|>"),
+                ])
+                .unwrap();
+            let ids = encoding.token_ids();
+            assert_eq!(ids.iter().filter(|id| **id == 1).count(), 1);
+            assert_eq!(
+                ids.iter().filter(|id| **id == 2).count(),
+                usize::from(add_special_tokens)
+            );
+            let decoded: String = tokenizer.decode(ids, true).unwrap().into();
+            assert_eq!(decoded, "<|call|>");
+            assert_eq!(
+                tokenizer
+                    .encode("<|call|>")
+                    .unwrap()
+                    .token_ids()
+                    .iter()
+                    .filter(|id| **id == 1)
+                    .count(),
+                1
+            );
+        }
+    }
+    #[test]
+    fn segmented_hf_encodes_non_special_added_tokens_as_text() {
+        // HF's `set_encode_special_tokens` skips only `special: true` entries;
+        // chat markers such as Qwen3's `<think>` are registered `special: false`.
+        let mut vocab = serde_json::json!({"<unk>":0,"<think>":1});
+        for ch in "<think>".chars() {
+            let id = vocab.as_object().unwrap().len();
+            vocab[ch.to_string()] = serde_json::json!(id);
+        }
+        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+            "version":"1.0", "truncation":null, "padding":null,
+            "normalizer":null, "pre_tokenizer":null, "post_processor":null, "decoder":{"type":"Fuse"},
+            "added_tokens":[{"id":1,"content":"<think>","special":false,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false}],
+            "model":{"type":"BPE","vocab":vocab,"merges":[],"unk_token":"<unk>"}
+        })).unwrap();
+        let tokenizer = HuggingFaceTokenizer::from_tokenizer(hf);
+        let ids = |segment| {
+            tokenizer
+                .encode_segments(&[segment])
+                .unwrap()
+                .token_ids()
+                .to_vec()
+        };
+        assert_eq!(ids(EncodeSegment::control("<think>")), [1]);
+        let ordinary = ids(EncodeSegment::ordinary("<think>"));
+        assert_eq!(ordinary.len(), "<think>".len());
+        assert!(!ordinary.contains(&1));
+    }
+
+    #[test]
+    fn segmented_hf_rejects_ordinary_control_ids() {
+        // `H`+`e` merges to id 18, declared here as the added token `He`:
+        // ordinary text must not come back as that control id.
+        let mut json: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/data/minimal-bpe/tokenizer.json"
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        json["added_tokens"] = serde_json::json!([{
+            "id": 18,
+            "content": "He",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        let tokenizer = HuggingFaceTokenizer::from_tokenizer(serde_json::from_value(json).unwrap());
+        let control = tokenizer
+            .encode_segments(&[EncodeSegment::control("He")])
+            .unwrap();
+        assert_eq!(control.token_ids(), &[18]);
+        let error = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary("He")])
+            .unwrap_err();
+        assert!(
+            error.to_string().contains("control-token id 18"),
+            "unexpected error: {error}"
+        );
     }
 }

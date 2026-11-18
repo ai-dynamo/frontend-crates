@@ -1132,7 +1132,7 @@
     "thinking": true,
     "effort": 50,
     "drop_thinking": true,
-    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜><think>Use the tool.</think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
   },
   {
     "name": "image-tool-image-high",
@@ -1180,7 +1180,7 @@
     "thinking": true,
     "effort": 75,
     "drop_thinking": true,
-    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜><think>Use the tool.</think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
   },
   {
     "name": "image-tool-image-max",
@@ -1228,7 +1228,7 @@
     "thinking": true,
     "effort": 100,
     "drop_thinking": true,
-    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜><think>Use the tool.</think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
   },
   {
     "name": "empty_system_tools",
@@ -1296,7 +1296,7 @@
     "thinking": true,
     "effort": 50,
     "drop_thinking": true,
-    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>q<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜>x<｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\n<tool_result>B</tool_result><｜Assistant｜><think>"
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>q<｜Assistant｜><think></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜></think>x<｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\n<tool_result>B</tool_result><｜Assistant｜><think>"
   },
   {
     "name": "merged_user_drops_task",
@@ -1355,5 +1355,100 @@
     "effort": 50,
     "drop_thinking": true,
     "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>q<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\nSearch\n\nMore\n\n<tool_result>B</tool_result><｜Assistant｜><think></think>OK<｜end▁of▁sentence｜>"
+  },
+  {
+    "name": "tool-result-keeps-current-reasoning",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the weather in Paris? Answer in Fahrenheit."
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Tool returns Celsius; convert to Fahrenheit.",
+        "tool_calls": [
+          {
+            "id": "c1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "c1",
+        "content": "{\"temp_c\": 20}"
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>What's the weather in Paris? Answer in Fahrenheit.<｜Assistant｜><think>Tool returns Celsius; convert to Fahrenheit.</think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"get_weather\">\n<｜DSML｜ parameter name=\"city\" string=\"true\">Paris</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>{\"temp_c\": 20}</tool_result><｜Assistant｜><think>"
+  },
+  {
+    "name": "new-user-turn-drops-earlier-reasoning",
+    "messages": [
+      {
+        "role": "user",
+        "content": "What's the weather in Paris?"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Look up Paris.",
+        "tool_calls": [
+          {
+            "id": "c1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "c1",
+        "content": "{\"temp_c\": 20}"
+      },
+      {
+        "role": "assistant",
+        "content": "It is 20C in Paris.",
+        "reasoning_content": "Report the result."
+      },
+      {
+        "role": "user",
+        "content": "And in London?"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Look up London.",
+        "tool_calls": [
+          {
+            "id": "c2",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "c2",
+        "content": "{\"temp_c\": 15}"
+      }
+    ],
+    "thinking": true,
+    "effort": 75,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 75 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>What's the weather in Paris?<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"get_weather\">\n<｜DSML｜ parameter name=\"city\" string=\"true\">Paris</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>{\"temp_c\": 20}</tool_result><｜Assistant｜></think>It is 20C in Paris.<｜end▁of▁sentence｜><｜User｜>And in London?<｜Assistant｜><think>Look up London.</think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"get_weather\">\n<｜DSML｜ parameter name=\"city\" string=\"true\">Paris</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>{\"temp_c\": 15}</tool_result><｜Assistant｜><think>"
   }
 ]

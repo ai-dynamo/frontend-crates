@@ -2,8 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use serde_json::{Map, Value};
 
+use serde_json::Value;
+
+use crate::tool_calling::arguments::{
+    ParsedObject, ParsedValue, parsed_json_literal, parsed_json_object,
+};
+use crate::tool_calling::dsml::{BLOCK_SEPARATOR, DsmlInvokeFollower};
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
     WrappedBlockScanner, WrappedBlockSpec,
@@ -35,12 +40,14 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
         preserve_special_tokens: true,
         ..Default::default()
     };
-    let scanner = WrappedBlockScanner::new(spec, DeepSeekV41).with_reasoning(ReasoningSpec {
-        start: "<think>",
-        end: "</think>",
-        preserve_special_tokens: true,
-        ..Default::default()
-    });
+    let scanner = WrappedBlockScanner::new(spec, DeepSeekV41)
+        .with_tool_separator(BLOCK_SEPARATOR, &[INVOKE_START])
+        .with_reasoning(ReasoningSpec {
+            start: "<think>",
+            end: "</think>",
+            preserve_special_tokens: true,
+            ..Default::default()
+        });
     Box::new(GuidedRouted::new(ScannerUnified::new(scanner)))
 }
 
@@ -103,7 +110,7 @@ enum InvocationPosition {
         scan_from: usize,
     },
     InvalidParameter {
-        start: usize,
+        scan_from: usize,
     },
 }
 
@@ -115,6 +122,7 @@ struct DeepSeekV41InvocationBoundary {
     guided_prefix_scan_from: usize,
     guided_prefix_payload_at: Option<usize>,
     guided_prefix_header_end: Option<usize>,
+    following_invoke: DsmlInvokeFollower,
 }
 
 impl DeepSeekV41InvocationBoundary {
@@ -216,7 +224,7 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                         }
                     }
                     if self.json.invalid {
-                        self.position = InvocationPosition::InvalidParameter { start: 0 };
+                        self.position = InvocationPosition::InvalidParameter { scan_from: 0 };
                     } else if self.json.complete {
                         self.position = InvocationPosition::BetweenParameters;
                     } else {
@@ -261,7 +269,7 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                         return None;
                     };
                     let Some((_, _, value)) = parameter_header(&candidate[start..]) else {
-                        self.position = InvocationPosition::InvalidParameter { start };
+                        self.position = InvocationPosition::InvalidParameter { scan_from: start };
                         continue;
                     };
                     let value_start = candidate.len() - value.len();
@@ -272,21 +280,80 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                     };
                 }
                 InvocationPosition::ParameterValue { start, scan_from } => {
-                    let Some(value_end) = find_from(candidate, scan_from, PARAMETER_END) else {
+                    let prefix = "</｜DSML｜";
+                    let boundary = if candidate[scan_from..].starts_with(prefix) {
+                        Some(scan_from)
+                    } else {
+                        find_from(candidate, scan_from, prefix)
+                    };
+                    let Some(at) = boundary else {
                         if flush {
                             return Self::malformed_end(candidate, start, true);
                         }
                         self.position = InvocationPosition::ParameterValue {
                             start,
-                            scan_from: next_scan_start(candidate, PARAMETER_END.len()),
+                            scan_from: next_scan_start(candidate, prefix.len()),
                         };
                         return None;
                     };
-                    self.scan_from = value_end + PARAMETER_END.len();
-                    self.position = InvocationPosition::BetweenParameters;
+                    let tail = &candidate[at..];
+                    if tail.starts_with(PARAMETER_END) {
+                        self.scan_from = at + PARAMETER_END.len();
+                        self.position = InvocationPosition::BetweenParameters;
+                        continue;
+                    }
+                    if tail.starts_with(INVOKE_END) {
+                        match self
+                            .following_invoke
+                            .follows(candidate, at, INVOKE_END, INVOKE_START)
+                        {
+                            Some(true) => {
+                                tracing::warn!(
+                                    why = "dsml_unterminated_parameter_before_invoke",
+                                    skipped_bytes = at,
+                                    "Dropped an unclosed DSML parameter before the next invocation"
+                                );
+                                return Some(at);
+                            }
+                            None if !flush => {
+                                self.position = InvocationPosition::ParameterValue {
+                                    start,
+                                    scan_from: at,
+                                };
+                                return None;
+                            }
+                            _ => {}
+                        }
+                        self.position = InvocationPosition::ParameterValue {
+                            start,
+                            scan_from: at + INVOKE_END.len(),
+                        };
+                        continue;
+                    }
+                    if !flush
+                        && [PARAMETER_END, INVOKE_END]
+                            .iter()
+                            .any(|m| m.starts_with(tail))
+                    {
+                        self.position = InvocationPosition::ParameterValue {
+                            start,
+                            scan_from: at,
+                        };
+                        return None;
+                    }
+                    self.position = InvocationPosition::ParameterValue {
+                        start,
+                        scan_from: at + prefix.len(),
+                    };
                 }
-                InvocationPosition::InvalidParameter { start } => {
-                    return Self::malformed_end(candidate, start, flush);
+                InvocationPosition::InvalidParameter { scan_from } => {
+                    if let Some(close) = find_from(candidate, scan_from, INVOKE_END) {
+                        return Some(close + INVOKE_END.len());
+                    }
+                    self.position = InvocationPosition::InvalidParameter {
+                        scan_from: next_scan_start(candidate, INVOKE_END.len()),
+                    };
+                    return None;
                 }
             }
         }
@@ -329,14 +396,18 @@ impl InvokeEmitter for DeepSeekV41 {
         let mut body = body
             .strip_suffix(INVOKE_END)
             .context("incomplete DeepSeek V4.1 invocation")?;
-        let mut arguments = if body.trim_start().starts_with('{') {
-            let arguments = serde_json::from_str::<Map<String, Value>>(body)
-                .context("invalid DeepSeek V4.1 JSON arguments")?;
-            body = "";
-            arguments
-        } else {
-            Map::new()
-        };
+        if body.trim_start().starts_with('{') {
+            let raw = serde_json::from_str::<Box<serde_json::value::RawValue>>(body)?;
+            let arguments =
+                parsed_json_object(raw.get()).context("invalid DeepSeek V4.1 JSON arguments")?;
+            return Ok(Some(ToolCallDelta {
+                tool_index,
+                name: Some(name.to_string()),
+                arguments: arguments.json_text()?,
+                complete: true,
+            }));
+        }
+        let mut arguments = ParsedObject::new();
         while !body.trim().is_empty() {
             let (name, string, value) = parameter_header(body.trim_start())
                 .context("invalid DeepSeek V4.1 parameter header")?;
@@ -344,9 +415,10 @@ impl InvokeEmitter for DeepSeekV41 {
                 .split_once(PARAMETER_END)
                 .context("incomplete DeepSeek V4.1 parameter")?;
             let value = if string {
-                Value::String(raw.to_string())
+                ParsedValue::from(Value::String(raw.to_string()))
             } else {
-                serde_json::from_str(raw)?
+                let raw = serde_json::from_str::<Box<serde_json::value::RawValue>>(raw)?;
+                parsed_json_literal(raw.get()).context("invalid DeepSeek V4.1 parameter JSON")?
             };
             anyhow::ensure!(
                 arguments.insert(name.to_string(), value).is_none(),
@@ -357,15 +429,13 @@ impl InvokeEmitter for DeepSeekV41 {
         Ok(Some(ToolCallDelta {
             tool_index,
             name: Some(name.to_string()),
-            arguments: serde_json::to_string(&arguments)?,
+            arguments: ParsedValue::Object(arguments).json_text()?,
             complete: true,
         }))
     }
 
-    fn defer_parse_error(&self, _invoke: &str, error: &anyhow::Error) -> bool {
-        error
-            .downcast_ref::<serde_json::Error>()
-            .is_some_and(serde_json::Error::is_eof)
+    fn defer_parse_error(&self, _invoke: &str, _error: &anyhow::Error) -> bool {
+        true
     }
 }
 
@@ -440,6 +510,173 @@ mod tests {
     }
 
     #[test]
+    fn invalid_plain_body_does_not_abort_following_empty_call() {
+        let input = concat!(
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"bad\">not-json</｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"get_weather\"></｜DSML｜ invoke></｜DSML｜ calls>"
+        );
+        assert_every_split(
+            input,
+            UnifiedParserStartingState::None,
+            vec![UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({}),
+            }],
+        );
+        let mut parser = deepseek_v41_unified(&[]);
+        let mut output = UnifiedParserOutput::default();
+        for chunk in [
+            BLOCK_START,
+            "<｜DSML｜ invoke name=\"bad\">",
+            "not-json",
+            INVOKE_END,
+            BLOCK_END,
+            BLOCK_START,
+            "<｜DSML｜ invoke name=\"get_weather\">",
+            INVOKE_END,
+            BLOCK_END,
+        ] {
+            parser.parse_into(chunk, &mut output).unwrap();
+        }
+        assert_eq!(
+            output.assembled(),
+            vec![UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({}),
+            }],
+            "the later call must reach the consumer before finish"
+        );
+        assert!(parser.finish().unwrap().is_empty());
+    }
+
+    const MALFORMED_BODIES: [&str; 5] = [
+        "not-json",
+        "{\"value\":é}",
+        "<｜DSML｜ parameter name=\"value\" string=\"false\">invalid</｜DSML｜ parameter>",
+        "<｜DSML｜ parameter name=\"value\" string=\"maybe\">1</｜DSML｜ parameter>",
+        "<｜DSML｜ parameter name=\"x\" string=\"true\">first</｜DSML｜ parameter><｜DSML｜ parameter name=\"x\" string=\"true\">second</｜DSML｜ parameter>",
+    ];
+
+    #[test]
+    fn malformed_invocations_recover_later_calls_across_states_and_blocks() {
+        let valid = concat!(
+            "<｜DSML｜ invoke name=\"get_weather\"></｜DSML｜ invoke>",
+            "<｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">Café</｜DSML｜ parameter></｜DSML｜ invoke>"
+        );
+        let expected = vec![
+            UnifiedEvent::ToolCall {
+                name: "get_weather".into(),
+                arguments: serde_json::json!({}),
+            },
+            UnifiedEvent::ToolCall {
+                name: "echo".into(),
+                arguments: serde_json::json!({"value":"Café"}),
+            },
+        ];
+        for body in MALFORMED_BODIES {
+            for separator in [String::new(), format!("{BLOCK_END}{BLOCK_START}")] {
+                let input = format!(
+                    "{BLOCK_START}{INVOKE_START}bad\">{body}{INVOKE_END}{separator}{valid}{BLOCK_END}"
+                );
+                for state in [
+                    UnifiedParserStartingState::None,
+                    UnifiedParserStartingState::Response,
+                    UnifiedParserStartingState::Reasoning,
+                ] {
+                    let init = UnifiedParserInit {
+                        starting_state: state,
+                        ..Default::default()
+                    };
+                    assert_every_split_with_init(&input, init.clone(), expected.clone());
+                    let mut parser = deepseek_v41_unified(&[]);
+                    parser.initialize_request(init).unwrap();
+                    let mut output = UnifiedParserOutput::default();
+                    for ch in input.chars() {
+                        parser
+                            .parse_into(ch.encode_utf8(&mut [0; 4]), &mut output)
+                            .unwrap();
+                    }
+                    assert_eq!(output.assembled(), expected, "before finish: {body}");
+                    assert!(parser.finish().unwrap().is_empty());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_json_still_rejects_native_output_without_promised_json() {
+        let input = format!(
+            "{BLOCK_START}{INVOKE_START}bad\">not-json{INVOKE_END}{INVOKE_START}get_weather\">{INVOKE_END}{BLOCK_END}"
+        );
+        for named_tool in [None, Some("get_weather".into())] {
+            let mut parser = deepseek_v41_unified(&[]);
+            parser
+                .initialize_request(UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool },
+                    ..Default::default()
+                })
+                .unwrap();
+            parser.push(&input).unwrap();
+            let error = parser.finish().unwrap_err();
+            assert!(error.to_string().contains("promised"), "{error}");
+        }
+    }
+
+    #[test]
+    fn malformed_invocation_boundary_work_remains_linear() {
+        let mut previous = None;
+        for length in [4096, 16384] {
+            let input = format!(
+                "{BLOCK_START}{INVOKE_START}bad\">{PARAMETER_START}value\" string=\"maybe\">{}{INVOKE_END}{INVOKE_START}get_weather\">{INVOKE_END}{BLOCK_END}",
+                "x".repeat(length)
+            );
+            BOUNDARY_EXAMINED_BYTES.with(|counter| counter.set(0));
+            let mut parser = deepseek_v41_unified(&[]);
+            let mut output = UnifiedParserOutput::default();
+            for ch in input.chars() {
+                parser
+                    .parse_into(ch.encode_utf8(&mut [0; 4]), &mut output)
+                    .unwrap();
+            }
+            let examined = BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get);
+            assert!(examined < input.len() * 64, "examined {examined} bytes");
+            if let Some(earlier) = previous {
+                assert!(examined < earlier * 5);
+            }
+            previous = Some(examined);
+            assert_eq!(
+                output.assembled(),
+                vec![UnifiedEvent::ToolCall {
+                    name: "get_weather".into(),
+                    arguments: serde_json::json!({})
+                }]
+            );
+            assert!(parser.finish().unwrap().is_empty());
+        }
+    }
+
+    #[test]
+    fn legacy_spaced_dsml_projects_only_recovered_calls() {
+        for body in MALFORMED_BODIES {
+            let input = format!(
+                "{BLOCK_START}{INVOKE_START}bad\">{body}{INVOKE_END}{INVOKE_START}get_weather\">{INVOKE_END}{BLOCK_END}"
+            );
+            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                let mut parser = crate::create_tool_parser_for_family("deepseek_v4", &[]).unwrap();
+                let mut output = parser.push(&input[..split]).unwrap();
+                output.append(parser.push(&input[split..]).unwrap());
+                output.append(parser.finish().unwrap());
+                let output = output.coalesce_calls();
+                assert!(output.normal_text.is_empty());
+                assert_eq!(output.calls.len(), 1);
+                assert_eq!(output.calls[0].name.as_deref(), Some("get_weather"));
+                assert_eq!(output.calls[0].arguments, "{}");
+                assert!(output.calls[0].complete);
+            }
+        }
+    }
+
+    #[test]
     fn reasoning_transition_and_multiple_calls() {
         let input = concat!(
             "Check the tools.\n</think>\n\n<｜DSML｜ calls>\n",
@@ -456,9 +693,6 @@ mod tests {
             vec![
                 UnifiedEvent::Reasoning {
                     text: "Check the tools.\n".into(),
-                },
-                UnifiedEvent::Text {
-                    text: "\n\n".into(),
                 },
                 UnifiedEvent::ToolCall {
                     name: "weather".into(),
@@ -670,7 +904,7 @@ mod tests {
     }
 
     #[test]
-    fn malformed_invocation_is_an_error_without_tool_deltas() {
+    fn unrecovered_malformed_invocation_is_an_error_without_tool_deltas() {
         for input in [
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"x\" string=\"true\">first</｜DSML｜ parameter><｜DSML｜ parameter name=\"x\" string=\"true\">second</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">invalid</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
@@ -680,7 +914,8 @@ mod tests {
                 let mut output = UnifiedParserOutput::default();
                 let result = parser
                     .parse_into(&input[..split], &mut output)
-                    .and_then(|()| parser.parse_into(&input[split..], &mut output));
+                    .and_then(|()| parser.parse_into(&input[split..], &mut output))
+                    .and_then(|()| parser.finish().map(|_| ()));
                 assert!(result.is_err(), "split {split}");
                 assert!(output.events.is_empty(), "split {split}");
             }

@@ -37,6 +37,19 @@ pub struct RealtimeClientEventInputTextClear {
     pub event_id: Option<String>,
 }
 
+/// Replace the chat completion request fields applied to every response in the session.
+///
+/// OpenAI Realtime sessions have no sampling or chat template fields, so this
+/// Dynamo extension carries fields such as `temperature`, `top_p`, `seed`, and
+/// `chat_template_kwargs` to text workers that render chat completions. Workers
+/// validate the fields they support.
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct RealtimeClientEventSessionChatCompletionOptionsUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_id: Option<String>,
+    pub chat_completion_options: serde_json::Map<String, serde_json::Value>,
+}
+
 /// Experimental Dynamo extensions to the OpenAI Realtime client event set.
 ///
 /// These events are not part of the OpenAI Realtime API and may change before
@@ -50,6 +63,8 @@ pub enum RealtimeClientEventExtension {
     InputTextCommit(RealtimeClientEventInputTextCommit),
     #[serde(rename = "input_text.clear")]
     InputTextClear(RealtimeClientEventInputTextClear),
+    #[serde(rename = "session.chat_completion_options.update")]
+    SessionChatCompletionOptionsUpdate(RealtimeClientEventSessionChatCompletionOptionsUpdate),
 }
 
 /// OpenAI Realtime client events plus inference-serving extensions from Dynamo.
@@ -112,6 +127,9 @@ impl EventType for RealtimeClientEventExtension {
             RealtimeClientEventExtension::InputTextAppend(_) => "input_text.append",
             RealtimeClientEventExtension::InputTextCommit(_) => "input_text.commit",
             RealtimeClientEventExtension::InputTextClear(_) => "input_text.clear",
+            RealtimeClientEventExtension::SessionChatCompletionOptionsUpdate(_) => {
+                "session.chat_completion_options.update"
+            }
         }
     }
 }
@@ -180,6 +198,18 @@ mod tests {
                 }),
                 "input_text.clear",
             ),
+            (
+                serde_json::json!({
+                    "type": "session.chat_completion_options.update",
+                    "event_id": "options-1",
+                    "chat_completion_options": {
+                        "temperature": 0.3,
+                        "seed": 7,
+                        "chat_template_kwargs": { "enable_thinking": true }
+                    }
+                }),
+                "session.chat_completion_options.update",
+            ),
         ];
 
         for (value, event_type) in values {
@@ -195,6 +225,19 @@ mod tests {
         for value in [
             serde_json::json!({"type": "input_text.append"}),
             serde_json::json!({"type": "input_text.append", "text": null}),
+        ] {
+            assert!(serde_json::from_value::<DynamoRealtimeClientEvent>(value).is_err());
+        }
+    }
+
+    #[test]
+    fn chat_completion_options_update_requires_an_object() {
+        for value in [
+            serde_json::json!({"type": "session.chat_completion_options.update"}),
+            serde_json::json!({
+                "type": "session.chat_completion_options.update",
+                "chat_completion_options": [0.3]
+            }),
         ] {
             assert!(serde_json::from_value::<DynamoRealtimeClientEvent>(value).is_err());
         }

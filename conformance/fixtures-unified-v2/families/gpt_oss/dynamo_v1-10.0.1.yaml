@@ -1,0 +1,1463 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 10.0.1
+    source_sha256: de64aa93f8730f3b79510909f5b9be6b31ed1510477c0c3a2f8fcdb975f134a2
+    adapter_sha256: eee1796cb1b3ab55cb4de1c854adf0c154ff8b1730b3cb288fb7cbe901368160
+    job_sha256: a4c2ccb35c9f1642354ea7108d53932afc2390d8cfff9a1020d2ac5e66ca098e
+document:
+  mode: unified
+changes:
+  arg_json_null:
+    observation:
+      value:
+        assembled: []
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled: []
+  arg_json_null_const:
+    observation:
+      value:
+        assembled: []
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled: []
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled: []
+  arg_string_null:
+    observation:
+      value:
+        assembled: []
+  arg_string_null_const:
+    observation:
+      value:
+        assembled: []
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled: []
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled: []
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled: []
+  arg_string_null_union:
+    observation:
+      value:
+        assembled: []
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled: []
+  arg_unicode:
+    observation:
+      value:
+        assembled: []
+  content_then_reason:
+    observation:
+      value:
+        assembled: []
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled: []
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled: []
+  glm_ref_json_looking_strings:
+    observation:
+      value:
+        assembled: []
+  glm_ref_object:
+    observation:
+      value:
+        assembled: []
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled: []
+  interstitial_text:
+    observation:
+      value:
+        assembled: []
+  local_schema_id_preserves_type:
+    observation:
+      value:
+        assembled: []
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled: []
+  narrated_calls:
+    observation:
+      value:
+        assembled: []
+  nullable_reference_alias_literals:
+    observation:
+      value:
+        assembled: []
+  reason_after_tool:
+    observation:
+      value:
+        assembled: []
+  reason_between_calls:
+    observation:
+      value:
+        assembled: []
+  reason_interleaved:
+    observation:
+      value:
+        assembled: []
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_then_content:
+    observation:
+      value:
+        assembled: []
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled: []
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled: []
+  schema_const_array_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_array_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_array_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_array_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_boolean_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_boolean_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_boolean_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_boolean_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_entity_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_entity_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_entity_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_entity_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_null_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_null_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_null_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_null_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_number_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_number_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_number_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_number_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_object_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_object_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_object_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_object_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_plain_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_plain_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_plain_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_plain_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_quoted_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_quoted_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_quoted_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_quoted_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_space_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_space_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_space_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_space_typed:
+    observation:
+      value:
+        assembled: []
+  schema_const_unicode_allof:
+    observation:
+      value:
+        assembled: []
+  schema_const_unicode_bare:
+    observation:
+      value:
+        assembled: []
+  schema_const_unicode_ref:
+    observation:
+      value:
+        assembled: []
+  schema_const_unicode_typed:
+    observation:
+      value:
+        assembled: []
+  schema_declared_array:
+    observation:
+      value:
+        assembled: []
+  schema_declared_boolean:
+    observation:
+      value:
+        assembled: []
+  schema_declared_integer:
+    observation:
+      value:
+        assembled: []
+  schema_declared_null:
+    observation:
+      value:
+        assembled: []
+  schema_declared_number:
+    observation:
+      value:
+        assembled: []
+  schema_declared_object:
+    observation:
+      value:
+        assembled: []
+  schema_declared_string:
+    observation:
+      value:
+        assembled: []
+  schema_enum_integer:
+    observation:
+      value:
+        assembled: []
+  schema_enum_string:
+    observation:
+      value:
+        assembled: []
+  schema_escaped_ref_const:
+    observation:
+      value:
+        assembled: []
+  schema_id_direct_integer:
+    observation:
+      value:
+        assembled: []
+  schema_integer_const_ambiguous:
+    observation:
+      value:
+        assembled: []
+  schema_intersection_anyof:
+    observation:
+      value:
+        assembled: []
+  schema_intersection_oneof:
+    observation:
+      value:
+        assembled: []
+  schema_null_union_ambiguous:
+    observation:
+      value:
+        assembled: []
+  schema_nullable_string:
+    observation:
+      value:
+        assembled: []
+  schema_object_const_union:
+    observation:
+      value:
+        assembled: []
+  schema_percent_ref_const:
+    observation:
+      value:
+        assembled: []
+  schema_ref_sibling_integer:
+    observation:
+      value:
+        assembled: []
+  schema_ref_union_anyof_integer:
+    observation:
+      value:
+        assembled: []
+  schema_ref_union_anyof_string:
+    observation:
+      value:
+        assembled: []
+  schema_ref_union_oneof_integer:
+    observation:
+      value:
+        assembled: []
+  schema_ref_union_oneof_string:
+    observation:
+      value:
+        assembled: []
+  schema_type_array_integer_null:
+    observation:
+      value:
+        assembled: []
+  schema_type_array_integer_null_null:
+    observation:
+      value:
+        assembled: []
+  schema_type_array_string_integer:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_array_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_array_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_array_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_array_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_boolean_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_boolean_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_boolean_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_integer_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_integer_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_integer_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_integer_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_null_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_null_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_null_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_null_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_number_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_number_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_number_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_number_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_object_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_object_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_object_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_anyof_object_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_array_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_array_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_array_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_array_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_boolean_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_boolean_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_boolean_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_integer_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_integer_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_integer_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_integer_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_null_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_null_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_null_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_null_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_number_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_number_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_number_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_number_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_object_reverse_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_object_reverse_typed:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_object_string:
+    observation:
+      value:
+        assembled: []
+  schema_union_oneof_object_typed:
+    observation:
+      value:
+        assembled: []
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_between_calls:
+    observation:
+      value:
+        assembled: []
+  text_only:
+    observation:
+      value:
+        assembled: []
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled: []
+  text_sandwich:
+    observation:
+      value:
+        assembled: []
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+  tool_markup_only_emits_nothing:
+    observation:
+      value:
+        assembled: []
+  tool_only:
+    observation:
+      value:
+        assembled: []
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled: []
+  two_calls:
+    observation:
+      value:
+        assembled: []
+  two_calls_same_name:
+    observation:
+      value:
+        assembled: []
+  two_reason_spans:
+    observation:
+      value:
+        assembled: []
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled: []
+metadata_changes:
+  arg_json_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_json_null_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_json_null_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_json_null_nullable:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_json_null_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null_enum:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null_sibling_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null_sibling_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null_union:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_string_null_untyped_branch:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  arg_unicode:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  content_then_reason:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  glm_ref_encoded_targets:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  glm_ref_json_looking_strings:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  glm_ref_object:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  glm_ref_scalar_types:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  interstitial_text:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  local_schema_id_preserves_type:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  malformed_json_then_two_valid_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  narrated_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  nullable_reference_alias_literals:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  reason_after_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  reason_between_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  reason_interleaved:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  reason_only:
+    batch_final:
+      reasoning_text: just thinking, no answer
+      normal_text: ''
+      calls: []
+  reason_then_content:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  reason_then_tool:
+    batch_final:
+      reasoning_text: Check weather.
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  reason_tool_reason_tool_reason:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_array_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_array_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_array_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_boolean_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_boolean_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_boolean_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_entity_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_entity_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_entity_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_entity_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_null_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_null_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_null_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_null_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_number_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_number_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_number_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_object_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_object_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_object_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_plain_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_plain_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_plain_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_plain_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_quoted_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_quoted_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_quoted_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_quoted_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_space_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_space_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_space_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_space_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_unicode_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_unicode_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_unicode_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_const_unicode_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_array:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_boolean:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_number:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_object:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_declared_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_enum_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_enum_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_escaped_ref_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_id_direct_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_integer_const_ambiguous:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_intersection_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_intersection_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_null_union_ambiguous:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_nullable_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_object_const_union:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_percent_ref_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_ref_sibling_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_ref_union_anyof_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_ref_union_anyof_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_ref_union_oneof_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_ref_union_oneof_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_type_array_integer_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_type_array_integer_null_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_type_array_string_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_array_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_array_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_array_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_boolean_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_boolean_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_integer_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_integer_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_integer_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_null_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_null_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_null_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_null_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_number_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_number_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_number_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_object_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_object_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_object_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_anyof_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_array_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_array_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_array_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_boolean_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_boolean_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_integer_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_integer_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_integer_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_null_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_null_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_null_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_null_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_number_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_number_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_number_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_object_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_object_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_object_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  schema_union_oneof_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  text_before_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'On it: '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  text_between_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  text_only:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  text_sandwich:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  tool_block_never_closed_then_text:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  tool_markup_only_emits_nothing:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  tool_only:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  trailing_text_after_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  two_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  two_calls_same_name:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  two_reason_spans:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  unused_reference_graph_parameter_types:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+document_overrides: {}

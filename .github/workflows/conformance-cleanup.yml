@@ -1,0 +1,33 @@
+name: Conformance artifact cleanup
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    if: ${{ github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: conformance-artifacts-${{ github.event.workflow_run.id }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      # workflow_run uses the default-branch workflow. Never checkout the PR SHA
+      # or execute files from its publication with this write-capable token.
+      - name: Checkout trusted cleanup tools
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Remove identified transfers from the completed CI run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 conformance/utils/src/ci_publication_cleanup.py

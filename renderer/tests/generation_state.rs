@@ -118,19 +118,26 @@ fn existing_constructors_and_custom_formatters_make_no_state_claim() {
 }
 
 #[test]
-fn deepseek_reports_the_emitted_transition_even_without_generation_prompt_flag() {
-    for formatter in deepseek() {
+fn deepseek_reports_the_emitted_transition_with_generation_prompt_control() {
+    for (formatter, honors_flag) in deepseek().into_iter().zip([false, false, true]) {
         let mut request = user_request();
         for add in [true, false] {
             request.generation_prompt = add;
             for thinking in [true, false] {
                 request.args.insert("thinking".into(), json!(thinking));
-                let state = if thinking {
+                let suppressed = !add && honors_flag;
+                let state = if suppressed {
+                    GenerationState::Unknown
+                } else if thinking {
                     GenerationState::Reasoning
                 } else {
                     GenerationState::Response
                 };
                 let prompt = check(formatter.as_ref(), &request, state);
+                if suppressed {
+                    assert!(prompt.as_str().ends_with("Hello"));
+                    continue;
+                }
                 assert!(
                     prompt
                         .as_str()

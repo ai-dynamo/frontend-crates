@@ -43,6 +43,7 @@ FAMILY_PARSERS = {
     "deepseek_v41": ("combined", "DeepSeekV4ReasoningParser", "DeepSeekV4ToolParser"),
     "glm47": ("combined", "Glm45ReasoningParser", "Glm47MoeToolParser"),
     "qwen3": ("combined", "Qwen3ReasoningParser", "Qwen3CoderToolParser"),
+    "nemotron_v3": ("combined", "NemotronV3ReasoningParser", "Qwen3CoderToolParser"),
     "kimi_k2": ("combined", "KimiReasoningParser", "KimiK2ToolParser"),
 }
 
@@ -145,7 +146,7 @@ fn make_parser(family: &str, tools: &[Tool]) -> (Box<dyn UnifiedParser>, String)
     let reasoning = Qwen3ReasoningParser::create(Arc::new(tokenizer))
         .expect("standard think reasoning parser");
     let tool = match family {
-        "qwen3" => Qwen3CoderToolParser::create(tools),
+        "qwen3" | "nemotron_v3" => Qwen3CoderToolParser::create(tools),
         "kimi_k2" => KimiK2ToolParser::create(tools),
         "deepseek_v4" | "deepseek_v41" => DeepSeekV4ToolParser::create(tools),
         "glm47" => Glm47MoeToolParser::create(tools),
@@ -166,7 +167,7 @@ fn prompt_token_ids(case: &Case) -> Vec<u32> {
         // parser only needs the open-reasoning marker to detect the prompt's
         // initial state; generated text still supplies the closing marker.
         "gemma4" => vec![256],
-        "qwen3" | "kimi_k2" | "deepseek_v4" | "deepseek_v41" | "glm47" => vec![256],
+        "qwen3" | "nemotron_v3" | "kimi_k2" | "deepseek_v4" | "deepseek_v41" | "glm47" => vec![256],
         other => panic!("no prompt marker profile for family `{other}`"),
     }
 }
@@ -329,6 +330,19 @@ def _vllm_rust_version(vllm_rust_source: Path, parser_crate: Path) -> str:
     )
 
 
+def rust_main(version: str, unified_api: str) -> str:
+    source = RUST_MAIN.replace('"vllm_rust_version": "0.25.1"',
+                               f'"vllm_rust_version": {json.dumps(version)}')
+    # Newer releases carry token attribution with decoded reasoning text. The
+    # authored corpus supplies text, so use the released unattributed constructor.
+    if re.search(r"fn\s+parse_into\s*\([^)]*\bdelta:\s*DecodedText\b", unified_api):
+        source = source.replace("use vllm_tokenizer::DynTokenizer;", "use vllm_tokenizer::{DecodedText, DynTokenizer};")
+        source = source.replace('"kind":"reasoning","text":t', '"kind":"reasoning","text":t.text')
+        source = source.replace("p.parse_into(&case.input, &mut out)", "p.parse_into(DecodedText::unattributed(case.input.clone()), &mut out)")
+        source = source.replace("ps.parse_into(ch, &mut co)", "ps.parse_into(DecodedText::unattributed(ch.clone()), &mut co)")
+    return source
+
+
 def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
     """Create a temp crate depending on the vLLM rust parser/tokenizer crates, build,
     and run it with the job on stdin. Returns the captured stdout JSON."""
@@ -338,6 +352,7 @@ def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
         if not p.exists():
             sys.exit(f"vLLM rust crate not found: {p}")
     version = _vllm_rust_version(vllm_rust_source, parser_crate)
+    unified_api = (parser_crate / "src/unified/mod.rs").read_text()
 
     with tempfile.TemporaryDirectory(prefix="vllm-rust-uni-") as td:
         crate = Path(td)
@@ -358,10 +373,7 @@ serde_json = "1"
 
 [workspace]
 ''')
-        (crate / "src/main.rs").write_text(
-            RUST_MAIN.replace('"vllm_rust_version": "0.25.1"',
-                              f'"vllm_rust_version": {json.dumps(version)}')
-        )
+        (crate / "src/main.rs").write_text(rust_main(version, unified_api))
         subprocess.run(["cargo", "fmt"], cwd=crate, check=True, capture_output=True, text=True)
         build = subprocess.run(
             ["cargo", "build", "--quiet"],

@@ -12,7 +12,7 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from capture_vllm_rust_unified import RUST_MAIN, _vllm_rust_version
+from capture_vllm_rust_unified import _vllm_rust_version, rust_main
 
 
 @pytest.mark.parametrize("dirname", ["vllm-99.88.77", "source"])
@@ -61,13 +61,15 @@ def test_rust_capture_uses_exact_release_tag(tmp_path, tag):
         _vllm_rust_version(root / "rust", parser)
 
 
-def test_streaming_peer_failures_are_preserved_for_both_terminal_schedules(tmp_path):
+@pytest.mark.parametrize("decoded_text", [False, True])
+def test_streaming_peer_failures_are_preserved_for_both_terminal_schedules(tmp_path, decoded_text):
     rustc = shutil.which("rustc")
     if rustc is None:
         pytest.skip("Rust compiler required to execute the generated peer capture loop")
     # Execute the producer's loop with an injected parser failure, without needing
     # a vLLM checkout. Mocking build_and_run would bypass the error being tested.
-    loop = RUST_MAIN.split("// Streaming: fresh parser, per-chunk deltas.", 1)[1].split("results.insert(", 1)[0]
+    api = "fn parse_into(&mut self, delta: DecodedText);" if decoded_text else "fn parse_into(&mut self, delta: &str);"
+    loop = rust_main("0.30.0" if decoded_text else "0.25.1", api).split("// Streaming: fresh parser, per-chunk deltas.", 1)[1].split("results.insert(", 1)[0]
     source = r'''
 type Value = String;
 #[derive(Default)]
@@ -116,6 +118,15 @@ fn main() {
     }
 }
 '''
+    if decoded_text:
+        source = """
+struct DecodedText { text: String }
+impl DecodedText {
+    fn unattributed(text: impl Into<String>) -> Self { Self { text: text.into() } }
+}
+""" + source.replace("text: &str, out:", "text: DecodedText, out:").replace(
+            "out.events.push(text.to_string());", "let text = &text.text; out.events.push(text.to_string());"
+        )
     path = tmp_path / "peer_errors.rs"
     path.write_text(source)
     subprocess.run(["rustfmt", "--edition=2021", str(path)], check=True, capture_output=True, text=True)

@@ -27,6 +27,8 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from gen_unified_golden import UNIFIED_FAMILIES
+
 CONSTRUCTED: list[dict] = []
 
 
@@ -99,7 +101,8 @@ def _load(reasoning_parser):
     ids=["released-sglang", "muse-sglang"],
 )
 def test_the_flag_is_passed_only_when_sglang_accepts_it(reasoning_parser, expected):
-    assert _load(reasoning_parser)._ACTIVE_KWARG == expected
+    module = _load(reasoning_parser)
+    assert module.sglang_reasoning_kwargs(reasoning_parser, streaming=True) == {"stream_reasoning": True, "force_reasoning": False, **expected}
 
 
 @pytest.mark.parametrize(
@@ -121,10 +124,11 @@ def test_glm_uses_the_registered_reasoning_detector_name():
 
 def test_all_authored_families_have_explicit_detector_pairs():
     module = _load(_Released)
-    assert set(module.FAMILY_PARSERS) == {
-        "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "kimi_k2",
-        "kimi_k3", "muse_glimmer", "qwen3",
-    }
+    # Harmony has no split pair; Hermes adds Dynamo support without a SGLang pipeline.
+    unpaired = {"gpt_oss", "hermes"}
+    assert not unpaired & set(module.FAMILY_PARSERS)
+    assert set(module.FAMILY_PARSERS) | unpaired == UNIFIED_FAMILIES
+    assert module.FAMILY_PARSERS["nemotron_v3"] == ("nemotron_3", "qwen3_coder")
     with mock.patch.object(module, "version", return_value="0.5.16"):
         assert module._registration_unavailable({"family": "deepseek_v4"}) is None
         code, detail = module._registration_unavailable({"family": "deepseek_v41"})

@@ -34,6 +34,8 @@ pub struct CaseDivergence {
     #[serde(default)]
     pub golden: Option<GoldenDivergence>,
     #[serde(default)]
+    pub projection: Option<GoldenDivergence>,
+    #[serde(default)]
     pub chunk_invariance: Option<ChunkInvarianceDivergence>,
     #[serde(default)]
     pub stream_batch: Option<StreamBatchDivergence>,
@@ -44,12 +46,14 @@ pub type KnownDivergences = BTreeMap<String, BTreeMap<String, CaseDivergence>>;
 #[derive(Clone, Copy)]
 pub enum Check {
     Golden,
+    Projection,
     ChunkInvariance,
     StreamBatch,
 }
 
 pub enum Expected<'a> {
     Golden(&'a GoldenDivergence),
+    Projection(&'a GoldenDivergence),
     ChunkInvariance(&'a ChunkInvarianceDivergence),
     StreamBatch(&'a StreamBatchDivergence),
 }
@@ -58,6 +62,7 @@ impl CaseDivergence {
     fn has_check(&self, check: Check) -> bool {
         match check {
             Check::Golden => self.golden.is_some(),
+            Check::Projection => self.projection.is_some(),
             Check::ChunkInvariance => self.chunk_invariance.is_some(),
             Check::StreamBatch => self.stream_batch.is_some(),
         }
@@ -72,27 +77,20 @@ pub fn load() -> KnownDivergences {
         serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let mut known = KnownDivergences::new();
     for (family, cases) in published {
-        let inputs_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("fixtures-unified-v2/families")
-            .join(&family)
-            .join("inputs_and_golden.yaml");
-        let inputs: serde_yaml::Value = serde_yaml::from_str(
-            &std::fs::read_to_string(&inputs_path)
-                .unwrap_or_else(|e| panic!("{}: {e}", inputs_path.display())),
-        )
-        .unwrap_or_else(|e| panic!("{}: {e}", inputs_path.display()));
-        let authored = inputs["cases"].as_mapping().expect("family cases mapping");
+        let inputs =
+            super::authored::load(std::path::Path::new(env!("CARGO_MANIFEST_DIR")), &family);
+        let authored = inputs["cases"].as_object().expect("family cases mapping");
         let mut projected = BTreeMap::new();
         for (case_id, divergence) in cases {
-            let owner = authored.values().find(|case| {
+            let owner = authored.iter().find(|(_, case)| {
                 case["display_id"].as_str() == Some(case_id.as_str())
-                    || case["historical_ids"].as_sequence().is_some_and(|ids| {
+                    || case["historical_ids"].as_array().is_some_and(|ids| {
                         ids.iter().any(|id| id.as_str() == Some(case_id.as_str()))
                     })
             });
             // Tests still address internal scenario names; the store owns the
             // mapping from published labels, so Rust does not duplicate taxonomy.
-            let internal_id = owner.map_or(case_id, |case| {
+            let internal_id = owner.map_or(case_id, |(_, case)| {
                 format!(
                     "UNIFIED.{}.{}",
                     case["scenario"].as_str().expect("scenario"),
@@ -110,12 +108,14 @@ pub fn load() -> KnownDivergences {
         for (case_id, divergence) in cases {
             assert!(
                 divergence.golden.is_some()
+                    || divergence.projection.is_some()
                     || divergence.chunk_invariance.is_some()
                     || divergence.stream_batch.is_some(),
                 "{family}:{case_id}: no check declared in unified-known-divergences.yaml"
             );
             for note in [
                 divergence.golden.as_ref().map(|d| d.note.as_str()),
+                divergence.projection.as_ref().map(|d| d.note.as_str()),
                 divergence
                     .chunk_invariance
                     .as_ref()
@@ -144,6 +144,7 @@ pub fn expected<'a>(
     let divergence = known.get(family)?.get(case_id)?;
     match check {
         Check::Golden => divergence.golden.as_ref().map(Expected::Golden),
+        Check::Projection => divergence.projection.as_ref().map(Expected::Projection),
         Check::ChunkInvariance => divergence
             .chunk_invariance
             .as_ref()

@@ -4,6 +4,7 @@
 //! Model-family capabilities shared by parser construction and guided decoding.
 
 use crate::structural_tag::StructuralTagBuilder;
+use crate::unified::canonical_unified_family;
 
 use super::debug::{self, DebugToolParser};
 use super::dsml::DeepSeekV4ToolStreamParser;
@@ -15,6 +16,7 @@ use super::kimi_k3::KimiK3ToolStreamParser;
 use super::minimax_m2::MiniMaxM2ToolStreamParser;
 use super::minimax_m3::MiniMaxM3ToolStreamParser;
 use super::muse_glimmer::MuseGlimmerToolStreamParser;
+use super::muse_spark::MuseSparkToolStreamParser;
 use super::qwen3_coder::Qwen3CoderToolStreamParser;
 use super::traits::{Tool, ToolParser};
 
@@ -42,8 +44,8 @@ macro_rules! family_registry {
 }
 
 family_registry! {
-    "harmony"      => (HarmonyToolStreamParser::create, None),
-    "harmony_text" => (HarmonyToolStreamParser::create, None),
+    "harmony"      => (HarmonyToolStreamParser::create, Some(&crate::structural_tag::builders::HARMONY)),
+    "harmony_text" => (HarmonyToolStreamParser::create, Some(&crate::structural_tag::builders::HARMONY)),
     "deepseek_v4"  => (
         DeepSeekV4ToolStreamParser::create,
         Some(&crate::structural_tag::builders::DEEPSEEK_DSML)
@@ -53,18 +55,29 @@ family_registry! {
         Some(&crate::structural_tag::builders::QWEN3_CODER)
     ),
     "muse_glimmer" => (MuseGlimmerToolStreamParser::create, None),
+    // Forced Spark calls need native ATEM guidance rather than a JSON envelope.
+    "muse_spark" => (
+        MuseSparkToolStreamParser::create,
+        Some(&crate::structural_tag::builders::MUSE_SPARK)
+    ),
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
-    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
+    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, Some(&crate::structural_tag::builders::MINIMAX_M3)),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
     "glm47"        => (
         Glm47ToolStreamParser::create,
         Some(&crate::structural_tag::builders::GLM47)
     ),
-    "kimi_k2"      => (KimiK2ToolStreamParser::create, None),
-    "kimi_k3"      => (KimiK3ToolStreamParser::create, None),
+    "kimi_k2"      => (KimiK2ToolStreamParser::create, Some(&crate::structural_tag::builders::KIMI_K2)),
+    "kimi_k3"      => (KimiK3ToolStreamParser::create, Some(&crate::structural_tag::builders::KIMI_K3)),
 }
 
 fn family_spec(family: &str) -> Option<&'static FamilySpec> {
+    // Public and compatibility names must select the same parser and grammar.
+    let family = if family == "muse_spark_open" {
+        "muse_spark"
+    } else {
+        family
+    };
     FAMILY_SPECS.iter().find(|spec| spec.name == family)
 }
 
@@ -84,9 +97,16 @@ pub fn create_tool_parser_for_family(
     Ok(parser)
 }
 
-/// Return the structural-tag builder registered for a model family, if any.
+/// Return the structural-tag builder for a model family, accepting Unified aliases: from
+/// the tool-calling registry, or for a family served only by a unified parser (no
+/// tool-call-only parser to carry it), from the structural-tag builders.
 pub fn structural_tag_builder_for_family(family: &str) -> Option<&'static StructuralTagBuilder> {
-    family_spec(family).and_then(|spec| spec.structural_tag_builder)
+    let canonical = canonical_unified_family(family).unwrap_or(family);
+    FAMILY_SPECS
+        .iter()
+        .find(|spec| canonical_unified_family(spec.name).unwrap_or(spec.name) == canonical)
+        .and_then(|spec| spec.structural_tag_builder)
+        .or_else(|| crate::structural_tag::builders::unified_only_builder(canonical))
 }
 
 #[cfg(test)]
@@ -112,6 +132,11 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
+        assert!(structural_tag_builder_for_family("kimi_k2").is_some());
+        assert!(structural_tag_builder_for_family("kimi_k3").is_some());
+        // Unified-only family: no tool-calling entry, grammar still resolves.
+        assert!(structural_tag_builder_for_family("beam").is_some());
+        assert!(create_tool_parser_for_family("beam", &[]).is_err());
         assert!(structural_tag_builder_for_family("gemma4").is_none());
         assert!(structural_tag_builder_for_family("unknown").is_none());
     }
@@ -126,8 +151,10 @@ mod tests {
         }];
 
         for (family, trigger) in [
-            ("qwen3_coder", "<tool_call>\n<function="),
+            ("qwen3", "<tool_call>"),
+            ("qwen3_coder", "<tool_call>"),
             ("deepseek_v4", "<｜DSML｜tool_calls>"),
+            ("deepseek_v41", "<｜DSML｜ calls>"),
             ("glm47", "<tool_call>"),
         ] {
             let builder = structural_tag_builder_for_family(family)

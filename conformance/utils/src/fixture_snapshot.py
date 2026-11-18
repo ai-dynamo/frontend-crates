@@ -11,13 +11,13 @@ from pathlib import Path
 
 @lru_cache
 def fixture_snapshot_root() -> Path:
-    """Return one immutable snapshot path, never the mutable cache symlinks."""
+    """Return the legacy snapshot used by these consumers, without Unified expansion."""
     env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
     root = Path(env) if env else None
     if root is None or any((root / name).is_symlink() for name in ("toolcalling", "reasoning", "unified")):
         script = Path(__file__).resolve().parent / "extract_fixtures.py"
         proc = subprocess.run(
-            [sys.executable, str(script)],
+            [sys.executable, str(script), "--legacy-only", "--include-history"],
             check=True,
             capture_output=True,
             text=True,

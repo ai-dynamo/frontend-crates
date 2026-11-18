@@ -74,21 +74,21 @@ impl TikTokenTokenizer {
         let encoder = parse_tiktoken_file(path)?;
         // Use max rank + 1 (not len) to avoid ID collisions with sparse/non-contiguous ranks
         let num_base_tokens = encoder.values().max().map_or(0, |&m| m + 1) as usize;
-        let special_tokens = load_special_tokens(directory, num_base_tokens)?;
-        let special_token_ids: HashSet<u32> = special_tokens.values().copied().collect();
-        let special_token_strings = sorted_special_token_strings(&special_tokens);
+        let AddedTokens { tokens, skip_ids } = load_added_tokens(directory, num_base_tokens)?;
+        let special_token_strings = sorted_special_token_strings(&tokens);
 
-        let bpe = CoreBPE::new(encoder, special_tokens, pattern)
+        let bpe = CoreBPE::new(encoder, tokens, pattern)
             .map_err(|err| Error::msg(format!("Error creating tiktoken BPE: {err}")))?;
 
         Ok(Self {
             bpe,
-            special_token_ids,
+            special_token_ids: skip_ids,
             special_tokens: special_token_strings,
         })
     }
 
     /// Atomic special-token strings registered with the underlying TikToken BPE.
+    /// Includes added tokens marked `"special": false`, unlike `special_token_ids`.
     ///
     /// [`CoreBPE::encode_with_special_tokens`] recognizes these strings outside ordinary
     /// BPE. For non-overlapping token spellings, splitting immediately after a match
@@ -111,14 +111,84 @@ impl Encoder for TikTokenTokenizer {
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
         let mut token_ids = Vec::new();
         for segment in segments {
-            if segment.allow_special {
-                token_ids.extend(self.bpe.encode_with_special_tokens(segment.text));
-            } else {
-                token_ids.extend(self.bpe.encode_ordinary(segment.text));
+            let start = token_ids.len();
+            for_each_reference_piece(segment.text, |piece| {
+                if segment.allow_special {
+                    token_ids.extend(self.bpe.encode_with_special_tokens(piece));
+                } else {
+                    token_ids.extend(self.bpe.encode_ordinary(piece));
+                }
+            });
+            if !segment.allow_special {
+                crate::reject_control_ids_in_ordinary_segment(
+                    &token_ids[start..],
+                    &self.special_token_ids,
+                )?;
             }
         }
         Ok(Encoding::Sp(token_ids))
     }
+}
+
+/// Longest text, in characters, the reference Kimi tokenizer passes to tiktoken at once.
+const MAX_ENCODE_CHARS: usize = 400_000;
+
+/// Longest run of whitespace or non-whitespace characters the reference Kimi tokenizer
+/// encodes in one piece (<https://github.com/openai/tiktoken/issues/195>).
+const MAX_RUN_CHARS: usize = 25_000;
+
+/// Python's `str.isspace`: Unicode `White_Space` plus the ASCII information separators
+/// U+001C..U+001F, which Rust's [`char::is_whitespace`] does not include.
+fn is_python_space(c: char) -> bool {
+    c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
+}
+
+/// Calls `f`, in order, on the pieces the reference Kimi tokenizer
+/// (`TikTokenTokenizer._encode_text_piece` in the checkpoint's `tokenization_kimi.py`)
+/// encodes separately: `text` cut into chunks of [`MAX_ENCODE_CHARS`] characters, each
+/// split before any whitespace or non-whitespace run would exceed [`MAX_RUN_CHARS`]
+/// characters. BPE does not merge across these cuts, so encoding the text whole yields
+/// different ids whenever a cut applies.
+fn for_each_reference_piece<'a>(text: &'a str, mut f: impl FnMut(&'a str)) {
+    // At most MAX_RUN_CHARS bytes means at most that many characters: no cut applies.
+    if text.len() <= MAX_RUN_CHARS {
+        f(text);
+        return;
+    }
+    let mut chunk_start = 0;
+    let mut chunk_chars = 0;
+    for (index, _) in text.char_indices() {
+        if chunk_chars == MAX_ENCODE_CHARS {
+            split_long_runs(&text[chunk_start..index], &mut f);
+            chunk_start = index;
+            chunk_chars = 0;
+        }
+        chunk_chars += 1;
+    }
+    split_long_runs(&text[chunk_start..], &mut f);
+}
+
+/// Calls `f` on `chunk` split before any whitespace or non-whitespace run would exceed
+/// [`MAX_RUN_CHARS`] characters.
+fn split_long_runs<'a>(chunk: &'a str, f: &mut impl FnMut(&'a str)) {
+    let mut run_is_space = chunk.chars().next().is_some_and(is_python_space);
+    let mut run_len = 0;
+    let mut piece_start = 0;
+    for (index, c) in chunk.char_indices() {
+        let is_space = is_python_space(c);
+        if is_space != run_is_space {
+            run_is_space = is_space;
+            run_len = 1;
+        } else {
+            run_len += 1;
+            if run_len > MAX_RUN_CHARS {
+                f(&chunk[piece_start..index]);
+                piece_start = index;
+                run_len = 1;
+            }
+        }
+    }
+    f(&chunk[piece_start..]);
 }
 
 impl Decoder for TikTokenTokenizer {
@@ -226,12 +296,11 @@ pub(crate) fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
         // it still ships the Kimi tiktoken tokenizer file, so the KIMI_PATTERN BPE regex is the
         // correct pattern to use.  No pure DeepSeek V3 model uses tiktoken.model files
         // (they use tokenizer.json instead) so this match is safe.
-        "kimi" | "kimi_k2" | "kimi_k25" | "kimi_k3" | "kimi_linear" | "deepseek_v3" => {
-            Ok(KIMI_PATTERN)
-        }
+        "kimi" | "kimi_k2" | "kimi_k25" | "kimi_k3" | "kimi_k31" | "kimi_linear"
+        | "deepseek_v3" => Ok(KIMI_PATTERN),
         _ => Err(Error::msg(format!(
             "Unsupported tiktoken model_type '{model_type}'. \
-             Currently supported: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_linear, deepseek_v3. \
+             Currently supported: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31, kimi_linear, deepseek_v3. \
              To add a new model type, extend detect_bpe_pattern() in lib/tokenizers/src/tiktoken.rs \
              with the appropriate BPE regex pattern. \
              Alternatively, provide a tokenizer.json (HuggingFace format) instead."
@@ -239,24 +308,32 @@ pub(crate) fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
     }
 }
 
-/// Load special tokens from `tokenizer_config.json` in the model directory.
+/// Added tokens from `tokenizer_config.json`.
+pub(crate) struct AddedTokens {
+    /// Every added token; each encodes as one unit.
+    pub(crate) tokens: FxHashMap<String, u32>,
+    /// IDs `skip_special_tokens` removes: `"special": true` entries and reserved slots.
+    /// A missing `special` field counts as false, as in Hugging Face.
+    pub(crate) skip_ids: HashSet<u32>,
+}
+
+/// Load added tokens from `tokenizer_config.json` in the model directory.
 ///
 /// Reads the `added_tokens_decoder` field which maps string token IDs to token definitions.
 /// Falls back to generating `<|reserved_token_{id}|>` names for unmapped IDs.
-pub(crate) fn load_special_tokens(
-    directory: &Path,
-    num_base_tokens: usize,
-) -> Result<FxHashMap<String, u32>> {
+pub(crate) fn load_added_tokens(directory: &Path, num_base_tokens: usize) -> Result<AddedTokens> {
     let config_path = directory.join("tokenizer_config.json");
-    let mut special_tokens = FxHashMap::default();
+    let mut tokens = FxHashMap::default();
+    let mut skip_ids = HashSet::new();
 
     if !config_path.exists() {
         // No tokenizer_config.json — generate default reserved tokens
         for i in 0..DEFAULT_NUM_RESERVED_SPECIAL_TOKENS {
             let id = num_base_tokens as u32 + i;
-            special_tokens.insert(format!("<|reserved_token_{id}|>"), id);
+            tokens.insert(format!("<|reserved_token_{id}|>"), id);
+            skip_ids.insert(id);
         }
-        return Ok(special_tokens);
+        return Ok(AddedTokens { tokens, skip_ids });
     }
 
     let contents = std::fs::read_to_string(&config_path)
@@ -286,27 +363,36 @@ pub(crate) fn load_special_tokens(
                 });
 
             if !content.is_empty() {
-                special_tokens.insert(content.to_string(), id);
+                tokens.insert(content.to_string(), id);
+                if token_def
+                    .get("special")
+                    .and_then(serde_json::Value::as_bool)
+                    == Some(true)
+                {
+                    skip_ids.insert(id);
+                }
             }
         }
 
         // Fill in any gaps with reserved tokens for the expected range
-        let used_ids: HashSet<u32> = special_tokens.values().copied().collect();
+        let used_ids: HashSet<u32> = tokens.values().copied().collect();
         for i in 0..DEFAULT_NUM_RESERVED_SPECIAL_TOKENS {
             let id = num_base_tokens as u32 + i;
             if !used_ids.contains(&id) {
-                special_tokens.insert(format!("<|reserved_token_{id}|>"), id);
+                tokens.insert(format!("<|reserved_token_{id}|>"), id);
+                skip_ids.insert(id);
             }
         }
     } else {
         // No added_tokens_decoder — generate default reserved tokens
         for i in 0..DEFAULT_NUM_RESERVED_SPECIAL_TOKENS {
             let id = num_base_tokens as u32 + i;
-            special_tokens.insert(format!("<|reserved_token_{id}|>"), id);
+            tokens.insert(format!("<|reserved_token_{id}|>"), id);
+            skip_ids.insert(id);
         }
     }
 
-    Ok(special_tokens)
+    Ok(AddedTokens { tokens, skip_ids })
 }
 
 #[cfg(test)]
@@ -515,8 +601,9 @@ mod tests {
         create_test_config(dir.path(), "kimi");
         create_test_tokenizer_config(dir.path(), 21);
 
-        let mut expected_specials: Vec<String> = load_special_tokens(dir.path(), 21)
+        let mut expected_specials: Vec<String> = load_added_tokens(dir.path(), 21)
             .unwrap()
+            .tokens
             .into_keys()
             .collect();
         expected_specials.sort();
@@ -529,6 +616,16 @@ mod tests {
         assert!(!ids.is_empty());
 
         let decoded: String = tokenizer.decode(ids, false).unwrap().into();
+        assert_eq!(decoded, "hello world");
+
+        // K3.1 ships the same tiktoken vocabulary format under a new model type.
+        create_test_config(dir.path(), "kimi_k31");
+        let k31_tokenizer = TikTokenTokenizer::from_file_auto(&file_path).unwrap();
+        assert_eq!(
+            k31_tokenizer.encode("hello world").unwrap().token_ids(),
+            ids
+        );
+        let decoded: String = k31_tokenizer.decode(ids, false).unwrap().into();
         assert_eq!(decoded, "hello world");
     }
 
@@ -543,8 +640,10 @@ mod tests {
     #[test]
     fn test_kimi_k3_uses_kimi_bpe_pattern() {
         let dir = tempfile::tempdir().unwrap();
-        create_test_config(dir.path(), "kimi_k3");
-        assert_eq!(detect_bpe_pattern(dir.path()).unwrap(), KIMI_PATTERN);
+        for model_type in ["kimi_k3", "kimi_k31"] {
+            create_test_config(dir.path(), model_type);
+            assert_eq!(detect_bpe_pattern(dir.path()).unwrap(), KIMI_PATTERN);
+        }
     }
 
     #[test]
@@ -557,7 +656,7 @@ mod tests {
     #[test]
     fn test_load_special_tokens_no_config() {
         let dir = tempfile::tempdir().unwrap();
-        let tokens = load_special_tokens(dir.path(), 100).unwrap();
+        let tokens = load_added_tokens(dir.path(), 100).unwrap().tokens;
         assert_eq!(tokens.len(), 256);
         assert_eq!(tokens["<|reserved_token_100|>"], 100);
         assert_eq!(tokens["<|reserved_token_355|>"], 355);
@@ -567,11 +666,59 @@ mod tests {
     fn test_load_special_tokens_with_config() {
         let dir = tempfile::tempdir().unwrap();
         create_test_tokenizer_config(dir.path(), 100);
-        let tokens = load_special_tokens(dir.path(), 100).unwrap();
+        let tokens = load_added_tokens(dir.path(), 100).unwrap().tokens;
         assert_eq!(tokens["[BOS]"], 100);
         assert_eq!(tokens["[EOS]"], 101);
         // Should also have reserved tokens filling gaps
         assert!(tokens.len() > 2);
+    }
+
+    /// Kimi-style `added_tokens_decoder`: a control token marked special, a format marker
+    /// marked `"special": false`, and one with no `special` field (Hugging Face default false).
+    fn create_tokenizer_with_non_special_added_tokens(dir: &Path) -> TikTokenTokenizer {
+        let file_path = create_test_tiktoken_file(dir);
+        create_test_config(dir, "kimi_k3");
+        let config = serde_json::json!({"added_tokens_decoder": {
+            "21": {"content": "[BOS]", "special": true},
+            "22": {"content": "<|open|>", "special": false},
+            "23": {"content": "<|sep|>"},
+        }});
+        std::fs::write(dir.join("tokenizer_config.json"), config.to_string()).unwrap();
+        TikTokenTokenizer::from_file_auto(&file_path).unwrap()
+    }
+
+    #[test]
+    fn test_skip_special_tokens_keeps_non_special_added_tokens() {
+        let dir = tempfile::tempdir().unwrap();
+        let tokenizer = create_tokenizer_with_non_special_added_tokens(dir.path());
+
+        let encoding = tokenizer.encode("<|open|>hello").unwrap();
+        assert_eq!(encoding.token_ids(), &[22, 19]);
+
+        let special_ids = tokenizer.special_token_ids().unwrap();
+        assert!(special_ids.contains(&21));
+        assert!(special_ids.contains(&24), "reserved placeholder");
+        assert!(!special_ids.contains(&22));
+        assert!(!special_ids.contains(&23));
+
+        let ids = [21, 22, 19, 23];
+        let skipped: String = tokenizer.decode(&ids, true).unwrap().into();
+        assert_eq!(skipped, "<|open|>hello<|sep|>");
+        let kept: String = tokenizer.decode(&ids, false).unwrap().into();
+        assert_eq!(kept, "[BOS]<|open|>hello<|sep|>");
+    }
+
+    #[test]
+    fn test_decode_stream_emits_leading_non_special_added_token() {
+        let dir = tempfile::tempdir().unwrap();
+        let tokenizer = create_tokenizer_with_non_special_added_tokens(dir.path());
+        let tokenizer_arc: Arc<dyn crate::traits::Tokenizer> = Arc::new(tokenizer);
+
+        let mut stream = DecodeStream::new(tokenizer_arc, &[19], true);
+        assert_eq!(stream.step(22).unwrap().as_deref(), Some("<|open|>"));
+        assert_eq!(stream.step(19).unwrap().as_deref(), Some("hello"));
+        assert_eq!(stream.step(21).unwrap(), None);
+        assert_eq!(stream.step(23).unwrap().as_deref(), Some("<|sep|>"));
     }
 
     /// Helper: create a tiktoken file that includes raw byte tokens (byte fallback tokens).
@@ -859,6 +1006,81 @@ mod tests {
             .unwrap()
             .into();
         assert_eq!(decoded, marker);
+    }
+
+    /// Character lengths of [`for_each_reference_piece`]'s pieces, to compare with the
+    /// Python reference.
+    fn piece_chars(text: &str) -> Vec<usize> {
+        let mut lengths = Vec::new();
+        for_each_reference_piece(text, |piece| lengths.push(piece.chars().count()));
+        lengths
+    }
+
+    #[test]
+    fn test_reference_pieces_match_kimi_reference_split() {
+        // Expected lengths come from the checkpoint's `_encode_text_piece` split, run in
+        // Python on the same strings.
+        assert_eq!(piece_chars("hello world"), vec![11]);
+        assert_eq!(
+            piece_chars(&"a".repeat(60_000)),
+            vec![25_000, 25_000, 10_000]
+        );
+        assert_eq!(
+            piece_chars(&("a".repeat(30_000) + &" ".repeat(30_000))),
+            vec![25_000, 30_000, 5_000]
+        );
+        assert_eq!(
+            piece_chars(&("x".repeat(25_000) + " " + &"y".repeat(25_001))),
+            vec![50_001, 1]
+        );
+        // Python's isspace counts U+001C..U+001F as whitespace, so the separators start a
+        // new run; with `char::is_whitespace` this is one 30,000-character run, cut at
+        // 25,000.
+        assert_eq!(
+            piece_chars(&("a".repeat(20_000) + &"\u{1c}".repeat(10_000))),
+            vec![30_000]
+        );
+        // Lengths are in characters, not bytes.
+        assert_eq!(piece_chars(&"é".repeat(26_000)), vec![25_000, 1_000]);
+        // Chunks of 400k characters, even without long runs.
+        let chunked: String = "ab ".repeat(136_667).chars().take(410_000).collect();
+        assert_eq!(piece_chars(&chunked), vec![400_000, 10_000]);
+    }
+
+    #[test]
+    fn test_segment_encoding_cuts_long_runs_like_the_reference() {
+        // Byte vocabulary plus one merge ("aa"), so a cut inside an "aa" pair changes ids.
+        let dir = tempfile::tempdir().unwrap();
+        let engine = base64::engine::general_purpose::STANDARD;
+        let mut content = String::new();
+        for byte_val in 0u16..256 {
+            let encoded = engine.encode([byte_val as u8]);
+            content.push_str(&format!("{encoded} {byte_val}\n"));
+        }
+        content.push_str(&format!("{} 256\n", engine.encode(b"aa")));
+        let file_path = dir.path().join("tiktoken.model");
+        std::fs::write(&file_path, &content).unwrap();
+        let tokenizer = TikTokenTokenizer::from_file(
+            file_path.to_str().unwrap(),
+            r"(?s).+",
+            FxHashMap::default(),
+        )
+        .unwrap();
+
+        // One non-whitespace run of 25,001 characters: the reference encodes the first
+        // 25,000 ("b" + 24,999 "a") and the last "a" separately.
+        let text = "b".to_string() + &"a".repeat(25_000);
+        let segmented = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary(&text)])
+            .unwrap();
+        let mut expected = tokenizer.bpe.encode_ordinary(&text[..25_000]);
+        expected.extend(tokenizer.bpe.encode_ordinary(&text[25_000..]));
+        assert_eq!(segmented.token_ids(), expected.as_slice());
+        assert_ne!(
+            segmented.token_ids(),
+            tokenizer.bpe.encode_ordinary(&text).as_slice(),
+            "the cut must change ids for this input, or the test proves nothing"
+        );
     }
 
     fn has_nontrivial_self_overlap(token: &str) -> bool {

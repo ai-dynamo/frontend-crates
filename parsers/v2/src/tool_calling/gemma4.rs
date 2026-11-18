@@ -13,7 +13,7 @@
 //! The streaming concerns (buffering, chunk-split marker safety, normal_text
 //! suppression, orphan-close stripping, EOF-truncation drop) live in the shared
 //! [`WrappedBlockScanner`], not here. Gemma 4 supplies only what its markers
-//! cannot express, through [`InvokeScan`]: `<tool_call|>` and `call:` both occur
+//! cannot express, through [`InvokeBoundary`]: `<tool_call|>` and `call:` both occur
 //! legitimately INSIDE a `<|"|>`-delimited string value, so where an invoke ends
 //! and whether a `call:` opens one are answered by the v1 balanced,
 //! string-aware scan rather than by `find`. One scanner, one boundary
@@ -255,6 +255,20 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
 
     fn opens(&self, text: &str, at: usize) -> bool {
         opens_bare_call(text, at, &self.opener_header)
+    }
+
+    fn guided_native_body_start(&self, text: &str, at: usize) -> Option<usize> {
+        if !self.opens(text, at) {
+            return None;
+        }
+        let body = at
+            + text[at..]
+                .find('{')
+                .expect("recognized Gemma call has a body");
+        // An extra body opener before guided JSON is a recoverable wrapper;
+        // only a native parameter key transfers ownership of nested values.
+        native_key_end(text[body + 1..].trim_ascii_start().as_bytes(), 0)?;
+        Some(body)
     }
 
     fn accepts_buffer_start(&self, previous: Option<char>) -> bool {
@@ -603,6 +617,7 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
             drop_invoke_crossing_block_end: false,
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(gemma4_invoke_boundary)),
             preserve_special_tokens: true,
+            narrated_invoke_header_end: None,
         },
         Gemma4InvokeEmitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),
@@ -976,14 +991,8 @@ fn source_key_order(block: &str) -> Vec<String> {
                 while i < bytes.len() && is_key_byte(bytes[i]) {
                     i += 1;
                 }
-                let name = body[start..i].to_string();
-                // Only treat it as a key if a `:` follows (after optional spaces).
-                let mut j = i;
-                while j < bytes.len() && bytes[j].is_ascii_whitespace() {
-                    j += 1;
-                }
-                if j < bytes.len() && bytes[j] == b':' {
-                    names.push(name);
+                if let Some(end) = native_key_end(bytes, start) {
+                    names.push(body[start..end].to_string());
                 }
                 expect_key = false;
             }
@@ -999,6 +1008,20 @@ fn source_key_order(block: &str) -> Vec<String> {
 
 fn is_key_byte(b: u8) -> bool {
     is_call_name_char(char::from(b))
+}
+
+fn native_key_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let end = start
+        + bytes[start..]
+            .iter()
+            .take_while(|b| is_key_byte(**b))
+            .count();
+    let colon = end
+        + bytes[end..]
+            .iter()
+            .take_while(|b| b.is_ascii_whitespace())
+            .count();
+    (end > start && bytes.get(colon) == Some(&b':')).then_some(end)
 }
 
 /// Byte width of a UTF-8 code point from its leading byte.
@@ -1543,6 +1566,26 @@ mod tests {
         );
         assert_eq!(out.normal_text, "I will call: you tomorrow about the trip.");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn block_noise_retains_the_call_identifier_boundary_at_every_split() {
+        for (prefix, expected_calls) in [("x", 0), ("prefix", 0), (" ", 1), ("\n", 1)] {
+            let input = format!(
+                "<|tool_call>{prefix}call:get_weather{{location:<|\"|>NYC<|\"|>}}<tool_call|>"
+            );
+            let expected = parse_chunks(&weather_tools(), &[&input]).coalesce_calls();
+            assert_eq!(expected.calls.len(), expected_calls, "{prefix:?}");
+            for split in 0..=input.len() {
+                let actual = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]])
+                    .coalesce_calls();
+                assert_eq!(
+                    actual.normal_text, expected.normal_text,
+                    "{prefix:?}/{split}"
+                );
+                assert_eq!(actual.calls, expected.calls, "{prefix:?}/{split}");
+            }
+        }
     }
 
     #[test]

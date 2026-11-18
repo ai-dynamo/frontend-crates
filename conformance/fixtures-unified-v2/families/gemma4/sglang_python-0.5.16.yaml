@@ -764,6 +764,10 @@ changes:
           - kind: tool_call
             name: null
             arguments: '{"city": "Paris"}'
+    case_key: UNIFIED.5.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
 metadata_changes:
   arg_json_null_anyof:
     sglang_capture_provenance:

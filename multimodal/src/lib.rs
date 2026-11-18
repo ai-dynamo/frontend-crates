@@ -39,6 +39,8 @@ pub mod processor;
 pub mod registry;
 pub mod token_layout;
 pub mod video;
+#[cfg(feature = "video-decode")]
+pub mod video_decode;
 
 /// A multimodal preprocessing failure.
 #[derive(Debug)]

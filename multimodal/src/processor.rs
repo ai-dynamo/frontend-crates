@@ -5,7 +5,7 @@
 //! carriers it exchanges with the engine's driver.
 //!
 //! Design rule: **families produce data, the driver owns control flow.** A
-//! family never sees the request loop, thread pool, or failure protocol — it
+//! family never sees the thread pool or failure protocol — it
 //! turns decoded media into named tensors and describes its prompt geometry
 //! as a [`TokenLayout`], which the driver applies mechanically
 //! ([`crate::token_layout::apply_layout`]).
@@ -20,6 +20,8 @@
 pub enum TensorData {
     F32(Vec<f32>),
     I64(Vec<i64>),
+    /// bfloat16 bit patterns.
+    Bf16(Vec<u16>),
 }
 
 pub struct Tensor {
@@ -50,12 +52,32 @@ pub enum DecodedMedia {
         height: usize,
         width: usize,
     },
+    /// HWC u8 RGBA, straight alpha, for families that composite transparency
+    /// themselves.
+    ImageRgba {
+        rgba: Vec<u8>,
+        height: usize,
+        width: usize,
+    },
+    /// Sampled frames, each HWC u8 RGB of one size, concatenated in sample
+    /// order. `frame_indices` (each frame's index in the source video, one
+    /// per frame) and `fps` (the source frame rate) are HF's
+    /// `video_metadata.frames_indices` and `.fps`, from which a family
+    /// derives frame timestamps.
+    Video {
+        rgb: Vec<u8>,
+        height: usize,
+        width: usize,
+        frame_indices: Vec<u64>,
+        fps: f64,
+    },
 }
 
 impl DecodedMedia {
     pub fn modality(&self) -> Modality {
         match self {
-            Self::Image { .. } => Modality::Image,
+            Self::Image { .. } | Self::ImageRgba { .. } => Modality::Image,
+            Self::Video { .. } => Modality::Video,
         }
     }
 }
@@ -87,6 +109,15 @@ pub enum MediaMetadata {
 pub enum Geometry {
     /// `[t, h, w]` patch grid (`t` = 1 for still images).
     Grid([u32; 3]),
+    /// The source `width` and `height` before any resize, for expansions
+    /// that print the source size.
+    SourceSize { width: u32, height: u32 },
+    /// A video's `[t, h, w]` patch grid and the timestamp, in seconds, of
+    /// each of its `t` temporal patches.
+    TimedGrid {
+        grid: [u32; 3],
+        timestamps: Vec<f64>,
+    },
 }
 
 /// One processed media item and the metadata needed for prompt preparation.
@@ -180,6 +211,12 @@ pub enum PositionOutput {
     MRope { positions: Vec<i64>, delta: i64 },
 }
 
+/// Token ids for literal text a layout inserts, such as video timestamps.
+/// The host supplies its tokenizer; a family never tokenizes on its own.
+pub trait TextEncoder {
+    fn encode(&self, text: &str) -> crate::Result<Vec<i32>>;
+}
+
 /// The per-model-family hooks: implement in `src/models/<model>.rs` and add a
 /// `family` arm to [`crate::registry::ProcessorSpec`]. All parameters come
 /// from the runtime spec; nothing is hardcoded per model.
@@ -189,10 +226,26 @@ pub trait MmFamilyProcessor: Send + Sync {
         Capabilities::default()
     }
 
+    /// Decode encoded image bytes using the family's loading policy. The
+    /// default matches PIL's `convert("RGB")`; a family may apply EXIF and
+    /// alpha compositing. Limits are checked before pixel decoding.
+    fn decode_image(
+        &self,
+        data: &[u8],
+        limits: &crate::image::decode::DecodeLimits,
+    ) -> crate::Result<DecodedMedia> {
+        let (rgb, height, width) = crate::image::decode::decode_rgb(data, limits)?;
+        Ok(DecodedMedia::Image { rgb, height, width })
+    }
+
     /// Tokens one media item will occupy in the expanded prompt, from
     /// lightweight metadata alone — no pixel or feature-extraction work (HF's
     /// `_get_num_multimodal_tokens`). Lets routers account prompt length after
-    /// probing only the modality-specific header.
+    /// probing only the modality-specific header. Literal ids of the
+    /// expansion count; the positions that take embeddings are the `Feature`
+    /// parts of the layout and [`ProcessedItem::feature_token_count`]. A family
+    /// that sizes media against the whole request returns `Unsupported`; there
+    /// [`Self::layout_from_metadata`] is the exact call.
     fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
 
     /// Describe a prompt expansion from metadata alone, without constructing
@@ -216,10 +269,60 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// geometry `layout`/`positions` will need.
     fn process_item(&self, media: &DecodedMedia) -> crate::Result<ProcessedItem>;
 
+    /// Preprocess every media item of one request, in prompt order, given the
+    /// unexpanded prompt. A family whose geometry depends on the whole request
+    /// (the prompt length, the other items) overrides this and refuses
+    /// `process_item`, so a driver serves every family through this method.
+    fn process_items(
+        &self,
+        input_ids: &[i32],
+        media: &[DecodedMedia],
+    ) -> crate::Result<Vec<ProcessedItem>> {
+        let _ = input_ids;
+        media.iter().map(|item| self.process_item(item)).collect()
+    }
+
     /// Describe how the prompt expands around the processed items (in prompt
     /// order). Sees the full prompt and all items, so structured schemes
     /// (tile markers, separators) are expressible.
     fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> crate::Result<TokenLayout>;
+
+    /// The modality of each media placeholder in `input_ids`, in prompt order:
+    /// the order [`Self::layout`] takes items in when a prompt mixes
+    /// modalities. Families that take only images need not implement it.
+    fn placeholder_modalities(&self, input_ids: &[i32]) -> crate::Result<Vec<Modality>> {
+        let _ = input_ids;
+        Err(crate::MmError::unsupported(
+            "this family does not take mixed-modality prompts",
+        ))
+    }
+
+    /// [`Self::layout`] for families whose expansion contains text, such as
+    /// a video's timestamps, which `text` encodes. Hosts call this one.
+    fn layout_with_text(
+        &self,
+        input_ids: &[i32],
+        items: &[ProcessedItem],
+        text: &dyn TextEncoder,
+    ) -> crate::Result<TokenLayout> {
+        let _ = text;
+        self.layout(input_ids, items)
+    }
+
+    /// [`Self::positions`] given each item's feature ranges as well
+    /// ([`crate::token_layout::ExpandedPrompt::feature_ranges`]), for schemes
+    /// that place features apart from literals, such as a video's frames
+    /// between timestamps. Hosts call this one.
+    fn positions_with_features(
+        &self,
+        input_len: usize,
+        offsets: &[(u32, u32)],
+        feature_ranges: &[Vec<std::ops::Range<u32>>],
+        items: &[ProcessedItem],
+    ) -> crate::Result<PositionOutput> {
+        let _ = feature_ranges;
+        self.positions(input_len, offsets, items)
+    }
 
     /// Positions for the expanded prompt. Families without a custom scheme
     /// keep the default.

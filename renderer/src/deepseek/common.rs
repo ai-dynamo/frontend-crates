@@ -3,6 +3,8 @@
 
 //! Shared DeepSeek native prompt-formatting helpers.
 
+use std::borrow::Cow;
+
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
 
@@ -464,6 +466,21 @@ pub(crate) fn sort_tool_results_by_call_order(mut messages: Vec<JsonValue>) -> V
     messages
 }
 
+pub(crate) fn reasoning_text(reasoning: Option<&JsonValue>) -> Cow<'_, str> {
+    match reasoning {
+        Some(JsonValue::String(text)) => Cow::Borrowed(text),
+        Some(JsonValue::Array(segments)) => Cow::Owned(
+            segments
+                .iter()
+                .filter_map(JsonValue::as_str)
+                .filter(|text| !text.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ),
+        _ => Cow::Borrowed(""),
+    }
+}
+
 // Drop reasoning and non-essential messages before the last user message.
 pub(crate) fn drop_thinking_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
     let last_user_idx = find_last_user_index(&messages);
@@ -520,7 +537,7 @@ pub(crate) fn inject_tools_and_response_format(
 ) -> Result<()> {
     let tools_json = req
         .tools()
-        .map(|t| serde_json::to_value(&t))
+        .map(|t| crate::python::template_json(&t))
         .transpose()
         .context("Failed to convert tools to JSON")?;
 
@@ -536,7 +553,7 @@ pub(crate) fn inject_tools_and_response_format(
 
     let response_format_json = req
         .response_format()
-        .map(|rf| serde_json::to_value(&rf))
+        .map(|rf| crate::python::template_json(&rf))
         .transpose()
         .context("Failed to convert response_format to JSON")?;
 

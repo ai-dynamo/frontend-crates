@@ -1,0 +1,2273 @@
+capture_selection: {"family":"gpt_oss","implementation":"vllm_python_batch","lineage":[{"family":"gpt_oss","implementation":"vllm_python_batch","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_python_batch-0.32.0.yaml","version":"0.32.0"}],"mode":"unified","payload_sha256":"259848e3efd7f3c621be117be64c70b9b627b6da69e09d45c373b8ab9d43b101","source":"conformance/fixtures-unified-v2/families/gpt_oss/vllm_python_batch-0.32.0.yaml","surface":"unified","version":"0.32.0"}
+document:
+  mode: unified
+schema_version: 3
+provenance:
+  origin: origin_ecc37121c7a59f29
+  status: captured
+origins:
+  origin_ecc37121c7a59f29:
+    adapter_sha256: d603d3272b669d9188ee0129be75afea7f03ecefa5d87060a02a4d10f3528e62
+    crate_version: 0.32.0
+    job_sha256: 264815e0779f22fcae5351c38d6202b7e3e048a696599d77cae5168c38902b43
+    source_sha256: 89d3c33d4a786b6e2ff175facd886f0336e0d5b6b1f08d02c3bf70d05a062c1a
+producers:
+  producer_e3c17efa199cd1cd:
+    capture_origin: origin_ecc37121c7a59f29
+    captured_with:
+      vllm_python_batch: 0.32.0
+contexts:
+  context_707dc69eabc3a207:
+    mode: unified
+record_defaults:
+  member: conformance/fixtures-unified-v2/families/gpt_oss/vllm_python_batch-0.32.0.yaml
+  producer: producer_e3c17efa199cd1cd
+  context: context_707dc69eabc3a207
+records:
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    request: 8855f4503748936811f3456092bddf7f237c864cc1962157af1a3b8ce87699f5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_json_null:
+    case_key: arg_json_null
+    request: a5831ca715e76f3af697bc698cf288e22b2be602fac792d71d2a19c25b18e28a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_json_null_anyof:
+    case_key: arg_json_null_anyof
+    request: a837acf3f886faecb4e2246b30868c0d6b322a7efb503583ea539bbb9f2548ba
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_json_null_const:
+    case_key: arg_json_null_const
+    request: 1f1d49dae957fb3564a2b6bef2cfa219ceaeb00942478841a7e1663b67135e6b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_json_null_nullable:
+    case_key: arg_json_null_nullable
+    request: 3f1289587fdeb0319c8e3176cc13d94465ca5d52c67dba52cf622e12e3a3d651
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_json_null_oneof:
+    case_key: arg_json_null_oneof
+    request: 50f147a3c869fd14fc6b7fa33f0f577a93d124dd3521d3384a18f01844c0e1ff
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    request: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_marker_in_string:
+    case_key: arg_marker_in_string
+    request: d1dc011ca8f714c1070c6f4ef99390d69ccb090ea40a8619ffee41da16b40f30
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_marker_in_string_pr424:
+    case_key: arg_marker_in_string_pr424
+    request: abeff7444333123f3a0a27999b08354ed98fbd9b92fc7861fe5d60ae46b4f1c8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    request: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    request: 536131c3dc7c433869df785edeb147068d0c2c34f27af42aeeef6d2f47a84f90
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    request: e5aee6c0ced34a29e2bc756b18d67cf671b02613acfea55128b4d0d0745b01aa
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    request: 3dfd98ea8d356bf0a0f72c526a21aa8030aa04d0d65a23dc5099dcf2e7a8f522
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    request: dcbd413a0c4544150e5bfd6f4a248c8573b2996485a1fe29ac747945d74517ab
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    request: f4cb06a1a31894afbb6bb411cae9c5a522d8e2cb301c8fa65b326a35d33a4026
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    request: 5827aceb7be8a390d780ec4fd3d64af1d8411a952faa7506e4ad2857532569e1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    request: ad15dcfd9fc2fbf14cdb39a53d16cb0449b0664344b312790630475814389b8e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    request: 1a09ae684a0e34f558d30e50c013f80db687391038d0c6dbb169d93448494ae8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    request: e55fb100a8f324f282c949fd82a96d232747bc784883486705687d066f3b9cc2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    request: 5dafbd1478b82f1cb0fb0fd5e8c240e2ca513100bd5bf750915f032d8eef95c7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    request: d1c935e6ac460cc24a7090e56260429c7aef1c4589d01b900cb44a7ce7a71c47
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    request: 9f2b0a5c014ebaec784dd293c32a75c94c4461ee9e341fcf421ade753e953adf
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    request: 9709b6414f1a62a0005e2b8b17cf8447f6bdb661f58ba624d5023972682a5827
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    request: 306764898ea6faa5c03f7ed9a1067cf7690516711dc37a57b8ad574664314cae
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    request: 0575be81824a7133cc44d8e776074bd19b9e62f469b06ab7949bc3bb58c1c14f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    request: fced57e332830217221238293522effb4e1f6405b306e8ab1472ebba0355447e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    request: acea4f4f1315cd8094c72fa5f72aea3605bc1b76e2dcb4c299634c01ffdcdcf6
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    request: efaa155c53c223001b591665d8a2bcc8fb483ec44885677ad6bf618f20820567
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    request: c14967933b95ff062527f064cbb052855bb5fa16aad8c862cd4c0c30616a4d5f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    request: b4b9b47477f70989c359034c14298b3d4767eb4818f718d82b85fb38337ddd77
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    request: cbfbad8882c6a3a1c791bf865d31eb68fc6a912486a49b04b6459f5702b652a9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null:
+    case_key: arg_string_null
+    request: 9520782fc0334a0249bc0c7de52e371aa68db2d35ae54806ba172aa3c2182b41
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_const:
+    case_key: arg_string_null_const
+    request: e0acc680f0a193a3ac8979dd180a33ac1ca2de5dd0fa1cd2d4836942df29ffde
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_enum:
+    case_key: arg_string_null_enum
+    request: fefd853178bd61fc0bc63692951e49e9916c1dc23bab5f618cc16a2113227144
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    request: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_sibling_anyof:
+    case_key: arg_string_null_sibling_anyof
+    request: dc23e090a8fca2ac7e5a9234bea9cfbdfddf5ae58b969ebb526ff7d262f33f0e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_sibling_oneof:
+    case_key: arg_string_null_sibling_oneof
+    request: d0a534fed6bf1a4159618aa02df7bd7c396f9a77a2649a9b1cc155b3650171ce
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_union:
+    case_key: arg_string_null_union
+    request: 154a5e2144d0c9215de3b0d531c35790c1e31cfb6ff5d29e764aac9d58e4f681
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_string_null_untyped_branch:
+    case_key: arg_string_null_untyped_branch
+    request: a0a790e6dadf448db1dd4d1d847525a6bcb1a49f00a70cf7b5bc483aec9bd2d9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  arg_unicode:
+    case_key: arg_unicode
+    request: d073bb9cc5b9a50cc89a2f7faefec60471e3a0ca76772459b50fd980b43d6d24
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    request: 91613061bcf6105b20a0da7701ca645f661aa26503538e8ff9cc7d69899de649
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    request: ef4a4795b68a017ba4e9c2d078ccacfd9d5ab0c10ed8b3222a68eb86d1c6894a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    request: 2e2bc267c32fd66f1cee9f7390b930af291fd551db48d4c10a2b3de44b2db21d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    request: a1b6dfd5ebcba51f7d16ee24f24c09f253dd36190c65bb8940cf138d89ac6aeb
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    request: e773900072a012c169f920114723c7984eb0f07b06a6ca42456d488a8d99eefa
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    request: 712994908f4ed1624e90608946cd8b24678590aeea3c521f75da6010c685fff3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  conditional_schema_number_types:
+    case_key: conditional_schema_number_types
+    request: 9bc921871abb05666d71d9668dcfedcb34e597f56ce082a9cf7775fa2a14d0fe
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  content_then_reason:
+    case_key: content_then_reason
+    request: a6643f668768da6cd3e107803edd1c503cfbf3a42356309bb1083c47c7dba2a7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  content_then_reason_then_tool:
+    case_key: content_then_reason_then_tool
+    request: 8f7d6ea3b02b2a0d36f750c075209efc3700aebff8f209827d3d35509b7bf736
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: deepseek_v41_mixed_control_text_in_string
+    request: 2d5d42a8cb9a42a608f3183a678bc7a67d8d3faa3b39945a270629113ab4c5ff
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  deepseek_v41_mixed_control_text_in_string_pr424:
+    case_key: deepseek_v41_mixed_control_text_in_string_pr424
+    request: 337c6df1e5981fa6b0dc8cb8e4d88d17654869b1bb89fe526b45f25c9183acea
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    request: 5e3d1179397e5450e167e41b649d3f9b910667860ac2a472ce4ae6f77cf74a5f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    request: 1c6c59687e13f5a62160ba5ce791db8832c8ac482a43bb4d053d123327dbbe48
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    request: ece2bfb20932e8163f5a5b84f0ced28236540b1a5ad67c883a89fdde70eda642
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    request: 075aa1795ac22e25e7ea371f5f6544dd78076474b8cc1b98f0e70417062c8401
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  empty_args:
+    case_key: empty_args
+    request: fefa16a1f5c6ee969b063757fa07cfc555d9a19979c7ecc41a300fba8a5fe258
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  glm_ref_encoded_targets:
+    case_key: glm_ref_encoded_targets
+    request: cf5bda6632e3c477a14a965c81e421e7db7393ff0a13e4eeb011117c7b433f94
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  glm_ref_json_looking_strings:
+    case_key: glm_ref_json_looking_strings
+    request: ccd9c609fbeb721e5141a2023e074ca0f3d85d14f9890e1ab2fc6dac244a2781
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  glm_ref_object:
+    case_key: glm_ref_object
+    request: ccbc22c8b27f08ddc4be2ddfa4c1fd0b4071dcdf7de76eede8a37b839bdbc95d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  glm_ref_scalar_types:
+    case_key: glm_ref_scalar_types
+    request: f6d9aec6c7d25e89b388ca4cd1f60a27eda9ec4a6ad5dbcfe2c8235f143c5ef3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_channel_first_tool_header:
+    case_key: gpt_oss_channel_first_tool_header
+    request: 0ec24da0d83ad1039c6269e40b474ad39d1084c4902ef8b8ca17a15d9857f080
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_channel_header_variants:
+    case_key: gpt_oss_channel_header_variants
+    request: 8ed80fcb415dd00c8de37f46adf5d9f56c3dbd2ce62893e506ba4da6f56bbfae
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_chat_template_tool_header:
+    case_key: gpt_oss_chat_template_tool_header
+    request: 50cbdcd340af07be9dbeb60d27629e6dc9e08f4a6faf4a9e7a79b424644e768b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_complete_alternate_message_ends:
+    case_key: gpt_oss_complete_alternate_message_ends
+    request: 59735b7a908f3cde44cd0d717e84b9dae272246e5150fb1347499609ac5091dc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_constrained_final_header:
+    case_key: gpt_oss_constrained_final_header
+    request: fd5f1a342b9e8d4df5e4ed0eca1762709cd63dd259a884e0d03fd3f5c8d1d839
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: gpt_oss_control_marker_inside_argument_string
+    request: 34ad9ff9150c67b81ab16e2ad34d0b447f6a5960b5e79fdc75d2514a21c7d289
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_implicit_recipient_first_header:
+    case_key: gpt_oss_implicit_recipient_first_header
+    request: 56992d89d8ef42935ac7f97927093565b9f450542558165d49eb501fbb65c7d5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_interrupted_reasoning_then_tool:
+    case_key: gpt_oss_interrupted_reasoning_then_tool
+    request: ba8c75755c529c50ce48fb5ae3a412921b313635f5b909a929f9da0615add6c2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_interrupted_reasoning_then_tool_with_text:
+    case_key: gpt_oss_interrupted_reasoning_then_tool_with_text
+    request: aa58c97a06b8e5e32b555935ac1271301c6a9bb852c35707889a9957799c7304
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: gpt_oss_invalid_tool_body_then_empty_call
+    request: 3414e5d55d78363413f51b31c63f731a9e572c42c1582b9c73bb405ee9632412
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: gpt_oss_invalid_tool_body_then_valid_call
+    request: 1fbb8113d8c7e947b395e9c6e811e2e844eff1c081eac019d267e7e192c2e90c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    request: 429ed7448696c0c4ea3852ee03e3daf2c7e856d08af992ad6307e190e04978df
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_quoted_message_header_literal:
+    case_key: gpt_oss_quoted_message_header_literal
+    request: daed298a17f69c9f4e565a5453486e20a6d1e1581dfd5c8e8d1f9b32f1da2345
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_quoted_truncated_tool_then_final:
+    case_key: gpt_oss_quoted_truncated_tool_then_final
+    request: c51bb17b577e9ba8c94bb56aa7d20adf7ba8290f66b7c51cc0dc94a19fd1b72d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    request: b880a4fafaeb35837443eaa8fc7f8c4c14c8618f51171f0c8942aa93405f111f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_after_reasoning:
+    case_key: guided_json_after_reasoning
+    request: 427b403a2899f8743a3625cf5ba375864d9a88ed8aea55c516573f249424cea8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_after_reasoning_pr424:
+    case_key: guided_json_after_reasoning_pr424
+    request: d16aa75ce0f663f6bdd10af3a57e85587f961929b791839b3bd5f5bd0466984d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_array_argument:
+    case_key: guided_json_array_argument
+    request: 4c661030173069e28fe34aee958ee44390e4814410043493dfdcac9e7cf68113
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    case_key: guided_json_bare_tool_header_recovers_inside_a_thought
+    request: 0438b79bafe00144cc39b88d6971a8f0a91d916c64141f1a05e19b0880567c6d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_bare_tool_header_recovers_inside_a_thought_pr424:
+    case_key: guided_json_bare_tool_header_recovers_inside_a_thought_pr424
+    request: 30af9e9506a9a77ddd0c60be77828102ca10b3803f45695763ac75c56695f7f5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_escaped_string_args:
+    case_key: guided_json_escaped_string_args
+    request: 87f7c649b656221527484786bbf185ea5ac9a1bf54a2b98201492850755c3c8c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_trailing_close:
+    case_key: guided_json_gt_in_argument_trailing_close
+    request: fce37c8038b5982478b8b0c83487b1b41b994a92d34e9770cfae27c88ea7932a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_trailing_close_pr424:
+    case_key: guided_json_gt_in_argument_trailing_close_pr424
+    request: b7aca65c3b61a00b31787cfc4f164e492a0eae92dffe0a56bb3cc6373973325a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_wrapped:
+    case_key: guided_json_gt_in_argument_wrapped
+    request: 94a23ad9434dda04bf2e7c30258dc6760607cc118cf511e15e34cd8a156fa1fc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_gt_in_argument_wrapped_pr424:
+    case_key: guided_json_gt_in_argument_wrapped_pr424
+    request: cc7094e05086247507a88bbc9786d3b3641b89f120c254feff5755e00afbe4a4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_invalid_call:
+    case_key: guided_json_invalid_call
+    request: 55306ac3a8fc3a2c60d600aaedaec78aca4be5a38dae226430f8a1b4799d9527
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_list_with_broken_element:
+    case_key: guided_json_list_with_broken_element
+    request: b202a015e26479022303613c995fd3a311fe728088b3ab3dda5ea9f28d5bae5d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_malformed_json:
+    case_key: guided_json_malformed_json
+    request: 51ef7d144967064e0510a157c51cb44cb8288f61b240091dee1a5f9f76452f1f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_marker_inside_argument:
+    case_key: guided_json_marker_inside_argument
+    request: 03cf32cd2680c098498f768c8bb09fc6c676279ae4c8e33a2d2ed582d97c6035
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_marker_inside_argument_pr424:
+    case_key: guided_json_marker_inside_argument_pr424
+    request: 318c5c98074f86203e059a65bc0e1852c82ddd66731cd3dbed27d4f529c44c49
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_named_tool:
+    case_key: guided_json_named_tool
+    request: 256004757470aacfa149c42c449b054b1b0c423623bf32db1a349e44f85c3cbb
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_narrated_invoke_in_reasoning:
+    case_key: guided_json_narrated_invoke_in_reasoning
+    request: 1fd125bc967dfc626a3a2b2d08b14bba8034affb79dd1d83e78aeb8a64192c4b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_narrated_invoke_in_reasoning_pr424:
+    case_key: guided_json_narrated_invoke_in_reasoning_pr424
+    request: dfef338142de696fb49206ca97430ee0ec6858091158a0fc8a03d4ebed912055
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: guided_json_narrated_prefix_inside_reasoning
+    request: aba208c078f74147c6c0683fb06c4cca1be85ed7df4b78242fc91742995a91f8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_narrated_prefix_inside_reasoning_pr424:
+    case_key: guided_json_narrated_prefix_inside_reasoning_pr424
+    request: 9eb4a0bd57206d63e083f78caea11ab3cb6202a3468e9f7e8094bd28ee8241c0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_markup_only:
+    case_key: guided_json_native_markup_only
+    request: 2115927b76ca331316eae238fdcd1a5d2a0911820adf38bdfd22d617245e0ff4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_markup_only_pr424:
+    case_key: guided_json_native_markup_only_pr424
+    request: 645ad4c615fc16ff8fc90eade4c15fb0fa6f18fa93f145f48ae6a3801ca468d9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_parameter_array_before_payload:
+    case_key: guided_json_native_parameter_array_before_payload
+    request: b0e0eb44f45f5749367ef3a949cbfd9c61e97dabb88098e073859f87d63afea4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_parameter_body_inside_reasoning:
+    case_key: guided_json_native_parameter_body_inside_reasoning
+    request: a65dc7c6579757e34307d606a1d660a65e62d885a623c563ee218451ff9fc276
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_parameter_body_inside_reasoning_pr424:
+    case_key: guided_json_native_parameter_body_inside_reasoning_pr424
+    request: 5c2687ee4f344187ac2963e8b0c983ebf0cb43b720ede9074d2aaca00d41707b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_parameter_object_before_payload:
+    case_key: guided_json_native_parameter_object_before_payload
+    request: 5c0b3366a29da0d1be1463c9cda8355ce5d10c91feb48f2a92b67c6a614a9001
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_native_parameter_string_before_payload:
+    case_key: guided_json_native_parameter_string_before_payload
+    request: fa01710204e5d243fac97e1c235bc4f94e03fb8392a05e707f33854054698c58
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: guided_json_noncall_before_native_array_before_payload
+    request: 28423eb43bea942ce4d335a68163cd9fe68a77788761c795bcc5551aeaad358c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_orphan_reason_close_before_payload:
+    case_key: guided_json_orphan_reason_close_before_payload
+    request: 992e287a724e22cfa7d60608a860799fdc4df77dba4f3b4f38c12b161f2e7a75
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_orphan_reason_close_before_payload_pr424:
+    case_key: guided_json_orphan_reason_close_before_payload_pr424
+    request: d38586df22e2d4f21af95e418cfbcaf16124866cfefe2eb62c965c13ec49f890
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_orphan_tool_close_before_payload:
+    case_key: guided_json_orphan_tool_close_before_payload
+    request: df752f6ae71355237b22042d70f659c0eb1cbf6a07bded4a634bacd9c3e72529
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_orphan_tool_close_before_payload_pr424:
+    case_key: guided_json_orphan_tool_close_before_payload_pr424
+    request: e0776dbda7133e27eb937eb34a9680b8afaf341162cdd1173dba1d642033f4cc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_partial_calls:
+    case_key: guided_json_partial_calls
+    request: 0b46ec03fa2b2a1a5020f035da84131e4404f3d5750996711854726c20227ae3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_prose_before_reasoning:
+    case_key: guided_json_prose_before_reasoning
+    request: d1983d43f9ceffbd1d1fa294a0f0c86da3ab15de92d11d08483996fc181ba4f7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_prose_before_reasoning_pr424:
+    case_key: guided_json_prose_before_reasoning_pr424
+    request: 4513e4abbfd9f7f848a48aaaa16ce079ff37df042bb2d854db0c35f0e131a87f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_quoted_bare_header_after_payload:
+    case_key: guided_json_quoted_bare_header_after_payload
+    request: c0fd97979d310db003e2153c49ec292bd0d4712a5e66d556ae17de808ec7ef51
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_quoted_bare_header_after_payload_pr424:
+    case_key: guided_json_quoted_bare_header_after_payload_pr424
+    request: 84f90aaf45b46d978013e3714abed52efda66f3f82242a0b69c827dad8628ddc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_quoted_bare_header_in_answer:
+    case_key: guided_json_quoted_bare_header_in_answer
+    request: 965a479a703bda82246412fc3148965c82985fcfa9a637e9776c6c08d39a2516
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_quoted_bare_header_in_answer_pr424:
+    case_key: guided_json_quoted_bare_header_in_answer_pr424
+    request: 5d083c0e74859ac66ef9b7785689d7ffb8e22d7e455452d963939ffe922ce785
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_reasoning_markers_inside_native_parameter:
+    case_key: guided_json_reasoning_markers_inside_native_parameter
+    request: f8a0f32eba8f930dc98f37666d48cf93b5eadb7ce17555e0b311acde0e8021b1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_reasoning_markers_inside_native_parameter_pr424:
+    case_key: guided_json_reasoning_markers_inside_native_parameter_pr424
+    request: c150469c27b77373571ecbf4ea8153638091cdc42d8e15a51cd4138cacfcb945
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_required_tool:
+    case_key: guided_json_required_tool
+    request: 67a0e8efd63596543137edd7be473a2060972277e960914fa5c9e60a126139e1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: guided_json_schema_error_nameless_element_bare_opener
+    request: 0ba607d7c0e60b015188cbffb56868d118303bc9ead2309fdde1be8f39ef2900
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_trailing_close:
+    case_key: guided_json_schema_error_nameless_element_trailing_close
+    request: d7768d28c9de61c936c21be97cfba714f059b3ed00a6f1229b8f0a2fb91a17c0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_trailing_close_pr424:
+    case_key: guided_json_schema_error_nameless_element_trailing_close_pr424
+    request: b3a1a4d0e9202906de465f28615bda40446ca682b7a6a8df48d4372e317b77d8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_wrapped:
+    case_key: guided_json_schema_error_nameless_element_wrapped
+    request: 829b85b156c29cc320c9250d763938bc8fb86b588aae5a40da5c5547eb18f0b9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_nameless_element_wrapped_pr424:
+    case_key: guided_json_schema_error_nameless_element_wrapped_pr424
+    request: 9c38c0c4e815c8d79ab0eedca8693b04ecaf133fc3f1ae0b6c939429a6b5c612
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_trailing_close:
+    case_key: guided_json_schema_error_not_a_call_trailing_close
+    request: 413256fb316a28d4263fa7fdaf956ab23b9a0c34860fb8cbc0b4ab68e4eded36
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_trailing_close_pr424:
+    case_key: guided_json_schema_error_not_a_call_trailing_close_pr424
+    request: 835e292abdaf8a185cef7cd543023638b71ce6f0f93a571a4105f9b60a17a301
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_wrapped:
+    case_key: guided_json_schema_error_not_a_call_wrapped
+    request: 3378d5aa6f8d455258dfe4e67464eb20f7f6a631d2b6b130c6171ecf2ce027a3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_schema_error_not_a_call_wrapped_pr424:
+    case_key: guided_json_schema_error_not_a_call_wrapped_pr424
+    request: af4b980fb35b491cf2ec3b876ef2568c68f88911120f83130d13e7eccabc26be
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_stray_prefix_before_reasoning:
+    case_key: guided_json_stray_prefix_before_reasoning
+    request: 5f07498aa65d3b114f81b9d8e9fe14880b72d4811dc736d66f5d22c93ac81ed6
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_stray_prefix_before_reasoning_pr424:
+    case_key: guided_json_stray_prefix_before_reasoning_pr424
+    request: 6427f008d1b42c4fe0330dc2b340cb4cdb2c836026b9ab7c1abf507d0cc02a3c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_syntax_error_bare_opener:
+    case_key: guided_json_syntax_error_bare_opener
+    request: d5891591a764d9e9527a2fa20983c29fc8ed838f0fd95be2a8556a53cc893a50
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_syntax_error_trailing_close:
+    case_key: guided_json_syntax_error_trailing_close
+    request: 3c24437a263f53469a17d4a427e716ac4c4026819592cf6f9ffe0340549fc0a5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_syntax_error_trailing_close_pr424:
+    case_key: guided_json_syntax_error_trailing_close_pr424
+    request: 9081cc9bdfb5a6701ebffc0c1226d290767285a2dfeba94b2d1e83aa32029d26
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_syntax_error_wrapped:
+    case_key: guided_json_syntax_error_wrapped
+    request: 5188cd86214081249abcc5f81fd8cf0256d510297ae185ced411c657a8c3fdb1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_syntax_error_wrapped_pr424:
+    case_key: guided_json_syntax_error_wrapped_pr424
+    request: d2f338cbfca0459d1a613eb00a67955f4d7d645a95d5d51759b5a598ddb80211
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_tool_close_after_payload:
+    case_key: guided_json_tool_close_after_payload
+    request: 671831c6eff0844d02aeb2432fb4ae67319e032af3dcd8cbc277528d335a1282
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_tool_close_after_payload_pr424:
+    case_key: guided_json_tool_close_after_payload_pr424
+    request: ed6fb5b9e552d7724f7a4e8843aebf4cb244485f7afce5a1b4547fa2c09cdda7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_two_calls:
+    case_key: guided_json_two_calls
+    request: c5406e55fc4c814cc1e850140a042c38c759d200a458d554d7e99919b7e272ad
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: guided_json_unterminated_reasoning_then_wrapped_payload
+    request: 54919c74e22a52926cb1f00c75caf2c1d0bae5735f8708ccc91304e3ed4e3883
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_unterminated_reasoning_then_wrapped_payload_pr424:
+    case_key: guided_json_unterminated_reasoning_then_wrapped_payload_pr424
+    request: 5f561832d9d4bad6a652a0a2883e89078f459ec2c50180d6535009336ef044f8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_wrapped_in_tool_markup:
+    case_key: guided_json_wrapped_in_tool_markup
+    request: 188764bc0a677cc6a82d83d627f33f92084e6f928b0358cecdcf393cf7e306ea
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_json_wrapped_in_tool_markup_pr424:
+    case_key: guided_json_wrapped_in_tool_markup_pr424
+    request: d0dbea7fb3364b08925cdcaab3d1f7ce7db8cee6b3bce9ef2aa1d59f246a77a5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_quoted_reasoning_closer_named:
+    case_key: guided_quoted_reasoning_closer_named
+    request: b42f3d319d9d63fe4c1ea4818fe57cfb53ad33cc67497a10bafca26f57c257ac
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_quoted_reasoning_closer_named_pr424:
+    case_key: guided_quoted_reasoning_closer_named_pr424
+    request: bb4c7c9c51f000e277bb975f44eea0b9f13787fb7756967fc2f49d25adfa4de5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_quoted_reasoning_closer_required:
+    case_key: guided_quoted_reasoning_closer_required
+    request: 740fd26fc9c51aab33959bae93588b36e302080a720038c251b80ae242e9a488
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_quoted_reasoning_closer_required_pr424:
+    case_key: guided_quoted_reasoning_closer_required_pr424
+    request: 15e4a9774a41f70fbc4316b919986734ad1141298a47277cfddbc6663d2a15f4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: guided_response_native_wrapper_whitespace_before_prose
+    request: f0a51afe3a9b3a0cc80965e179c339594e645b7e7fad269fcfa69097eeb13c2f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_response_quoted_control_braces_named:
+    case_key: guided_response_quoted_control_braces_named
+    request: 46733b8e2a3938ca09b7b029db5398f7a2c6e2cba37a5a36a2bc5ac79dbcdc2c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  guided_response_quoted_control_braces_required:
+    case_key: guided_response_quoted_control_braces_required
+    request: 44af50e5129ca11013e96f23b28554be89a727a250c373179ec7ad165d219a71
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_gt_in_argument_bare_opener:
+    case_key: harmony_guided_json_gt_in_argument_bare_opener
+    request: 55b68477adb6276bf5d2aa97e995d7ae6349319fa77660e81e15af348a9a60e7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_gt_in_argument_named_bare_opener:
+    case_key: harmony_guided_json_gt_in_argument_named_bare_opener
+    request: 6c8645ceff7a9a45d2115ab49de0112e8ee970219b9101abf98d09c84c7836d3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_narrated_prefix_inside_reasoning:
+    case_key: harmony_guided_json_narrated_prefix_inside_reasoning
+    request: f57aece643638775543123652d10bd9896a70e88888977ae7b1fc432b7b621ac
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_schema_error_nameless_element_bare_opener:
+    case_key: harmony_guided_json_schema_error_nameless_element_bare_opener
+    request: a741c1e43d75cd7e912791c0d5684fb5eb4e802ef2206ae650a92733ee246500
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_schema_error_not_a_call_bare_opener:
+    case_key: harmony_guided_json_schema_error_not_a_call_bare_opener
+    request: 672f15c159baa487b442ee41e9ccb3bbacfadfeee38a9bd207ebfa839994264c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_stray_prefix_before_reasoning:
+    case_key: harmony_guided_json_stray_prefix_before_reasoning
+    request: 580d9e35c0d214acef1327953252871df7193a987a45f88f9ff7a32421e2ea94
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_syntax_error_bare_opener:
+    case_key: harmony_guided_json_syntax_error_bare_opener
+    request: 8b2e46dfff9f7e1c0cb9fc0486ce1622ad6542bfa85383a458b5265ff3f6e538
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  harmony_guided_json_tool_open_before_payload:
+    case_key: harmony_guided_json_tool_open_before_payload
+    request: bf60f74a573d9a56c8b87ddcf85ec7eeca1ae8bc4d78d155e875988c5f82802c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  interrupted_reasoning_then_response:
+    case_key: interrupted_reasoning_then_response
+    request: 838acab12e6bc65283f63ade423be9ca9464452d38093d53fe14671b4d789867
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  interstitial_text:
+    case_key: interstitial_text
+    request: bdf2417b52e65d84fdf00601bb95573590d76d84dac0b4ff7abb06162d32d5b9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  local_schema_id_preserves_type:
+    case_key: local_schema_id_preserves_type
+    request: 2fcdb894199e9d5316cb4c4d1f86e2ba607be58af4e873392813ea51b6dc0e4a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  malformed_json_then_two_valid_calls:
+    case_key: malformed_json_then_two_valid_calls
+    request: 56182c3f3763e6825ad607d024e32648ba984587c69006d38a8d99a605fb4082
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  narrated_calls:
+    case_key: narrated_calls
+    request: b7ac114241971d48096425312f1b2a7ecc7456dc0e98bac45a8e682395203817
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  native_unmatched_quote_then_call:
+    case_key: native_unmatched_quote_then_call
+    request: 9a30ecd389aaaa6a3543387366fc77f73266dac5245149b2d5d6a94f4dd84aff
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  not_keyword_type_complement:
+    case_key: not_keyword_type_complement
+    request: a6b51ed1b6d2c78756bce77bea0f2257c1522a08ad244ec1ab82f07ad7235a31
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  nullable_reference_alias_literals:
+    case_key: nullable_reference_alias_literals
+    request: de7b4f3cbcfd7d4bd001c9fe1861c2aba3e5663778407f40059a0f09cffb1ad8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  orphan_close_after_prose:
+    case_key: orphan_close_after_prose
+    request: b881f50fbda9674a94bd2836a66ef083f637d69ed9a3582e19bed7ec4d9295f0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_redundant_opener:
+    case_key: prefilled_reasoning_redundant_opener
+    request: 5cf1a8da613996ef9f62ad13f254b249d25addd6dbb389412e66c1d857eed03c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_then_text:
+    case_key: prefilled_reasoning_then_text
+    request: 3792d755b49e2a3fb085a9093dcb773f5f3f54d60106c012d4ecde5ac4c17a8a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_then_text_then_tool:
+    case_key: prefilled_reasoning_then_text_then_tool
+    request: 421ef29a1bd3fc40d56d7bce58e1735a20569ccf6d746361380fcf4ae4121461
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_truncated:
+    case_key: prefilled_reasoning_truncated
+    request: e6ccf78958b72190c74a3f2396e60c13dd563e74e6aff9e4e9d6789d78b1caf5
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_with_guided_json:
+    case_key: prefilled_reasoning_with_guided_json
+    request: ef5fd26caa99b994776245c3c5dab07f8939725a17636c0e0ea26a4fb98f931d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_with_guided_json_pr424:
+    case_key: prefilled_reasoning_with_guided_json_pr424
+    request: 29132f63d896f062969ce206dd09937379f23db477905b2f47797fa227a5d17a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_reasoning_with_tool:
+    case_key: prefilled_reasoning_with_tool
+    request: 7bdac4369b27a570202ba723be438e6ebe0afb346ffab26cac0bba35c263b370
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  prefilled_response_reasoning_markers_literal:
+    case_key: prefilled_response_reasoning_markers_literal
+    request: 92c8ba60c1d18b491eea53d9e6692708609712735d93beadb393d8e22764ccd9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_after_tool:
+    case_key: reason_after_tool
+    request: b71c7aabf34bef29ade49a236b0a8c5a428de5c40b1713a7c6bac347872feb03
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_between_calls:
+    case_key: reason_between_calls
+    request: 514d5c16829a3f40384e9f5e28717a84a28b67a6d82ba92cdb1fee48315b5113
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_interleaved:
+    case_key: reason_interleaved
+    request: 90478a4790c666e35d6beb4a2139d857297cba3ac2725781add3ab7c8c653391
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_markup_in_arg_consistent:
+    case_key: reason_markup_in_arg_consistent
+    request: 6fa35eb281f363e72214dc26bd47b0b43d95b94cc4b707db3743eeb438ec9259
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_markup_in_arg_with_text_consistent:
+    case_key: reason_markup_in_arg_with_text_consistent
+    request: 0a4415d75a8c5461fd5255f795baaba42ac5151cf0c1e9aef3d999a83e9a26d6
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_only:
+    case_key: reason_only
+    request: 94f4fb3ce45f4f2cfa5413846997af2f8f15c5438a95ccbafb3ca8e60e9974e9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_then_content:
+    case_key: reason_then_content
+    request: 304ef5e93912db4207f0a4f640fb27ead4920bcfad5822b1a8baebb4e1327ac8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_then_tool:
+    case_key: reason_then_tool
+    request: 3b125c16173ed286d3df97c76225b0335ac907525198f8094c5744039f563b1b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_tool_reason_tool_reason:
+    case_key: reason_tool_reason_tool_reason
+    request: 5691035ad5330fd6b789cd95ca178170bfbc08532139a47a7f61a4ff5d1984ee
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_tool_text_reason_tool:
+    case_key: reason_tool_text_reason_tool
+    request: 78c65124ffaa14b06235319183b93a666f23b435c8e50bf56fbcfd44cbcc18c2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reason_unterminated:
+    case_key: reason_unterminated
+    request: e852abd3d7c699a1ed3ae943f9160cad442112e00247969c66bae56bd38f7b90
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  reference_object_recursive_and_composed_types:
+    case_key: reference_object_recursive_and_composed_types
+    request: 0ddb7576faadb33bc6440d8618eb5deaa5b58101239778d30b704a63fdbc304e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_array_allof:
+    case_key: schema_const_array_allof
+    request: fc03815025a4c0237508e7ca0cc9efbcafc054ef3c2eb2255aa739a32e92b537
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_array_bare:
+    case_key: schema_const_array_bare
+    request: fc3e16f3425a3197d5d7bd1a1bc43c118d4bbe1721e6fb8f395683eac52941fa
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_array_ref:
+    case_key: schema_const_array_ref
+    request: 3323ad6c69ac635b56cc431c742e3f931c468d5b7628a12de677a3114f5d322f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_array_typed:
+    case_key: schema_const_array_typed
+    request: d459b8e6d6942b72df37649fec24d7c2b478c458c392186412be71361fa3bf95
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_boolean_allof:
+    case_key: schema_const_boolean_allof
+    request: 2e45930509d53ca7ad5f8cebbd94fd13766e8d8475484ad67b252f99c228196e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_boolean_bare:
+    case_key: schema_const_boolean_bare
+    request: 9384561b15b245d6f4743db6e7443aa6292586909895bc6960d724982d6e19ac
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_boolean_ref:
+    case_key: schema_const_boolean_ref
+    request: 46e9af26161cfc52d281804c1e0742a955517fe9ae26b971e6eba551c290f259
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_boolean_typed:
+    case_key: schema_const_boolean_typed
+    request: 356968ee158b881c871cacc27a6b7a682f5e0f542d82f0e9512bb62be149b475
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_entity_allof:
+    case_key: schema_const_entity_allof
+    request: 611c5408af7653283aca70c0a8736acacce9a69ddd7095cbb7c3360b573ebb65
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_entity_bare:
+    case_key: schema_const_entity_bare
+    request: ac452268c26265380f08831133bec6abf297b6c1482df0c8e69c7f993a6748ea
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_entity_ref:
+    case_key: schema_const_entity_ref
+    request: b966a1f4c3a2c6d74755030e0c532bb7422119550b85bb23c0fb004972c747c2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_entity_typed:
+    case_key: schema_const_entity_typed
+    request: 9f67f8a595afa574d4530cda8c009e9b69fd91e3a46d2b01fd8da55a04c8f748
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_null_allof:
+    case_key: schema_const_null_allof
+    request: 6486bd373f590f8c61b27c864bdcb8f463bd688d764f5a2d7f8e91586083a2bb
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_null_bare:
+    case_key: schema_const_null_bare
+    request: f1539ad54d08f2e5e57ff65d7c5e01a1a35b536f39c49221f001f266ef9f4c42
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_null_ref:
+    case_key: schema_const_null_ref
+    request: fa1474628d504973dd9dde591f213ec41cc06dfa88c95f84ac164bc80210a195
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_null_typed:
+    case_key: schema_const_null_typed
+    request: cc810b95bcd093b6bffe62be8b78127d921b32e748ef5ab7f4e3385eae145362
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_number_allof:
+    case_key: schema_const_number_allof
+    request: 4055359ec831b48da5766db24bdbe60fbe83b4a920b6682fa41fe943158969b2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_number_bare:
+    case_key: schema_const_number_bare
+    request: a53b85cfc34cee4e26ab282bf24d1e16f5466ff20f551c278bb17486d438d0fc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_number_ref:
+    case_key: schema_const_number_ref
+    request: 17fdd823a0e7f8c70a8dd9be7220d2dab6367d3a326e60da1483f3d3357dab3d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_number_typed:
+    case_key: schema_const_number_typed
+    request: 03e0b62be7058a5dcff8ea15179dd3089911f88640168400e71af1634a1fd060
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_numeric_bare:
+    case_key: schema_const_numeric_bare
+    request: 459b643753bf6f4cd4a9c23bcb4d502c31968fca2b290f9f7d9aa60cc2934b9c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_object_allof:
+    case_key: schema_const_object_allof
+    request: ad508c9c3e7d8e260763f1e4ea1e3ef9b6475c8a7fbe72ac594f95ae6f72568a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_object_bare:
+    case_key: schema_const_object_bare
+    request: e2038a252edfeb0d509cf455701c62ced579e706d424bb8b139e4e22a34234a3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_object_ref:
+    case_key: schema_const_object_ref
+    request: f586ea02a1e43660ceda3d4a8a2c43a0b48e270c56f4d5876d6bba350dad7e62
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_object_typed:
+    case_key: schema_const_object_typed
+    request: 58344858a26f7a63d7a165fccd0582bb0b5f66730fa6ff05e34a3bb969cc27f4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_plain_allof:
+    case_key: schema_const_plain_allof
+    request: 83c6dbc56c874c72e8c9c2a5e56ebdf08b4da686bb9f417738ab1dc379ddfb81
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_plain_bare:
+    case_key: schema_const_plain_bare
+    request: cdb4fe4c83ff11dfcd4ac6c318677bbaf2876e246cc35335e030250738a6ed88
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_plain_ref:
+    case_key: schema_const_plain_ref
+    request: c70b7ab39f5c880fa70e1a3b7d8b2b840c5dd2441c3c6ff7057a597b67823178
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_plain_typed:
+    case_key: schema_const_plain_typed
+    request: e7feaed52c6f8695667494aa1700e8a507e42a42dcfeeed5e6ca88555af0b8f3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_quoted_allof:
+    case_key: schema_const_quoted_allof
+    request: 6efff31abb8c08b036d611dfc18b6ba2dada36fa9b453dfa35a42023929523cf
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_quoted_bare:
+    case_key: schema_const_quoted_bare
+    request: 7f85afb9c99b7fcf97625e9994eb47c9edae39f6ba0c2d5a933994ca79bdb99a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_quoted_ref:
+    case_key: schema_const_quoted_ref
+    request: ce26a8b3d5dae30a5ed280a100d2f13f9b569f9801bd92cd2846f563424052ea
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_quoted_typed:
+    case_key: schema_const_quoted_typed
+    request: b5e9376c69398ec527fc7dacfb319cd2df1c9cbdd869a11fde75f4417c7c7191
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_space_allof:
+    case_key: schema_const_space_allof
+    request: 6fbdc42b323b9de7ad63902259b811ba259a0ad9756b4ac04b2125c058ccb1f4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_space_bare:
+    case_key: schema_const_space_bare
+    request: 565aaedb93105f0d21f711263174b987ada42acf220e4db223bb4b6c01f18adb
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_space_ref:
+    case_key: schema_const_space_ref
+    request: 0d2cb75d70ae9a140f1fd284032017682b06d32335eb2564c19acf6c26899326
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_space_typed:
+    case_key: schema_const_space_typed
+    request: 61380b28c39782b268b8113e10fec3b1263b4ada95ad142347f220e80a605027
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_unicode_allof:
+    case_key: schema_const_unicode_allof
+    request: 08e63a58442788950b2245e626a3fb1e6393493bdb2179064216c22ae96b40d2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_unicode_bare:
+    case_key: schema_const_unicode_bare
+    request: bfd3e129f6b6b98a031f07a9fc98a81d5dbbc407ae50d6e2d06d1fc348115086
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_unicode_ref:
+    case_key: schema_const_unicode_ref
+    request: 4a926bb4bdc884876926c6c32773c9d9801f94c87222f61e70485c17502f5729
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_const_unicode_typed:
+    case_key: schema_const_unicode_typed
+    request: 297202fe72d1223339076c58ef14434c64b59af2b77c4f061cd4cb75eb4e8388
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_array:
+    case_key: schema_declared_array
+    request: 66c3000041f42c403a443cd485572d63bb307d592092f320e1e300dadcc38b5e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_boolean:
+    case_key: schema_declared_boolean
+    request: 8009b0b1c6c567e6ee96e8a3d73e6601f3982e6bb5680a825cf9ce243942ce90
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_integer:
+    case_key: schema_declared_integer
+    request: a54dcb1c9d60d2ed2592939b50ed0bd5efd5677cedf10ea829d781e3b9451863
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_null:
+    case_key: schema_declared_null
+    request: 9d9ba59e92b990b031cca4154cbd4217019157017cb64803dc5c623c554dbf17
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_number:
+    case_key: schema_declared_number
+    request: 9225fe80c6c1dd9a7e800d65f865284f8c56fa51c853d8ac65f40127630833bd
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_object:
+    case_key: schema_declared_object
+    request: 82b15df85ca735ab8354aa48a8d1a372b50b240efded8e6c73963a8223ecadd7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_declared_string:
+    case_key: schema_declared_string
+    request: 12a2fcdbb1b3c36a8d42251b0bacb5d212e2412ea59e55cb5fb373dbc852ec74
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_enum_const_narrowing:
+    case_key: schema_enum_const_narrowing
+    request: ae494d6cd259e1eee7520952c5e14f4432339c6e722e88da310a295a04616a13
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_enum_inferred_integer:
+    case_key: schema_enum_inferred_integer
+    request: 525c518d5fc5ea4b98850ada17bb016c67e1e81c4cf286c152a6aaee6cb5db4d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_enum_integer:
+    case_key: schema_enum_integer
+    request: 8342bde9e29b17b64b63004ffb3e9ba40b0a4895aa060ae2792a4c0dfe0c9aec
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_enum_string:
+    case_key: schema_enum_string
+    request: 13aebdf3109098179329079c86aa951f168c52751f8cf5393c9db6b5a39553d1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_escaped_ref_const:
+    case_key: schema_escaped_ref_const
+    request: 812d9a2ab7686d675bd9fff64ed3754223e394e5c037650c3d1eac5e8a6e23ff
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_id_direct_integer:
+    case_key: schema_id_direct_integer
+    request: 516d9ed035bbc603170292e8053b27cdbc96ef392e62ff554214a2d28ffd7c08
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_integer_const_ambiguous:
+    case_key: schema_integer_const_ambiguous
+    request: cb060a50d46a5f6ad68c0e1ceeea90b1323f49fa9794844a3384ef955fe38d72
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_intersection_anyof:
+    case_key: schema_intersection_anyof
+    request: fe92abb9b8cf15ead3a84b9e79cfef7a580f5cefdcad7a9db369a4226ab4ab70
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_intersection_oneof:
+    case_key: schema_intersection_oneof
+    request: 6da749ade88f3aa0dbbfc218a3ffc31d31aa3d0c11701b35d5bec83899c513bc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_null_union_ambiguous:
+    case_key: schema_null_union_ambiguous
+    request: 408eb4e1b1e80c4d83128fb76a0a4b8a5463ec135973f9cac9a2c37604870230
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_nullable_string:
+    case_key: schema_nullable_string
+    request: 947947e45e39b3cd75e03bebdb7c6e6f3726a0662d7500af9c77fca7dc7dcd21
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_object_const_union:
+    case_key: schema_object_const_union
+    request: 593652df794988fd76ef82415eafae9a861f219c4018d0b9769243863e1dc674
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_percent_ref_const:
+    case_key: schema_percent_ref_const
+    request: c2a5d9c73adefef25b6d586d7cc8bb2f11df91d7facd7d3100db0c638df00f9d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_ref_sibling_integer:
+    case_key: schema_ref_sibling_integer
+    request: a6e7d83f5d2f69103bdd6aea370128f100629cfabdfd4024c1ca1de073f5b04d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_ref_union_anyof_integer:
+    case_key: schema_ref_union_anyof_integer
+    request: 53bf5df780707f22578c69f9536ea9ac93f926fb8641d164a96434cad91d3842
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_ref_union_anyof_string:
+    case_key: schema_ref_union_anyof_string
+    request: 835c7b8282757dbd652d8ffaec28865929da23955506df2a0047c80856cd4c52
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_ref_union_oneof_integer:
+    case_key: schema_ref_union_oneof_integer
+    request: 8d252764585bc2bbc38ac469ff028bcb1e9afdabfc3b1c3608564171b6589465
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_ref_union_oneof_string:
+    case_key: schema_ref_union_oneof_string
+    request: 0d81a9326fcd548039b8c0a917471c209128221b07960b3e5c0836a337f1f2f1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_type_array_integer_null:
+    case_key: schema_type_array_integer_null
+    request: c0762e1567e58bd0a654a738228e304353f3d10e44be9f3e367317bd6583d117
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_type_array_integer_null_null:
+    case_key: schema_type_array_integer_null_null
+    request: ceece8d16b886eb39450aad1ebdde4d2a42e6bf6a5fef4f3ded28918f8d9ca1c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_type_array_string_integer:
+    case_key: schema_type_array_string_integer
+    request: fe32f026e0625ee43ed1c368e80306eb1e8c5499035eeacb2300888cd8deaef2
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_array_reverse_string:
+    case_key: schema_union_anyof_array_reverse_string
+    request: 84f14cf1495ccf10da9a827636861c8f1910710c3e721335671d61c91421576a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_array_reverse_typed:
+    case_key: schema_union_anyof_array_reverse_typed
+    request: 41e2f315b6739c3e5a4b62897c9d3b5a53d5320b5db6f14be76f52630095b8c8
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_array_string:
+    case_key: schema_union_anyof_array_string
+    request: 7e788a689da87ddf131fa3ff24ed6e4de9fa459ca1bd4377192f1112d50b1084
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_array_typed:
+    case_key: schema_union_anyof_array_typed
+    request: 43725f47dff26b3e36edc473e36621213595c7a6ad48a226e5df9ceb47b2f1e0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_boolean_reverse_string:
+    case_key: schema_union_anyof_boolean_reverse_string
+    request: 53fe6fc44dd5d3cb11bc48f916ce15eae13d96b247caee36faba23bd7587079b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_boolean_reverse_typed:
+    case_key: schema_union_anyof_boolean_reverse_typed
+    request: d2c18ba1d87d1ac80aa9e1a997432fa1817ee82eca75c7b98b852682a9b48a27
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_boolean_string:
+    case_key: schema_union_anyof_boolean_string
+    request: cf571817827200577225bc77b227c2fa6cef6d8e1e7590e57b225b5c43314bf4
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_boolean_typed:
+    case_key: schema_union_anyof_boolean_typed
+    request: f467e8159717e94eb7a9913a24afa6081d7b54f71fc65cebcea0cefb8a2aa3e3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_integer_reverse_string:
+    case_key: schema_union_anyof_integer_reverse_string
+    request: 0e2b637058ba58160862ad1cb7d1ad9f23e1f83219d2a6ff97e2e33260501107
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_integer_reverse_typed:
+    case_key: schema_union_anyof_integer_reverse_typed
+    request: 0da9e8f8c97739f9dc03ca27f4ea01342aca72f0d0bb3e21dc999c4865ae4224
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_integer_string:
+    case_key: schema_union_anyof_integer_string
+    request: 8f2029f17e2988bf436f57c739ca4693f3fd4407c5bc1db81c50cd801fe4ab30
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_integer_typed:
+    case_key: schema_union_anyof_integer_typed
+    request: eae24ed503db1ab91cc6498578314364bde901de1bd89b91e015a6fad61677cd
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_null_reverse_string:
+    case_key: schema_union_anyof_null_reverse_string
+    request: f35b75c35b75c779ee01e6ee8a3bca1b0f86724300f3f0c4b0b628f07b89c3e0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_null_reverse_typed:
+    case_key: schema_union_anyof_null_reverse_typed
+    request: 5a046d4a6492da35e1802d8cad462c287ccc7ba1f1dda345dd7b210ed51c9839
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_null_string:
+    case_key: schema_union_anyof_null_string
+    request: 43daab3e9658696863ea9ea24bf94a04aabade6a3ca6576717623b5f0e7cdc67
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_null_typed:
+    case_key: schema_union_anyof_null_typed
+    request: 81d0f706035f5f8ba678057039e3894240070a5f2cbb9b25561af40283f2e223
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_number_reverse_string:
+    case_key: schema_union_anyof_number_reverse_string
+    request: 7df9df810fdd0f12ce6c2d506ed6f9ec2f6a31ad3b04fab528cbd2a6b759e1ea
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_number_reverse_typed:
+    case_key: schema_union_anyof_number_reverse_typed
+    request: 7258d0e20f9204c4c816695b198032f5d81ffcd5c37df548845a89b49127d017
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_number_string:
+    case_key: schema_union_anyof_number_string
+    request: 4a430be3e5255505efd0c1a80f3e58e78ea4670681eb99cd30ad8090d94b5bec
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_number_typed:
+    case_key: schema_union_anyof_number_typed
+    request: d1a9a4a0fdf40b1e39c940516a060a9319214837a7024776b71a9f0647303932
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_object_reverse_string:
+    case_key: schema_union_anyof_object_reverse_string
+    request: 9b3159fe06e313e96545341ca8eca323614397d384dea2f12e19c043d0e72075
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_object_reverse_typed:
+    case_key: schema_union_anyof_object_reverse_typed
+    request: 98126a0d4aa16e2eca851b1910536d07f84a54c9745b9a0f369cb24939d63d0e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_object_string:
+    case_key: schema_union_anyof_object_string
+    request: 66a24ff84f2928a5e93981bc7d11c96f10522ca33a141c450000e27df924f07a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_anyof_object_typed:
+    case_key: schema_union_anyof_object_typed
+    request: 77fc4cb262d456be919173f19086c4cc755d87e2db5d4b0dbadc185ed5dc7a33
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_array_reverse_string:
+    case_key: schema_union_oneof_array_reverse_string
+    request: e834e9f4ac0e93ec6d346f040f51fb43b858801e12f8ef3b0a6f2e484108d45e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_array_reverse_typed:
+    case_key: schema_union_oneof_array_reverse_typed
+    request: 7cac7537a2f6004082ee6570b774be0dabd4b3d81208c867a9d945680ad6b943
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_array_string:
+    case_key: schema_union_oneof_array_string
+    request: 6bc955b7657d1e43b934295e649f49102e609195216fcb32fb2b249e38b71912
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_array_typed:
+    case_key: schema_union_oneof_array_typed
+    request: 968b1257bcb0b7df8f94dd26c6c68515839170a8236dc09d49b098d681b7d917
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_boolean_reverse_string:
+    case_key: schema_union_oneof_boolean_reverse_string
+    request: dbc8b1c4b7a30c8ce56ae54d0e48889aa78769d6a4ae7fb53ddadc13f0b78429
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_boolean_reverse_typed:
+    case_key: schema_union_oneof_boolean_reverse_typed
+    request: 2ab328dcecdb3d23347c5c60723ba468008f277b77b42b044bdbf142502cd1f9
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_boolean_string:
+    case_key: schema_union_oneof_boolean_string
+    request: 46571fd659fdf48be7f5d0ac999d4253a92fcc677e503078311fd5bdcf0d9fa1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_boolean_typed:
+    case_key: schema_union_oneof_boolean_typed
+    request: eef36eb16468e467bd3291d878d959eb535b773669647c94dba1ef5df212af7f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_integer_reverse_string:
+    case_key: schema_union_oneof_integer_reverse_string
+    request: b408a1b75f92d4c4f10b96e6bbae41b902794af59f0aa8255e1af5e7ec438f8f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_integer_reverse_typed:
+    case_key: schema_union_oneof_integer_reverse_typed
+    request: 933901d2ee891e51d9811a71dd425d8d7f8b311d8fb6221c5db872c1ded27673
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_integer_string:
+    case_key: schema_union_oneof_integer_string
+    request: bc2e12ac5f5f0358e79166dd8a040ab6bb6292d1026cc886194c2e1c396923bc
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_integer_typed:
+    case_key: schema_union_oneof_integer_typed
+    request: 980b50418f5b41952861a84d71a1b804d204465c7e5a786ad357794fa4098a5e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_null_reverse_string:
+    case_key: schema_union_oneof_null_reverse_string
+    request: e7c27aa3bf9a7c0d9ae38e7ccabf0f692baac1748af13472347017d9bb62df10
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_null_reverse_typed:
+    case_key: schema_union_oneof_null_reverse_typed
+    request: 140e37df8a4aedae9cd023121fdb969f8133eda92723a6e1af43098c83e3795b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_null_string:
+    case_key: schema_union_oneof_null_string
+    request: e94f0f4748d31a71ffcc7e272e2a269100dbfa4e3b05f6e6432c1ff97b988ac3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_null_typed:
+    case_key: schema_union_oneof_null_typed
+    request: 6f5ee0d53fe3e21466887fafd7c0c925448e61af94b895354abc851f83742064
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_number_reverse_string:
+    case_key: schema_union_oneof_number_reverse_string
+    request: d4f815d6fb8707dfa62dbe2ba91902adc5b2cf9d3bedecea450353bb1b81fc79
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_number_reverse_typed:
+    case_key: schema_union_oneof_number_reverse_typed
+    request: 8e0afc8ca051241ebf08ab8731ea74a2d93bc8e1705938f10e386a1f97219c8a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_number_string:
+    case_key: schema_union_oneof_number_string
+    request: 937b7a06e3453ffaa961acc9ab3eef6919698f9b5c7a284583146f2f6a0b8e46
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_number_typed:
+    case_key: schema_union_oneof_number_typed
+    request: f4cc0389d0904bde5f15bb501def61e3e2bb1d9a6ed900211f6c65955f700b27
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_object_reverse_string:
+    case_key: schema_union_oneof_object_reverse_string
+    request: a7686cec0627ec4563d2bfced67bcec42391f903f9acc0646a803d39accb3ca3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_object_reverse_typed:
+    case_key: schema_union_oneof_object_reverse_typed
+    request: e2289b98f5333d91b48a39143752a33c580e5a7757c9004ae3620891c3ed8c76
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_object_string:
+    case_key: schema_union_oneof_object_string
+    request: 1636d049cc966092e62a8ca67fb57c3b35c29763fc71c6deb520a692c513614e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  schema_union_oneof_object_typed:
+    case_key: schema_union_oneof_object_typed
+    request: 5eef14bb4b340848e5e0ac23b700021a693f7da06ac15c15bece9f32ef7d4d61
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  structured_response_after_reasoning:
+    case_key: structured_response_after_reasoning
+    request: 3d352e75afc03e25aba4d13708959faab9b2e432cc9b16bcfbe28da74a5edc94
+    unavailable:
+      code: unsupported_request_mode
+      detail: Parser-only batch capture does not execute structural-tag generation constraints.
+    suppress_inherited_from: true
+  text_before_tool:
+    case_key: text_before_tool
+    request: 32a2c9ae4ee1e5cb9ad4644cce20a88e499c2d2b5118ef1304084901f1cd1cc3
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  text_between_calls:
+    case_key: text_between_calls
+    request: 8bac86fa07c14cbbea32bd50a4a895e18140abfa1cd15df14c3c4e2cf7df9b8c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  text_only:
+    case_key: text_only
+    request: fdaacaaa30d88df8112f3a478ba90e38c270c705fc0ba36e6adbe9c711c2a5c0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  text_reason_tool_text_reason_tool:
+    case_key: text_reason_tool_text_reason_tool
+    request: 3f5a6672e64c6ec93ae1532ddbd791ba613c7c727033fde4fcf84b148c1ede70
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  text_sandwich:
+    case_key: text_sandwich
+    request: 9c5b70a139f3b8fb6a9d158fc60fb29332b5ac4370e86b16e9fc70070dad4cb0
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  tool_block_never_closed_then_text:
+    case_key: tool_block_never_closed_then_text
+    request: 6fd6d7605f9ba0e2e5bd92cb1be743a95f9e4bc0c1005b83ce297530b5316a05
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  tool_body_whitespace:
+    case_key: tool_body_whitespace
+    request: 63903da5d22b28f0a82578695bdd05b48c9273fb193e86977914397348b3e64e
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  tool_markup_only_emits_nothing:
+    case_key: tool_markup_only_emits_nothing
+    request: 53381a24f62cc4a4cdea0bac23fd7797eb247acdef2472bc4b6a39d8221a2346
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  tool_no_close:
+    case_key: tool_no_close
+    request: 088ace30c8072d8eecaf333eb31373f14b563ecdbd5c30b1754eb4c8e00e25fa
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  tool_only:
+    case_key: tool_only
+    request: 43921ce505d4030c97f5518c9e93e52f41ffaac3fbcd3743353fdc5a48e35963
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  trailing_text_after_tool:
+    case_key: trailing_text_after_tool
+    request: a86e313d7f03c7945ca096c5ec7bf50579d13013669a6f11175821de7f32baa7
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  truncated_tool_eof:
+    case_key: truncated_tool_eof
+    request: 16c7c4a57c50d46a1d60f6a51893facd75cb5a8381c70bf5b2e5addd8e38450a
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  two_adjacent_reason_spans:
+    case_key: two_adjacent_reason_spans
+    request: d9f6c3a6e43d7ed894f4a71a46c786330d154c69bd668d95bbd8ec4346660c93
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  two_calls:
+    case_key: two_calls
+    request: c552c3d21d0d5fe3bb32c7e91cecaa324ffefb2819aff2b53d2c0f6fc410891b
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  two_calls_same_name:
+    case_key: two_calls_same_name
+    request: b486400806f33c0f2239ceee6c3a18005bc6286f3cafac9842a6b97bf4603da1
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  two_reason_spans:
+    case_key: two_reason_spans
+    request: cb60cb0a2eab004350738280dd3a2fb6ae9a2f2782e44a5be4a9df428228139f
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  unused_reference_graph_parameter_types:
+    case_key: unused_reference_graph_parameter_types
+    request: bf8ed12f44478c32a2b915429e82029288395203ca851505bfda341cb233cd75
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  xml_string_type_double_quoted_object:
+    case_key: xml_string_type_double_quoted_object
+    request: c6bf3fcef73bf7b388e4caa0df38d401eef560872a73b92cb7b07c7a69070a6c
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
+    request: f2751e639d761da4e38f1ab8dbd57d037a97b584136209b73b3358d82cdc346d
+    unavailable:
+      code: unsupported_family
+      detail: No registered reasoning + batch tool parser for this family
+    suppress_inherited_from: true

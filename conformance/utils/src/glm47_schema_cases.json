@@ -20,6 +20,15 @@
     ]
   },
   {
+    "name": "declared_integer_boolean_number_order",
+    "schema": {
+      "type": ["integer", "boolean", "number"]
+    },
+    "value": 1,
+    "raw": "1",
+    "invalid_raw": ["wrong"]
+  },
+  {
     "name": "declared_number",
     "schema": {
       "type": "number"
@@ -1918,5 +1927,26 @@
     "value": 42,
     "raw": "42",
     "grammar": false
+  },
+  {
+    "name": "enum_inferred_integer",
+    "schema": {"enum": [1, 2, 4]},
+    "value": 2,
+    "raw": "2",
+    "invalid_raw": ["3"]
+  },
+  {
+    "name": "const_numeric_bare",
+    "schema": {"const": 3},
+    "value": 3,
+    "raw": "3",
+    "invalid_raw": ["4"]
+  },
+  {
+    "name": "enum_const_narrowing",
+    "schema": {"enum": [1, "auto"], "const": 1},
+    "value": 1,
+    "raw": "1",
+    "invalid_raw": ["auto", "2"]
   }
 ]

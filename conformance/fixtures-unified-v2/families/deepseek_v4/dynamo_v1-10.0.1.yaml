@@ -1,0 +1,4322 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 10.0.1
+    source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+    adapter_sha256: ebd9120a8bf7a6cf588a696044b5d78dd136015b2f2140d4f15ff7961319dc8b
+    job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+    git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+document:
+  mode: unified
+changes:
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+  arg_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_unicode:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: São Paulo 東京
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: Hello there. The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking the forecast
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: quoted
+  empty_args:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+  glm_ref_json_looking_strings:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+  glm_ref_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+  guided_json_after_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_array_argument:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_escaped_string_args:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_gt_in_argument_bare_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_gt_in_argument_trailing_close:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_gt_in_argument_wrapped:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_invalid_call:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_list_with_broken_element:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_malformed_json:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_marker_inside_argument:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_named_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_narrated_invoke_in_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_narrated_prefix_inside_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_native_markup_only:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_orphan_reason_close_before_payload:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_orphan_tool_close_before_payload:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_partial_calls:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_prose_before_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_quoted_bare_header_after_payload:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_quoted_bare_header_in_answer:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_required_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_schema_error_nameless_element_bare_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_schema_error_nameless_element_trailing_close:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_schema_error_nameless_element_wrapped:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_schema_error_not_a_call_bare_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_schema_error_not_a_call_trailing_close:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_schema_error_not_a_call_wrapped:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_stray_prefix_before_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_syntax_error_bare_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_syntax_error_trailing_close:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_syntax_error_wrapped:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_tool_close_after_payload:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_tool_open_before_payload:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_two_calls:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_json_wrapped_in_tool_markup:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_quoted_reasoning_closer_named:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_quoted_reasoning_closer_required:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_response_quoted_control_braces_named:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_response_quoted_control_braces_required:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  guided_response_rejected_header_quote_ownership:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  local_schema_id_preserves_type:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments:
+            value: '{"x":"unfinished'
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  native_quoted_control_in_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_quoted_control_in_response:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_quoted_control_then_call:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_quoted_incomplete_header:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_single_quote_contraction_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_single_quote_contraction_response:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_single_quoted_word_control:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_unmatched_quote_then_call:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  nullable_reference_alias_literals:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+  orphan_close_after_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check that.
+  prefilled_reasoning_redundant_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_then_text:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_truncated:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_with_guided_json:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_with_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_response_reasoning_markers_literal:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  qwen_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.Now answer.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: reconsider
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: reconsider
+        - kind: text
+          text: 'Logging now: '
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_then_content:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ABC
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_unterminated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking but stream ends
+  retired__30_14:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  retired__31_33:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  retired__31_38:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  retired__31_40:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  schema_const_array_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+  schema_const_array_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+  schema_const_array_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+  schema_const_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+  schema_const_boolean_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+  schema_const_boolean_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+  schema_const_boolean_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+  schema_const_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+  schema_const_entity_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+  schema_const_entity_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+  schema_const_entity_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+  schema_const_entity_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+  schema_const_null_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+  schema_const_null_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+  schema_const_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+  schema_const_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+  schema_const_number_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_const_number_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_const_number_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_const_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_const_object_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+  schema_const_object_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+  schema_const_object_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+  schema_const_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+  schema_const_plain_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_const_plain_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_const_plain_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_const_plain_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_const_quoted_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+  schema_const_quoted_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+  schema_const_quoted_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+  schema_const_quoted_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+  schema_const_space_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_space_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_space_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_space_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_unicode_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+  schema_const_unicode_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+  schema_const_unicode_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+  schema_const_unicode_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+  schema_declared_array:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_declared_boolean:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_declared_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_declared_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_declared_number:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_declared_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_declared_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: plain
+  schema_enum_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_enum_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_escaped_ref_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+  schema_id_direct_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_integer_const_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_intersection_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_intersection_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_null_union_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_nullable_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_object_const_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+  schema_percent_ref_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_ref_sibling_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_ref_union_anyof_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+  schema_ref_union_anyof_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_ref_union_oneof_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+  schema_ref_union_oneof_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_type_array_integer_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_type_array_integer_null_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_type_array_string_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+  schema_union_anyof_array_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_anyof_array_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_anyof_boolean_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_anyof_boolean_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_anyof_integer_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_anyof_integer_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_anyof_null_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_union_anyof_null_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_union_anyof_number_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_anyof_number_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_anyof_object_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_anyof_object_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_anyof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_oneof_array_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_oneof_array_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_oneof_boolean_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_oneof_boolean_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_oneof_integer_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_oneof_integer_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_oneof_null_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_union_oneof_null_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+  schema_union_oneof_number_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_oneof_number_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_oneof_object_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_oneof_object_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+  schema_union_oneof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_only:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The answer is 42, no tools needed.
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: check Acheck B
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_markup_only_emits_nothing:
+    observation:
+      value:
+        assembled: []
+  tool_no_close:
+    observation:
+      value:
+        assembled: []
+  tool_only:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first
+
+            second'
+        - kind: text
+          text: done
+  two_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  two_calls_same_name:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thoughtsecond thought
+        - kind: text
+          text: interlude done
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+metadata_changes:
+  arg_json_null_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_json_null_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_json_null_nullable:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_json_null_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_marker_in_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: run
+        arguments: {}
+  arg_string_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_enum:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_sibling_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_sibling_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_union:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_string_null_untyped_branch:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+  arg_unicode:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: São Paulo 東京
+  content_then_reason:
+    batch_final:
+      reasoning_text: let me recall
+      normal_text: Hello there. The capital is Paris.
+      calls: []
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: checking the forecast
+      normal_text: 'Sure, one sec. '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    batch_final:
+      reasoning_text: quoted
+      normal_text: ''
+      calls: []
+  empty_args:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments: {}
+  glm_ref_encoded_targets:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          space: 42
+          utf8_plus: 42
+          pointer: 42
+  glm_ref_json_looking_strings:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          object_text: '{"x":1}'
+          array_text: '[1,2]'
+          quoted_text: '"hello"'
+          inline_text: '{"x":1}'
+  glm_ref_object:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          payload:
+            x: 1
+  glm_ref_scalar_types:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          count: 42
+          ratio: 3.5
+          flag: true
+          narrowed: 42
+  interstitial_text:
+    batch_final:
+      reasoning_text: a
+      normal_text: 'Here you go: '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  local_schema_id_preserves_type:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          count: 42
+  malformed_json_then_two_valid_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: bad
+        arguments:
+          value: '{"x":"unfinished'
+      - name: echo
+        arguments:
+          value: é
+      - name: echo
+        arguments:
+          value: Café
+  narrated_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  native_quoted_control_in_reasoning:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: The literal "
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal "<｜DSML｜tool_calls>" marker is part of the explanation.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <｜DSML｜tool_calls>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: The literal "
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  native_single_quote_contraction_reasoning:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: 'The literal ''doesn''t '
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: The literal 'doesn't <｜DSML｜tool_calls> marker' stays quoted.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <｜DSML｜tool_calls>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  nullable_reference_alias_literals:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          const_text: 'null'
+          enum_text: 'null'
+  orphan_close_after_prose:
+    batch_final:
+      reasoning_text: ''
+      normal_text: I will check that.
+      calls: []
+  prefilled_reasoning_redundant_opener:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: checking weather
+          normal_text: ''
+          calls:
+          - name: get_weather
+            arguments:
+              city: London
+        capture_input:
+          input: <think>checking weather</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">London</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <think>
+          - delta_text: checking weather
+          - delta_text: </think>
+          - delta_text: <｜DSML｜tool_calls>
+          - delta_text: <｜DSML｜invoke name="get_weather">
+          - delta_text: <｜DSML｜parameter name="city" string="true">
+          - delta_text: London
+          - delta_text: </｜DSML｜parameter>
+          - delta_text: </｜DSML｜invoke>
+          - delta_text: </｜DSML｜tool_calls>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  prefilled_reasoning_then_text:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: no tool needed
+          normal_text: The answer is 42.
+          calls: []
+        capture_input:
+          input: no tool needed</think>The answer is 42.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: no tool needed
+          - delta_text: </think>
+          - delta_text: The answer is 42.
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  prefilled_reasoning_then_text_then_tool:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: weighing options
+          normal_text: 'Here''s what I found: '
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: 'weighing options</think>Here''s what I found: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: weighing options
+          - delta_text: </think>
+          - delta_text: 'Here''s what I found: '
+          - delta_text: <｜DSML｜tool_calls>
+          - delta_text: <｜DSML｜invoke name="get_weather">
+          - delta_text: <｜DSML｜parameter name="city" string="true">
+          - delta_text: Paris
+          - delta_text: </｜DSML｜parameter>
+          - delta_text: </｜DSML｜invoke>
+          - delta_text: </｜DSML｜tool_calls>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  prefilled_reasoning_truncated:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: analyzing data
+          normal_text: ''
+          calls: []
+        capture_input:
+          input: analyzing data</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Par
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: length
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: analyzing data
+          - delta_text: </think>
+          - delta_text: <｜DSML｜tool_calls>
+          - delta_text: <｜DSML｜invoke name="get_weather">
+          - delta_text: <｜DSML｜parameter name="city" string="true">
+          - delta_text: Par
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  prefilled_reasoning_with_tool:
+    verified_recapture:
+      result:
+        batch_final:
+          reasoning_text: checking weather
+          normal_text: ''
+          calls:
+          - name: get_weather
+            arguments:
+              city: Paris
+        capture_input:
+          input: checking weather</think><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: checking weather
+          - delta_text: </think>
+          - delta_text: <｜DSML｜tool_calls>
+          - delta_text: <｜DSML｜invoke name="get_weather">
+          - delta_text: <｜DSML｜parameter name="city" string="true">
+          - delta_text: Paris
+          - delta_text: </｜DSML｜parameter>
+          - delta_text: </｜DSML｜invoke>
+          - delta_text: </｜DSML｜tool_calls>
+          - delta_text: ‹finish›
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+      provenance:
+        version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        implementation: dynamo_v1
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      resolution: historical_adapter_unsupported
+  qwen_string_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  reason_after_tool:
+    batch_final:
+      reasoning_text: Look it up.Now answer.
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  reason_between_calls:
+    batch_final:
+      reasoning_text: mid
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_interleaved:
+    batch_final:
+      reasoning_text: AB
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_markup_in_arg:
+    batch_final:
+      reasoning_text: reconsider
+      normal_text: ''
+      calls:
+      - name: log
+        arguments:
+          note: ''
+  reason_markup_in_arg_with_text:
+    batch_final:
+      reasoning_text: reconsider
+      normal_text: 'Logging now: '
+      calls:
+      - name: log
+        arguments:
+          note: ''
+  reason_only:
+    batch_final:
+      reasoning_text: just thinking, no answer
+      normal_text: ''
+      calls: []
+  reason_then_content:
+    batch_final:
+      reasoning_text: let me think
+      normal_text: The answer is 42.
+      calls: []
+  reason_then_tool:
+    batch_final:
+      reasoning_text: Check weather.
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  reason_tool_reason_tool_reason:
+    batch_final:
+      reasoning_text: ABC
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: AB
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_unterminated:
+    batch_final:
+      reasoning_text: thinking but stream ends
+      normal_text: ''
+      calls: []
+  schema_const_array_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_array_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_array_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_boolean_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_boolean_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_boolean_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_entity_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_entity_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_entity_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_entity_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_null_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'null'
+  schema_const_null_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'null'
+  schema_const_null_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'null'
+  schema_const_null_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'null'
+  schema_const_number_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_number_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_number_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_object_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_object_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_object_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_plain_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_const_plain_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_const_plain_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_const_plain_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_const_quoted_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_quoted_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_quoted_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_quoted_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_space_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: spaced
+  schema_const_space_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: spaced
+  schema_const_space_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: spaced
+  schema_const_space_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: spaced
+  schema_const_unicode_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: café
+  schema_const_unicode_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: café
+  schema_const_unicode_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: café
+  schema_const_unicode_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: café
+  schema_declared_array:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+          - 1
+          - 2
+  schema_declared_boolean:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: true
+  schema_declared_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_declared_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_declared_number:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 3.5
+  schema_declared_object:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            x: 1
+  schema_declared_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: plain
+  schema_enum_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_enum_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_escaped_ref_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_id_direct_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_integer_const_ambiguous:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_intersection_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_intersection_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_null_union_ambiguous:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_nullable_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_object_const_union:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_percent_ref_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_ref_sibling_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_ref_union_anyof_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: -7
+  schema_ref_union_anyof_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_ref_union_oneof_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: -7
+  schema_ref_union_oneof_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_type_array_integer_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_type_array_integer_null_null:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_type_array_string_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_union_anyof_array_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_array_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+          - 1
+          - 2
+  schema_union_anyof_array_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+          - 1
+          - 2
+  schema_union_anyof_boolean_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: true
+  schema_union_anyof_boolean_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: true
+  schema_union_anyof_integer_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_union_anyof_integer_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_integer_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_union_anyof_null_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_null_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_anyof_null_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_null_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_anyof_number_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_number_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 3.5
+  schema_union_anyof_number_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 3.5
+  schema_union_anyof_object_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_object_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            x: 1
+  schema_union_anyof_object_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_anyof_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            x: 1
+  schema_union_oneof_array_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_array_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+          - 1
+          - 2
+  schema_union_oneof_array_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+          - 1
+          - 2
+  schema_union_oneof_boolean_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: true
+  schema_union_oneof_boolean_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: true
+  schema_union_oneof_integer_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_union_oneof_integer_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_integer_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 42
+  schema_union_oneof_null_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_null_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_oneof_null_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_null_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_oneof_number_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_number_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 3.5
+  schema_union_oneof_number_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 3.5
+  schema_union_oneof_object_reverse_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_object_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            x: 1
+  schema_union_oneof_object_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: auto
+  schema_union_oneof_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            x: 1
+  text_before_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'On it: '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  text_between_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_only:
+    batch_final:
+      reasoning_text: ''
+      normal_text: The answer is 42, no tools needed.
+      calls: []
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: check Acheck B
+      normal_text: 'Sure. '
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_sandwich:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'Before. '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  tool_block_never_closed_then_text:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  tool_in_reason:
+    batch_final:
+      reasoning_text: 'I should check. '
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  tool_in_reason_with_text:
+    batch_final:
+      reasoning_text: 'I should check. '
+      normal_text: 'Sure. '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  tool_markup_only_emits_nothing:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  tool_no_close:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls: []
+  tool_only:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  trailing_text_after_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  truncated_tool_eof:
+    batch_final:
+      reasoning_text: ok
+      normal_text: ''
+      calls: []
+  two_adjacent_reason_spans:
+    batch_final:
+      reasoning_text: 'first
+
+        second'
+      normal_text: done
+      calls: []
+  two_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  two_calls_same_name:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+      - name: get_weather
+        arguments:
+          city: Tokyo
+  two_reason_spans:
+    batch_final:
+      reasoning_text: first thoughtsecond thought
+      normal_text: interlude done
+      calls: []
+  unused_reference_graph_parameter_types:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          count: 42
+          flag: false
+          text: 'null'
+document_overrides:
+  guided_json_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_array_argument:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_escaped_string_args:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_gt_in_argument_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_gt_in_argument_trailing_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_gt_in_argument_wrapped:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_invalid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_list_with_broken_element:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_malformed_json:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_marker_inside_argument:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_named_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_narrated_invoke_in_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_narrated_prefix_inside_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_native_markup_only:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_orphan_reason_close_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_orphan_tool_close_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_partial_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_prose_before_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_quoted_bare_header_after_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_quoted_bare_header_in_answer:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_required_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_schema_error_nameless_element_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_schema_error_nameless_element_trailing_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_schema_error_nameless_element_wrapped:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_schema_error_not_a_call_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_schema_error_not_a_call_trailing_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_schema_error_not_a_call_wrapped:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_stray_prefix_before_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_syntax_error_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_syntax_error_trailing_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_syntax_error_wrapped:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_tool_close_after_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_tool_open_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_two_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_json_wrapped_in_tool_markup:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_quoted_reasoning_closer_named:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_quoted_reasoning_closer_required:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  guided_response_rejected_header_quote_ownership:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  prefilled_reasoning_with_guided_json:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  prefilled_response_reasoning_markers_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  retired__30_14:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  retired__31_33:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  retired__31_38:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  retired__31_40:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
+        adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+        job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null

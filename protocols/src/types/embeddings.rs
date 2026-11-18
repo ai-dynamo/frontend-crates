@@ -42,11 +42,45 @@ pub use async_openai::types::embeddings::*;
 ///
 /// [`Float`]: EmbeddingVector::Float
 /// [`Base64`]: EmbeddingVector::Base64
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum EmbeddingVector {
     Float(Vec<f32>),
     Base64(String),
+}
+
+impl<'de> Deserialize<'de> for EmbeddingVector {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct VectorVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for VectorVisitor {
+            type Value = EmbeddingVector;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("an array of floats or a base64 string")
+            }
+
+            fn visit_seq<A: serde::de::SeqAccess<'de>>(
+                self,
+                seq: A,
+            ) -> Result<Self::Value, A::Error> {
+                // Deserialize f32 directly: untagged-enum buffering loses the
+                // numeric type when serde_json arbitrary_precision is enabled.
+                Vec::<f32>::deserialize(serde::de::value::SeqAccessDeserializer::new(seq))
+                    .map(EmbeddingVector::Float)
+            }
+
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                Ok(EmbeddingVector::Base64(value.to_owned()))
+            }
+
+            fn visit_string<E: serde::de::Error>(self, value: String) -> Result<Self::Value, E> {
+                Ok(EmbeddingVector::Base64(value))
+            }
+        }
+
+        deserializer.deserialize_any(VectorVisitor)
+    }
 }
 
 impl EmbeddingVector {

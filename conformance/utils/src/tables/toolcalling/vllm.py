@@ -32,6 +32,7 @@ from vllm.entrypoints.openai.parser.harmony_utils import get_encoding
 from vllm.tokenizers import TokenizerLike
 
 from ..common import ParseResult, decode_arguments, decode_stream_calls
+from peer_modules import VllmTextTokenizer as _StubTokenizer
 
 _HARMONY_ASSISTANT_START = "<|start|>assistant"
 _HARMONY_COMMENTARY_CALL_RE = re.compile(
@@ -67,36 +68,6 @@ class _TokenIdToolParser(Protocol):
     ) -> Any:
         ...
 
-
-class _OmnivorousVocab(dict):
-    """Returns a non-None synthetic ID for any token lookup.
-
-    Several vLLM parsers (qwen3_coder, glm47_moe, minimax_m2, deepseekv31,
-    etc.) call `self.vocab.get(token_string)` at __init__ and refuse to
-    construct if the result is `None`. Real tokenizers return real IDs,
-    but `extract_tool_calls()` (text mode) only uses the IDs to compare
-    against `delta_token_ids`, which we never pass — so any non-None int
-    works.
-    """
-
-    def get(self, key, default=None):  # type: ignore[override]
-        return 1
-
-
-_STUB_VOCAB = _OmnivorousVocab()
-
-
-class _StubTokenizer:
-    """Truthy placeholder for vLLM parsers that do text-based extraction.
-
-    Most vLLM `extract_tool_calls()` implementations don't actually need a
-    tokenizer, but the parser __init__s look up special-token IDs via
-    `self.vocab.get(...)`. We return synthetic non-None IDs to satisfy
-    those checks; the IDs aren't used during text extraction.
-    """
-
-    def get_vocab(self) -> dict[str, int]:
-        return _STUB_VOCAB
 
 
 def _harmony_token_ids(raw_text: str) -> list[int]:

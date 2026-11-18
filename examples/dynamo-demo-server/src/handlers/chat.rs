@@ -77,6 +77,7 @@ pub async fn handler(
             calls
                 .into_iter()
                 .map(|tc| ChatCompletionMessageToolCall {
+                    custom: None,
                     id: tc.id,
                     r#type: FunctionType::Function,
                     function: FunctionCall {
@@ -151,6 +152,7 @@ fn make_stream(
             // Stream tool calls
             for (i, tc) in calls.into_iter().enumerate() {
                 let chunk_tc = ChatCompletionMessageToolCallChunk {
+                    custom: None,
                     index: i as u32,
                     id: Some(tc.id),
                     r#type: Some(FunctionType::Function),

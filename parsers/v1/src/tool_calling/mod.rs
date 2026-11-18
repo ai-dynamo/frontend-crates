@@ -3,6 +3,7 @@
 
 use serde_json::Value;
 
+pub(crate) mod code_spans;
 pub mod config;
 pub mod dsml;
 pub mod gemma4;

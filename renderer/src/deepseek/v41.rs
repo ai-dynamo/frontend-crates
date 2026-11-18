@@ -6,7 +6,7 @@
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
-use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
+use super::common::{ThinkingMode, reasoning_text, resolve_thinking_mode, to_json};
 use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
 use crate::RenderedPrompt;
 
@@ -20,10 +20,23 @@ fn validate_text(text: &str) -> Result<&str> {
     Ok(text)
 }
 
+/// Mid-conversation system messages count as user turns. As in the reference
+/// encoder, user messages containing only tool results do not start a new turn.
 pub(super) fn find_last_user_index(messages: &[Value]) -> Option<usize> {
     messages.iter().enumerate().rposition(|(index, message)| {
         let role = message.get("role").and_then(Value::as_str);
-        role == Some("user") || (role == Some("system") && index > 0)
+        if !(role == Some("user") || (role == Some("system") && index > 0)) {
+            return false;
+        }
+        match message.get("content_blocks").and_then(Value::as_array) {
+            Some(blocks) if !blocks.is_empty() => blocks.iter().any(|block| {
+                matches!(
+                    block.get("type").and_then(Value::as_str),
+                    Some("text" | "image" | "image_url")
+                )
+            }),
+            _ => true,
+        }
     })
 }
 
@@ -187,10 +200,7 @@ fn normalize_content(messages: &mut [Value]) -> Result<()> {
             "DeepSeek V4.1 expects OpenAI content blocks in content"
         );
         ensure!(
-            !message
-                .get("reasoning_content")
-                .and_then(Value::as_str)
-                .is_some_and(|text| text.contains(IMAGE_PLACEHOLDER)),
+            !reasoning_text(message.get("reasoning_content")).contains(IMAGE_PLACEHOLDER),
             "Images must be supplied as image content blocks, not literal image placeholders"
         );
         if message.get("role").and_then(Value::as_str) == Some("developer") {
@@ -259,6 +269,7 @@ pub fn encode_messages(
         thinking_mode,
         drop_thinking,
         reasoning_effort,
+        true,
     )
     .map(RenderedPrompt::into_text)
 }
@@ -268,6 +279,7 @@ fn encode_owned_messages(
     thinking_mode: ThinkingMode,
     drop_thinking: bool,
     reasoning_effort: u8,
+    add_generation_prompt: bool,
 ) -> Result<RenderedPrompt> {
     ensure!(
         (1..=100).contains(&reasoning_effort),
@@ -286,7 +298,10 @@ fn encode_owned_messages(
         thinking_mode,
         true,
         drop_thinking,
-        Encoding::V41(reasoning_effort),
+        Encoding::V41 {
+            effort: reasoning_effort,
+            add_generation_prompt,
+        },
     )
 }
 
@@ -297,7 +312,7 @@ pub struct DeepSeekV41Formatter;
 
 impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
     fn supports_add_generation_prompt(&self) -> bool {
-        false
+        true
     }
 
     fn media_message_order(&self, request: &dyn crate::OAIChatLikeRequest) -> Option<Vec<usize>> {
@@ -357,12 +372,13 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                     75
                 }
                 Some("low") => 50,
+                Some("medium") => 62,
                 Some("high") => 75,
                 Some("max") => 100,
                 _ => value
                     .as_u64()
                     .filter(|v| (1..=100).contains(v))
-                    .context("DeepSeek V4.1 reasoning effort must be low, high, max, none, or an integer within 1–100")?
+                    .context("DeepSeek V4.1 reasoning effort must be low, medium, high, max, none, or an integer within 1–100")?
                     as u8,
             },
         };
@@ -410,6 +426,12 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                 messages[0]["response_format"] = response_format;
             }
         }
-        encode_owned_messages(messages, thinking_mode, drop_thinking, budget)
+        encode_owned_messages(
+            messages,
+            thinking_mode,
+            drop_thinking,
+            budget,
+            req.should_add_generation_prompt(),
+        )
     }
 }

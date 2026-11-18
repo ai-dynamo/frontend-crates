@@ -12,6 +12,25 @@ Request/response types for OpenAI- and Anthropic-compatible inference servers. B
 - **Anthropic Messages** — fully owned (no upstream equivalent).
 - **Embeddings**, **Images** — re-exported.
 
+## Anthropic image sources and thinking display
+
+`AnthropicImageSource` distinguishes the `Base64 { media_type, data }` and
+`Url { url }` source variants. Both ordinary image blocks and image-bearing tool
+results preserve their source when serialized. The serving layer owns URL policy,
+fetching, and image validation; parsing a URL source does not fetch it.
+
+`ThinkingConfig.display` preserves `ThinkingDisplay::Summarized`,
+`ThinkingDisplay::Omitted`, and the beta `ThinkingDisplay::Updates`. Omission remains
+unset. The serving layer must gate beta support, validate combinations with the
+thinking mode, and apply the display policy. Parsing does not implement progress updates.
+File sources are outside this subset. Non-null, non-boolean `tool_result.is_error` values are
+rejected during deserialization.
+
+Rust callers migrating from the previous image-source struct must construct an
+enum variant and match on it instead of accessing `source_type`, `media_type`, or
+`data` directly. Existing `ThinkingConfig` literals need `display: None` to retain
+their previous behavior.
+
 ## Optional protocol schemas
 
 The `protocol-schema` feature is disabled by default. When enabled, it supplies utoipa 5 `ToSchema`
@@ -104,6 +123,11 @@ A few fields extend the upstream `async-openai` schema:
 - `mm_processor_kwargs` on chat-completion requests (vLLM multimodal)
 - `continuous_usage_stats` on chat stream options
 - `FunctionCall.arguments` accepts both string and object forms
+- Optional `token_id` on selected tokens and `top_logprobs` candidates, preserving
+  vocabulary IDs even when different candidates render to the same text. The
+  locally owned `TopLogprobs` type keeps the upstream fields and adds
+  `token_id: Option<u32>`; Rust callers constructing candidates must set it
+  to `None` when the backend does not supply an ID.
 
 ## Request compatibility and serving policy
 
@@ -126,3 +150,55 @@ also serve callers that need to preserve the original request.
 Run the wire-level regressions for
 [#299](https://github.com/ai-dynamo/frontend-crates/issues/299) with
 `cargo test -p dynamo-protocols --test request_compatibility`.
+
+## Experimental Custom Content
+
+User and tool content keep their established typed Text, ImageUrl, VideoUrl and
+AudioUrl variants (and user InputAudio). Both enums add `Custom(CustomModalityPart)`:
+
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Does this structure "},
+    {"type": "custom", "kind": "chemistry", "fields": {
+      "projected_soft_tokens": {
+        "dtype": "float32", "shape": [2, 4096], "data_base64": "..."
+      },
+      "revision": 1
+    }},
+    {"type": "text", "text": " match the reaction diagram?"},
+    {"type": "image_url", "image_url": {"url": "https://example.org/reaction-diagram.png"}}
+  ]
+}
+```
+
+The custom payload describes projected soft tokens, with application-defined
+JSON/base64 inside `fields`. Its encoding, dimensions, and the image URL are
+illustrative; the protocol crate does not define a tensor codec or transfer API.
+
+`kind` must be non-empty; `fields` must be an object. Its values may contain any
+JSON, including arrays and null. Unknown envelope members are rejected. This crate
+preserves all fields but does not interpret payloads or move bytes. The consumer
+must document the plugin-facing representation. Dynamo forwards the **entire**
+fields map under `multi_modal_data[kind]`; it does not select `fields[kind]`.
+Unknown top-level modality tags remain rejected; use the explicit custom envelope.
+
+Adding enum variants still breaks exhaustive Rust matches. This branch prepares
+protocols **10.0.0**, renderer **10.0.0**, and parsers **11.0.0**; the latter two
+expose protocol types and require coordinated publication. These remain major
+bumps relative to current upstream releases. Tokenizers stays at upstream
+**4.1.1**. These versions are not release qualification or publication.
+
+When rendering chat templates, Custom parts retain their content-array positions
+as `{"type":"custom","kind":"chemistry"}` with `fields` omitted. The consumer's
+model-specific template renders its own marker; clients do not duplicate that
+marker in text. The renderer preserves Custom arrays even for templates with
+string and array branches, and removes payload fields from typed template inputs.
+HTTP parsing still requires `fields`; the payload-free view is internal template
+input, not an alternate HTTP content schema.
+
+With `protocol-schema`, user and tool Custom variants use a schema-only
+`CustomContentPart` containing `type`, `kind`, and `fields`. This keeps the enum's
+discriminator valid under the closed schema; runtime parsing still uses
+`CustomModalityPart`.

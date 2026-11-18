@@ -1,0 +1,80 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.4
+    source_sha256: 338d826f501fc1fdae865bc0c7fe29dc76c815b75b29334cc9f03a5fa3d4b747
+    adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+    job_sha256: e9b337f84aea0d4a1c5129bffd4b2418fe3d683dbdbea66b30e46600433e9d4c
+    git_commit: ca17bb58efd655d289fda1043ec91b4eb63407d8
+document:
+  mode: unified
+changes:
+  tool_body_whitespace:
+    case_key: tool_body_whitespace
+    stimulus:
+      semantic_sha256: f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6
+      inline:
+        input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|> \n\t{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>"
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_weather:0
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: " \n\t{\"city\": \"Paris\"}"
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city": "Paris"}'
+            complete: false
+            kind: tool_call
+            name: get_weather
+        - expected:
+          - arguments: ''
+            complete: true
+            kind: tool_call
+            name: null
+        - expected: []
+        - expected: []
+metadata_changes:
+  tool_body_whitespace:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+    dynamo_v2_capture_provenance:
+      implementation: dynamo_v2
+      version: 0.9.4
+      git_commit: ca17bb58efd655d289fda1043ec91b4eb63407d8
+      source_sha256: 338d826f501fc1fdae865bc0c7fe29dc76c815b75b29334cc9f03a5fa3d4b747
+      adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+      job_sha256: e9b337f84aea0d4a1c5129bffd4b2418fe3d683dbdbea66b30e46600433e9d4c
+      crate_checksum: null
+      reasoning_version: 10.2.4
+      results_sha256: 7b4617f21b60d7f6724f9a7d631b001c5d1446b71854614f4d58a30d3cfdd9c2
+      cargo_lock_sha256: 47bb5ec2466bdc24cf2ac9360b9115b60a370b14f5b73311ecfd13005288abaf
+document_overrides: {}

@@ -119,6 +119,10 @@ changes:
             text: ' --oneline"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.7.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   arg_string_null:
     observation:
       value:
@@ -298,6 +302,10 @@ changes:
             arguments: '{"city": "São Paulo 東京"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.7.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   content_then_reason_then_tool:
     observation:
       value:
@@ -324,6 +332,10 @@ changes:
             arguments: '{"city": "Paris"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.f
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   deepseek_v41_mixed_control_text_in_string:
     observation:
       value:
@@ -397,6 +409,10 @@ changes:
             arguments: '{}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.6.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   glm_ref_encoded_targets:
     observation:
       value:
@@ -978,6 +994,10 @@ changes:
             arguments: '{"city": "Paris"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   local_schema_id_preserves_type:
     observation:
       value:
@@ -1078,6 +1098,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.8.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   nullable_reference_alias_literals:
     observation:
       value:
@@ -1338,6 +1362,10 @@ changes:
         - expected:
           - kind: text
             text: It's 18C.
+    case_key: UNIFIED.11.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_between_calls:
     observation:
       value:
@@ -1374,6 +1402,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.i
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_interleaved:
     observation:
       value:
@@ -1419,6 +1451,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_markup_in_arg:
     observation:
       value:
@@ -1446,6 +1482,10 @@ changes:
             arguments: '"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.12.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_markup_in_arg_with_text:
     observation:
       value:
@@ -1479,6 +1519,10 @@ changes:
         - expected:
           - kind: text
             text: ' done.'
+    case_key: UNIFIED.12.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_then_tool:
     observation:
       value:
@@ -1502,6 +1546,10 @@ changes:
             arguments: '{"city": "Paris"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_tool_reason_tool_reason:
     observation:
       value:
@@ -1556,6 +1604,10 @@ changes:
         - expected:
           - kind: text
             text: </think>
+    case_key: UNIFIED.11.h
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   reason_tool_text_reason_tool:
     observation:
       value:
@@ -1604,6 +1656,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   retired__1_2:
     observation:
       value:
@@ -4368,6 +4424,10 @@ changes:
             arguments: '{"city": "Paris"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.8.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   text_between_calls:
     observation:
       value:
@@ -4402,6 +4462,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.8.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   text_reason_tool_text_reason_tool:
     observation:
       value:
@@ -4453,6 +4517,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.11.j
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   text_sandwich:
     observation:
       value:
@@ -4477,6 +4545,10 @@ changes:
         - expected:
           - kind: text
             text: ' After.'
+    case_key: UNIFIED.8.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -4518,6 +4590,10 @@ changes:
         - expected:
           - kind: text
             text: </think>
+    case_key: UNIFIED.12.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   tool_in_reason_with_text:
     observation:
       value:
@@ -4552,6 +4628,10 @@ changes:
         - expected:
           - kind: text
             text: ' Here you go.'
+    case_key: UNIFIED.12.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   tool_markup_only_emits_nothing:
     case_key: UNIFIED.4.b
     stimulus:
@@ -4578,6 +4658,10 @@ changes:
           - kind: tool_call
             name: null
             arguments: '{"city": "Paris"}'
+    case_key: UNIFIED.5.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   tool_only:
     observation:
       value:
@@ -4596,6 +4680,10 @@ changes:
             arguments: '{"city": "Paris"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.1.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   trailing_text_after_tool:
     observation:
       value:
@@ -4617,6 +4705,10 @@ changes:
         - expected:
           - kind: text
             text: The forecast shows clear skies for the rest of the week.
+    case_key: UNIFIED.8.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   truncated_tool_eof:
     observation:
       value:
@@ -4638,6 +4730,10 @@ changes:
           - kind: tool_call
             name: null
             arguments: '{"city": "Par'
+    case_key: UNIFIED.5.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   two_calls:
     observation:
       value:
@@ -4669,6 +4765,10 @@ changes:
             arguments: '{"y": "2"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.2.a
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   two_calls_same_name:
     observation:
       value:
@@ -4700,6 +4800,10 @@ changes:
             arguments: '{"city": "Tokyo"}'
         - expected: []
         - expected: []
+    case_key: UNIFIED.2.b
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   unused_reference_graph_parameter_types:
     observation:
       value:

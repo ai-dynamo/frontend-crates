@@ -1,0 +1,1117 @@
+{
+ "chat_no_tools": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [],
+  "raw": "657 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "none_with_tools": {
+  "tool_choice": "none",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "657 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_weather": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "4967 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_weather_two": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   },
+   {
+    "type": "function",
+    "function": {
+     "description": "Current time",
+     "name": "get_time",
+     "parameters": {
+      "type": "object",
+      "properties": {}
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "5509 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_weather_noparallel": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": false,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "2829 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "required_weather": {
+  "tool_choice": "required",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "1711 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "required_weather_noparallel": {
+  "tool_choice": "required",
+  "parallel_tool_calls": false,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "978 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "required_weather_two": {
+  "tool_choice": "required",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   },
+   {
+    "type": "function",
+    "function": {
+     "description": "Current time",
+     "name": "get_time",
+     "parameters": {
+      "type": "object",
+      "properties": {}
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "2131 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "named_weather_of_two": {
+  "tool_choice": {
+   "function": {
+    "name": "get_weather"
+   },
+   "type": "function"
+  },
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   },
+   {
+    "type": "function",
+    "function": {
+     "description": "Current time",
+     "name": "get_time",
+     "parameters": {
+      "type": "object",
+      "properties": {}
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "978 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_rich": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Book a table",
+     "name": "book_table",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "city": {
+        "type": "string",
+        "description": "City"
+       },
+       "guests": {
+        "type": "integer"
+       },
+       "budget": {
+        "type": "number",
+        "minimum": 0
+       },
+       "outdoor": {
+        "type": "boolean"
+       },
+       "cuisine": {
+        "type": "string",
+        "enum": [
+         "thai",
+         "italian",
+         "sushi"
+        ]
+       },
+       "tags": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "window": {
+        "type": "object",
+        "properties": {
+         "start": {
+          "type": "string"
+         },
+         "end": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "start"
+        ]
+       },
+       "notes": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "city",
+       "guests"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "21181 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "required_rich_noparallel": {
+  "tool_choice": "required",
+  "parallel_tool_calls": false,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Book a table",
+     "name": "book_table",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "city": {
+        "type": "string",
+        "description": "City"
+       },
+       "guests": {
+        "type": "integer"
+       },
+       "budget": {
+        "type": "number",
+        "minimum": 0
+       },
+       "outdoor": {
+        "type": "boolean"
+       },
+       "cuisine": {
+        "type": "string",
+        "enum": [
+         "thai",
+         "italian",
+         "sushi"
+        ]
+       },
+       "tags": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "window": {
+        "type": "object",
+        "properties": {
+         "start": {
+          "type": "string"
+         },
+         "end": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "start"
+        ]
+       },
+       "notes": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "city",
+       "guests"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "9108 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_triangle": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "triangle_properties_get",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "side1": {
+        "type": "integer"
+       },
+       "side2": {
+        "type": "integer"
+       },
+       "side3": {
+        "type": "integer"
+       },
+       "get_area": {
+        "type": "boolean"
+       },
+       "get_perimeter": {
+        "type": "boolean"
+       },
+       "get_angles": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "side1",
+       "side2",
+       "side3"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "12751 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_loose_additional": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "free_form",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "q": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "q"
+      ],
+      "additionalProperties": true
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "3327 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_loose_maxlength": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "short_text",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "q": {
+        "type": "string",
+        "maxLength": 10
+       }
+      },
+      "required": [
+       "q"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "3327 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_no_parameters": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "ping",
+     "strict": false
+    }
+   }
+  ],
+  "raw": "3943 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_nullable_defs": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "configure",
+     "parameters": {
+      "type": "object",
+      "$defs": {
+       "Level": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3
+       }
+      },
+      "properties": {
+       "level": {
+        "$ref": "#/$defs/Level"
+       },
+       "retries": {
+        "type": "integer",
+        "nullable": true
+       },
+       "mode": {
+        "enum": [
+         "fast",
+         "slow"
+        ]
+       },
+       "kind": {
+        "const": "primary"
+       },
+       "ratio": {
+        "anyOf": [
+         {
+          "type": "number"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "level"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "16067 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_formats": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "schedule",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "on": {
+        "type": "string",
+        "format": "date"
+       },
+       "email": {
+        "type": "string",
+        "format": "email"
+       },
+       "id": {
+        "type": "string",
+        "format": "uuid"
+       },
+       "label": {
+        "type": "string",
+        "format": "color"
+       }
+      },
+      "required": [
+       "on"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "3327 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_pattern": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "lookup",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "code": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}[0-9]{2}$"
+       }
+      },
+      "required": [
+       "code"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "4569 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_required_extra": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "send",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "to": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "to",
+       "body"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "6379 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_sorted_same": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "alpha",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "a": {
+        "type": "string"
+       },
+       "b": {
+        "type": "integer"
+       }
+      },
+      "required": [
+       "a"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "5677 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_optional_only": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "list_items",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "limit": {
+        "type": "integer"
+       },
+       "cursor": {
+        "type": "string"
+       }
+      }
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "7591 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_anyof_str_int": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "find",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "key": {
+        "anyOf": [
+         {
+          "type": "integer"
+         },
+         {
+          "type": "string"
+         }
+        ]
+       }
+      },
+      "required": [
+       "key"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "4621 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_int_enum": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "set_level",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "level": {
+        "type": "integer",
+        "enum": [
+         1,
+         2,
+         3
+        ]
+       }
+      },
+      "required": [
+       "level"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "4771 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_quote_param": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "odd",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "na\"me": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "na\"me"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "3327 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_space_name": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "bad name",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "q": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "q"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "error": "ValueError: tool name 'bad name' cannot be encoded in tool calls"
+ },
+ "auto_strict_unsupported": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "strict_short",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "q": {
+        "type": "string",
+        "maxLength": 10
+       }
+      },
+      "required": [
+       "q"
+      ]
+     },
+     "strict": true
+    }
+   },
+   {
+    "type": "function",
+    "function": {
+     "description": "Weather for a city",
+     "name": "get_weather",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "location": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "location"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "None",
+  "detector": "None"
+ },
+ "auto_string_only_props": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "echo",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "text": {},
+       "note": {
+        "description": "free"
+       }
+      },
+      "required": [
+       "text"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "7001 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_newline_enum": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "pick",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "style": {
+        "type": "string",
+        "enum": [
+         "plain",
+         "two\nlines",
+         " padded "
+        ]
+       }
+      },
+      "required": [
+       "style"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "4711 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "auto_props_none_additional_false": {
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "name": "nothing",
+     "parameters": {
+      "type": "object",
+      "additionalProperties": false
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "4087 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ },
+ "required_mixed_three": {
+  "tool_choice": "required",
+  "parallel_tool_calls": true,
+  "tools": [
+   {
+    "type": "function",
+    "function": {
+     "description": "Book a table",
+     "name": "book_table",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "city": {
+        "type": "string",
+        "description": "City"
+       },
+       "guests": {
+        "type": "integer"
+       },
+       "budget": {
+        "type": "number",
+        "minimum": 0
+       },
+       "outdoor": {
+        "type": "boolean"
+       },
+       "cuisine": {
+        "type": "string",
+        "enum": [
+         "thai",
+         "italian",
+         "sushi"
+        ]
+       },
+       "tags": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       },
+       "window": {
+        "type": "object",
+        "properties": {
+         "start": {
+          "type": "string"
+         },
+         "end": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "start"
+        ]
+       },
+       "notes": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "city",
+       "guests"
+      ]
+     },
+     "strict": false
+    }
+   },
+   {
+    "type": "function",
+    "function": {
+     "description": "Current time",
+     "name": "get_time",
+     "parameters": {
+      "type": "object",
+      "properties": {}
+     },
+     "strict": false
+    }
+   },
+   {
+    "type": "function",
+    "function": {
+     "name": "short_text",
+     "parameters": {
+      "type": "object",
+      "properties": {
+       "q": {
+        "type": "string",
+        "maxLength": 10
+       }
+      },
+      "required": [
+       "q"
+      ]
+     },
+     "strict": false
+    }
+   }
+  ],
+  "raw": "20611 bytes",
+  "detector": "ok",
+  "validated": true,
+  "compiles": true
+ }
+}

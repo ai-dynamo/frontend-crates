@@ -26,6 +26,9 @@ def test_interleaved_release_builds_execute_their_own_binary(tmp_path, monkeypat
             crate = source / "src" / name
             crate.mkdir(parents=True)
             (crate / "Cargo.toml").write_text(f'[package]\nname = "vllm-{name}"\nversion = "0.0.0"\n')
+        unified = source / "src/parser/src/unified"
+        unified.mkdir(parents=True)
+        (unified / "mod.rs").write_text("trait UnifiedParser { fn parse_into(&mut self, delta: &str); }\n")
         sources[version] = source
     monkeypatch.setattr(capture, "_vllm_rust_version", lambda source, _parser: source.parent.name)
     if target_mode == "absolute":

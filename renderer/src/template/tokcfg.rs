@@ -7,10 +7,16 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Local};
 use either::Either;
-use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter, value::Kwargs};
+use std::borrow::Cow;
+
+use minijinja::value::{Kwargs, StringInput, from_args};
+use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
 use serde::{Deserialize, Serialize};
 
-use crate::python::{PyFloats, PyJsonFormatter, python_float_repr};
+use crate::python::{
+    PyFloats, PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace,
+    python_splitlines,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -79,6 +85,16 @@ pub struct ChatTemplate {
     tokenizer_class: Option<String>,
     truncation_size: Option<String>,
     use_default_system_prompt: Option<bool>,
+
+    /// The `added_tokens` of the model's `tokenizer.json`; see
+    /// [`ChatTemplate::with_tokenizer_json`].
+    #[serde(skip)]
+    tokenizer_added_tokens: Vec<AddedTokensDecoder>,
+
+    /// See [`ChatTemplate::with_request_control_tokens_as_text`]; `None` is the
+    /// default, on.
+    #[serde(skip)]
+    pub(crate) request_control_tokens_as_text: Option<bool>,
 }
 
 impl ChatTemplate {
@@ -101,6 +117,76 @@ impl ChatTemplate {
             Either::Left(ref lit) => Some(lit.clone()),
             Either::Right(ref added) => Some(added.content.clone()),
         }
+    }
+
+    /// Add the `added_tokens` of the model's `tokenizer.json` to
+    /// [`ChatTemplate::added_token_spellings`]. Some repos declare no
+    /// `added_tokens_decoder` in `tokenizer_config.json` (DeepSeek V3/R1,
+    /// GLM-5, Gemma 4), so their chat markers are listed only there.
+    pub fn with_tokenizer_json(mut self, tokenizer_json: &str) -> anyhow::Result<Self> {
+        #[derive(Deserialize)]
+        struct TokenizerJson {
+            #[serde(default)]
+            added_tokens: Vec<AddedTokensDecoder>,
+        }
+        self.tokenizer_added_tokens =
+            serde_json::from_str::<TokenizerJson>(tokenizer_json)?.added_tokens;
+        Ok(self)
+    }
+
+    /// Whether control-token spellings in request text render as ordinary
+    /// text, so that only the template's own markers encode as control tokens.
+    /// On by default; `false` turns it off, except under a template with
+    /// Harmony framing, which always renders this way.
+    ///
+    /// The spellings come back as ordinary segments of
+    /// [`OAIPromptFormatter::render_prompt`](crate::OAIPromptFormatter::render_prompt),
+    /// to encode with [`crate::RenderedPrompt::encode_segments`]; `render`
+    /// returns the same text without them. A model that lists its markers
+    /// only in `tokenizer.json` also needs [`ChatTemplate::with_tokenizer_json`].
+    /// In assistant history, a marker the template itself reads stays a
+    /// control token.
+    pub fn with_request_control_tokens_as_text(mut self, enabled: bool) -> Self {
+        self.request_control_tokens_as_text = Some(enabled);
+        self
+    }
+
+    /// Spellings the tokenizer turns into one added token, each with whether it
+    /// is `special`: every `added_tokens_decoder` entry, the `tokenizer.json`
+    /// `added_tokens` when given, the `additional_special_tokens`, and the
+    /// bos/eos/unk literals. Whitespace-only spellings are dropped; a spelling
+    /// listed twice is special if either entry says so. Sorted for a stable
+    /// result.
+    pub(crate) fn added_token_spellings(&self) -> Vec<(String, bool)> {
+        fn insert(spellings: &mut HashMap<String, bool>, spelling: Option<String>, special: bool) {
+            if let Some(spelling) = spelling
+                && !spelling.trim().is_empty()
+            {
+                *spellings.entry(spelling).or_insert(false) |= special;
+            }
+        }
+        let mut spellings = HashMap::new();
+        for token in self
+            .added_tokens_decoder
+            .iter()
+            .flat_map(HashMap::values)
+            .chain(&self.tokenizer_added_tokens)
+        {
+            insert(
+                &mut spellings,
+                Some(token.content.clone()),
+                token.special.unwrap_or(false),
+            );
+        }
+        for token in self.additional_special_tokens.iter().flatten() {
+            insert(&mut spellings, Some(token.clone()), true);
+        }
+        insert(&mut spellings, self.bos_tok(), true);
+        insert(&mut spellings, self.eos_tok(), true);
+        insert(&mut spellings, self.unk_tok(), true);
+        let mut spellings: Vec<_> = spellings.into_iter().collect();
+        spellings.sort();
+        spellings
     }
 }
 
@@ -144,6 +230,81 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
     }
 }
 
+/// minijinja-contrib's pycompat string methods, with Python's whitespace where
+/// Rust's differs: `strip`, `lstrip`, `rstrip` and `split()` also treat U+001C..U+001F
+/// as whitespace, `isspace` is false for `""`, and `splitlines` ends lines at every
+/// Python line break. HF renders templates through Python, so `m.content.strip()` must
+/// strip what Python strips.
+pub fn python_methods(
+    state: &State,
+    value: &Value,
+    method: &str,
+    args: &[Value],
+) -> Result<Value, Error> {
+    if let Some(s) = value.as_str() {
+        match method {
+            "strip" | "lstrip" | "rstrip" => {
+                let (chars,): (Option<&str>,) = from_args(args)?;
+                if chars.is_none() {
+                    let trimmed = match method {
+                        "strip" => s.trim_matches(is_python_space),
+                        "lstrip" => s.trim_start_matches(is_python_space),
+                        _ => s.trim_end_matches(is_python_space),
+                    };
+                    return Ok(StringInput::new(state, value)?.preserve_safety(trimmed.to_owned()));
+                }
+            }
+            "split" => {
+                let (sep, maxsplit): (Option<&str>, Option<i64>) = from_args(args)?;
+                if sep.is_none() {
+                    let maxsplit = maxsplit.and_then(|n| usize::try_from(n).ok());
+                    return Ok(python_split_whitespace(s, maxsplit)
+                        .into_iter()
+                        .map(|part| {
+                            if value.is_safe() {
+                                Value::from_safe_string(part.to_owned())
+                            } else {
+                                Value::from(part)
+                            }
+                        })
+                        .collect());
+                }
+            }
+            "splitlines" => {
+                let (keepends,): (Option<bool>,) = from_args(args)?;
+                return Ok(python_splitlines(s, keepends.unwrap_or(false))
+                    .into_iter()
+                    .map(|part| {
+                        if value.is_safe() {
+                            Value::from_safe_string(part.to_owned())
+                        } else {
+                            Value::from(part)
+                        }
+                    })
+                    .collect());
+            }
+            "isspace" => {
+                let () = from_args(args)?;
+                return Ok(Value::from(!s.is_empty() && s.chars().all(is_python_space)));
+            }
+            _ => {}
+        }
+    }
+    minijinja_contrib::pycompat::unknown_method_callback(state, value, method, args)
+}
+
+/// Jinja2's `trim` filter, `str.strip(chars)`, with Python's whitespace by default;
+/// see [`python_methods`].
+pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value {
+    match chars {
+        Some(chars) => minijinja::filters::trim(value, Some(chars)),
+        None => {
+            let trimmed = value.as_str().trim_matches(is_python_space).to_owned();
+            value.preserve_safety(trimmed)
+        }
+    }
+}
+
 /// Mirrors HF transformers' `tojson` filter, not stock Jinja2's. Transformers
 /// overrides Jinja's HTML-safe `tojson` with plain
 /// `json.dumps(x, ensure_ascii=False)` in its chat-template environment, and
@@ -152,6 +313,9 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
 /// (`'`, `<`, `>`, `&` stay literal). serde_json leaves non-ASCII unescaped by
 /// default, matching `ensure_ascii=False`.
 pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
+    let value = crate::python::template_json(value).map_err(|err| {
+        Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
+    })?;
     let mut buf = Vec::new();
     let result = if let Ok(indent) = kwargs.get("indent") {
         // Python `json.dumps(indent=n)` separators are `(",", ": ")` with the
@@ -191,7 +355,7 @@ pub fn fromjson(value: Value) -> Result<Value, Error> {
     let parsed: serde_json::Value = serde_json::from_str(text).map_err(|err| {
         Error::new(ErrorKind::InvalidOperation, "cannot parse JSON").with_source(err)
     })?;
-    Ok(Value::from_serialize(&parsed))
+    Ok(crate::python::template_value(&parsed))
 }
 
 pub fn strftime_now(format_str: &str) -> Result<Value, Error> {
@@ -224,7 +388,7 @@ mod fromjson_tests {
     #[test]
     fn passes_through_non_string() {
         // Already-decoded values must survive a defensive `| fromjson`.
-        let already = Value::from_serialize(serde_json::json!({"a": 1}));
+        let already = crate::python::template_value(&serde_json::json!({"a": 1}));
         let out = fromjson(already).unwrap();
         assert_eq!(out.get_attr("a").unwrap().to_string(), "1");
     }

@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "yaml": "2.8.1"
+  },
+  "scripts": {
+    "vendor:yaml": "esbuild node_modules/yaml/browser/dist/index.js --bundle --format=esm --platform=browser --target=es2022 --minify --legal-comments=inline --outfile=vendor/yaml/index.js"
+  }
+}

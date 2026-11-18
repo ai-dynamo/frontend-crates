@@ -1,0 +1,36 @@
+We need to call both functions with city Paris, and not answer in text (i.e., just output the function calls). According to instructions: "Do not answer in text." So we should only output the function calls. Probably we need to output two calls, each within the proper format. We can call them sequentially.
+
+We need to output something like:
+
+<tool_call>
+<function=lookup_weather>
+<parameter=city>
+Paris
+</parameter>
+</function>
+</tool_call>
+<tool_call>
+<function=lookup_time>
+<parameter=city>
+Paris
+</parameter>
+</function>
+</tool_call>
+
+Make sure no extra text. We'll output exactly that.
+
+</think>
+<tool_call>
+<function=lookup_weather>
+<parameter=city>
+Paris
+</parameter>
+</function>
+</tool_call>
+<tool_call>
+<function=lookup_time>
+<parameter=city>
+Paris
+</parameter>
+</function>
+</tool_call><|im_end|>

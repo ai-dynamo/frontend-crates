@@ -1,10 +1,9 @@
 # release-plz configuration. See https://release-plz.dev/docs/config
 
 [workspace]
-# Validate proposed bumps against the public API diff via cargo-semver-checks.
-# If a `fix:` commit actually removed/renamed a pub item, the
-# release fails before anything is published.
-semver_check = true
+# Version policy is maintainer-controlled: API checks are advisory in CI.
+# Automatic major bumps are blocked by the release workflow; peg them manually.
+semver_check = false
 
 # Only commits matching this regex count toward "is there anything to release".
 release_commits = "^(feat|fix|perf|refactor)(\\(.+\\))?!?:"
@@ -53,7 +52,7 @@ header = """# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Major versions are selected manually; minor releases may include API changes.
 """
 
 body = """

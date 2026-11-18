@@ -11,8 +11,12 @@
 // `<|"|>`-delimited strings, bare unquoted keys, nested objects/arrays,
 // multiple calls concatenated without separators.
 
-use serde_json::{Map, Value};
+use serde_json::Value;
 use uuid::Uuid;
+
+use crate::tool_calling::arguments::{
+    ParsedObject, ParsedValue, normalize_decimal_spelling, raw_number_literal,
+};
 
 use super::super::ToolDefinition;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
@@ -44,7 +48,7 @@ fn parse_gemma_call_parts(
                 name,
                 e
             );
-            Value::Object(Map::new())
+            ParsedValue::Object(ParsedObject::new())
         }
     };
     let arguments = serde_json::to_string(&args_value)?;
@@ -217,7 +221,7 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<Value> {
+pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<ParsedValue> {
     let mut cur = Cursor::new(input);
     cur.skip_whitespace();
     let val = parse_object_body(&mut cur)?;
@@ -232,11 +236,11 @@ pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<Value> {
     Ok(val)
 }
 
-fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
-    let mut map = Map::new();
+fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
+    let mut map = ParsedObject::new();
     cur.skip_whitespace();
     if cur.eof() || cur.peek_byte() == Some(b'}') {
-        return Ok(Value::Object(map));
+        return Ok(ParsedValue::Object(map));
     }
     loop {
         cur.skip_whitespace();
@@ -248,7 +252,7 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
         cur.skip_whitespace();
         // `key:` with no value emits `{"key": ""}` (matches upstream).
         let value = match cur.peek_byte() {
-            None | Some(b',') | Some(b'}') => Value::String(String::new()),
+            None | Some(b',') | Some(b'}') => ParsedValue::from(Value::String(String::new())),
             _ => parse_value(cur)?,
         };
         map.insert(key, value);
@@ -257,7 +261,7 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
             break;
         }
     }
-    Ok(Value::Object(map))
+    Ok(ParsedValue::Object(map))
 }
 
 fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
@@ -298,7 +302,7 @@ fn try_consume_keyword(cur: &mut Cursor, keyword: &str) -> bool {
     true
 }
 
-fn parse_value(cur: &mut Cursor) -> anyhow::Result<Value> {
+fn parse_value(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
     cur.skip_whitespace();
 
     // Delimited string `<|"|>...<|"|>`. If the closing delimiter is missing
@@ -311,12 +315,12 @@ fn parse_value(cur: &mut Cursor) -> anyhow::Result<Value> {
                 let body_end = body_start + end_rel;
                 let s = cur.src[body_start..body_end].to_string();
                 cur.pos = body_end + STRING_DELIM.len();
-                return Ok(Value::String(s));
+                return Ok(ParsedValue::from(Value::String(s)));
             }
             None => {
                 let s = cur.src[body_start..].to_string();
                 cur.pos = cur.src.len();
-                return Ok(Value::String(s));
+                return Ok(ParsedValue::from(Value::String(s)));
             }
         }
     }
@@ -338,34 +342,34 @@ fn parse_value(cur: &mut Cursor) -> anyhow::Result<Value> {
 
     // Booleans + null aliases (case-insensitive).
     if try_consume_keyword(cur, "true") {
-        return Ok(Value::Bool(true));
+        return Ok(ParsedValue::from(Value::Bool(true)));
     }
     if try_consume_keyword(cur, "false") {
-        return Ok(Value::Bool(false));
+        return Ok(ParsedValue::from(Value::Bool(false)));
     }
     if try_consume_keyword(cur, "null")
         || try_consume_keyword(cur, "none")
         || try_consume_keyword(cur, "nil")
     {
-        return Ok(Value::Null);
+        return Ok(ParsedValue::from(Value::Null));
     }
 
     // Number
     parse_number(cur)
 }
 
-fn parse_array(cur: &mut Cursor) -> anyhow::Result<Value> {
+fn parse_array(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
     let mut items = Vec::new();
     cur.skip_whitespace();
     if cur.consume_byte(b']') {
-        return Ok(Value::Array(items));
+        return Ok(ParsedValue::Array(items));
     }
     loop {
         cur.skip_whitespace();
         items.push(parse_value(cur)?);
         cur.skip_whitespace();
         if cur.consume_byte(b']') {
-            return Ok(Value::Array(items));
+            return Ok(ParsedValue::Array(items));
         }
         if !cur.consume_byte(b',') {
             anyhow::bail!("expected ',' or ']' in array at offset {}", cur.pos);
@@ -373,7 +377,7 @@ fn parse_array(cur: &mut Cursor) -> anyhow::Result<Value> {
     }
 }
 
-fn parse_number(cur: &mut Cursor) -> anyhow::Result<Value> {
+fn parse_number(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
     let start = cur.pos;
     let bytes = cur.src.as_bytes();
     if cur.peek_byte() == Some(b'-') {
@@ -390,22 +394,30 @@ fn parse_number(cur: &mut Cursor) -> anyhow::Result<Value> {
             &cur.src[start..]
         );
     }
-    let mut is_float = false;
     if cur.peek_byte() == Some(b'.') {
-        is_float = true;
         cur.pos += 1;
         while cur.pos < bytes.len() && bytes[cur.pos].is_ascii_digit() {
             cur.pos += 1;
         }
     }
-    let lex = &cur.src[start..cur.pos];
-    if is_float {
-        let f: f64 = lex.parse()?;
-        Ok(serde_json::json!(f))
-    } else {
-        let i: i64 = lex.parse()?;
-        Ok(serde_json::json!(i))
+    if matches!(cur.peek_byte(), Some(b'e' | b'E')) {
+        let exponent = cur.pos + 1;
+        let digits = if matches!(bytes.get(exponent), Some(b'+' | b'-')) {
+            exponent + 1
+        } else {
+            exponent
+        };
+        if bytes.get(digits).is_some_and(u8::is_ascii_digit) {
+            cur.pos = digits + 1;
+            while cur.pos < bytes.len() && bytes[cur.pos].is_ascii_digit() {
+                cur.pos += 1;
+            }
+        }
     }
+    let lex = &cur.src[start..cur.pos];
+    raw_number_literal(lex)
+        .or_else(|| normalize_decimal_spelling(lex))
+        .ok_or_else(|| anyhow::anyhow!("invalid number at offset {start}"))
 }
 
 #[cfg(test)]

@@ -21,7 +21,7 @@
 use std::sync::Arc;
 
 use dynamo_tokenizers::{
-    CachedTokenizer, HuggingFaceTokenizer, TikTokenTokenizer,
+    CachedTokenizer, EncodeSegment, HuggingFaceTokenizer, TikTokenTokenizer,
     traits::{Encoder, Tokenizer},
 };
 
@@ -681,4 +681,65 @@ fn extend_transparent_to_plaintext_tool_markup() {
             cache_b.cache_stats().entries
         );
     }
+}
+
+/// Kimi-style renderer segments for a growing `turns`-turn conversation: trusted control
+/// markers around untrusted role and message text, as the Kimi K3 renderer passes them to
+/// `encode_segments`. Message bodies are long enough to be cached, and each turn
+/// re-sends every earlier message, as an agentic client does.
+fn kimi_conversation_segments(turns: usize) -> Vec<(String, bool)> {
+    let mut messages = vec![(
+        "system".to_string(),
+        "You are a careful agent. Use the tools you are given, explain each step, and stop \
+         once the task is complete. "
+            .repeat(3),
+    )];
+    for i in 0..turns {
+        messages.push((
+            "user".to_string(),
+            format!("Request {i}: inspect the repository and report what changed in file_{i}.rs. ")
+                .repeat(4),
+        ));
+        messages.push((
+            "assistant".to_string(),
+            format!("Turn {i}: I read file_{i}.rs; the diff adds {i} lines and removes none. ")
+                .repeat(4),
+        ));
+    }
+    let mut segments = Vec::new();
+    for (role, content) in messages {
+        segments.push(("<|im_start|>".to_string(), true));
+        segments.push((format!("{role}\n"), false));
+        segments.push((content, false));
+        segments.push(("<|im_end|>".to_string(), true));
+    }
+    segments
+}
+
+#[test]
+fn segmented_kimi_turns_match_uncached_and_hit() {
+    let (inner, specials) = build_kimi_tiktoken();
+    let cached =
+        CachedTokenizer::new(inner.clone(), specials, 64 << 20).expect("tiktoken is cacheable");
+
+    for turns in 1..=12 {
+        let owned = kimi_conversation_segments(turns);
+        let segments: Vec<EncodeSegment<'_>> = owned
+            .iter()
+            .map(|(text, allow_special)| EncodeSegment::new(text, *allow_special))
+            .collect();
+        let expected = inner.encode_segments(&segments).expect("uncached encode");
+        let actual = cached.encode_segments(&segments).expect("cached encode");
+        assert_eq!(
+            actual.token_ids(),
+            expected.token_ids(),
+            "segmented encode diverged at {turns} turns"
+        );
+    }
+
+    // Turn 1 misses; every later turn re-sends the earlier messages and hits.
+    let stats = cached.cache_stats();
+    assert_eq!((stats.hits, stats.misses), (11, 1));
+    // One entry per distinct long message: the system prompt plus two per turn.
+    assert_eq!(stats.entries, 1 + 2 * 12);
 }

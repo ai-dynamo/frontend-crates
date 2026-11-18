@@ -15,6 +15,9 @@ use uuid::Uuid;
 
 use crate::error::OpenAIError;
 
+mod custom_tools;
+pub use custom_tools::*;
+
 // ---------------------------------------------------------------------------
 // Re-exports from upstream async-openai (unchanged types)
 // ---------------------------------------------------------------------------
@@ -31,11 +34,11 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartRefusal,
     ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestSystemMessageContentPart, ChatCompletionResponseMessageAudio, Choice,
-    CompletionFinishReason, CompletionTokensDetails, CompletionUsage, FunctionObject,
-    FunctionObjectArgs, ImageDetail, InputAudio, InputAudioFormat, Logprobs, PredictionContent,
-    PredictionContentContent, Prompt, PromptTokensDetails, ResponseFormat,
-    ResponseFormatJsonSchema, Role, ServiceTier, TopLogprobs, WebSearchContextSize,
-    WebSearchLocation, WebSearchOptions, WebSearchUserLocation, WebSearchUserLocationType,
+    CompletionFinishReason, CompletionTokensDetails, CompletionUsage, ImageDetail, InputAudio,
+    InputAudioFormat, Logprobs, PredictionContent, PredictionContentContent, Prompt,
+    PromptTokensDetails, ResponseFormat, ResponseFormatJsonSchema, Role, ServiceTier,
+    WebSearchContextSize, WebSearchLocation, WebSearchOptions, WebSearchUserLocation,
+    WebSearchUserLocationType,
 };
 
 /// OpenAI stop configuration, with Dynamo's token-id stop extension.
@@ -130,9 +133,8 @@ impl From<async_openai::types::chat::StopConfiguration> for Stop {
 // Upstream renamed FinishReason (streaming) -- re-export
 pub use async_openai::types::chat::FinishReason;
 
-// Upstream uses FunctionType where we used ChatCompletionToolType.
-// Re-export both names for compatibility.
-pub use async_openai::types::chat::FunctionType;
+// Keep the historical alias while accepting both OpenAI tool-call kinds.
+pub type FunctionType = ChatCompletionToolType;
 
 /// Reasoning effort values accepted by OpenAI-compatible clients.
 ///
@@ -284,10 +286,11 @@ pub struct ChatCompletionMessageToolCallChunk {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::FunctionType>))]
     pub r#type: Option<FunctionType>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function: Option<FunctionCallStream>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom: Option<CustomToolCallStream>,
 }
 
 // ---------------------------------------------------------------------------
@@ -341,6 +344,26 @@ pub struct ImageUrl {
     pub uuid: Option<Uuid>,
 }
 
+/// Experimental modality envelope. The fields object is plugin-owned JSON;
+/// consumers must explicitly document whether they pass the whole map or a payload.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::CustomModalityPart))]
+pub struct CustomModalityPart {
+    #[serde(deserialize_with = "deserialize_custom_kind")]
+    pub kind: String,
+    pub fields: serde_json::Map<String, serde_json::Value>,
+}
+
+fn deserialize_custom_kind<'de, D: serde::Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    let kind = String::deserialize(d)?;
+    if kind.trim().is_empty() {
+        return Err(serde::de::Error::custom("custom kind must be non-empty"));
+    }
+    Ok(kind)
+}
+
 /// Tool message content part with media observation support.
 ///
 /// OpenAI's schema currently limits tool content parts to text, but
@@ -357,6 +380,8 @@ pub enum ChatCompletionRequestToolMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::CustomContentPart))]
+    Custom(CustomModalityPart),
 }
 
 /// Tool message content, extended to preserve media observations.
@@ -411,6 +436,22 @@ pub struct ChatChoiceLogprobs {
     pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
 }
 
+/// Top logprob candidate with an optional backend vocabulary ID.
+///
+/// Different vocabulary IDs may render to the same token string. Retain IDs
+/// supplied by the backend without adding them to ordinary OpenAI responses.
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::TopLogprobs))]
+pub struct TopLogprobs {
+    pub token: String,
+    pub logprob: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_id: Option<u32>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
+    pub bytes: Option<Vec<u8>>,
+}
+
 /// Token logprob entry with optional backend token ID.
 ///
 /// Some inference backends can report both the rendered token string and its
@@ -426,7 +467,6 @@ pub struct ChatCompletionTokenLogprob {
     pub token_id: Option<u32>,
     #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub bytes: Option<Vec<u8>>,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Vec<crate::schema::TopLogprobs>))]
     pub top_logprobs: Vec<TopLogprobs>,
 }
 
@@ -437,6 +477,7 @@ pub struct ChatCompletionTokenLogprob {
 pub enum ChatCompletionToolType {
     #[default]
     Function,
+    Custom,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
@@ -446,32 +487,25 @@ pub struct FunctionName {
     pub name: String,
 }
 
-#[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
-#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionNamedToolChoice))]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct ChatCompletionNamedToolChoice {
     pub r#type: ChatCompletionToolType,
+    /// Common selected name; serialization chooses `function` or `custom`.
     pub function: FunctionName,
 }
 
-fn default_function_type() -> FunctionType {
-    FunctionType::Function
-}
-
-/// Tool call kept locally to preserve `type: "function"` in unary request/response payloads.
+/// Tool call kept locally for function and custom unary request/response payloads.
 ///
 /// Differs from upstream: `type` is serialized by default and also defaults to
 /// `function` when omitted during deserialization, preserving compatibility with
 /// both Dynamo's historical wire format and upstream spec-compliant inputs.
-#[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
-#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionMessageToolCall))]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ChatCompletionMessageToolCall {
     pub id: String,
-    #[serde(default = "default_function_type")]
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::FunctionType))]
     pub r#type: FunctionType,
+    /// Function-oriented internal view; custom calls wrap their text in `input`.
     pub function: FunctionCall,
+    pub custom: Option<CustomToolCall>,
 }
 
 /// Tool choice enum kept locally because upstream changed variant names.
@@ -514,19 +548,101 @@ impl utoipa::ToSchema for ChatCompletionToolChoiceOption {
     }
 }
 
+/// Chat function definition with the vLLM/SGLang deferred-rendering extension.
+/// Keep this local because the SDK type drops `defer_loading` before rendering.
 #[derive(Clone, Serialize, Default, Debug, Builder, Deserialize, PartialEq)]
-#[builder(name = "ChatCompletionToolArgs")]
+#[builder(name = "FunctionObjectArgs")]
 #[builder(pattern = "mutable")]
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
 #[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionTool))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::FunctionObject))]
+pub struct FunctionObject {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
+    /// Passed to the chat template; discovery and tool execution remain external.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+}
+
+#[derive(Clone, Default, Debug, Builder, PartialEq)]
+#[builder(name = "ChatCompletionToolArgs")]
+#[builder(pattern = "mutable")]
+#[builder(setter(into, strip_option), default)]
+#[builder(derive(Debug))]
+#[builder(build_fn(name = "build_inner", private, error = "OpenAIError"))]
 pub struct ChatCompletionTool {
     #[builder(default = "ChatCompletionToolType::Function")]
     pub r#type: ChatCompletionToolType,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::FunctionObject))]
     pub function: FunctionObject,
+    pub custom: Option<ChatCompletionCustomTool>,
+    /// Wrapper-level alias used when `function.defer_loading` is unset,
+    /// including tools constructed or modified directly in Rust.
+    pub defer_loading: Option<bool>,
+}
+
+impl Serialize for ChatCompletionTool {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if self.r#type == ChatCompletionToolType::Custom {
+            use serde::ser::{Error, SerializeStruct};
+            let custom = self
+                .custom
+                .as_ref()
+                .ok_or_else(|| S::Error::custom("custom tool requires custom definition"))?;
+            let mut value = serializer.serialize_struct("ChatCompletionTool", 2)?;
+            value.serialize_field("type", "custom")?;
+            value.serialize_field("custom", custom)?;
+            return value.end();
+        }
+        #[derive(Serialize)]
+        struct FunctionWithDeferral<'a> {
+            #[serde(flatten)]
+            function: &'a FunctionObject,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            defer_loading: Option<bool>,
+        }
+        #[derive(Serialize)]
+        struct Wire<'a> {
+            r#type: &'a ChatCompletionToolType,
+            function: FunctionWithDeferral<'a>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            defer_loading: Option<bool>,
+        }
+        // Apply the alias at serialization too, without cloning schemas or
+        // mutating the registry. A present function flag must not be emitted twice.
+        Wire {
+            r#type: &self.r#type,
+            function: FunctionWithDeferral {
+                function: &self.function,
+                defer_loading: self
+                    .defer_loading
+                    .filter(|_| self.function.defer_loading.is_none()),
+            },
+            defer_loading: self.defer_loading,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl ChatCompletionTool {
+    fn normalize_defer_loading(&mut self) {
+        // Match both engines: an explicit function-level false wins over the alias.
+        self.function.defer_loading = self.function.defer_loading.or(self.defer_loading);
+    }
+}
+
+impl ChatCompletionToolArgs {
+    pub fn build(&self) -> Result<ChatCompletionTool, OpenAIError> {
+        let mut tool = self.build_inner()?;
+        tool.normalize_defer_loading();
+        Ok(tool)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -816,6 +932,8 @@ pub enum ChatCompletionRequestUserMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::CustomContentPart))]
+    Custom(CustomModalityPart),
     #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartAudio))]
     InputAudio(ChatCompletionRequestMessageContentPartAudio),
 }
@@ -1661,6 +1779,7 @@ mod tests {
     #[test]
     fn tool_call_serializes_type_for_wire_compat() {
         let tool_call = ChatCompletionMessageToolCall {
+            custom: None,
             id: "call_123".into(),
             r#type: FunctionType::Function,
             function: FunctionCall {
@@ -2253,6 +2372,7 @@ mod tests {
     #[test]
     fn stream_tool_call_continuation_chunk_omits_absent_fields() {
         let chunk = ChatCompletionMessageToolCallChunk {
+            custom: None,
             index: 0,
             id: None,
             r#type: None,

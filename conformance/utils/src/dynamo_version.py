@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Capture origin validation shared by refresh, explode, and capture harnesses.
+"""Validate capture origins shared by refresh, export, and capture harnesses.
 
-Unified capture directories and rendered columns are keyed only by the crate
-semantic version. The first capture of that version retains its source digest as
-origin metadata; later checkouts with the same version do not create another
-capture identity. The digest covers parser crates, the split-path protocol
-dependency, and workspace build inputs; conformance outputs are excluded so a
-capture cannot change its own origin.
+Conformance selections and filenames use only crate versions. The legacy
+producer protocol retains source-qualified identities as provenance, never as
+selectable versions. The digest covers parser crates, the split-path protocol
+dependency, and workspace build inputs. Conformance outputs are excluded so a
+capture cannot change its own producer identity.
 """
 
 import argparse
@@ -21,13 +20,16 @@ import sys
 import tomllib
 from pathlib import Path
 
-from fixture_disposition import DYNAMO_VERSION_RE
+from capture_versions import DYNAMO_VERSION_RE
 
 ENV_OVERRIDE = "CONFORMANCE_DYNAMO_V2_LABEL"
-SOURCE_PATHS = (
+CRATE_SOURCE_PATHS = (
     "parsers/v1/src", "parsers/v1/Cargo.toml", "parsers/v1/build.rs",
     "parsers/v2/src", "parsers/v2/Cargo.toml", "parsers/v2/build.rs",
     "protocols/src", "protocols/Cargo.toml", "protocols/build.rs",
+)
+SOURCE_PATHS = (
+    *CRATE_SOURCE_PATHS,
     "Cargo.toml", "Cargo.lock",
     "rust-toolchain", "rust-toolchain.toml", ".cargo",
 )
@@ -88,11 +90,11 @@ def _git(repo_root: Path, *args: str) -> bytes:
     ).stdout
 
 
-def source_fingerprint(repo_root: Path, revision: str | None = None) -> str:
+def source_fingerprint(repo_root: Path, revision: str | None = None, *, source_paths: tuple[str, ...] = SOURCE_PATHS) -> str:
     entries = {}
     if revision is not None:
         # Read blobs directly: export-ignore/subst attributes must not alter identity.
-        tree = _git(repo_root, "ls-tree", "-rz", revision, "--", *SOURCE_PATHS)
+        tree = _git(repo_root, "ls-tree", "-rz", revision, "--", *source_paths)
         records = [entry.split(b"\t", 1) for entry in tree.split(b"\0") if entry]
         objects = b"".join(meta.split()[2] + b"\n" for meta, _ in records)
         blobs = subprocess.run(
@@ -112,7 +114,7 @@ def source_fingerprint(repo_root: Path, revision: str | None = None) -> str:
             assert stream.read(1) == b"\n"
     else:
         # Include ignored/untracked files too: Rust can compile an untracked module.
-        paths = _git(repo_root, "ls-files", "-z", "--cached", "--others", "--", *SOURCE_PATHS)
+        paths = _git(repo_root, "ls-files", "-z", "--cached", "--others", "--", *source_paths)
         for raw in set(paths.split(b"\0")) - {b""}:
             name = os.fsdecode(raw)
             path = repo_root / name
@@ -131,7 +133,7 @@ def source_fingerprint(repo_root: Path, revision: str | None = None) -> str:
     return digest.hexdigest()
 
 
-def dynamo_v2_provenance(repo_root: Path, override: str | None = None) -> dict:
+def dynamo_v2_provenance(repo_root: Path, override: str | None = None, *, release_refs: str | None = None) -> dict:
     """Deprecated producer protocol retained until the Rust harnesses migrate."""
     repo_root = repo_root.resolve()
     actual_root = Path(os.fsdecode(_git(repo_root, "rev-parse", "--show-toplevel")).strip())
@@ -146,11 +148,13 @@ def dynamo_v2_provenance(repo_root: Path, override: str | None = None) -> dict:
     qualified = f"{version}+source.{fingerprint}"
     tag = f"dynamo-parsers-v2-v{version}"
     ref = f"refs/tags/{tag}"
-    tags = _git(repo_root, "tag", "--list", tag).decode().splitlines()
+    frozen = dict(line.split() for line in release_refs.splitlines()) if release_refs is not None else None
+    tags = [name.removeprefix("refs/tags/") for name in frozen] if frozen is not None else _git(repo_root, "tag", "--list", tag).decode().splitlines()
     release_commit = None
     released = False
     if tag in tags:
-        release_commit = _git(repo_root, "rev-parse", f"{ref}^{{commit}}").decode().strip()
+        release_ref = frozen[ref] if frozen is not None else ref
+        release_commit = _git(repo_root, "rev-parse", f"{release_ref}^{{commit}}").decode().strip()
         released = source_fingerprint(repo_root, release_commit) == fingerprint
     if requested is None:
         requested = version if released else "current"
@@ -177,6 +181,11 @@ def dynamo_v2_provenance(repo_root: Path, override: str | None = None) -> dict:
         "release_tag": tag if kind == "release" else None,
         "release_commit": release_commit if kind == "release" else None,
     }
+
+
+def compact_capture_origin(provenance: dict) -> dict:
+    """Retain the producer identity beside captured results, without display fields."""
+    return {key: provenance[key] for key in ("crate_version", "source_sha256", "git_commit")}
 
 
 def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
@@ -280,21 +289,18 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     _validate_provenance_origin(repo_root, recorded)
     version = current["crate_version"]
     tag = f"dynamo-parsers-v2-v{version}"
-    # The Unified publisher converts every producer label to a plain semantic
-    # version, so source-qualified output cannot be recorded under an existing
-    # release whose tag points at different parser source.
+    # Workspace build inputs retain their exact unpublished provenance. Changes
+    # to parser/protocol crate files still require a new version after release.
     if _git(repo_root, "tag", "--list", tag).strip():
-        released_source = source_fingerprint(repo_root, f"refs/tags/{tag}")
-        if released_source != current["source_sha256"]:
+        released_source = source_fingerprint(repo_root, f"refs/tags/{tag}", source_paths=CRATE_SOURCE_PATHS)
+        current_source = source_fingerprint(repo_root, source_paths=CRATE_SOURCE_PATHS)
+        if released_source != current_source:
             raise ValueError(
                 f"Parser version {version} is already released with different source; "
                 "set a new unpublished crate version before recording Unified output"
             )
     supplied = os.environ.get(ENV_OVERRIDE)
-    origin = {
-        key: recorded[key]
-        for key in ("crate_version", "source_sha256", "git_commit")
-    }
+    origin = compact_capture_origin(recorded)
     if supplied is not None and dynamo_v2_label(repo_root, supplied) != origin["crate_version"]:
         raise ValueError("capture feed version differs from the requested capture version")
     return origin

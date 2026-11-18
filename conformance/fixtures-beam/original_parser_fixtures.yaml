@@ -1,0 +1,362 @@
+# Pinned assistant wires and token IDs. Arguments are compared after JSON decoding.
+# Identify the tokenizer used to encode the assistant wires.
+source:
+  tokenizer_json_sha256: 914f7f8e1ce7381a5ff610a20d43d9a1b8a0a74f1c1394d1173a44f2bb6eeb15
+# Built-in names are bare; XML parameter tags retain rfl:.
+message_cases:
+- case_id: thinking_and_final
+  input:
+    text: <|start|>assistant<|channel|>analysis<|message|>Thinking...<|end|><|start|>assistant<|channel|>final<|message|>Hi
+      there!<|return|>
+    tools: []
+    tokens: [151669, 77091, 151672, 34484, 151671, 93945, 1112, 151670, 151669, 77091, 151672, 11822, 151671, 13048,
+      1052, 0, 151674]
+  expected:
+    reasoning_content: Thinking...
+    content: Hi there!
+    tool_calls: []
+- case_id: empty_analysis_and_final
+  input:
+    text: <|start|>assistant<|channel|>analysis<|message|><|end|><|start|>assistant<|channel|>final<|message|>Hello.<|return|>
+    tools: []
+    tokens: [151669, 77091, 151672, 34484, 151671, 151670, 151669, 77091, 151672, 11822, 151671, 9707, 13, 151674]
+  expected:
+    reasoning_content: ''
+    content: Hello.
+    tool_calls: []
+- case_id: thinking_and_xml_tool_call
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|>Look it up.<|end|><|start|>assistant to=weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+      London
+      </rfl:parameter><|call|>
+    tools: &id002
+    - type: function
+      function:
+        name: weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+    tokens: [151669, 77091, 151672, 34484, 151671, 10380, 432, 705, 13, 151670, 151669, 77091, 311, 28, 15206, 151672,
+      34484, 220, 151673, 6455, 151671, 151679, 2527, 881, 39572, 151680, 151675]
+  expected:
+    reasoning_content: Look it up.
+    content: ''
+    tool_calls:
+    - name: weather
+      arguments:
+        location: London
+- case_id: parallel_xml_tool_calls
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|><|end|><|start|>assistant to=a<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
+      1.0
+      </rfl:parameter><|end|><|start|>assistant to=b<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="y">
+      2.0
+      </rfl:parameter><|call|>
+    tools:
+    - type: function
+      function:
+        name: a
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+    - type: function
+      function:
+        name: b
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+          required:
+          - y
+    tokens: [151669, 77091, 151672, 34484, 151671, 151670, 151669, 77091, 311, 24239, 151672, 34484, 220, 151673,
+      6455, 151671, 151679, 87, 881, 16, 13, 15, 151680, 151670, 151669, 77091, 311, 22086, 151672, 34484, 220,
+      151673, 6455, 151671, 151679, 88, 881, 17, 13, 15, 151680, 151675]
+  expected:
+    reasoning_content: ''
+    content: ''
+    tool_calls:
+    - name: a
+      arguments:
+        x: '1.0'
+    - name: b
+      arguments:
+        y: '2.0'
+- case_id: typed_xml_arguments
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|>t<|end|><|start|>assistant to=fn<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="arr">
+      [1.0, 2.0]
+      </rfl:parameter>
+      <rfl:parameter name="b">
+      true
+      </rfl:parameter>
+      <rfl:parameter name="n">
+      1.5
+      </rfl:parameter>
+      <rfl:parameter name="obj">
+      {"k": "v"}
+      </rfl:parameter>
+      <rfl:parameter name="s">
+      hi
+      </rfl:parameter><|call|>
+    tools:
+    - type: function
+      function:
+        name: fn
+        parameters:
+          type: object
+          properties:
+            arr:
+              type: string
+            b:
+              type: string
+            n:
+              type: string
+            obj:
+              type: string
+            s:
+              type: string
+          required:
+          - arr
+          - b
+          - n
+          - obj
+          - s
+    tokens: [151669, 77091, 151672, 34484, 151671, 83, 151670, 151669, 77091, 311, 28, 8822, 151672, 34484, 220,
+      151673, 6455, 151671, 151679, 1118, 881, 58, 16, 13, 15, 11, 220, 17, 13, 15, 60, 151680, 198, 151679, 65,
+      881, 1866, 151680, 198, 151679, 77, 881, 16, 13, 20, 151680, 198, 151679, 2295, 881, 4913, 74, 788, 330, 85,
+      9207, 151680, 198, 151679, 82, 881, 6023, 151680, 151675]
+  expected:
+    reasoning_content: t
+    content: ''
+    tool_calls:
+    - name: fn
+      arguments:
+        arr: '[1.0, 2.0]'
+        b: 'true'
+        n: '1.5'
+        obj: '{"k": "v"}'
+        s: hi
+- case_id: schema_coerces_arguments
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|>t<|end|><|start|>assistant to=fn<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="arr">
+      [1.0, 2.0]
+      </rfl:parameter>
+      <rfl:parameter name="b">
+      true
+      </rfl:parameter>
+      <rfl:parameter name="n">
+      1.5
+      </rfl:parameter>
+      <rfl:parameter name="obj">
+      {"k": "v"}
+      </rfl:parameter>
+      <rfl:parameter name="s">
+      hi
+      </rfl:parameter><|call|>
+    tools:
+    - type: function
+      function:
+        name: fn
+        parameters:
+          type: object
+          properties:
+            arr:
+              type: array
+              items:
+                type: number
+            b:
+              type: boolean
+            n:
+              type: number
+            obj:
+              type: object
+            s:
+              type: string
+          required:
+          - arr
+          - b
+          - n
+          - obj
+          - s
+    tokens: [151669, 77091, 151672, 34484, 151671, 83, 151670, 151669, 77091, 311, 28, 8822, 151672, 34484, 220,
+      151673, 6455, 151671, 151679, 1118, 881, 58, 16, 13, 15, 11, 220, 17, 13, 15, 60, 151680, 198, 151679, 65,
+      881, 1866, 151680, 198, 151679, 77, 881, 16, 13, 20, 151680, 198, 151679, 2295, 881, 4913, 74, 788, 330, 85,
+      9207, 151680, 198, 151679, 82, 881, 6023, 151680, 151675]
+  expected:
+    reasoning_content: t
+    content: ''
+    tool_calls:
+    - name: fn
+      arguments:
+        arr:
+        - 1.0
+        - 2.0
+        b: true
+        n: 1.5
+        obj:
+          k: v
+        s: hi
+- case_id: builtin_bare_name_with_rfl_parameters
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|>Look it up.<|end|><|start|>assistant to=bash<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="command">
+      ls
+      </rfl:parameter><|call|>
+    tools:
+    - type: function
+      function:
+        name: bash
+        parameters:
+          type: object
+          properties:
+            command:
+              type: string
+          required:
+          - command
+    tokens: [151669, 77091, 151672, 34484, 151671, 10380, 432, 705, 13, 151670, 151669, 77091, 311, 22086, 988, 151672, 34484, 220, 151673, 6455, 151671, 151679, 5631, 881, 4730, 151680, 151675]
+  expected:
+    reasoning_content: Look it up.
+    content: ''
+    tool_calls:
+    - name: bash
+      arguments:
+        command: ls
+- case_id: nested_arguments_and_json_looking_string
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|>t<|end|><|start|>assistant to=fn<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="arr">
+      [1.0, 2.0]
+      </rfl:parameter>
+      <rfl:parameter name="b">
+      true
+      </rfl:parameter>
+      <rfl:parameter name="n">
+      1.5
+      </rfl:parameter>
+      <rfl:parameter name="obj">
+      {"items": [{"label": "München 🧪", "enabled": true}]}
+      </rfl:parameter>
+      <rfl:parameter name="s">
+      true
+      </rfl:parameter><|call|>
+    tools:
+    - type: function
+      function:
+        name: fn
+        parameters:
+          type: object
+          properties:
+            arr:
+              type: array
+              items:
+                type: number
+            b:
+              type: boolean
+            n:
+              type: number
+            obj:
+              type: object
+            s:
+              type: string
+          required:
+          - arr
+          - b
+          - n
+          - obj
+          - s
+    tokens: [151669, 77091, 151672, 34484, 151671, 83, 151670, 151669, 77091, 311, 28, 8822, 151672, 34484, 220,
+      151673, 6455, 151671, 151679, 1118, 881, 58, 16, 13, 15, 11, 220, 17, 13, 15, 60, 151680, 198, 151679, 65,
+      881, 1866, 151680, 198, 151679, 77, 881, 16, 13, 20, 151680, 198, 151679, 2295, 881, 4913, 3615, 788, 61753,
+      1502, 788, 330, 44, 51831, 11162, 100, 103, 497, 330, 15868, 788, 830, 92, 13989, 151680, 198, 151679, 82,
+      881, 1866, 151680, 151675]
+  expected:
+    reasoning_content: t
+    content: ''
+    tool_calls:
+    - name: fn
+      arguments:
+        arr:
+        - 1.0
+        - 2.0
+        b: true
+        n: 1.5
+        obj:
+          items:
+          - label: München 🧪
+            enabled: true
+        s: 'true'
+- case_id: unicode_and_quotes
+  input:
+    text: <|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">München
+      "Altstadt"</rfl:parameter><|call|>
+    tools: &id001
+    - type: function
+      function:
+        name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+    tokens: [151669, 77091, 311, 28280, 69364, 151672, 34484, 220, 151673, 6455, 151671, 151679, 2527, 755, 44,
+      51831, 330, 26017, 44278, 21522, 81, 1489, 25, 16181, 29, 151675]
+  expected:
+    tool_calls:
+    - name: get_weather
+      arguments:
+        location: München "Altstadt"
+    content: ''
+    reasoning_content: ''
+- case_id: plain_text_is_not_a_tool_call
+  input:
+    text: <|start|>assistant<|channel|>final<|message|>You can call get_weather for Berlin.<|return|>
+    tools: *id001
+    tokens: [151669, 77091, 151672, 11822, 151671, 2610, 646, 1618, 633, 69364, 369, 19846, 13, 151674]
+  expected:
+    tool_calls: []
+    content: You can call get_weather for Berlin.
+    reasoning_content: ''
+- case_id: continuation_reasoning_and_final
+  input:
+    text: <|channel|>analysis<|message|>Check the arithmetic.<|end|><|start|>assistant<|channel|>final<|message|>391<|return|>
+    tools: []
+    tokens: [151672, 34484, 151671, 3973, 279, 34784, 13, 151670, 151669, 77091, 151672, 11822, 151671, 18, 24,
+      16, 151674]
+  expected:
+    reasoning_content: Check the arithmetic.
+    content: '391'
+    tool_calls: []
+rejection_cases:
+- case_id: truncated_parameter
+  input:
+    text: |
+      <|start|>assistant<|channel|>analysis<|message|>Look it up.<|end|><|start|>assistant to=weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+      London
+    tools: *id002
+    tokens: [151669, 77091, 151672, 34484, 151671, 10380, 432, 705, 13, 151670, 151669, 77091, 311, 28, 15206, 151672,
+      34484, 220, 151673, 6455, 151671, 151679, 2527, 881, 39572, 198]
+- case_id: malformed_parameter
+  input:
+    text: |-
+      <|start|>assistant<|channel|>analysis<|message|>Look it up.<|end|><|start|>assistant to=weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="location">
+      London
+      </wrong><|call|>
+    tools: *id002
+    tokens: [151669, 77091, 151672, 34484, 151671, 10380, 432, 705, 13, 151670, 151669, 77091, 311, 28, 15206, 151672,
+      34484, 220, 151673, 6455, 151671, 151679, 2527, 881, 39572, 198, 522, 34870, 29, 151675]

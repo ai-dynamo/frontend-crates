@@ -1,0 +1,155 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""Reject missing or accidentally duplicated tests across CI groups."""
+import argparse
+from collections import Counter
+import json
+from pathlib import Path
+import re
+
+import yaml
+
+import ci_plan
+from verify_publication_transport import publication_metadata, runtime_catalog
+
+
+def read_assignments(directory):
+    paths = sorted(directory.glob("*.json"))
+    if not paths:
+        raise ValueError(f"missing test assignment manifests: {directory}")
+    return [json.loads(path.read_bytes()) for path in paths]
+
+
+def verify_jobs(results, jobs, gate="conformance-table"):
+    def dependencies(job):
+        value = job.get("needs", [])
+        return {value} if isinstance(value, str) else set(value)
+
+    if any(dependencies(job) - jobs.keys() for job in jobs.values()):
+        raise ValueError("publication workflow contains an unknown job dependency")
+    # Downstream deployment jobs cannot qualify the artifact they consume.
+    downstream = {gate}
+    while True:
+        expanded = downstream | {name for name, job in jobs.items() if dependencies(job) & downstream}
+        if expanded == downstream:
+            break
+        downstream = expanded
+    required = set(jobs) - downstream
+    if not required or dependencies(jobs[gate]) != required or set(results) != required:
+        raise ValueError("publication gate must depend on every validation job")
+    failed = {name: result.get("result") for name, result in results.items() if result.get("result") != "success"}
+    if failed:
+        raise ValueError(f"publication validation did not succeed: {failed}")
+    return {"validation_jobs": sorted(required)}
+
+
+def verify_plan(baseline, assignments, *, revision=None):
+    entries = [ci_plan.entry("fixtures", 0, 1), *ci_plan.plan()]
+    expected = {item["id"]: item for item in entries}
+    observed = Counter(document.get("plan", {}).get("entry") for document in assignments)
+    if observed != Counter({identifier: 1 for identifier in expected}):
+        raise ValueError(f"publication plan entries differ: expected={sorted(expected)}, observed={dict(observed)}")
+    qualification = set(ci_plan.qualification_nodes())
+    collected = {node for document in baseline for node in document["selected"]}
+    if not qualification <= collected:
+        raise ValueError("publication baseline is missing planned qualification tests")
+    for document in [*baseline, *assignments]:
+        if revision is not None and document.get("revision") != revision:
+            raise ValueError("publication test receipt differs from the checked revision")
+    for document in assignments:
+        receipt = document["plan"]
+        item = expected[receipt["entry"]]
+        resource_receipt = document.get("resource_shard", {})
+        if any(type(value) is not int for value in (receipt.get("index"), receipt.get("count"),
+                                                   resource_receipt.get("index"), resource_receipt.get("count"))):
+            raise ValueError("publication receipt coordinates must be integers")
+        coordinate = {"id": ci_plan.plan_digest(), "entry": item["id"], "lane": item["lane"],
+                      "index": item["index"], "count": item["count"]}
+        if receipt != coordinate:
+            raise ValueError("publication test receipt has a stale or invalid plan coordinate")
+        resource = ci_plan.resource_shard(item)
+        if resource_receipt != resource:
+            raise ValueError("publication resource shard differs from its planned coordinate")
+        eligible = document["eligible"]
+        if len(eligible) != len(set(eligible)):
+            raise ValueError("publication test receipt repeats eligible tests")
+        group = ci_plan.test_group(item)
+        if document.get("group") != group:
+            raise ValueError("publication test group differs from its planned coordinate")
+        selected = sorted(eligible)
+        if group:
+            selected = [node for ordinal, node in enumerate(selected) if ordinal % item["count"] == item["index"]]
+        if sorted(document["selected"]) != selected:
+            raise ValueError("publication receipt does not contain its complete test assignment")
+        if item["lane"] == "qualification" and set(selected) != qualification:
+            raise ValueError("publication resource shard is missing qualification tests")
+
+
+def verify(baseline, assignments, *, require_history=False, revision=None):
+    if require_history:
+        for document in [*baseline, *assignments]:
+            if document.get("include_history") is not True or document.get("coverage") != "exhaustive":
+                raise ValueError("publication gate requires exhaustive history test assignments")
+        if any(document.get("scope") is not None or document.get("group") is not None
+               or document.get("selected") != document.get("eligible") for document in baseline):
+            raise ValueError("publication baseline must collect every eligible test without filtering")
+        verify_plan(baseline, assignments, revision=revision)
+    expected = {node for document in baseline for node in document["selected"]}
+    observed = Counter(node for document in assignments for node in document["selected"])
+    missing = sorted(expected - observed.keys())
+    extra = sorted(observed.keys() - expected)
+    qualification_shards = sum(item["lane"] == "qualification" for item in ci_plan.plan())
+    wrong_counts = {node: count for node, count in observed.items()
+                    if count != (qualification_shards if node in ci_plan.qualification_nodes() else 1)}
+    if not expected or missing or extra or wrong_counts:
+        raise ValueError(f"CI selection mismatch: missing={missing}, extra={extra}, counts={wrong_counts}")
+    return {"unique_tests": len(expected), "test_assignments": sum(observed.values()),
+            "qualification_shards": qualification_shards}
+
+
+def verify_publication(site, revision):
+    if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+        raise ValueError("publication gate requires a full commit revision")
+    metadata = publication_metadata(site)
+    catalog = runtime_catalog(site)
+    if metadata.get("revision") != revision:
+        raise ValueError("publication source revision differs from the checked commit")
+    if catalog.get("capture_generation", {}).get("mode") != "history":
+        raise ValueError("publication gate requires a history publication")
+    return {"source_revision": revision, "publication_mode": "history"}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--selections", type=Path)
+    parser.add_argument("--shard-matrix", action="store_true", help="emit the complete qualification matrix for CI")
+    parser.add_argument("--job-results", type=Path, help="validate GitHub needs results against the workflow graph")
+    parser.add_argument("--workflow", type=Path, default=Path(__file__).resolve().parents[3] / ".github/workflows/ci.yml")
+    parser.add_argument("--require-history", action="store_true")
+    parser.add_argument("--publication", type=Path)
+    parser.add_argument("--revision")
+    args = parser.parse_args()
+    if args.shard_matrix:
+        if any((args.baseline, args.selections, args.job_results, args.require_history, args.publication, args.revision)):
+            parser.error("--shard-matrix cannot be combined with test assignments")
+        print(json.dumps([item["index"] for item in ci_plan.plan() if item["lane"] == "qualification"]))
+        return
+    if args.job_results is not None:
+        if any((args.baseline, args.selections, args.require_history, args.publication, args.revision)):
+            parser.error("--job-results cannot be combined with publication accounting")
+        print(json.dumps(verify_jobs(json.loads(args.job_results.read_bytes()), yaml.safe_load(args.workflow.read_text())["jobs"])))
+        return
+    if args.baseline is None or args.selections is None:
+        parser.error("--baseline and --selections are required for accounting")
+    if bool(args.publication) != bool(args.revision) or args.publication and not args.require_history:
+        parser.error("--publication and --revision require each other and --require-history")
+    result = verify(read_assignments(args.baseline), read_assignments(args.selections), require_history=args.require_history,
+                    revision=args.revision)
+    if args.publication:
+        result.update(verify_publication(args.publication, args.revision))
+    print(json.dumps(result))
+
+
+if __name__ == "__main__":
+    main()

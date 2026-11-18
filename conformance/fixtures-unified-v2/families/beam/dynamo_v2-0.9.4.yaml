@@ -1,0 +1,83 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.4
+    source_sha256: 338d826f501fc1fdae865bc0c7fe29dc76c815b75b29334cc9f03a5fa3d4b747
+    adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+    job_sha256: 762793e1f45ee93385a394c93bb8bd0bd60bfbce4f4e6166ab8030486d40482e
+    git_commit: ca17bb58efd655d289fda1043ec91b4eb63407d8
+document:
+  mode: unified
+changes:
+  interrupted_reasoning_then_response:
+    case_key: interrupted_reasoning_then_response
+    stimulus:
+      semantic_sha256: 838acab12e6bc65283f63ade423be9ca9464452d38093d53fe14671b4d789867
+      inline:
+        input: <|start|>assistant<|channel|>analysis<|message|>let me think<|start|>assistant<|channel|>final<|message|>The answer is 42.<|return|>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools: []
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assistant
+        - delta_text: <|channel|>
+        - delta_text: analysis
+        - delta_text: <|message|>
+        - delta_text: let me think
+        - delta_text: <|start|>
+        - delta_text: assistant
+        - delta_text: <|channel|>
+        - delta_text: final
+        - delta_text: <|message|>
+        - delta_text: The answer is 42.
+        - delta_text: <|return|>
+        - delta_text: ‹finish›
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me think
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        - expected: []
+metadata_changes:
+  interrupted_reasoning_then_response:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native
+    dynamo_v2_capture_provenance:
+      implementation: dynamo_v2
+      version: 0.9.4
+      git_commit: ca17bb58efd655d289fda1043ec91b4eb63407d8
+      source_sha256: 338d826f501fc1fdae865bc0c7fe29dc76c815b75b29334cc9f03a5fa3d4b747
+      adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+      job_sha256: 762793e1f45ee93385a394c93bb8bd0bd60bfbce4f4e6166ab8030486d40482e
+      crate_checksum: null
+      reasoning_version: 10.2.4
+      results_sha256: 742d8d68e3e2e83268edf755f3f15bf90b3a7dcbfecc4a651250cec8c7422383
+      cargo_lock_sha256: 47bb5ec2466bdc24cf2ac9360b9115b60a370b14f5b73311ecfd13005288abaf
+document_overrides: {}

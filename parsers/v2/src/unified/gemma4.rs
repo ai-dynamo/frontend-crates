@@ -24,7 +24,7 @@
 //! literal `<tool_call|>` inside a `<|"|>`-delimited string value is an argument
 //! value, so the plain `find` every other wrapped family uses would cut the value
 //! there (`I7`, case `7-2`). The scanner takes a grammar-aware
-//! [`crate::tool_calling::scan::InvokeScan`] for exactly that; see
+//! [`crate::tool_calling::scan::InvokeBoundary`] for exactly that; see
 //! `tool_calling/gemma4.rs`.
 //!
 //! The reasoning side needed the other extension. Gemma 4's opener is a marker
@@ -775,6 +775,52 @@ mod tests {
                 events(&weather_tools(), &chunks),
                 expected,
                 "chunk_size={chunk_size}"
+            );
+        }
+    }
+
+    #[test]
+    fn unterminated_string_does_not_discard_later_calls() {
+        let input = concat!(
+            "<|tool_call>call:bad{value:{x:<|\"|>unfinished}}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>é<|\"|>}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>Café<|\"|>}<tool_call|>",
+        );
+        let expected = vec![
+            call("echo", serde_json::json!({"value": "é"})),
+            call("echo", serde_json::json!({"value": "Café"})),
+        ];
+        for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+            assert_eq!(
+                events(&[], &[&input[..split], &input[split..]]),
+                expected,
+                "split={split}"
+            );
+        }
+        let chunks: Vec<_> = input
+            .char_indices()
+            .map(|(i, c)| &input[i..i + c.len_utf8()])
+            .collect();
+        assert_eq!(events(&[], &chunks), expected);
+    }
+
+    #[test]
+    fn eof_recovery_preserves_markers_inside_the_recovered_string() {
+        let input = concat!(
+            "<|tool_call>call:bad{value:<|\"|>unfinished}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>quoted <|tool_call>call:fake{}<tool_call|><|\"|>}<tool_call|>",
+        );
+        let expected = vec![call(
+            "echo",
+            serde_json::json!({
+                "value": "quoted <|tool_call>call:fake{}<tool_call|>"
+            }),
+        )];
+        for split in 0..=input.len() {
+            assert_eq!(
+                events(&[], &[&input[..split], &input[split..]]),
+                expected,
+                "split={split}"
             );
         }
     }

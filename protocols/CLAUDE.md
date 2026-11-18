@@ -100,10 +100,18 @@ Glob re-exports will silently pick up the rename. Explicit re-exports will fail 
 ## Things that are explicitly *not* this crate's job
 
 - HTTP transport (request execution, retries, streaming frame parsing) — pair this crate with `axum`, `reqwest`, or whatever your stack uses.
-- Semantic conversion between API types (Responses → Chat, Anthropic → Chat, etc.) — keep that in your server-side translation layer; this crate just defines the wire types.
+- Semantic conversion between API types (Responses → Chat, Anthropic → Chat, etc.) — keep that in your server-side translation layer.
 - Model-specific tokenization or prompt templating — see `dynamo-tokenizers` and `dynamo-parsers`.
 
-Keep this crate declarative: types, serde derives, builders, conversions-by-`From`. Business logic belongs downstream.
+This crate owns protocol types, serialization, builders, conversions, and protocol-defined validation and normalization. Keep validation read-only and normalization separate.
+
+Use `openai` as the baseline. The `vllm` and `sglang` namespaces should reuse OpenAI rules when their contracts match and define engine-specific rules where they differ. Add an operation to `shared` only when both engines define equivalent behavior outside the OpenAI contract. `shared` is a private implementation module: consumers import a concrete contract (`openai`, `vllm`, or `sglang`), and the engine namespaces re-export what they reuse. Assess validation and normalization separately.
+
+Keep application-specific business logic, deployment policy, runtime-dependent checks, and request orchestration downstream.
+
+### Implementation transition
+
+Validation and normalization are being implemented incrementally. During this transition, `src/validation/coverage.md` tracks implemented operations, remaining gaps, and temporary deviations from the intended protocol contracts.
 
 ## Common mistakes
 

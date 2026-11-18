@@ -3,7 +3,11 @@
 
 import ast
 import copy
+import json
+import re
+from decimal import Decimal
 import sys
+import traceback
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,7 +18,9 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
+from impls import VLLM_TOKENIZER_MARKERS
 from unified_tools import openai_tools, unified_tools
+from schema_cases import XML_COMPATIBILITY_CASES, schema_tools
 
 
 def _assert_value(value, schema):
@@ -83,17 +89,116 @@ def test_schema_guard_corpus_keywords(schema, valid, invalid):
 
 def _assert_golden_schemas(cases, tools):
     for case_id, case in cases.items():
+        scenario = case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0]
+        custom_probe = next((probe for probe in XML_COMPATIBILITY_CASES
+                             if probe["schema"]["type"] == "custom" and probe["name"] == scenario), None)
+        if custom_probe is not None:
+            # These exact native compatibility requests deliberately use an invalid
+            # JSON Schema type. Preserve the strict schema oracle for every other case.
+            assert case_id.rsplit(".", 1)[1] in {"qwen3", "nemotron_v3"}
+            assert case["tools"] == schema_tools(custom_probe)
+            assert case["golden"] == [{"kind": "tool_call", "name": "schema_probe",
+                                       "arguments": {"value": {"a": 1}}}]
+            continue
         offered_tools = case.get("tools", tools)
         schemas = {tool["name"]: tool["parameters"] for tool in offered_tools}
         assert len(schemas) == len(offered_tools)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
-                if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
-                    family = case_id.rsplit(".", 1)[1]
-                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer"}
-                    assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
+                if not offered_tools:
+                    # Native lexical probes deliberately exercise unoffered calls.
+                    assert case_id.endswith(".gpt_oss") or (
+                        scenario in {
+                            "gpt_oss_multiple_unknown_and_empty_tools",
+                            "gpt_oss_control_marker_inside_argument_string",
+                            "gpt_oss_invalid_tool_body_then_empty_call",
+                            "gpt_oss_invalid_tool_body_then_valid_call",
+                            "gpt_oss_truncated_tool_resynchronizes_at_next_message",
+                            "gpt_oss_interrupted_reasoning_then_response",
+                        }
+                        and case["init"]["tool_output_mode"] == "Native"
+                    )
                     continue
-                _assert_value(event["arguments"], schemas[event["name"]])
+                if case_id in {
+                    "UNIFIED.kimi_native_trailing_syntax_whitespace.kimi_k2",
+                    "UNIFIED.kimi_native_incompatible_string_recovery.kimi_k2",
+                }:
+                    # Malformed recovery is a completed raw call, projected to {}
+                    # by assembly; it does not satisfy a successful call's schema.
+                    assert event == {"kind": "tool_call", "name": "write_file", "arguments": {}}
+                    continue
+                if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
+                    family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
+                    assert family in {"kimi_k2", "mistral_4", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3", "hermes"}
+                    assert event["arguments"] == ({} if family in {"kimi_k2", "mistral_4"} else {"value": '{"x":"unfinished'})
+                    continue
+                if case_id.startswith("UNIFIED.mistral_name_before_marker.") and event["name"] == "":
+                    # The malformed generation surfaces as a nameless call no schema offers.
+                    continue
+                if case_id.startswith("UNIFIED.mistral_non_object_arguments."):
+                    # Non-object arguments pass through; no object schema can accept them.
+                    continue
+                arguments = event["arguments"]
+                if isinstance(arguments, str):
+                    arguments = json.loads(arguments, parse_float=Decimal)
+                _assert_value(arguments, schemas[event["name"]])
+
+
+@pytest.mark.parametrize("mutation", ["malformed_arguments", "successor_schema"])
+def test_hermes_malformed_recovery_exclusion_preserves_exact_calls(mutation):
+    case_id = "UNIFIED.malformed_json_then_two_valid_calls.hermes"
+    case = copy.deepcopy(G.build_cases("hermes")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    if mutation == "malformed_arguments":
+        case["golden"][0]["arguments"]["value"] = "changed"
+    else:
+        case["golden"][1]["arguments"]["value"] = 42
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
+
+
+@pytest.mark.parametrize("family", ["qwen3", "gpt_oss"])
+def test_schema_free_text_does_not_imply_a_schema_free_tool_call(family):
+    case = {"tools": [], "golden": [
+        {"kind": "reasoning", "text": "analysis"},
+        {"kind": "text", "text": "response"},
+    ]}
+    cases = {f"UNIFIED.no_tools.{family}": case}
+    _assert_golden_schemas(cases, unified_tools())
+    case["golden"].append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+    if family == "gpt_oss":
+        _assert_golden_schemas(cases, unified_tools())
+    else:
+        with pytest.raises(AssertionError):
+            _assert_golden_schemas(cases, unified_tools())
+
+
+def test_schema_free_lexical_exception_requires_its_scenario_and_native_mode():
+    case_id = "UNIFIED.gpt_oss_multiple_unknown_and_empty_tools.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({"UNIFIED.tool_only.qwen3": case}, unified_tools())
+    case["init"]["tool_output_mode"] = "GuidedJson"
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
+
+
+@pytest.mark.parametrize("mutation", ["arguments", "schema", "family"])
+def test_custom_compatibility_exclusion_rejects_changed_contracts(mutation):
+    case_id = "UNIFIED.xml_custom_type_single_quoted_object.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    with pytest.raises(AssertionError):
+        _assert_value(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
+    if mutation == "arguments":
+        case["golden"][0]["arguments"]["value"] = "{'a':1}"
+    elif mutation == "schema":
+        case["tools"][0]["parameters"]["properties"]["value"] = {"type": "object"}
+    else:
+        case_id = case_id.removesuffix("qwen3") + "glm47"
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("family", G.FAMILIES)
@@ -101,12 +206,23 @@ def test_all_authored_successful_calls_match_offered_schemas(family):
     _assert_golden_schemas(G.build_cases(family), unified_tools())
 
 
-@pytest.mark.parametrize("family", G.FAMILIES)
+# `sum_values` is offered only by the guided cases.
+@pytest.mark.parametrize("family", sorted(f for f in G.UNIFIED_FAMILIES if G._MANIFEST[f].get("guided_tool_output", True)))
 def test_schema_guard_rejects_old_array_as_string_declaration(family):
     tools = unified_tools()
     next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}
+    cases = G.build_cases(family)
+    for case in cases.values():
+        if not case.get("tools") and any(
+            event["kind"] == "tool_call" and event["name"] == "sum_values"
+            for event in case["golden"]
+        ):
+            case["tools"] = copy.deepcopy(tools)
+        for tool in case.get("tools", []):
+            if tool["name"] == "sum_values":
+                tool["parameters"]["properties"]["values"] = {"type": "string"}
     with pytest.raises(AssertionError):
-        _assert_golden_schemas(G.build_cases(family), tools)
+        _assert_golden_schemas(cases, tools)
 
 
 def test_schema_guard_rejects_old_numeric_string_successor():
@@ -181,6 +297,76 @@ def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
     assert "make_parser(&case.family, &case.tools)" in peer
     assert "supports_tools=True" in peer
     assert "schema_bytes = SCHEMA_PATH.read_bytes()" in peer
+
+
+@pytest.mark.parametrize("tools", [[], None, unified_tools()])
+def test_vllm_native_request_without_tools_disables_tool_choice(tools):
+    tree = ast.parse((SRC / "capture_vllm_unified.py").read_text())
+    request = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_request")
+    namespace = {"openai_tools": openai_tools, "ChatCompletionRequest": SimpleNamespace}
+    exec(compile(ast.Module(body=[request], type_ignores=[]), "capture_vllm_unified.py", "exec"), namespace)
+    actual = namespace["_request"]({"tools": tools})
+    projected = openai_tools(tools)
+    assert actual.tools == (projected or None)
+    assert actual.tool_choice == ("auto" if projected else "none")
+
+
+@pytest.mark.parametrize("family", sorted(VLLM_TOKENIZER_MARKERS))
+@pytest.mark.parametrize("state", [None, "Reasoning", "Response"])
+def test_vllm_request_preserves_family_reasoning_initialization(family, state):
+    # Existing corpus states need adapter kwargs that initialize the published parser.
+    tree = ast.parse((SRC / "capture_vllm_unified.py").read_text())
+    request = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_request")
+    namespace = {"openai_tools": openai_tools, "ChatCompletionRequest": SimpleNamespace}
+    exec(compile(ast.Module(body=[request], type_ignores=[]), "capture_vllm_unified.py", "exec"), namespace)
+    actual = namespace["_request"]({"family": family, "init": {"starting_state": state}, "tools": []})
+    expected = {"thinking": state != "Response", "enable_thinking": state != "Response"}
+    if family == "minimax_m3":
+        expected["thinking_mode"] = "enabled" if state == "Reasoning" else "adaptive"
+    assert actual.chat_template_kwargs == expected
+
+
+@pytest.mark.parametrize("family, marker", [
+    ("minimax_m3", "<mm:think>"), ("qwen3", "<think>"),
+    ("kimi_k3", "<|open|>think<|sep|>"), ("gemma4", "<|channel>"),
+])
+def test_vllm_prefilled_reasoning_uses_family_marker(family, marker):
+    # Existing corpus rows exercise this state; this pins the adapter's prompt-token projection.
+    tree = ast.parse((SRC / "capture_vllm_unified.py").read_text())
+    functions = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))
+                 and node.name in {"_prompt_token_ids", "StubTokenizer"}]
+    namespace = {"VLLM_TOKENIZER_MARKERS": VLLM_TOKENIZER_MARKERS, "re": re}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "capture_vllm_unified.py", "exec"), namespace)
+    tokenizer = namespace["StubTokenizer"](family)
+    tokens = namespace["_prompt_token_ids"]({"init": {"starting_state": "Reasoning"}}, family)
+    assert tokens == tokenizer.encode(marker, add_special_tokens=False)
+    assert tokens
+    for state in (None, "Response"):
+        assert namespace["_prompt_token_ids"]({"init": {"starting_state": state}}, family) is None
+
+
+def test_vllm_request_rejection_is_recorded_without_aborting_later_cases():
+    tree = ast.parse((SRC / "capture_vllm_unified.py").read_text())
+    functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in {"_request", "_capture_cases"}]
+
+    def validate_request(**kwargs):
+        assert kwargs["tools"] is None
+        assert kwargs["tool_choice"] == "required"
+        raise ValueError("tool_choice requires tools")
+
+    namespace = {"openai_tools": openai_tools, "ChatCompletionRequest": validate_request,
+                 "FAMILY_PARSERS": {"qwen3": ("qwen3", "qwen3")},
+                 "_PARSER_FACTORY": lambda **kwargs: SimpleNamespace(parse=True),
+                 "parser_error_detail": lambda error: str(error), "traceback": traceback}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "capture_vllm_unified.py", "exec"), namespace)
+    cases = [{"id": str(index), "family": "qwen3", "tools": [], "init": {"tool_output_mode": "GuidedJson"}}
+             for index in range(2)]
+    results = namespace["_capture_cases"](cases)
+    assert set(results) == {"0", "1"}
+    for result in results.values():
+        assert result["error"] == "tool_choice requires tools"
+        assert result["partial_chunks"] == []
+        assert result["capture_observation"]["error"]["code"] == "vllm_parser_error"
 
 
 def test_recovery_successor_respects_string_schema():
