@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-multimodal"
-version = "0.2.12"
+version = "0.2.13"
 dependencies = [
  "base64 0.22.1",
  "blake3",
