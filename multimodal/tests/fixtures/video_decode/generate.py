@@ -25,7 +25,9 @@ Clips:
   last block in a BlockGroup whose BlockDuration (500 ms) comes after the
   Block; vp9_duration_switch.webm has it before the Block, and the block
   before in a group whose BlockDuration (100 ms) comes after. Both clips
-  end at 1.4 s;
+  end at 1.4 s. vp9_duration_same_time.webm has its last two blocks at
+  0.8 s, in groups whose BlockDurations (500 ms, then 100 ms) come before
+  the Block: it ends at 1.3 s;
 * delay.mp4 is forty frames behind an edit list that delays them 1.5 s (an
   empty edit, then the media); cut.mp4 is 120 frames cut at 1.5 s without
   re-encoding, so its edit list hides the first 15, which are still decoded
@@ -314,7 +316,9 @@ def write_size(data: bytearray, offset: int, size: int) -> None:
     data[at : at + length] = ((1 << (7 * length)) | size).to_bytes(length, "big")
 
 
-def group_blocks(src: Path, dst: Path, durations_first: list[bool]) -> None:
+def group_blocks(src: Path, dst: Path, groups: list[tuple[bool, int, int | None]]) -> None:
+    """Put the last blocks in BlockGroups, one per (BlockDuration first, its
+    ms, a new block time in ms or None), and void the segment Duration."""
     data = src.read_bytes()
     [(_, segment, segment_data, segment_size)] = [
         e for e in elements(data, 0, len(data)) if e[0] == 0x18538067
@@ -322,13 +326,17 @@ def group_blocks(src: Path, dst: Path, durations_first: list[bool]) -> None:
     top = {e[0]: e for e in elements(data, segment_data, segment_data + segment_size)}
     _, cluster, cluster_data, cluster_size = top[0x1F43B675]
     blocks = list(elements(data, cluster_data, cluster_data + cluster_size))
-    blocks = blocks[-len(durations_first) :]
+    blocks = blocks[-len(groups) :]
     out = bytearray(data[: blocks[0][1]])
-    for i, ((_, block, block_data, block_size), first) in enumerate(zip(blocks, durations_first)):
+    for (_, block, block_data, block_size), (first, ms, time) in zip(blocks, groups):
         assert data[block] == 0xA3 and data[block_data + 3] & 0x80 == 0, "a SimpleBlock, not a keyframe"
         # A Block (same size byte and payload; no flag it sets) and its BlockDuration.
-        inner = bytes([0xA1]) + data[block + 1 : block_data + block_size]
-        ms = 500 if i == len(blocks) - 1 else 100
+        inner = bytearray([0xA1]) + data[block + 1 : block_data + block_size]
+        if time is not None:
+            # After the track number (one byte), in a cluster at time 0.
+            assert data[block_data] == 0x81
+            at = block_data - block + 1
+            inner[at : at + 2] = time.to_bytes(2, "big")
         duration = bytes([0x9B, 0x82]) + ms.to_bytes(2, "big")
         body = duration + inner if first else inner + duration
         out += bytes([0xA0, 0x80 | len(body)]) + body
@@ -475,8 +483,13 @@ def main() -> None:
     write(here / "vp9_texture.webm", "webm", "libvpx-vp9", {"crf": "30", "b": "0"}, frames=texture_frames())
     mark_invisible(here / "vp9_texture.webm", here / "vp9_invisible.webm", 2)
     patch_vp9_keyframe_size(here / "vp9.webm", here / "vp9_huge.webm", 16384, 16384)
-    group_blocks(here / "vp9.webm", here / "vp9_duration_after.webm", [False])
-    group_blocks(here / "vp9.webm", here / "vp9_duration_switch.webm", [False, True])
+    group_blocks(here / "vp9.webm", here / "vp9_duration_after.webm", [(False, 500, None)])
+    group_blocks(
+        here / "vp9.webm", here / "vp9_duration_switch.webm", [(False, 100, None), (True, 500, None)]
+    )
+    group_blocks(
+        here / "vp9.webm", here / "vp9_duration_same_time.webm", [(True, 500, None), (True, 100, 800)]
+    )
     patch_av01_size(here / "av1.mp4", here / "av1_small_container.mp4", 128, 128)
     write(here / "vp9_offset.webm", "webm", "libvpx-vp9", CLIPS[1][3], start=5 * FPS)
     write_bt709(here / "vp9_709.webm", "webm", "libvpx-vp9", CLIPS[1][3])

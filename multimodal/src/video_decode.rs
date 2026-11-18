@@ -972,14 +972,17 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
         .map_or(0, |ns| ns.get() / timestamp_scale);
     let (mut first_ts, mut end_ts) = (u64::MAX, 0);
     let mut frame = Frame::default();
+    let mut frames = 0;
     while file.next_frame(&mut frame).map_err(invalid)? {
         // Taken, as the demuxer refuses a BlockDuration while the frame holds
         // one. It drops one that comes before its Block: the walk has those.
         let demuxed = frame.duration.take();
+        let key = (frame.track, frame.timestamp, frames);
+        frames += 1;
         if frame.track != number {
             continue;
         }
-        let duration = demuxed.or_else(|| durations.get(&(number, frame.timestamp)).copied());
+        let duration = demuxed.or_else(|| durations.get(&key).copied());
         let end = frame
             .timestamp
             .saturating_add(duration.filter(|&d| d != 0).unwrap_or(default_units));
@@ -1754,13 +1757,21 @@ mod tests {
         assert!((info.fps - 10.0).abs() < 0.5, "{}", info.fps);
     }
 
-    /// Each clip ends at 0.9 + 0.5 s (see generate.py).
+    /// Ten frames from 0 s to the latest frame end (see generate.py).
     #[test]
     fn matroska_block_durations_count_in_either_order() {
-        for name in ["vp9_duration_after.webm", "vp9_duration_switch.webm"] {
+        let cases = [
+            ("vp9_duration_after.webm", 1.4),
+            ("vp9_duration_switch.webm", 1.4),
+            ("vp9_duration_same_time.webm", 1.3),
+        ];
+        for (name, end) in cases {
             let info = probe(&fixture(name)).unwrap();
-            assert_eq!(info.average_fps, 7.142_857_142_857_143, "{name}");
-            assert_eq!(info.duration, 1.4, "{name}");
+            assert_eq!(
+                (info.average_fps, info.duration),
+                (10.0 / end, end),
+                "{name}"
+            );
         }
     }
 

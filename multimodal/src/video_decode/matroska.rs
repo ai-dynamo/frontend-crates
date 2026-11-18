@@ -128,9 +128,9 @@ fn malformed(what: &str) -> MmError {
 }
 
 /// Each BlockDuration that comes before its Block in a BlockGroup (the
-/// demuxer drops those), by the track number and time of the Block, as the
-/// demuxer reads them.
-pub(super) type BlockDurations = HashMap<(u64, u64), u64>;
+/// demuxer drops those), by the Block's track number, time and first frame
+/// (counted over the frames of every track), as the demuxer reads them.
+pub(super) type BlockDurations = HashMap<(u64, u64, u64), u64>;
 
 /// Refuse what `matroska-demuxer` would loop on, panic on or read without
 /// bound in the WebM / Matroska file in `source`. Anything else it would
@@ -419,6 +419,7 @@ impl Walk<'_> {
     fn blocks(&self, mut at: u64) -> Result<BlockDurations> {
         let mut cluster_time = 0;
         let mut durations = BlockDurations::new();
+        let mut frames = 0;
         // The end of the BlockGroup the walk is in, until its Block, and a
         // BlockDuration read in it before then.
         let (mut group_end, mut duration) = (None, None);
@@ -435,14 +436,15 @@ impl Walk<'_> {
                 (CLUSTER, _) | (_, None) => at = element.data,
                 (SIMPLE_BLOCK | BLOCK, Some(size)) => {
                     let block = self.block(element.data, size, cluster_time)?;
-                    if let (Some(key), Some(value)) = (block, duration) {
+                    if let (Some((track, time, _)), Some(value)) = (block, duration) {
                         if durations.len() >= MAX_PACKETS {
                             return Err(MmError::invalid_input(
                                 "WebM / Matroska file has more BlockGroups than it can hold",
                             ));
                         }
-                        durations.insert(key, value);
+                        durations.insert((track, time, frames), value);
                     }
+                    frames += block.map_or(1, |(_, _, count)| count);
                     (group_end, duration) = (None, None);
                     at = element.next();
                 }
@@ -465,9 +467,9 @@ impl Walk<'_> {
     /// Refuse the block at `data` of `size` bytes if its timestamp overflows
     /// against `cluster_time`, or it is a fixed-size lace that does not
     /// divide its data (the demuxer would resume inside the block). A header
-    /// that does not read is the demuxer's to refuse. Return its track number
-    /// and time, as the demuxer reads them, when they read.
-    fn block(&self, data: u64, size: u64, cluster_time: u64) -> Result<Option<(u64, u64)>> {
+    /// that does not read is the demuxer's to refuse. Return its track number,
+    /// time and frame count, as the demuxer reads them, when they read.
+    fn block(&self, data: u64, size: u64, cluster_time: u64) -> Result<Option<(u64, u64, u64)>> {
         // Track number (a size-like VINT of up to 8 bytes), a 16-bit signed
         // timestamp, flags and, when laced, the frame count.
         let mut head = [0u8; 12];
@@ -501,14 +503,15 @@ impl Walk<'_> {
         let time = cluster_time.saturating_add_signed(i64::from(time));
         let (Some(&flags), Some(&count)) = (head.get(track_len + 2), head.get(track_len + 3))
         else {
-            return Ok(Some((track, time)));
+            return Ok(Some((track, time, 1)));
         };
         let frames = u64::from(count) + 1;
         let data_size = size.saturating_sub(track_len as u64 + 4);
         if (flags >> 1) & 0b11 == 0b10 && !data_size.is_multiple_of(frames) {
             return Err(malformed("fixed-size lace that does not divide its block"));
         }
-        Ok(Some((track, time)))
+        let laced = (flags >> 1) & 0b11 != 0;
+        Ok(Some((track, time, if laced { frames } else { 1 })))
     }
 }
 

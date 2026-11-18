@@ -261,6 +261,8 @@ fn block_durations_before_their_block_are_read() {
         CLUSTER,
         &[
             uint(TIMESTAMP, 1000),
+            // Three frames in a fixed-size lace: the next block's is frame 3.
+            el(SIMPLE_BLOCK, &[0x81, 0, 0, 0x84, 2, 0, 0, 0, 0, 0, 0]),
             group(&[block(5), uint(BLOCK_DURATION, 40)]),
             group(&[uint(BLOCK_DURATION, 50), block(-5)]),
             // Track 2, as a two-byte number.
@@ -268,12 +270,21 @@ fn block_durations_before_their_block_are_read() {
             // Track 0xFF, which the demuxer reads as u64::MAX.
             group(&[uint(BLOCK_DURATION, 70), el(BLOCK, &[0xFF, 0, 7, 0, 1])]),
             group(&[block(9)]),
+            // Two at one time, each with its own.
+            group(&[uint(BLOCK_DURATION, 80), block(9)]),
+            group(&[uint(BLOCK_DURATION, 30), block(9)]),
         ]
         .concat(),
     );
     assert_eq!(
         run(&file(&[cluster])).unwrap(),
-        BlockDurations::from([((1, 995), 50), ((2, 1000), 60), ((u64::MAX, 1007), 70)])
+        BlockDurations::from([
+            ((1, 995, 4), 50),
+            ((2, 1000, 5), 60),
+            ((u64::MAX, 1007, 6), 70),
+            ((1, 1009, 8), 80),
+            ((1, 1009, 9), 30),
+        ])
     );
 }
 
