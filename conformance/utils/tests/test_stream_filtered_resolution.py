@@ -13,7 +13,18 @@ sys.path.insert(0, str(SRC))
 from fixture_corpus import load_corpus
 from fixture_snapshot import fixture_snapshot_root
 from markers import _impl_get, _normalize_impl_mapping
-from resolve_stream_fixtures import resolve_docs
+from resolve_stream_fixtures import _merge_impl, resolve_docs
+
+
+def test_assembled_jail_overlay_survives_resolution_and_is_replaced_by_chunks():
+    case_id = "TOOLCALLING.streamv1.7-14"
+    base = {"cases": {case_id: {"chunks": [{"delta_text": "input"}]}}}
+    observed = {"calls": [{"name": "echo", "arguments": {"text": "literal"}}], "normal_text": ""}
+    _merge_impl(base, {"cases": {case_id: {"expected": {"dynamo_v1": observed}}}}, "dynamo_v1")
+    assert base["cases"][case_id]["expected"]["dynamo_v1"] == observed
+    _merge_impl(base, {"cases": {case_id: {"chunks": [{"expected": []}]}}}, "dynamo_v1")
+    assert "dynamo_v1" not in base["cases"][case_id]["expected"]
+    assert base["cases"][case_id]["chunks"][0]["expected"]["dynamo_v1"] == []
 
 
 def _project_selection(docs, impl):

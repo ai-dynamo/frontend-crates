@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.14] - Unreleased
+
+### Bug fixes
+
+- Preserve MiniMax M2 literal whitespace, XML entities, and delimiter-like text in tool arguments while keeping the legacy jail scan scoped and incremental.
+
 ## [11.0.13] - Unreleased
 
 ### Bug fixes
