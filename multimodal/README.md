@@ -651,6 +651,30 @@ What remains:
 
 ### Video and audio: planned layout
 
+#### Native audio contribution (draft)
+
+Native audio decoding and preprocessing are not implemented yet. This draft
+tracks the shared Rust portion of the direction discussed in
+[#607](https://github.com/ai-dynamo/frontend-crates/issues/607):
+
+- Define decoded PCM inputs with explicit sample format, channel layout,
+  sample rate, and sample count, independent of their transport.
+- Add Rust audio decoding and the channel conversion, resampling, and feature
+  extraction required by a selected model family.
+- Resolve family settings from checkpoint configuration and explicit engine
+  policy; keep token accounting and prompt layout consistent with the actual
+  truncation, padding, chunking, and feature extraction.
+- Add reference fixtures for PCM, features, auxiliary lengths/masks, expanded
+  token IDs, and layouts against a named, versioned HF or engine target.
+
+The first model family and the final public API remain to be agreed. This
+work should align with #607 without introducing a second configuration or
+planning path. SGLang owns request admission, media fetching, processor
+invocation, and scheduler adaptation. A future PCM shared-memory importer
+can feed the same decoded-input contract; shared-memory transport and its
+read-receipt lifecycle are separate from this contribution. This draft
+currently contains scope documentation only, with no runtime changes.
+
 ```
 src/
   image/                 as today
