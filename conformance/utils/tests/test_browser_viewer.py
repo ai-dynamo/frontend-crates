@@ -481,7 +481,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 || (item.capture_families || item.native_unified_families).length));
         """)
         newest_v2_by_minor = {}
-        newest_v1_by_producer_major = {}
+        v1_choices = set()
         for item in candidates:
             if item.get("identity", "").startswith("dynamo_v2@") or item["key"].startswith("dynamo@"):
                 version = item["version"]
@@ -490,14 +490,9 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                     newest_v2_by_minor[minor] = item
             elif item["key"].startswith(("dynamo_v1@", "dynamo_v1_jail@")):
-                producer = item["key"].split("@", 1)[0]
-                version = item["version"]
-                major = int(version.split(".", 1)[0])
-                line = (producer, major)
-                newest_v1_by_producer_major[line] = max(newest_v1_by_producer_major.get(line, version), version,
-                                                         key=capture_release_sort_key)
+                v1_choices.add(item["key"])
         expected = {item["key"] for item in newest_v2_by_minor.values()}
-        expected.update(f"{producer}@{version}" for (producer, _major), version in newest_v1_by_producer_major.items())
+        expected.update(v1_choices)
         for producer in ("dynamo_v2", "dynamo_v1", "dynamo_v1_jail"):
             recent = sorted((item for item in candidates if item.get("identity", "").startswith(producer + "@")),
                             key=lambda item: unified_history._capture_release_sort_key(item["version"]), reverse=True)[:2]
@@ -545,24 +540,9 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         v1_values = [option.get_attribute("value") for option in dynamo_options
                      if option.get_attribute("value").startswith("dynamo_v1")]
         assert v1_values
-        available_v1_versions = driver.execute_script("""
-          const candidates = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === 'tab-unified').candidates;
-            return candidates.filter(item => item.key.startsWith('dynamo_v1') && !item.source_blocker
-            && item.has_captured_results !== false
-            && (!(item.capture_families || item.native_unified_families)
-              || (item.capture_families || item.native_unified_families).length))
-            .map(item => item.key);
-        """)
         for producer in ("dynamo_v1@", "dynamo_v1_jail@"):
-            selected_versions = {value.rsplit("@", 1)[-1] for value in v1_values if value.startswith(producer)}
-            available_versions = [value.rsplit("@", 1)[-1] for value in available_v1_versions if value.startswith(producer)]
-            newest_by_major = {}
-            for version in available_versions:
-                major = version.split(".", 1)[0]
-                newest_by_major[major] = max(newest_by_major.get(major, version), version,
-                                             key=capture_release_sort_key)
-            recent = sorted(set(available_versions), key=unified_history._capture_release_sort_key, reverse=True)[:2]
-            assert selected_versions == set(newest_by_major.values()) | set(recent), producer
+            assert [value.split("@", 1)[1] for value in v1_values if value.startswith(producer)] == [
+                "Latest", "10.x", "9.x", "5.x", "3.x"]
         v2_values = {option.get_attribute("value") for option in dynamo_options
                      if option.get_attribute("value").startswith("dynamo@") or option.get_attribute("value") == "dynamo"}
         available_v2_versions = driver.execute_script("""
@@ -590,12 +570,12 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         for implementation in ("dynamo_v1", "dynamo_v1_jail"):
             candidates = [candidate for candidate in catalog["sources"]["candidates"]
                           if candidate["implementation"] == implementation
-                          and f"{implementation}@{candidate['version']}" in v1_values]
+                          and candidate["version"] in {row["version"] for row in catalog["capture_generation"]["current"] if row["implementation"] == implementation}]
             legacy_choices[implementation] = max(candidates, key=lambda candidate: (
                 len(candidate["capture_families"]), capture_release_sort_key(candidate["version"])))
-        direct_key = f"dynamo_v1@{legacy_choices['dynamo_v1']['version']}"
-        jail_key = f"dynamo_v1_jail@{legacy_choices['dynamo_v1_jail']['version']}"
-        assert {"dynamo_v1@5.1.3", "dynamo_v1_jail@5.1.3"} <= set(v1_values)
+        direct_key = "dynamo_v1@Latest"
+        jail_key = "dynamo_v1_jail@Latest"
+        assert {"dynamo_v1@5.x", "dynamo_v1_jail@5.x"} <= set(v1_values)
         selected_identity = driver.execute_script("""
           const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === 'tab-unified');
           return tab.candidates.find(item => item.key === 'dynamo')?.source_id;
@@ -621,14 +601,12 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         _ready(driver, "tab-unified")
         visible_families = set(driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.model_label)"))
         selected_sources = {selected_identity, legacy_choices["dynamo_v1"]["id"], legacy_choices["dynamo_v1_jail"]["id"]}
-        expected_families = {family for candidate in catalog["sources"]["candidates"]
-                             if f"{candidate['implementation']}@{candidate['mode']}@{candidate['version']}" in selected_sources
-                             for family in (candidate["capture_families"] if candidate["implementation"].startswith("dynamo_v1")
-                                            else candidate.get("native_unified_families", candidate["capture_families"]))}
+        expected_families = {family for resource in catalog["sources"]["unified"] if resource["kind"] == "inputs-and-golden"
+                             for family in resource.get("families", [resource.get("family")])}
         assert visible_families == expected_families
         assert {"qwen3", "muse_glimmer", "muse_spark"} <= visible_families
         driver.execute_script("""
-          for (const value of ['dynamo_v1@5.1.3', arguments[0], 'dynamo']) {
+          for (const value of ['dynamo_v1@5.x', arguments[0], 'dynamo']) {
             const select = document.querySelector('#tab-unified [data-slot-capture="0"]');
             select.value = value;
             select.dispatchEvent(new Event('change', {bubbles:true}));
@@ -651,11 +629,13 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
                    for path in requests if urlsplit(path).path.removeprefix("/") in resources}
         allowed = {selected_identity, "dynamo_v2@unified@0.7.24", "dynamo_v2@unified@0.6.1",
                    "dynamo_v1@unified@5.1.3", *selected_sources,
-                   f"dynamo_v1@unified@{max(direct_v1_versions, key=capture_release_sort_key)}",
-                   f"dynamo_v1_jail@unified@{max(jail_v1_versions, key=capture_release_sort_key)}"}
+                   f"dynamo_v1@unified@{legacy_choices['dynamo_v1']['version']}",
+                   f"dynamo_v1_jail@unified@{legacy_choices['dynamo_v1_jail']['version']}"}
         # Switching engines may admit the picker's most recent historical capture
         # before the following explicit selection replaces it.
         allowed.update(f"dynamo_v2@unified@{item['version']}" for item in recent_v2)
+        allowed.update(f"dynamo_v1@unified@{item['version']}" for item in catalog['sources']['candidates']
+                       if item['implementation'] == 'dynamo_v1' and item['version'].startswith('5.'))
         assert fetched <= allowed
 
     finally:
@@ -903,7 +883,7 @@ def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historic
 
         before = first_slot_size()
         capture_select = driver.find_element("css selector", '#tab-unified [data-slot-capture="0"]')
-        Select(capture_select).select_by_value("dynamo_v1@5.1.3")
+        Select(capture_select).select_by_value("dynamo_v1@5.x")
         assert started.wait(20), "the selected v1 5.1.3 capture request did not start"
         assert driver.execute_script("return document.querySelector('.capture-slot-controls').style.minHeight")
         during = first_slot_size()
@@ -1547,16 +1527,7 @@ def test_unavailable_jail_capture_deep_link_is_cleared(published_viewer):
 def test_primary_v1_deep_link_preserves_available_capture(stale_capture, historical_published_viewer):
     producer, version = stale_capture.split("@")
     major = version.split(".")[0]
-    catalog = _published_catalog(historical_published_viewer)
-    newest = max((row["version"] for row in catalog["sources"]["candidates"]
-                  if row["implementation"] == producer and row["version"].split(".")[0] == major
-                  and row.get("capture_families") and not row.get("source_blocker")
-                  and row.get("has_captured_results") is not False),
-                 key=unified_history._capture_release_sort_key)
-    available = any(row["implementation"] == producer and row["version"] == version
-                    and row.get("capture_families") and not row.get("source_blocker")
-                    and row.get("has_captured_results") is not False for row in catalog["sources"]["candidates"])
-    expected_capture = stale_capture if available else f"{producer}@{newest}"
+    expected_capture = f"{producer}@{major}.x"
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
@@ -1692,7 +1663,9 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
             assert actual_version.split(".")[:parts] == version.split(".")[:parts]
         current = _published_capture(historical_published_viewer)
         native = set(candidates[f"dynamo_v2@{current['version']}"]["native_unified_families"])
-        scopes = [set(candidates[identity]["capture_families"]) & native
+        authored = {family for resource in catalog["sources"]["unified"] if resource["kind"] == "inputs-and-golden"
+                    for family in resource.get("families", [resource.get("family")])}
+        scopes = [authored if identity.startswith("dynamo_v1") else set(candidates[identity]["capture_families"]) & native
                   if identity.startswith("dynamo_v2@") else set(candidates[identity]["capture_families"])
                   for identity in effective]
         expected = sorted(set().union(*scopes))
@@ -2024,6 +1997,72 @@ def test_renamed_case_popup_urls_keep_the_same_case(published_viewer, vertical, 
                 expected.append("kimi_k3")
             actual = driver.execute_script("return JSON.parse(new URL(location.href).searchParams.get('popup'))")
             assert actual == expected
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
+def test_v1_major_choices_preserve_golden_and_measured_family_versions(historical_published_viewer, implementation):
+    server, _requests = _server(root=historical_published_viewer)
+    driver = _driver()
+    try:
+        query = urlencode({"slots_tab-unified": f"{implementation}@11.0.13,none,none"})
+        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?{query}")
+        _ready(driver, "tab-unified")
+        capture = driver.find_element("css selector", "[data-slot-capture='0']")
+        assert Select(capture).first_selected_option.get_attribute("value") == f"{implementation}@Latest"
+        options = [option.get_attribute("value").split("@", 1)[1] for option in Select(capture).options
+                   if option.get_attribute("value").startswith(implementation + "@")]
+        assert options == ["Latest", "10.x", "9.x", "5.x", "3.x"]
+        snapshot = """
+          const key=arguments[0];
+          return Object.fromEntries(window.__conformanceModel.rows.map(row=>{
+            const cells=Object.values(row.cells).flatMap(function leaves(cell){return cell.variants ? cell.variants.flatMap(leaves) : [cell];});
+            return [row.family,cells.filter(cell=>cell.tooltip && cell.status !== 'na').map(cell=>({
+              golden:cell.tooltip.candidates.find(c=>c.key==='golden')?.block,
+              capture:cell.tooltip.candidates.find(c=>c.key===key)
+            }))];
+          }));
+        """
+        latest = driver.execute_script(snapshot, f"{implementation}@Latest")
+        for family in ("pythonic", "qwen3_coder"):
+            assert latest[family]
+            assert any("events" in item["capture"]["block"] for item in latest[family])
+            assert all(item["capture"]["version"] == "11.0.13" for item in latest[family])
+        for major in ("10.x", "9.x", "5.x", "3.x"):
+            Select(driver.find_element("css selector", "[data-slot-capture='0']")).select_by_value(f"{implementation}@{major}")
+            _ready(driver, "tab-unified")
+            historical = driver.execute_script(snapshot, f"{implementation}@{major}")
+            assert historical.keys() == latest.keys()
+            assert all(item["golden"] is not None for values in historical.values() for item in values)
+            if major == "10.x":
+                assert all(item["capture"]["version"] == "10.0.1" for item in historical["gpt_oss"])
+                assert all(item["capture"]["version"] == "10.2.2" for item in historical["qwen3"])
+                assert all(item["capture"]["block"].get("unavailable") == "No capture for this major"
+                           for item in historical["qwen3_coder"])
+                for family, expected in (("gpt_oss", "10.0.1"), ("qwen3", "10.2.2"), ("qwen3_coder", "No capture for this major")):
+                    cell = driver.execute_script("""
+                      return [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(cell => {
+                        const model = window.__conformanceCellModel(cell);
+                        return model?.family === arguments[0] && model.status !== 'na' && cell.offsetWidth && cell.offsetHeight;
+                      });
+                    """, family)
+                    assert cell is not None
+                    driver.execute_script("""
+                      window.__buildTooltip(arguments[0]);
+                      arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true,pointerType:'touch'}));
+                      arguments[0].click();
+                    """, cell)
+                    popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
+                    assert expected in popup.text
+                    assert "golden" in popup.text.lower()
+                    driver.find_element("tag name", "body").send_keys(Keys.ESCAPE)
+        driver.refresh()
+        _ready(driver, "tab-unified")
+        assert Select(driver.find_element("css selector", "[data-slot-capture='0']")).first_selected_option.get_attribute("value") == f"{implementation}@3.x"
+        assert not driver.execute_script("return window.__conformanceError || null")
     finally:
         driver.quit()
         server.shutdown()

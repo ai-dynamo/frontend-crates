@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns, validateCaseColumns, caseSchemas, compareVersions } from './model.js';
+import { familyCaptureSource, escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns, validateCaseColumns, caseSchemas, compareVersions } from './model.js';
 import { isMapping, hasField, getField, compareText, mappingEntries, mergeMappings, deleteField, sameValue } from './values.js';
 import { materializeUnifiedRecord, canonicalUnifiedLabel } from './resources.js';
 
@@ -90,15 +90,16 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     }
     byFamily.set(family, cases);
     for (const descriptor of chosen) {
-      const { records } = capturesFamily(descriptor.source, family)
-        ? await reader.unified(family, descriptor.source.implementation, descriptor.source.version, document) : { records: new Map() };
+      const familySource = familyCaptureSource(descriptor.source, family);
+      const { records } = familySource && capturesFamily(descriptor.source, family)
+        ? await reader.unified(family, familySource.implementation, familySource.version, document) : { records: new Map() };
       const captures = new Map();
       for (const [id, record] of records) {
         const input = document.cases[id];
         const identity = input.lifecycle === 'active' ? input.display_id : record.value.case_key;
         const current = activeAliases.get(canonicalUnifiedLabel(identity, family, metadata.unified_aliases));
         if (!current) continue;
-        const projected = materializeUnifiedRecord(input, record, family, { implementation: descriptor.source.implementation, version: descriptor.source.version, captureMode: metadata.unified_capture_policy[descriptor.source.implementation].mode });
+        const projected = materializeUnifiedRecord(input, record, family, { implementation: descriptor.source.implementation, version: familySource.version, captureMode: metadata.unified_capture_policy[descriptor.source.implementation].mode });
         let value = mappingEntries(getField(projected, 'cases'))[0][1];
         const reason = unifiedComparisonFailure(current.input.request, value);
         if (reason) { value = mergeMappings(value, { unavailable: reason }); deleteField(value, 'error'); deleteField(value, 'unavailable_code'); }
@@ -178,6 +179,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       const comparisons = { golden: { value: ['events', canonicalUnifiedEvents(gold)] } };
       for (const descriptor of chosen) {
         const { source, control } = descriptor;
+        const familySource = familyCaptureSource(source, family);
         const history = histories.get(`${family}\0${control.key}`);
         const capture = history.get(scenario);
         const parseMode = captureParserRoute(descriptor, family, metadata, capture?.parserPath);
@@ -186,7 +188,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         if (!capturesFamily(source, family)) {
           failure = { unavailable: `No parser for ${family}` };
         } else if (!capture) {
-          failure = missingCapture;
+          failure = source.family_versions ? { unavailable: source.release_choice === 'Latest' ? 'No current capture' : 'No capture for this major', unavailable_code: 'missing_capture' } : missingCapture;
         }
         const failed = Object.hasOwn(failure, 'error');
         const hasFailure = Object.keys(failure).length > 0;
@@ -215,9 +217,10 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         for (const field of ['producer_origin', 'inherited_from']) {
           if (capture && hasField(capture.value, field)) block[field] = getField(capture.value, field);
         }
+        const familyLabel = source.family_versions && familySource ? control.label.replace(source.release_choice, familySource.version) : control.label;
         const label = source.implementation === 'dynamo_v2' && parseMode
-          ? control.label.replace(/recorded history|UnifiedParser/, parseMode === 'unified' ? 'UnifiedParser' : parseMode) : control.label;
-        results.set(control.key, { chunks, events, verdict, failure, block, syntheticFinish, parseMode, label });
+          ? control.label.replace(/recorded history|UnifiedParser/, parseMode === 'unified' ? 'UnifiedParser' : parseMode) : familyLabel;
+        results.set(control.key, { chunks, events, verdict, failure, block, syntheticFinish, parseMode, label, version: familySource?.version || null });
         comparisons[control.key] = { value: events !== null ? ['events', canonicalUnifiedEvents(events)] : failed && (isDynamo || Object.hasOwn(failure, 'error')) ? ['failure'] : ['absent'],
           leak: Number(verdict === 'LEAK'), err: Number(control.key === 'dynamo' ? failed : Object.hasOwn(failure, 'error')),
           na: Number(events === null && !Object.hasOwn(failure, 'error')) };
@@ -238,7 +241,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
           input: { kind: chunks.length || finish ? 'chunks' : 'text', text: request.input, chunks, finish, family: markerFamily },
           candidates: tooltipOrder.map(({ control }) => control.key === 'golden'
             ? { key: 'golden', label: control.label, impl: 'golden', version: null, parse_mode: 'unified', leak: false, pin_first: true, block: { events: gold } }
-            : { key: control.key, label: results.get(control.key).label, impl: control.impl, version: control.version, parse_mode: results.get(control.key).parseMode, leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
+            : { key: control.key, label: results.get(control.key).label, impl: control.impl, version: results.get(control.key).version, parse_mode: results.get(control.key).parseMode, leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
           baseline: null, reasons, dynamo_notes: [], refs: [], leak_note: null, na_note: null } };
     }
     const modelLabel = family;

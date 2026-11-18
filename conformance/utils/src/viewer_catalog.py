@@ -225,9 +225,7 @@ def _selectable_v1_history(item: dict[str, Any]) -> bool:
         return False
     if not item.get("archive"):
         return True
-    archive_name = PurePosixPath(item["archive"]["path"]).name
-    archive_release = re.fullmatch(r"dynamo-([0-9][a-zA-Z0-9.-]*)\.tar\.gz", archive_name)
-    return not archive_release or item["version"] == archive_release[1]
+    return not Version(item["version"]).is_prerelease
 
 
 def _dynamo_v2_display_producer(root: Path) -> dict[str, str]:
@@ -925,10 +923,13 @@ def build_catalog(
     )
     if datasets:
         snapshot_format = True
+    generation_path = root / "conformance/capture-generation.json"
+    generation = json.loads(generation_path.read_bytes()) if generation_path.is_file() else None
+    current_sources = {row["source"] for row in generation["current"]} if generation else set()
     candidates = []
     for item in unified:
         if item["implementation"]:
-            if not _selectable_v1_history(item):
+            if item["path"] not in current_sources and not _selectable_v1_history(item):
                 continue
             policy = source_metadata["unified_capture_policy"].get(
                 item["implementation"], {}
@@ -944,7 +945,7 @@ def build_catalog(
                     "capture_mode": policy.get("mode"),
                     "producer": policy.get("producer"),
                     "source_blocker": None if item.get("archive") and item["implementation"] in {"dynamo_v1", "dynamo_v1_jail"} else policy.get("source_blockers", {}).get(item["version"]),
-                    "capture_families": [item["family"]] if item.get("archive") else [],
+                    "capture_families": [item["family"]] if item.get("archive") or item["implementation"] in {"dynamo_v1", "dynamo_v1_jail"} else [],
                 }
             )
     unique_candidates = {}

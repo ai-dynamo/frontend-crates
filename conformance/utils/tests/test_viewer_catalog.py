@@ -26,7 +26,7 @@ from test_capture_sources import native_publisher
 from test_unified_history import _store, _change
 
 
-def test_v1_archive_dependencies_and_modern_source_are_not_historical_choices():
+def test_v1_family_major_sources_include_archive_parents_but_exclude_modern_history():
     anchor = {"implementation": "dynamo_v1", "version": "5.1.3",
               "archive": {"path": "versions/dynamo-5.1.3.tar.gz"}}
     parent = {"implementation": "dynamo_v1", "version": "5.1.2",
@@ -34,7 +34,7 @@ def test_v1_archive_dependencies_and_modern_source_are_not_historical_choices():
     modern = {"implementation": "dynamo_v1_jail", "version": "11.0.13", "kind": "history"}
     current = {"implementation": "dynamo_v1_jail", "version": "11.0.13", "kind": "current"}
     assert viewer_catalog._selectable_v1_history(anchor)
-    assert not viewer_catalog._selectable_v1_history(parent)
+    assert viewer_catalog._selectable_v1_history(parent)
     assert not viewer_catalog._selectable_v1_history(modern)
     assert viewer_catalog._selectable_v1_history(current)
 

@@ -12,7 +12,7 @@ initializeDevelopmentParser();
 import { expandFamily, expandSnapshot, isNormalized } from './normalization.js';
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
-import { selectedCellOutcome } from './model.js';
+import { familyCaptureSource, selectedCellOutcome } from './model.js';
 import { leafCells, isApplicableCell, validateCaseCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
@@ -530,7 +530,7 @@ function validateTab(tab, loadedKeys = null) {
     const prior = sources.get(owner);
     if (prior) assert.ok(compareVersions(prior, descriptor.source.version) >= 0);
     sources.set(owner, descriptor.source.version);
-    assert.ok(descriptor.control.label.includes(descriptor.source.version));
+    assert.ok(descriptor.control.label.includes(descriptor.source.release_choice || descriptor.source.version));
     assert.ok(!descriptor.control.label.includes('+source.'));
     if (spec.mode === 'stream') assert.ok(!descriptor.source.version.match(/\.patch\d+$/));
   }
@@ -614,7 +614,7 @@ async function checkUnifiedSelections(original, reader, loadedKeys) {
       const selected = await buildTab(catalog, reader, original.id, { selected: [key], reference: null });
       const expectedFamilies = descriptor.source.implementation === 'dynamo_v2'
         ? currentNativeFamilies.filter(family => !descriptor.source.capture_families || descriptor.source.capture_families.includes(family))
-        : descriptor.source.capture_families;
+        : descriptor.source.family_versions ? [...new Set(catalog.sources.unified.filter(resource => resource.kind === 'inputs-and-golden').flatMap(resource => resource.families || [resource.family]))].sort() : descriptor.source.capture_families;
       assert.deepEqual(selected.rows.map(row => row.family), expectedFamilies,
         `${key}: historical observations retain the current native family scope`);
       for (const row of selected.rows) {
@@ -637,7 +637,7 @@ const unifiedSpec = catalog.metadata.tabs.find(spec => spec.suite === 'unified')
 assert.ok(unifiedSpec);
 const allUnifiedDescriptors = tabCandidates(catalog, unifiedSpec).filter(item => item.source.version);
 const selectedResources = args[4] ? JSON.parse(await readFile(args[4])) : null;
-const unifiedDescriptors = allUnifiedDescriptors.filter(item => !selectedResources || selectedResources.some(resource => resource.implementation === item.source.implementation && resource.version === item.source.version));
+const unifiedDescriptors = allUnifiedDescriptors.filter(item => !selectedResources || selectedResources.some(resource => resource.implementation === item.source.implementation && (item.source.family_versions ? Object.values(item.source.family_versions).includes(resource.version) : resource.version === item.source.version)));
 const defaultKey = allUnifiedDescriptors.find(item => item.control.default_bucket === 'A').control.key;
 const defaultDescriptor = allUnifiedDescriptors.find(item => item.control.key === defaultKey);
 if (!unifiedDescriptors.includes(defaultDescriptor)) unifiedDescriptors.push(defaultDescriptor);
@@ -760,9 +760,9 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
       assert.equal(cell.cmp[defaultKey].na, 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
-        const { source } = descriptor;
+        const source = familyCaptureSource(descriptor.source, family);
         const { id, input } = authored.get(scenario);
-        const { records } = capturesFamily(source, family)
+        const { records } = source && capturesFamily(source, family)
           ? await reader.unified(family, source.implementation, source.version, document) : { records: new Map() };
         const record = records.get(id);
         if (record) {
@@ -782,7 +782,7 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
           } else {
             assert.ok(Array.isArray(other.block.events), `${family}/${scenario}/${other.key}: compatible source record is measured`);
           }
-        } else if (!capturesFamily(source, family)) {
+        } else if (source && !capturesFamily(source, family)) {
           assert.equal(other.block.unavailable, `No parser for ${family}`);
           assert.equal(Object.hasOwn(other.block, 'events'), false);
         } else {

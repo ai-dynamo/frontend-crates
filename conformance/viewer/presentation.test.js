@@ -351,6 +351,31 @@ assert.deepEqual(scopedCell.tooltip.candidates.find(({ key }) => key === 'dynamo
   unavailable: `Not applicable to ${firstFamily}`, unavailable_code: 'scenario_not_applicable',
 });
 
+for (const implementation of ['dynamo_v1', 'dynamo_v1_jail']) {
+  const fixture = coverageFixture([[firstFamily], [sharedFamily]]);
+  fixture.catalog.capture_generation.current = coverageFamilies.map(family => ({ family, implementation, version: '11.0.13' }));
+  fixture.catalog.sources.candidates = fixture.catalog.sources.candidates.filter(source => source.implementation === 'dynamo_v2');
+  for (const [version, families] of [['11.0.13', coverageFamilies], ['10.2.2', [sharedFamily]], ['10.0.1', [firstFamily]], ['9.2.13', [sharedFamily]]]) {
+    fixture.catalog.sources.candidates.push({ mode: 'unified', implementation, version, capture_families: families });
+  }
+  const choices = tabCandidates(fixture.catalog, { id: 'tab-unified', mode: 'unified' }).filter(item => item.source.implementation === implementation);
+  assert.deepEqual(choices.map(item => item.source.release_choice), ['Latest', '10.x', '9.x']);
+  assert.deepEqual(choices[1].source.family_versions, { [sharedFamily]: '10.2.2', [firstFamily]: '10.0.1' });
+  const reads = [];
+  const reader = { ...fixture.reader, unified: async (family, impl, version) => {
+    reads.push([family, impl, version]);
+    return { records: new Map() };
+  } };
+  const key = `${implementation}@10.x`;
+  const panel = await unifiedPanel(fixture.catalog, reader, { selected: [key], reference: null });
+  assert.deepEqual(panel.rows.map(row => row.family), [...coverageFamilies].sort(), 'missing captures must retain applicable GOLDEN');
+  assert.deepEqual(reads.sort(), [[firstFamily, implementation, '10.0.1'], [sharedFamily, implementation, '10.2.2']].sort());
+  const missing = toolOnlyCell(panel, lastFamily).tooltip.candidates;
+  assert.equal(missing.find(item => item.key === key).block.unavailable, 'No capture for this major');
+  assert.ok(missing.find(item => item.key === 'golden').block.events);
+  assert.equal(toolOnlyCell(panel, firstFamily).tooltip.candidates.find(item => item.key === key).version, '10.0.1');
+}
+
 const inventoryCatalog = structuredClone(scopedCatalog);
 inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').capture_families.push(firstFamily);
 inventoryCatalog.sources.candidates.find(item => item.implementation === 'dynamo_v2').native_unified_families.push(firstFamily);

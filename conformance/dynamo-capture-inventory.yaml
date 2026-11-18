@@ -1,7 +1,7 @@
 schema_version: 1
 policy:
   corpus: UNIFIED
-  v1: archive the latest captured stable release for each represented major from 3.x through 10.x with parent sources; retain the latest 11.x source only for the versionless current capture and exclude it from historical selection
+  v1: archive the latest captured stable release for each represented major from 3.x through 10.x with parent sources; use versionless YAML as the only current v1 capture source; select each family's newest measured stable release within a historical major
   v2: retain every captured stable release and retained source labels; deduplicate unchanged observations
 targets:
 - implementation: dynamo_v1

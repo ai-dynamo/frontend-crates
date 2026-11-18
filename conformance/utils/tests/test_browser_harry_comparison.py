@@ -1135,7 +1135,7 @@ def test_reference_url_same_engine_and_stale_request(historical_published_viewer
         duplicate = driver.find_element("css selector","[data-slot-capture='0'] option[value='dynamo@0.7.18']")
         assert not duplicate.is_enabled()
         before = counts(driver)
-        Select(driver.find_element("css selector","[data-slot-capture='0']")).select_by_value("dynamo_v1@5.1.3")
+        Select(driver.find_element("css selector","[data-slot-capture='0']")).select_by_value("dynamo_v1@5.x")
         assert started.wait(20)
         assert counts(driver) == before
         Select(driver.find_element("css selector","[data-slot-capture='0']")).select_by_value("dynamo")

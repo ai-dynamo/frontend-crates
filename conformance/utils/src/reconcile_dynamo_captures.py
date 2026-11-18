@@ -195,6 +195,7 @@ def reconcile(root: Path, work: Path, *, workers=4, versions=None, discover=True
             v1_capture_retention.retain(staged_store, latest=next(iter(completed_v1)))
             store = unified_history._load_store_unlocked(staged_store)
             unified_history.refresh_current_snapshots(staged_root, store, versions=completed_v1)
+            v1_capture_retention.remove_current_duplicates(staged_root)
         publish_history_store(root, staged_store, expected_inventory, inventory_update=(inventory, before, data))
     return summary
 

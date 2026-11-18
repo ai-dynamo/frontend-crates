@@ -268,19 +268,39 @@ def history_request_contract(site, identities):
         if implementation == "dynamo":
             implementation = "dynamo_v2"
             identity = f"{implementation}@{version}"
-        candidate = next(item for item in candidates
-                         if item["implementation"] == implementation and item["version"] == version)
-        families = set(candidate.get("capture_families") or ())
-        if implementation == "dynamo_v2":
-            families.intersection_update(latest_dynamo.get("native_unified_families") or ())
-        if identity in embedded_ids:
-            families.difference_update(embedded_families)
-        required_families.update(families)
+        grouped = implementation in {"dynamo_v1", "dynamo_v1_jail"} and (version == "Latest" or version.endswith(".x"))
+        if grouped:
+            family_versions = {}
+            if version == "Latest":
+                family_versions = {row["family"]: row["version"] for row in current if row["implementation"] == implementation}
+            else:
+                for item in candidates:
+                    if item["implementation"] != implementation or item["version"].split(".")[0] != version.split(".")[0]:
+                        continue
+                    for family in item["capture_families"]:
+                        prior = family_versions.get(family)
+                        if prior is None or unified_history._capture_release_sort_key(item["version"]) > unified_history._capture_release_sort_key(prior):
+                            family_versions[family] = item["version"]
+            families = {family for item in resources if item["kind"] == "inputs-and-golden"
+                        for family in item.get("families", [item.get("family")])}
+        else:
+            candidate = next(item for item in candidates
+                             if item["implementation"] == implementation and item["version"] == version)
+            families = set(candidate.get("capture_families") or ())
+            if implementation == "dynamo_v2":
+                families.intersection_update(latest_dynamo.get("native_unified_families") or ())
+            family_versions = dict.fromkeys(families, version)
         for family in families:
+            version = family_versions.get(family)
+            if version is not None and f"{implementation}@{version}" in embedded_ids and family in embedded_families:
+                continue
+            required_families.add(family)
             input_resource = next((item for item in resources
                                    if item["kind"] == "inputs-and-golden" and item["family"] == family), None)
             if input_resource:
                 selected_resources[input_resource["path"]] = input_resource
+            if version is None:
+                continue
             packed = next((item for item in resources if item["kind"] == "resolved-capture"
                            and item["implementation"] == implementation and item["version"] == version
                            and (item.get("family") == family or family in item.get("families", ()))), None)

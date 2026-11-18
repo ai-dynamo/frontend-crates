@@ -194,3 +194,32 @@ def test_retention_archives_major_checkpoints_with_parent_sources_and_keeps_curr
     physical = {path.relative_to(root): path.read_bytes() for path in root.rglob("*") if path.is_file()}
     assert retention.retain(root)["retired"] == 0
     assert physical == {path.relative_to(root): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+
+
+def test_remove_current_duplicates_preserves_current_and_historical_evidence(tmp_path):
+    checkout = tmp_path / "checkout"
+    root = checkout / capture_sources.STORE
+    _write_family(root)
+    jobs = _receipted_jobs(root, tmp_path / "jobs", "dynamo_v1", "batch", versions=("3.0.0", "11.0.13"))
+    import_peer_unified.import_capture_groups(root, {"dynamo_v1": jobs}, compact_executions=True)
+    retention.retain(root)
+    unified_history.refresh_current_snapshots(checkout, unified_history.load_store(root))
+    current = root / "families/gemma4/dynamo_v1.yaml"
+    before = current.read_bytes()
+    archive = next((root / "versions").glob("*.tar.gz"))
+    historical = archive.read_bytes()
+    duplicate = current.with_name("dynamo_v1-11.0.13.yaml")
+    original = duplicate.read_bytes()
+    changed = unified_history.load_yaml(duplicate)
+    changed["document"]["retained_evidence"] = "must not be discarded"
+    duplicate.write_text(unified_history.dump_yaml(changed))
+    with pytest.raises(ValueError, match="evidence differs"):
+        retention.remove_current_duplicates(checkout)
+    assert duplicate.exists()
+    assert current.read_bytes() == before
+    duplicate.write_bytes(original)
+    assert retention.remove_current_duplicates(checkout) == [duplicate]
+    assert current.read_bytes() == before
+    assert archive.read_bytes() == historical
+    assert not duplicate.exists()
+    assert retention.remove_current_duplicates(checkout) == []

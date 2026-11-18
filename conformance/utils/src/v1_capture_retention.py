@@ -9,6 +9,7 @@ import tempfile
 
 from packaging.version import Version
 
+import capture_sources
 import execution_manifests
 import unified_archives
 import unified_history
@@ -16,7 +17,7 @@ from viewer_codec import typed_equal
 
 
 IMPLEMENTATIONS = {"dynamo_v1", "dynamo_v1_jail"}
-POLICY = "archive the latest captured v1 release for each 3.x through 10.x major with parent sources; retain the latest 11.x source for the versionless current capture"
+POLICY = "archive the latest captured v1 release for each 3.x through 10.x major with parent sources; use only the independent versionless current capture for the latest v1 release"
 
 
 def selected_targets(targets, versions=None):
@@ -156,3 +157,37 @@ def retain(root: Path, *, latest: str | None = None) -> dict:
             unified_history.publish_paths_transactionally([(staged, root)], backup_parent=root.parent)
         return {"archives": len(archives), "retained": retained, "retired": retired,
                 "latest": str(newest) if newest is not None else None}
+
+
+def remove_current_duplicates(checkout: Path) -> list[Path]:
+    """Remove backing copies only after their full evidence matches current YAML."""
+    root = checkout / capture_sources.STORE
+    with unified_history._store_mutation_lock(root):
+        capture_sources.current(checkout)
+        duplicates = []
+        for current in root.glob("families/*/*.yaml"):
+            if current.stem not in IMPLEMENTATIONS:
+                continue
+            data = current.read_bytes()
+            snapshot = unified_history._parse_yaml(current, data)
+            source = snapshot["capture_selection"]["source"]
+            target = checkout / capture_sources.relative(source)
+            expected = current.with_name(f"{current.stem}-{snapshot['capture_selection']['version']}.yaml")
+            if target != expected:
+                raise ValueError(f"current v1 source differs from selected release: {current}")
+            if not target.exists():
+                continue
+            authored_path = current.with_name("inputs_and_golden.yaml")
+            authored = unified_history._parse_yaml(authored_path, authored_path.read_bytes())
+            original = target.read_bytes()
+            complete = capture_sources.independent_snapshot(
+                unified_history._parse_yaml(target, original), authored, source_member=source)
+            if not typed_equal({key: value for key, value in snapshot.items() if key != "capture_selection"}, complete):
+                raise ValueError(f"current v1 evidence differs from backing source: {current}")
+            duplicates.append((current, data, target, original))
+        for current, data, target, original in duplicates:
+            if current.read_bytes() != data or target.read_bytes() != original:
+                raise ValueError("v1 sources changed while removing duplicate captures")
+        for _current, _data, target, _original in duplicates:
+            target.unlink()
+        return [target for _current, _data, target, _original in duplicates]

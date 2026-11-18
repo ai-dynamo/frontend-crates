@@ -203,8 +203,45 @@ export function sortCandidates(items) {
     .sort((a, b) => compareText(parserName(a), parserName(b)));
 }
 
-// The source descriptor carries implementation + data mode independently of
-// display parse_mode (the v1 jail uses stream data but displays batch parsing).
+const isV1Capture = source => ['dynamo_v1', 'dynamo_v1_jail'].includes(source.implementation);
+
+export function familyCaptureSource(source, family) {
+  if (!source.family_versions) return source;
+  const version = source.family_versions[family];
+  if (!version) return null;
+  const { family_versions, release_choice, ...capture } = source;
+  return { ...capture, version, capture_families: [family] };
+}
+
+function v1ReleaseSources(catalog, sources) {
+  const current = catalog.capture_generation?.current;
+  if (!current) return sources;
+  const result = sources.filter(source => !isV1Capture(source));
+  for (const implementation of ['dynamo_v1', 'dynamo_v1_jail']) {
+    const captures = sources.filter(source => source.implementation === implementation);
+    if (!captures.length) continue;
+    const groups = new Map();
+    const add = (choice, family, version) => {
+      if (!groups.has(choice)) groups.set(choice, {});
+      const versions = groups.get(choice);
+      if (!versions[family] || compareVersions(version, versions[family]) > 0) versions[family] = version;
+    };
+    for (const row of current.filter(row => row.implementation === implementation)) add('Latest', row.family, row.version);
+    for (const source of captures) {
+      const major = Number(source.version.split('.')[0]);
+      if (major >= 11 || /[-a-z]/i.test(source.version)) continue;
+      for (const family of source.capture_families || []) add(`${major}.x`, family, source.version);
+    }
+    for (const [release_choice, family_versions] of groups) {
+      const version = Object.values(family_versions).sort((a, b) => compareVersions(b, a))[0];
+      result.push({ ...captures[0], id: `${implementation}@unified@${release_choice}`, version,
+        release_choice, family_versions, capture_families: Object.keys(family_versions), source_blocker: null, has_captured_results: true });
+    }
+  }
+  return result;
+}
+
+// Data mode stays independent of display parse_mode: the v1 jail displays batch parsing.
 export function tabCandidates(catalog, tab, { golden = false } = {}) {
   const metadata = catalog.metadata;
   const mode = tab.mode;
@@ -223,15 +260,20 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
   const compare = mode === 'unified' ? compareVersions : compareLegacyVersions;
   const latest = (implementation, dataMode = mode) => recordedSources.filter((item) => item.implementation === implementation && item.mode === dataMode).sort((a, b) => compare(b.version, a.version))[0];
   // Only the public Unified selector narrows family-local current evidence.
-  const sources = mode === 'unified' && catalog.capture_generation?.mode === 'latest'
+  const selectedSources = mode === 'unified' && catalog.capture_generation?.mode === 'latest'
     ? recordedSources.filter(source => source.id === latest(source.implementation, source.mode).id)
     : recordedSources;
+  const sources = v1ReleaseSources(catalog, selectedSources);
   const control = (source, key, label, bucket = 'C') => ({
     source,
     control: { key, implementation: source.implementation, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
       label, label_html: mode === 'unified' ? label : candidateLabelHtml(label), default_bucket: bucket,
       version: source.version, parse_mode: mode === 'unified' ? (source.capture_mode || metadata.unified_capture_policy?.[source.implementation]?.mode || 'stream') : /\([^)]*stream/.test(label) ? 'stream' : /\([^)]*batch/.test(label) ? 'batch' : null,
       language: source.language || metadata.unified_capture_policy?.[source.implementation]?.language || null,
+      release_choice: source.release_choice,
+      identities: source.family_versions ? raw.filter(item => item.implementation === source.implementation
+        && (source.release_choice === 'Latest' ? Object.values(source.family_versions).includes(item.version) : item.version.split('.')[0] === source.release_choice.split('.')[0]))
+        .map(item => `${item.implementation}@${item.version}`) : [],
       capture_families: source.capture_families,
       native_unified_families: source.native_unified_families,
       has_captured_results: source.has_captured_results,
@@ -252,7 +294,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
         : source.implementation === 'dynamo_v1_jail' ? 'batch + jail-buffer'
         : capture.mode === 'batch' ? 'batch'
           : policy.capture_contracts?.[source.implementation]?.label || 'stream';
-      return `${producerLabel} ${source.version} (${flavor})`;
+      return `${producerLabel} ${source.release_choice || source.version} (${flavor})`;
     };
     const makeControl = (source, key, bucket = 'C') => control(source, key, labelFor(source), bucket);
     const result = [makeControl(reference, 'dynamo', 'A'), oracle('unified', policy.golden_bucket)];
@@ -260,7 +302,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
       const versions = sources.filter((item) => item.implementation === implementation && item.id !== reference.id)
         .sort((a, b) => compare(b.version, a.version));
       for (const source of versions) {
-        const identity = `${implementation}@${source.version}`;
+        const identity = `${implementation}@${source.release_choice || source.version}`;
         const key = implementation === policy.reference ? `dynamo@${source.version}`
           : policy.historical_control_aliases[identity] || identity;
         result.push(makeControl(source, key));
@@ -272,6 +314,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
 }
 
 export function sourceCapturesFamily(source, family, { nativeOnly = true } = {}) {
+  if (source.family_versions) return true;
   if (nativeOnly && source.implementation === 'dynamo_v2' && source.mode === 'unified') {
     if (!Array.isArray(source.native_unified_families)) throw new Error('Dynamo v2 capture lacks version-specific UnifiedParser eligibility');
     if (!source.native_unified_families.includes(family)) return false;
