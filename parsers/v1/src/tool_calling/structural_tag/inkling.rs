@@ -134,4 +134,143 @@ mod tests {
         );
         assert_eq!(builder.ban_tokens(), &["<|content_invoke_tool_json|>"]);
     }
+
+    #[test]
+    #[ignore = "requires lean CPU XGrammar; uses the shared v2 verifier"]
+    fn inkling_json_whitespace_xgrammar() {
+        use serde_json::Value;
+        use std::{
+            io::Write,
+            process::{Command, Stdio},
+        };
+
+        let mut requests = Vec::new();
+        let mut expected = Vec::new();
+        for name in ["get_weather", "get-weather"] {
+            let tools = [
+                ToolDefinition {
+                    name: name.into(),
+                    parameters: Some(json!({
+                        "type": "object", "properties": {"location": {"$ref": "#/$defs/city"}},
+                        "required": ["location"], "$defs": {"city": {"type": "string"}}
+                    })),
+                    strict: None,
+                },
+                ToolDefinition {
+                    name: "other".into(),
+                    parameters: Some(
+                        json!({"type": "object", "properties": {"count": {"type": "integer"}}, "required": ["count"]}),
+                    ),
+                    strict: None,
+                },
+            ];
+            let builder = ToolCallConfig::inkling().structural_tag_builder.unwrap();
+            for choice in [
+                ToolChoice::Auto,
+                ToolChoice::Required,
+                ToolChoice::Named(name.into()),
+            ] {
+                for reasoning in [false, true] {
+                    for parallel in [false, true] {
+                        let grammar = builder
+                            .build_tool_call_format(&ToolCallFormatBuildContext {
+                                tool_choice: &choice,
+                                tools: &tools,
+                                parallel_tool_calls: Some(parallel),
+                                schema_mode: StructuralTagSchemaMode::Auto,
+                                starts_in_reasoning: reasoning,
+                            })
+                            .unwrap()
+                            .unwrap();
+                        let prefix = if reasoning && choice != ToolChoice::Auto {
+                            "thinking<|end_message|>"
+                        } else {
+                            ""
+                        };
+                        let compact =
+                            format!(r#"{{"name":"{name}","args":{{"location":"Paris"}}}}"#);
+                        for (body, accepted) in [
+                            (compact.clone(), true),
+                            (
+                                format!(r#"{{"name": "{name}", "args": {{"location": "Paris"}}}}"#),
+                                true,
+                            ),
+                            (
+                                format!(
+                                    " \t\r\n{{\n\t\"name\" : \"{name}\",\n\"args\" : {{\"location\":\"Paris\"}}\n}} \n"
+                                ),
+                                true,
+                            ),
+                            (
+                                format!(r#"{{"name":"{name}","args":{{"location":7}}}}"#),
+                                false,
+                            ),
+                            (format!(r#"{{"name":"{name}","args":{{}}}}"#), false),
+                            (
+                                r#"{"name":"unknown","args":{"location":"Paris"}}"#.into(),
+                                false,
+                            ),
+                            (
+                                format!(r#"{{"name":"{name}" "args":{{"location":"Paris"}}}}"#),
+                                false,
+                            ),
+                            (
+                                format!(
+                                    r#"{{"name":"{name}","arguments":{{"location":"Paris"}}}}"#
+                                ),
+                                false,
+                            ),
+                            (
+                                r#"{"name":"other","args":{"count":2}}"#.into(),
+                                choice != ToolChoice::Named(name.into()),
+                            ),
+                            (
+                                format!(
+                                    "{compact}<|end_message|><|content_invoke_tool_json|>{compact}"
+                                ),
+                                parallel,
+                            ),
+                        ] {
+                            let id =
+                                format!("inkling/{name}/{choice:?}/{reasoning}/{parallel}/{body}");
+                            requests.push(json!({"id": id, "grammar": grammar, "input": format!("{prefix}<|content_invoke_tool_json|>{body}<|end_message|>")}));
+                            expected.push((id, accepted));
+                        }
+                    }
+                }
+            }
+        }
+        let mut child = Command::new(
+            std::env::var_os("CONFORMANCE_GRAMMAR_PYTHON").unwrap_or_else(|| "python3".into()),
+        )
+        .arg(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../v2/tests/check_structural_tag_xgrammar.py"
+        ))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("start XGrammar verifier");
+        let mut stdin = child.stdin.take().unwrap();
+        let writer = std::thread::spawn(move || {
+            stdin
+                .write_all(&serde_json::to_vec(&requests).unwrap())
+                .unwrap();
+        });
+        let output = child.wait_with_output().unwrap();
+        writer.join().unwrap();
+        assert!(output.status.success(), "XGrammar verifier failed");
+        let results: Vec<Value> = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(results.len(), expected.len(), "verifier skipped cases");
+        for ((id, accepted), result) in expected.iter().zip(results) {
+            assert_eq!(result["id"], *id);
+            assert_eq!(
+                result["accepted"] == true && result["complete"] == true,
+                *accepted,
+                "{result}"
+            );
+        }
+        eprintln!("{} Inkling grammar cases passed", expected.len());
+    }
 }
