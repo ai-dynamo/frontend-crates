@@ -919,7 +919,7 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
     }
     // What the demuxer would loop on, panic on or index without bound, while
     // opening the file or reading its frames.
-    matroska::check(source)?;
+    let durations = matroska::check(source)?;
     let mut file = MatroskaFile::open(reader).map_err(invalid)?;
     let entry = file
         .tracks()
@@ -973,12 +973,16 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
     let (mut first_ts, mut end_ts) = (u64::MAX, 0);
     let mut frame = Frame::default();
     while file.next_frame(&mut frame).map_err(invalid)? {
+        // Taken, as the demuxer refuses a BlockDuration while the frame holds
+        // one. It drops one that comes before its Block: the walk has those.
+        let demuxed = frame.duration.take();
         if frame.track != number {
             continue;
         }
+        let duration = demuxed.or_else(|| durations.get(&(number, frame.timestamp)).copied());
         let end = frame
             .timestamp
-            .saturating_add(frame.duration.filter(|&d| d != 0).unwrap_or(default_units));
+            .saturating_add(duration.filter(|&d| d != 0).unwrap_or(default_units));
         first_ts = first_ts.min(frame.timestamp);
         end_ts = end_ts.max(end);
         held += frame.data.len() as u64;
@@ -998,8 +1002,7 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
             frame.is_keyframe == Some(true),
         );
         if packet.shown {
-            let end = frame
-                .duration
+            let end = duration
                 .map(|d| pts + d as f64 * scale)
                 .or_else(|| default_duration.map(|d| pts + d));
             if let Some(end) = end {
@@ -1749,6 +1752,16 @@ mod tests {
         assert_eq!(info.start_time, 5.0);
         assert!((info.duration - 1.0).abs() < 0.05, "{}", info.duration);
         assert!((info.fps - 10.0).abs() < 0.5, "{}", info.fps);
+    }
+
+    /// Each clip ends at 0.9 + 0.5 s (see generate.py).
+    #[test]
+    fn matroska_block_durations_count_in_either_order() {
+        for name in ["vp9_duration_after.webm", "vp9_duration_switch.webm"] {
+            let info = probe(&fixture(name)).unwrap();
+            assert_eq!(info.average_fps, 7.142_857_142_857_143, "{name}");
+            assert_eq!(info.duration, 1.4, "{name}");
+        }
     }
 
     #[test]

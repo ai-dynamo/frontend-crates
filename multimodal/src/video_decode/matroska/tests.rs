@@ -75,7 +75,7 @@ fn file(children: &[Vec<u8>]) -> Vec<u8> {
     bytes
 }
 
-fn run(bytes: &[u8]) -> Result<()> {
+fn run(bytes: &[u8]) -> Result<BlockDurations> {
     check(&bytes)
 }
 
@@ -250,6 +250,31 @@ fn block_timestamps_the_demuxer_cannot_add_are_refused() {
     run(&file(&[cluster(u64::MAX, -1)])).unwrap();
     assert_invalid(&file(&[cluster(u64::MAX, 1)]), "past u64::MAX");
     run(&file(&[cluster(u64::MAX - 1, 1)])).unwrap();
+}
+
+#[test]
+fn block_durations_before_their_block_are_read() {
+    // A Block of track 1 at `time` after its cluster's.
+    let block = |time: i16| el(BLOCK, &[&[0x81][..], &time.to_be_bytes(), &[0, 1]].concat());
+    let group = |children: &[Vec<u8>]| el(BLOCK_GROUP, &children.concat());
+    let cluster = open_el(
+        CLUSTER,
+        &[
+            uint(TIMESTAMP, 1000),
+            group(&[block(5), uint(BLOCK_DURATION, 40)]),
+            group(&[uint(BLOCK_DURATION, 50), block(-5)]),
+            // Track 2, as a two-byte number.
+            group(&[uint(BLOCK_DURATION, 60), el(BLOCK, &[0x40, 2, 0, 0, 0, 1])]),
+            // Track 0xFF, which the demuxer reads as u64::MAX.
+            group(&[uint(BLOCK_DURATION, 70), el(BLOCK, &[0xFF, 0, 7, 0, 1])]),
+            group(&[block(9)]),
+        ]
+        .concat(),
+    );
+    assert_eq!(
+        run(&file(&[cluster])).unwrap(),
+        BlockDurations::from([((1, 995), 50), ((2, 1000), 60), ((u64::MAX, 1007), 70)])
+    );
 }
 
 #[test]

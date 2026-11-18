@@ -21,6 +21,11 @@ Clips:
   entry claims 128x128 (both must be refused before a decoder allocates);
 * vp9_offset.webm is vp9.webm with its first frame at 5 s (the decoder
   keeps player times: the clip starts at 5 s and lasts 1 s);
+* vp9_duration_after.webm is vp9.webm without its segment duration, its
+  last block in a BlockGroup whose BlockDuration (500 ms) comes after the
+  Block; vp9_duration_switch.webm has it before the Block, and the block
+  before in a group whose BlockDuration (100 ms) comes after. Both clips
+  end at 1.4 s;
 * delay.mp4 is forty frames behind an edit list that delays them 1.5 s (an
   empty edit, then the media); cut.mp4 is 120 frames cut at 1.5 s without
   re-encoding, so its edit list hides the first 15, which are still decoded
@@ -292,6 +297,62 @@ def simple_blocks(data: bytes, start: int, end: int):
         pos = body + size
 
 
+def elements(data: bytes, start: int, end: int):
+    """(ID, offset, data offset, size) of the elements in [start, end)."""
+    pos = start
+    while pos < end:
+        element, n = read_vint(data, pos, True)
+        size, m = read_vint(data, pos + n, False)
+        yield element, pos, pos + n + m, size
+        pos += n + m + size
+
+
+def write_size(data: bytearray, offset: int, size: int) -> None:
+    """Rewrite the size of the element at `offset` in as many bytes."""
+    at = offset + read_vint(data, offset, True)[1]
+    length = read_vint(data, at, False)[1]
+    data[at : at + length] = ((1 << (7 * length)) | size).to_bytes(length, "big")
+
+
+def group_blocks(src: Path, dst: Path, durations_first: list[bool]) -> None:
+    data = src.read_bytes()
+    [(_, segment, segment_data, segment_size)] = [
+        e for e in elements(data, 0, len(data)) if e[0] == 0x18538067
+    ]
+    top = {e[0]: e for e in elements(data, segment_data, segment_data + segment_size)}
+    _, cluster, cluster_data, cluster_size = top[0x1F43B675]
+    blocks = list(elements(data, cluster_data, cluster_data + cluster_size))
+    blocks = blocks[-len(durations_first) :]
+    out = bytearray(data[: blocks[0][1]])
+    for i, ((_, block, block_data, block_size), first) in enumerate(zip(blocks, durations_first)):
+        assert data[block] == 0xA3 and data[block_data + 3] & 0x80 == 0, "a SimpleBlock, not a keyframe"
+        # A Block (same size byte and payload; no flag it sets) and its BlockDuration.
+        inner = bytes([0xA1]) + data[block + 1 : block_data + block_size]
+        ms = 500 if i == len(blocks) - 1 else 100
+        duration = bytes([0x9B, 0x82]) + ms.to_bytes(2, "big")
+        body = duration + inner if first else inner + duration
+        out += bytes([0xA0, 0x80 | len(body)]) + body
+    end = blocks[-1][2] + blocks[-1][3]
+    grow = len(out) - end
+    out += data[end:]
+    write_size(out, cluster, cluster_size + grow)
+    write_size(out, segment, segment_size + grow)
+    # Seeks to the elements after the cluster (the Cues) move with them.
+    _, _, head_data, head_size = top[0x114D9B74]
+    for _, _, seek_data, seek_size in elements(data, head_data, head_data + head_size):
+        for field, _, at, size in elements(data, seek_data, seek_data + seek_size):
+            position = int.from_bytes(data[at : at + size], "big")
+            if field == 0x53AC and segment_data + position > cluster:
+                out[at : at + size] = (position + grow).to_bytes(size, "big")
+    # The segment Duration, voided in place.
+    _, _, info_data, info_size = top[0x1549A966]
+    for field, offset, at, size in elements(data, info_data, info_data + info_size):
+        if field == 0x4489:
+            void = at + size - offset - 2
+            out[offset : at + size] = bytes([0xEC, 0x80 | void]) + bytes(void)
+    dst.write_bytes(bytes(out))
+
+
 def mark_invisible(src: Path, dst: Path, index: int) -> None:
     data = bytearray(src.read_bytes())
     block = list(simple_blocks(bytes(data), 0, len(data)))[index]
@@ -414,6 +475,8 @@ def main() -> None:
     write(here / "vp9_texture.webm", "webm", "libvpx-vp9", {"crf": "30", "b": "0"}, frames=texture_frames())
     mark_invisible(here / "vp9_texture.webm", here / "vp9_invisible.webm", 2)
     patch_vp9_keyframe_size(here / "vp9.webm", here / "vp9_huge.webm", 16384, 16384)
+    group_blocks(here / "vp9.webm", here / "vp9_duration_after.webm", [False])
+    group_blocks(here / "vp9.webm", here / "vp9_duration_switch.webm", [False, True])
     patch_av01_size(here / "av1.mp4", here / "av1_small_container.mp4", 128, 128)
     write(here / "vp9_offset.webm", "webm", "libvpx-vp9", CLIPS[1][3], start=5 * FPS)
     write_bt709(here / "vp9_709.webm", "webm", "libvpx-vp9", CLIPS[1][3])
