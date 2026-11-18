@@ -70,6 +70,8 @@ python3 conformance/utils/src/capture_peer_unified_versions.py \
 
 The work directory must not already exist. The runner freezes the authored requests for every registered family, executes hash-verified published parser packages, and retains the image IDs, source hashes, producer receipts, and logs. `--vllm-image` and `--sglang-image` can select installed dependency images; the measured parser version comes from the frozen published package. Unsupported combinations remain explicit unavailable results.
 
+`dynamo_sglang_python` measures Dynamo's SGLang chat processor (`--dyn-chat-processor sglang`), which wraps SGLang's detectors in its own post-processing. Its targets live in [`dynamo-sglang-capture-inventory.yaml`](dynamo-sglang-capture-inventory.yaml): stable `ai-dynamo` releases, each run in the `nvcr.io/nvidia/ai-dynamo/sglang-runtime` image of the same release, which supplies the paired SGLang and the native runtime. The `dynamo` package comes from the hash-verified `ai-dynamo` wheel. Each authored chunk becomes one synthetic token that the published `process_output` decodes, so stream mode only. Select it with `--inventory conformance/dynamo-sglang-capture-inventory.yaml --mode stream`; `--dynamo-sglang-image` overrides the image. In the viewer it is an opt-in Dynamo column; the Rust parser stays the default.
+
 Results are saved as `captures/<implementation>-<version>/<family>.json` beneath the work directory. Stream implementations are `vllm_python` and `sglang_python`; batch implementations add `_batch`. Each JSON file contains `results` keyed by case ID and a `provenance` receipt. For example:
 
 ```bash

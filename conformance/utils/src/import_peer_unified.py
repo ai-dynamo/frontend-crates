@@ -60,7 +60,7 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
     if not typed_equal(job, expected_job):
         raise ValueError("capture job differs from the final candidate request corpus")
     capture = json.loads(capture_path.read_text()) if capture_path.suffix == ".json" else yaml.safe_load(capture_path.read_text())
-    version_field = "version" if execution else {"sglang_python": "sglang_version", "vllm_python": "vllm_version", "vllm_rust": "vllm_rust_version"}[implementation]
+    version_field = "version" if execution else {"sglang_python": "sglang_version", "vllm_python": "vllm_version", "vllm_rust": "vllm_rust_version", "dynamo_sglang_python": "dynamo_sglang_version"}[implementation]
     version = capture[version_field]
     if provenance["version"] != version or provenance["job_sha256"] != digest(job_path):
         raise ValueError("capture provenance differs from job or installed version")
@@ -290,7 +290,7 @@ def main() -> None:
     parser.add_argument("--capture", type=Path, required=True)
     parser.add_argument("--provenance", type=Path, required=True)
     parser.add_argument("--bundle", type=Path, required=True)
-    parser.add_argument("--implementation", choices=("sglang_python", "vllm_python", "vllm_rust", "dynamo_v2", *UNIFIED_BATCH_IMPLS), default="sglang_python")
+    parser.add_argument("--implementation", choices=("sglang_python", "vllm_python", "vllm_rust", "dynamo_sglang_python", "dynamo_v2", *UNIFIED_BATCH_IMPLS), default="sglang_python")
     parser.add_argument("--backfill-only", action="store_true", help="Preserve existing bound observations and append missing results")
     args = parser.parse_args()
     manifest_path = args.bundle / "manifest.json"

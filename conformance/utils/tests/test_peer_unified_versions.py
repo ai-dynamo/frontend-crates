@@ -37,6 +37,23 @@ def test_published_metadata_and_source_survive_extraction_without_building(tmp_p
     assert not (target / "setup.py").exists()
 
 
+def test_namespace_package_is_extracted_under_its_import_name(tmp_path):
+    # ai-dynamo installs the `dynamo` namespace package, which has no __init__.py.
+    archive = tmp_path / "ai_dynamo-1.0.0-py3-none-any.whl"
+    with zipfile.ZipFile(archive, "w") as wheel:
+        wheel.writestr("ai_dynamo-1.0.0.dist-info/METADATA", "Metadata-Version: 2.1\nName: ai-dynamo\nVersion: 1.0.0\n")
+        wheel.writestr("dynamo/frontend/sglang_prepost.py", "# processor\n")
+    target = tmp_path / "package"
+    peers.extract_package(archive, target, "dynamo_sglang")
+    assert (target / "dynamo/frontend/sglang_prepost.py").read_text() == "# processor\n"
+    assert peers.published_module_paths(target / "dynamo", "dynamo_sglang") == {"processor": "frontend.sglang_prepost"}
+    empty = tmp_path / "empty.whl"
+    with zipfile.ZipFile(empty, "w") as wheel:
+        wheel.writestr("ai_dynamo-1.0.0.dist-info/METADATA", "Name: ai-dynamo\n")
+    with pytest.raises(ValueError, match="lacks its Python package"):
+        peers.extract_package(empty, tmp_path / "empty", "dynamo_sglang")
+
+
 def test_package_traversal_is_rejected_before_writing_outside_target(tmp_path):
     archive = tmp_path / "malformed.tar.gz"
     source_archive(archive, {"package/sglang/../../escaped.py": b"wrong"})
@@ -82,9 +99,10 @@ def test_dependency_image_overrides_retain_resolved_immutable_ids(monkeypatch):
         return "sha256:" + str(len(calls)) + "\n"
 
     monkeypatch.setattr(peers.subprocess, "check_output", inspect)
-    images = peers.resolve_images({"vllm": "vllm/vllm-openai:v0.23.0"})
-    assert calls == ["vllm/vllm-openai:v0.23.0" if engine == "vllm" else image for engine, image in peers.IMAGE_NAMES.items()]
-    assert list(images.values()) == ["sha256:1", "sha256:2"]
+    images = peers.resolve_images({"vllm": "vllm/vllm-openai:v0.23.0"}, {"vllm", "sglang"})
+    # Only the engines being run are inspected; other images stay optional.
+    assert calls == ["vllm/vllm-openai:v0.23.0", peers.IMAGE_NAMES["sglang"]]
+    assert images == {"vllm": "sha256:1", "sglang": "sha256:2"}
 
 
 @pytest.mark.parametrize("present_apis", [False, True])

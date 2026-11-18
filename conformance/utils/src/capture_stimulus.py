@@ -569,7 +569,8 @@ def validate_adapter_bundle(root, manifest):
 
 def validate_execution(document, job, job_bytes, implementation, version, *, expected_adapter_sha256=None):
     version_field = {"sglang_python": "sglang_version", "vllm_python": "vllm_version",
-                     "vllm_rust": "vllm_rust_version"}.get(implementation, "version")
+                     "vllm_rust": "vllm_rust_version",
+                     "dynamo_sglang_python": "dynamo_sglang_version"}.get(implementation, "version")
     receipt = document["provenance"]
     for key in ("source_sha256", "adapter_sha256", "job_sha256", "results_sha256"):
         if not isinstance(receipt.get(key), str) or re.fullmatch(r"[0-9a-f]{64}", receipt[key]) is None:
