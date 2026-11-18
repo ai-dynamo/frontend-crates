@@ -409,6 +409,9 @@ impl MmFamilyProcessor for KimiK3Processor {
                 height,
                 width,
             } => (rgba, 4, *height, *width),
+            DecodedMedia::Video { .. } => {
+                return Err(MmError::unsupported("kimi_k3 supports only images"));
+            }
         };
         if h.checked_mul(w).and_then(|n| n.checked_mul(channels)) != Some(pixels.len()) {
             return Err(MmError::invalid_input(

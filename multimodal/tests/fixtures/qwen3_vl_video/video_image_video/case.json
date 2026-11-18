@@ -1,0 +1,216 @@
+{
+ "spec": {
+  "family": "qwen_vl",
+  "image_token_id": 151655,
+  "patch_size": 16,
+  "merge_size": 2,
+  "temporal_patch_size": 2,
+  "min_pixels": 1024,
+  "max_pixels": 16777216,
+  "image_mean": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "image_std": [
+   0.5,
+   0.5,
+   0.5
+  ],
+  "resample": "aten_u8",
+  "video": {
+   "video_token_id": 151656,
+   "vision_start_token_id": 151652,
+   "vision_end_token_id": 151653,
+   "processor": {
+    "video_processor_type": "Qwen3VLVideoProcessor",
+    "patch_size": 16,
+    "merge_size": 2,
+    "temporal_patch_size": 2,
+    "size": {
+     "shortest_edge": 4096,
+     "longest_edge": 25165824
+    }
+   },
+   "image_mean": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "image_std": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  }
+ },
+ "media": [
+  {
+   "kind": "video",
+   "shape": [
+    3,
+    30,
+    40
+   ],
+   "seed": 1775,
+   "resized_blake3": "faaa149592ed5b941a1ac494b02c1d85d83ee7b3a3b0072ea77bc0149c784e37",
+   "frame_indices": [
+    0,
+    7,
+    15
+   ],
+   "fps": 30.0
+  },
+  {
+   "kind": "image",
+   "shape": [
+    48,
+    80
+   ],
+   "seed": 2775
+  },
+  {
+   "kind": "video",
+   "shape": [
+    3,
+    32,
+    32
+   ],
+   "seed": 3775,
+   "frame_indices": [
+    0,
+    3,
+    5
+   ],
+   "fps": 2.0
+  }
+ ],
+ "prompt_ids": [
+  151652,
+  151656,
+  151653,
+  3391,
+  220,
+  151652,
+  151655,
+  151653,
+  323,
+  220,
+  151652,
+  151656,
+  151653,
+  74785,
+  13
+ ],
+ "timestamp_ids": {
+  "<0.1 seconds>": [
+   27,
+   15,
+   13,
+   16,
+   6486,
+   29
+  ],
+  "<0.5 seconds>": [
+   27,
+   15,
+   13,
+   20,
+   6486,
+   29
+  ],
+  "<0.8 seconds>": [
+   27,
+   15,
+   13,
+   23,
+   6486,
+   29
+  ],
+  "<2.5 seconds>": [
+   27,
+   17,
+   13,
+   20,
+   6486,
+   29
+  ]
+ },
+ "input_ids": [
+  151652,
+  27,
+  15,
+  13,
+  16,
+  6486,
+  29,
+  151652,
+  151656,
+  151653,
+  27,
+  15,
+  13,
+  20,
+  6486,
+  29,
+  151652,
+  151656,
+  151653,
+  151653,
+  3391,
+  220,
+  151652,
+  151655,
+  151655,
+  151655,
+  151655,
+  151653,
+  323,
+  220,
+  151652,
+  27,
+  15,
+  13,
+  23,
+  6486,
+  29,
+  151652,
+  151656,
+  151653,
+  27,
+  17,
+  13,
+  20,
+  6486,
+  29,
+  151652,
+  151656,
+  151653,
+  151653,
+  74785,
+  13
+ ],
+ "video_grids": [
+  [
+   2,
+   2,
+   2
+  ],
+  [
+   2,
+   2,
+   2
+  ]
+ ],
+ "mrope_delta": -2,
+ "pixel_values_videos_blake3": "c7ea08e6bdf293b65ae1f17fb78f2232aebd3cbbe34ca4a6f0fd55b42b53bf92",
+ "mrope_blake3": "9924316680bec7fef8766dd647be277a40732ee2982bd917c6cfeaf1f4722c32",
+ "provenance": {
+  "generator": "multimodal/tests/fixtures/qwen3_vl_video/generate.py",
+  "tokenizer": "Qwen/Qwen3-VL-2B-Instruct@89644892e4d85e24eaac8bacfd4f463576704203",
+  "transformers": "5.19.0",
+  "torch": "2.14.1+cu130",
+  "torchvision": "0.29.2+cu132",
+  "numpy": "2.3.5"
+ }
+}
