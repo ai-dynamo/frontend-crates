@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-multimodal"
-version = "0.2.6"
+version = "0.2.13"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -1220,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.12"
+version = "11.0.14"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1244,7 +1244,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.10.7"
+version = "0.10.8"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "10.0.1"
+version = "10.0.2"
 dependencies = [
  "async-openai",
  "derive_builder",
@@ -1291,7 +1291,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.4.3"
+version = "10.4.4"
 dependencies = [
  "aho-corasick",
  "anyhow",

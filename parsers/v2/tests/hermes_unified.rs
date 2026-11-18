@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#[path = "support/quote_policy.rs"]
+mod quote_policy;
+
 use dynamo_parsers_v2::{
     InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserEvent, UnifiedParserExt,
     UnifiedParserInit, UnifiedParserOutput, UnifiedParserStartingState, UnifiedToolOutputMode,
@@ -67,6 +70,9 @@ fn native_boundaries_and_recovery() {
 
 #[test]
 fn native_quoted_markers_do_not_hide_a_following_call() {
+    if !quote_policy::quote_aware_process("native_quoted_markers_do_not_hide_a_following_call") {
+        return;
+    }
     let weather = r#"<tool_call>{"name":"get_weather","arguments":{"city":"Paris"}}</tool_call>"#;
     for prose in [
         "The literal \"<tool_call>\" marker is part of the explanation.".to_string(),
@@ -87,6 +93,204 @@ fn native_quoted_markers_do_not_hide_a_following_call() {
         );
     }
     every_split("<tool_call>", UnifiedParserInit::default(), &[]);
+}
+
+fn assert_native_recovery(chunks: &[&str], expected: &[UnifiedEvent]) {
+    // Hermes has no legacy ToolParser registry entry; Unified owns its native
+    // envelope and these recovery/argument-ownership regressions.
+    let output = parse(
+        chunks,
+        UnifiedParserInit {
+            starting_state: UnifiedParserStartingState::Response,
+            ..UnifiedParserInit::default()
+        },
+    );
+    assert_eq!(output.assembled(), expected, "{chunks:?}");
+    let completions = output
+        .events
+        .iter()
+        .filter(|event| matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.complete))
+        .count();
+    let expected_completions = expected
+        .iter()
+        .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
+        .count();
+    assert_eq!(completions, expected_completions, "{chunks:?}");
+    assert!(output.events.iter().all(|event| {
+        !matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.name.as_deref() == Some("fake"))
+    }));
+}
+
+fn every_native_recovery_delivery(input: &str, expected: &[UnifiedEvent]) {
+    assert_native_recovery(&[input], expected);
+    for at in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {
+        assert_native_recovery(&[&input[..at], &input[at..]], expected);
+    }
+    let characters: Vec<_> = input
+        .char_indices()
+        .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+        .collect();
+    assert_native_recovery(&characters, expected);
+}
+
+#[test]
+fn native_malformed_quote_roots_preserve_the_next_call_and_visible_suffix() {
+    let weather = r#"{"name":"get_weather","arguments":{"city":"Paris"}}"#;
+    let chunks = [
+        "The literal \"",
+        "<tool_call>",
+        "\" marker is part of the explanation.",
+        "<tool_call>",
+        weather,
+        "</tool_call>",
+    ];
+    let expected = [
+        UnifiedEvent::Text {
+            text: "The literal \"".into(),
+        },
+        call("get_weather", serde_json::json!({"city":"Paris"})),
+    ];
+    assert_native_recovery(&chunks, &expected);
+    every_native_recovery_delivery(&chunks.concat(), &expected);
+
+    let quoted =
+        serde_json::to_string(r#"<tool_call>{"name":"lookup","arguments":{"q":"x"}}</tool_call>"#)
+            .unwrap();
+    every_native_recovery_delivery(
+        &format!("{quoted} trailing"),
+        &[UnifiedEvent::Text {
+            text: "\"\" trailing".into(),
+        }],
+    );
+}
+
+#[test]
+fn native_valid_argument_strings_own_complete_call_markers() {
+    let value = r#"雪 <tool_call>{"name":"fake","arguments":{}}</tool_call> suffix"#;
+    let body = serde_json::json!({"name":"lookup","arguments":{"q":value}});
+    every_native_recovery_delivery(
+        &format!("<tool_call>{body}</tool_call> tail"),
+        &[
+            call("lookup", serde_json::json!({"q":value})),
+            UnifiedEvent::Text {
+                text: " tail".into(),
+            },
+        ],
+    );
+}
+
+#[test]
+fn native_invalid_owned_strings_keep_markers_as_data_until_their_lexical_close() {
+    let next = r#"<tool_call>{"name":"ok","arguments":{"x":"雪"}}</tool_call>"#;
+    for escape in [r"\q", r"\u12Z4", r"\u12"] {
+        let input = format!(
+            r#"before <tool_call>{{"name":"bad","arguments":{{"q":"雪{escape} <tool_call>{{\"name\":\"fake\",\"arguments\":{{}}}}</tool_call> suffix"}}}}</tool_call> after {next} done"#
+        );
+        every_native_recovery_delivery(
+            &input,
+            &[
+                UnifiedEvent::Text {
+                    text: "before  after ".into(),
+                },
+                call("ok", serde_json::json!({"x":"雪"})),
+                UnifiedEvent::Text {
+                    text: " done".into(),
+                },
+            ],
+        );
+    }
+
+    every_native_recovery_delivery(
+        &format!(
+            r#"<tool_call>{{"name":"lookup","arguments":{{"q":"</tool_call>"}} oops</tool_call> tail{next}"#
+        ),
+        &[
+            UnifiedEvent::Text {
+                text: " tail".into(),
+            },
+            call("ok", serde_json::json!({"x":"雪"})),
+        ],
+    );
+}
+
+#[test]
+fn native_malformed_root_recovery_progresses_before_finish_and_resets() {
+    let mut parser = create_unified_parser_for_family("hermes", &[]).unwrap();
+    let init = UnifiedParserInit {
+        starting_state: UnifiedParserStartingState::Response,
+        ..UnifiedParserInit::default()
+    };
+    parser.initialize_request(init.clone()).unwrap();
+    let mut output = UnifiedParserOutput::default();
+    for chunk in [
+        "The literal \"",
+        "<tool_call>",
+        "\" marker is part of the explanation.",
+        "<tool_call>",
+        r#"{"name":"get_weather","arguments":{"city":"Paris"}}"#,
+    ] {
+        parser.parse_into(chunk, &mut output).unwrap();
+    }
+    assert!(
+        output
+            .events
+            .iter()
+            .all(|event| !matches!(event, UnifiedParserEvent::ToolCall(delta) if delta.complete))
+    );
+    parser.parse_into("</tool_call>", &mut output).unwrap();
+    assert_eq!(
+        output.assembled(),
+        [
+            UnifiedEvent::Text {
+                text: "The literal \"".into(),
+            },
+            call("get_weather", serde_json::json!({"city":"Paris"})),
+        ]
+    );
+
+    parser.reset();
+    parser.initialize_request(init.clone()).unwrap();
+    let mut output = UnifiedParserOutput::default();
+    for chunk in [
+        "\"",
+        "<tool_call>",
+        r#"{\"name\":\"lookup\",\"arguments\":{\"q\":\"x\"}}"#,
+        "</tool_call>",
+        "\" trailing",
+    ] {
+        parser.parse_into(chunk, &mut output).unwrap();
+    }
+    assert_eq!(
+        output.assembled(),
+        [UnifiedEvent::Text {
+            text: "\"\" trailing".into(),
+        }]
+    );
+
+    for abandoned in [
+        "<tool_call>\"scalar",
+        r#"<tool_call>{\"name\":\"bad\""#,
+        r#"<tool_call>{"name":"bad","arguments":{"q":"\q <tool_call>{\"name\":\"fake\"}"#,
+    ] {
+        parser.reset();
+        parser.initialize_request(init.clone()).unwrap();
+        parser
+            .parse_into(abandoned, &mut UnifiedParserOutput::default())
+            .unwrap();
+        parser.reset();
+        parser.initialize_request(init.clone()).unwrap();
+        assert_eq!(
+            parser
+                .parse_complete(r#"<tool_call>{"name":"ok","arguments":{}}</tool_call> tail"#)
+                .unwrap(),
+            [
+                call("ok", serde_json::json!({})),
+                UnifiedEvent::Text {
+                    text: " tail".into(),
+                },
+            ]
+        );
+    }
 }
 
 #[test]
@@ -164,6 +368,9 @@ fn guided_wrapped_payload_inside_reasoning() {
 
 #[test]
 fn guided_quoted_wrapper_and_braces_are_visible_prose() {
+    if !quote_policy::quote_aware_process("guided_quoted_wrapper_and_braces_are_visible_prose") {
+        return;
+    }
     for named in [false, true] {
         let prose = "The literal \"<tool_call> { example }\" stays visible. ";
         let payload = if named {

@@ -266,6 +266,20 @@ def write_split_only_family(family):
 
 
 
+def _has_authored_family(family, authored_families, registry):
+    if family in authored_families:
+        return True
+    entry = registry[family]
+    registry_key = entry.get("registry", family)
+    if family == registry_key and entry.get("scenario_profile") == "native" and any(
+        registry[name].get("registry", name) == registry_key for name in authored_families
+    ):
+        return False
+    if entry.get("native"):
+        raise ValueError(f"{family}: native family needs an independently authored canonical input file")
+    return False
+
+
 def append_authored_inputs():
     registry = yaml.safe_load((CONF / "utils/src/parser_families.yaml").read_text())["unified"]
     def append(store):
@@ -274,10 +288,14 @@ def append_authored_inputs():
                 continue
             document = yaml.safe_load((BUILD / "golden_spec" / entry["golden_spec"]).read_text())
             rows = _split_only_cases(family, document)
+            if not _has_authored_family(family, store.families, registry):
+                continue
             fam = store.families[family]
+            existing_scenarios = {case["scenario"] for case in fam.cases.values()}
+            existing_display_ids = {case["display_id"] for case in fam.cases.values()}
             for display_id, row in rows.items():
                 scenario = row["scenario"]
-                if scenario in fam.cases:
+                if scenario in existing_scenarios or display_id in existing_display_ids:
                     continue
                 fam.cases[scenario] = {
                     "lifecycle": "active", "scenario": scenario,
@@ -285,6 +303,8 @@ def append_authored_inputs():
                     "display_id": display_id, "historical_ids": [],
                     "request": row["request"], "golden": row["golden"],
                 }
+                existing_scenarios.add(scenario)
+                existing_display_ids.add(display_id)
     owner = unified_history.mutate_authored_store if capture_sources.is_current(REPO) else unified_history._mutate_store
     return owner(CONF / "fixtures-unified-v2", append)
 
@@ -337,9 +357,13 @@ def main():
             docs[k] = d
         return docs[k]["cases"]
 
+    registry = yaml.safe_load((CONF / "utils/src/parser_families.yaml").read_text())["unified"]
+    authored_families = {path.parent.name for path in (CONF / "fixtures-unified-v2/families").glob("*/inputs_and_golden.yaml")}
     for c in feed["cases"]:
         cid = c["id"]
         key, fam, scenario = _case_key(cid)
+        if not _has_authored_family(fam, authored_families, registry):
+            continue
         if fam not in golden_cases:
             golden_cases[fam] = build_cases(fam)
         chunks = c.get("chunks") or []

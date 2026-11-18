@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+#[path = "support/quote_policy.rs"]
+mod quote_policy;
+
 use dynamo_parsers_v2::{
     ToolParseResult, UnifiedEvent, UnifiedParserExt, UnifiedParserInit, UnifiedParserOutput,
     UnifiedParserStartingState, assemble, create_tool_parser_for_family,
@@ -194,6 +197,11 @@ fn unmatched_separators_and_partial_openers_are_text_at_eof() {
 
 #[test]
 fn quoted_literal_and_unmatched_quote_resolve_separator_ownership() {
+    if !quote_policy::quote_aware_process(
+        "quoted_literal_and_unmatched_quote_resolve_separator_ownership",
+    ) {
+        return;
+    }
     for family in FAMILIES {
         for wrapped in [true, false] {
             let call = native_call(family, wrapped, "Paris");

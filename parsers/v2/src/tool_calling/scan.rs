@@ -48,7 +48,7 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use crate::tool_calling::debug::env_is_truthy;
+use crate::tool_calling::debug::is_truthy;
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedTurnScope, Kind, MalformedToolCall,
@@ -1651,9 +1651,13 @@ pub(crate) trait InvokeEmitter {
 }
 
 /// Whether quotes in model output can make a reasoning or tool-call marker literal text.
+/// Disabled by default; an explicitly nontruthy setting restores quote-aware parsing.
 fn quote_aware_parsing() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
-    *ENABLED.get_or_init(|| !env_is_truthy("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING"))
+    *ENABLED.get_or_init(|| {
+        std::env::var_os("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING")
+            .is_some_and(|value| !value.to_str().is_some_and(is_truthy))
+    })
 }
 
 #[derive(Clone, Copy, Default)]
@@ -4270,6 +4274,13 @@ mod tests {
     use super::test_support::failing_scanner;
     use super::*;
 
+    mod quote_policy {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/quote_policy.rs"
+        ));
+    }
+
     #[test]
     fn open_invoke_block_end_search_is_linear() {
         let tools = [crate::tool_calling::traits::Tool {
@@ -4310,6 +4321,11 @@ mod tests {
 
     #[test]
     fn speculative_prose_quote_tail_advances_once_and_clear_releases_state() {
+        if !quote_policy::quote_aware_process(
+            "tool_calling::scan::tests::speculative_prose_quote_tail_advances_once_and_clear_releases_state",
+        ) {
+            return;
+        }
         let mut prose = ProseControlState::default();
         prose.consume("Quoted \"");
         let mut input = String::from("<control>");
@@ -4338,6 +4354,11 @@ mod tests {
 
     #[test]
     fn possessive_suffix_requires_a_closed_span_and_a_word_boundary() {
+        if !quote_policy::quote_aware_process(
+            "tool_calling::scan::tests::possessive_suffix_requires_a_closed_span_and_a_word_boundary",
+        ) {
+            return;
+        }
         for quote in ['`', '"'] {
             let name = format!("{quote}config{quote}");
             for (suffix, expected) in [
