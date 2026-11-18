@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-multimodal"
-version = "0.2.7"
+version = "0.2.13"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -1291,7 +1291,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.4.3"
+version = "10.4.4"
 dependencies = [
  "aho-corasick",
  "anyhow",

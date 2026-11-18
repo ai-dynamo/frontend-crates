@@ -87,6 +87,7 @@ struct GoldenFile {
 
 #[derive(Deserialize)]
 struct GoldenCase {
+    description: String,
     input: String,
     #[serde(default)]
     input_chunks: Option<Vec<String>>,
@@ -609,6 +610,40 @@ fn string_quote_controls_survive_every_split_for_every_family() {
                 .to_string())
             .collect()
     );
+}
+
+#[test]
+fn reasoning_quote_workload_cases_keep_current_results_at_every_split() {
+    let mut covered = 0;
+    for file in load_native_golden() {
+        for (id, case) in &file.cases {
+            if !case.description.starts_with("#595:") {
+                continue;
+            }
+            covered += 1;
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            // Delivery invariance is independent of GOLDEN agreement and retains
+            // the measured quote policy and EOF recovery for every split.
+            let baseline = events(
+                &file.family,
+                std::slice::from_ref(&case.input),
+                &case.init,
+                &tools,
+            );
+            for split in
+                (0..=case.input.len()).filter(|offset| case.input.is_char_boundary(*offset))
+            {
+                let chunks = vec![case.input[..split].into(), case.input[split..].into()];
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools),
+                    baseline,
+                    "{id}: split {split}"
+                );
+            }
+        }
+    }
+    assert!(covered > 0, "reasoning quote inventory is empty");
+    eprintln!("checked all two-chunk splits for {covered} family/case pairs");
 }
 
 #[test]

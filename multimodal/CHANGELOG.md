@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.13](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.12...dynamo-multimodal-v0.2.13) - 2026-11-18
+
+### Features
+
+- *(multimodal)* Add Pixtral image preprocessing for Mistral Large 4 ([#587](https://github.com/ai-dynamo/frontend-crates/pull/587))
+
+## [0.2.12](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.11...dynamo-multimodal-v0.2.12) - 2026-11-18
+
+### Features
+
+- *(multimodal)* Add Nemotron 3.5 Super VL image preprocessing ([#588](https://github.com/ai-dynamo/frontend-crates/pull/588))
+
+## [0.2.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.10...dynamo-multimodal-v0.2.11) - 2026-11-18
+
+### Features
+
+- *(multimodal)* Add Qwen3-VL video to the Qwen-VL processor ([#563](https://github.com/ai-dynamo/frontend-crates/pull/563))
+
+## [0.2.10](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.9...dynamo-multimodal-v0.2.10) - 2026-11-17
+
+### Features
+
+- *(multimodal)* Add Kimi K3 image preprocessing ([#589](https://github.com/ai-dynamo/frontend-crates/pull/589))
+
+## [0.2.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.8...dynamo-multimodal-v0.2.9) - 2026-11-17
+
+### Features
+
+- *(multimodal)* One parity table per model with an HF baseline ([#594](https://github.com/ai-dynamo/frontend-crates/pull/594))
+
+## [0.2.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.7...dynamo-multimodal-v0.2.8) - 2026-11-17
+
+### Features
+
+- *(multimodal)* Add RGBA decode and a decode parity table ([#593](https://github.com/ai-dynamo/frontend-crates/pull/593))
+
 ## [0.2.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.6...dynamo-multimodal-v0.2.7) - 2026-11-13
 
 ### Features

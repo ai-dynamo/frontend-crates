@@ -775,7 +775,14 @@ impl HfTokenizerConfigJsonFormatter {
             }
             Either::Right(map) => {
                 for t in map {
-                    for (k, v) in t.iter() {
+                    // Hugging Face saves named templates as
+                    // `{"name": "default", "template": "..."}`; a
+                    // `{"default": "..."}` entry also names its template.
+                    let named: Vec<(&String, &String)> = match (t.get("name"), t.get("template")) {
+                        (Some(name), Some(template)) if t.len() == 2 => vec![(name, template)],
+                        _ => t.iter().collect(),
+                    };
+                    for (k, v) in named {
                         if v.contains("add_generation_prompt") {
                             match supports_add_generation_prompt {
                                 Some(true) | None => {
