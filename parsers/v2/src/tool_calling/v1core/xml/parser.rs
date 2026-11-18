@@ -1046,39 +1046,6 @@ fn normalize_python_literal(s: &str) -> String {
     out
 }
 
-/// Safely parse a value - tries JSON, then falls back to string.
-/// Mimics SGLang's `_safe_val` function in spirit.
-/// NOTE: This function is deprecated and kept for reference. Use convert_param_value instead.
-#[allow(dead_code)]
-fn safe_parse_value(raw: &str) -> serde_json::Value {
-    // HTML unescape
-    let unescaped = html_unescape(raw.trim());
-
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(&unescaped) {
-        return value;
-    }
-
-    if let Ok(num) = unescaped.parse::<i64>() {
-        return serde_json::Value::Number(num.into());
-    }
-
-    if let Ok(num) = unescaped.parse::<f64>()
-        && let Some(num_val) = serde_json::Number::from_f64(num)
-    {
-        return serde_json::Value::Number(num_val);
-    }
-
-    match unescaped.to_lowercase().as_str() {
-        "true" => return serde_json::Value::Bool(true),
-        "false" => return serde_json::Value::Bool(false),
-        "null" | "none" => return serde_json::Value::Null,
-        _ => {}
-    }
-
-    // Default to string, stripping newlines from start and end.
-    serde_json::Value::String(unescaped.trim_matches('\n').to_string())
-}
-
 /// Simple HTML unescape for common entities.
 fn html_unescape(s: &str) -> String {
     s.replace("&lt;", "<")

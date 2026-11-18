@@ -1520,39 +1520,6 @@ fn try_literal_eval(s: &str) -> Result<Value, ()> {
     serde_json::from_str::<Value>(&normalized).map_err(|_| ())
 }
 
-/// Safely parse a value - tries JSON, then falls back to string.
-/// Mimics SGLang's `_safe_val` function in spirit.
-/// NOTE: This function is deprecated and kept for reference. Use convert_param_value instead.
-#[allow(dead_code)]
-fn safe_parse_value(raw: &str) -> serde_json::Value {
-    // HTML unescape
-    let unescaped = html_unescape(raw.trim());
-
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(&unescaped) {
-        return value;
-    }
-
-    if let Ok(num) = unescaped.parse::<i64>() {
-        return serde_json::Value::Number(num.into());
-    }
-
-    if let Ok(num) = unescaped.parse::<f64>()
-        && let Some(num_val) = serde_json::Number::from_f64(num)
-    {
-        return serde_json::Value::Number(num_val);
-    }
-
-    match unescaped.to_lowercase().as_str() {
-        "true" => return serde_json::Value::Bool(true),
-        "false" => return serde_json::Value::Bool(false),
-        "null" | "none" => return serde_json::Value::Null,
-        _ => {}
-    }
-
-    // Default to string, stripping newlines from start and end.
-    serde_json::Value::String(unescaped.trim_matches('\n').to_string())
-}
-
 /// Simple HTML unescape for common entities.
 fn html_unescape(s: &str) -> String {
     s.replace("&lt;", "<")
@@ -1666,24 +1633,6 @@ mod tests {
         assert_eq!(calls[0].function.name, "set_limit");
         assert_eq!(args["count"].get(), "100000000000000000000");
         assert_eq!(args["precise_count"].get(), "9007199254740993");
-    }
-
-    #[rstest] // helper
-    #[case(r#"{"key": "value"}"#, serde_json::json!({"key": "value"}), "JSON object")]
-    #[case(r#"[1, 2, 3]"#, serde_json::json!([1, 2, 3]), "JSON array")]
-    #[case("42", serde_json::json!(42), "integer")]
-    #[case("3.15", serde_json::json!(3.15), "float")]
-    #[case("true", serde_json::json!(true), "boolean true")]
-    #[case("false", serde_json::json!(false), "boolean false")]
-    #[case("null", serde_json::json!(null), "null")]
-    #[case("hello", serde_json::json!("hello"), "unquoted string")]
-    #[case("  text  ", serde_json::json!("text"), "trimmed string")]
-    fn test_safe_parse_value(
-        #[case] input: &str,
-        #[case] expected: serde_json::Value,
-        #[case] _description: &str,
-    ) {
-        assert_eq!(safe_parse_value(input), expected);
     }
 
     #[rstest] // helper
@@ -2264,7 +2213,6 @@ NYC
 
     #[test] // helper
     fn test_no_schema_fallback_behavior() {
-        // Without schema, behavior should match old safe_parse_value logic
         let input = r#"<tool_call>
 <function=unknown_func>
 <parameter=param1>42</parameter>
