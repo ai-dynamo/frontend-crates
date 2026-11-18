@@ -25,6 +25,7 @@
 //! unsupported.
 
 use crate::image::resize::{Filter, Resample, resize_rgb};
+use crate::models::qwen_vl::{Resampler, normalize_lut};
 use crate::processor::{
     DecodedMedia, ExpansionPart, MediaMetadata, MmFamilyProcessor, Modality, ProcessedItem,
     Segment, Tensor, TensorData, TokenLayout,
@@ -167,8 +168,7 @@ impl NemotronVlProcessor {
         }
         // torchvision `ToTensor` then `Normalize`, in f32.
         let lut = core::array::from_fn(|c| {
-            let (mean, std) = (spec.image_mean[c], spec.image_std[c]);
-            core::array::from_fn(|v| bf16_bits((v as f32 / 255.0 - mean) / std))
+            normalize_lut(Resampler::Pil, spec.image_mean[c], spec.image_std[c]).map(bf16_bits)
         });
         Ok(Self { spec, lut })
     }
@@ -392,8 +392,6 @@ impl NemotronVlProcessor {
 }
 
 impl MmFamilyProcessor for NemotronVlProcessor {
-    /// With `sglang` sizing the request budget decides each image's span, so only
-    /// `layout_from_metadata` counts it.
     fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize> {
         match media {
             MediaMetadata::Image { .. } if self.spec.sizing == NemotronVlSizing::Sglang => {

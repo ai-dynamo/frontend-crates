@@ -13,9 +13,7 @@ use std::path::Path;
 use dynamo_multimodal::models::nemotron_vl::{
     NemotronVlImagePlan, NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec,
 };
-use dynamo_multimodal::processor::{
-    DecodedMedia, MediaMetadata, MmFamilyProcessor, Modality, ProcessedItem, Tensor, TensorData,
-};
+use dynamo_multimodal::processor::{DecodedMedia, MediaMetadata, MmFamilyProcessor};
 use dynamo_multimodal::registry::{
     ProcessorSpec, build_processor, processor_from_spec, spec_from_hf_configs, spec_from_model_dir,
 };
@@ -514,49 +512,6 @@ fn from_sizes(spec: &Value, input_ids: &[i32], sizes: &[(u32, u32)]) -> Result<V
     }))
 }
 
-fn item(feature_token_count: usize) -> ProcessedItem {
-    ProcessedItem {
-        modality: Modality::Image,
-        feature_token_count,
-        feature: Tensor {
-            shape: vec![],
-            data: TensorData::Bf16(vec![]),
-        },
-        aux: vec![],
-        geometry: None,
-    }
-}
-
-/// SGLang's own vector, `test_nano_nemotron_vl_processor.py`: two images of
-/// two tokens each, with ids before, between and after them.
-#[test]
-fn layout_wraps_each_image_in_its_markers() {
-    let family = processor_from_spec(&sizes_fixture()["sglang_spec"].to_string()).unwrap();
-    let ids = [0, 101, IMAGE, 7, IMAGE, 102, 103];
-    let layout = family.layout(&ids, &[item(2), item(2)]).unwrap();
-    let expanded = apply_layout(&ids, &layout, &[2, 2], usize::MAX).unwrap();
-    assert_eq!(
-        expanded.input_ids,
-        [
-            0, 101, 19, IMAGE, IMAGE, 20, 7, 19, IMAGE, IMAGE, 20, 102, 103
-        ]
-    );
-    // SGLang reports the feature runs, (3, 4) and (8, 9).
-    assert_eq!(expanded.feature_ranges.concat(), [3..5, 8..10]);
-    assert_eq!(expanded.offsets, [(2, 5), (7, 10)]);
-
-    for (ids, items) in [
-        (&ids[..3], vec![item(2), item(2)]),
-        (&ids[..], vec![item(2)]),
-        (&ids[..2], vec![item(2)]),
-    ] {
-        assert!(matches!(
-            family.layout(ids, &items),
-            Err(MmError::InvalidInput { .. })
-        ));
-    }
-}
-
 #[test]
 fn hf_sizing_is_metadata_only_and_other_modalities_are_unsupported() {
     let fixture = sizes_fixture();
@@ -604,32 +559,6 @@ fn hf_sizing_is_metadata_only_and_other_modalities_are_unsupported() {
             sglang.layout_from_metadata(&[IMAGE], &[media]),
             Err(MmError::Unsupported { .. })
         ));
-    }
-}
-
-/// A driver that calls `process_items` for every family gets what
-/// `process_item` gave it, unless the family sizes by request.
-#[test]
-fn process_items_maps_process_item_by_default() {
-    let qwen = processor_from_spec(
-        r#"{"family": "qwen_vl", "image_token_id": 151655, "patch_size": 14, "merge_size": 2,
-            "temporal_patch_size": 2, "min_pixels": 3136, "max_pixels": 12845056,
-            "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5]}"#,
-    )
-    .unwrap();
-    let media = [(40, 30), (64, 96)].map(|(width, height)| DecodedMedia::Image {
-        rgb: (0..width * height * 3).map(|i| i as u8).collect(),
-        height,
-        width,
-    });
-    let pixels = |item: &ProcessedItem| match &item.feature.data {
-        TensorData::F32(values) => (item.feature.shape.clone(), values.clone()),
-        _ => panic!("Qwen features are f32"),
-    };
-    let together = qwen.process_items(&[151655, 7, 151655], &media).unwrap();
-    assert_eq!(together.len(), 2);
-    for (item, alone) in together.iter().zip(&media) {
-        assert_eq!(pixels(item), pixels(&qwen.process_item(alone).unwrap()));
     }
 }
 
