@@ -24,6 +24,7 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::{KimiK3ParserConfig, TerminalMarkerPolicy};
+use super::super::json::compact_json_lexically;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 pub(crate) const SEP: &str = "<|sep|>";
@@ -491,32 +492,6 @@ fn encode_argument_value(arg_type: &str, raw: &str) -> String {
     } else {
         serde_json::to_string(raw).expect("serializing a Rust string cannot fail")
     }
-}
-
-/// Remove insignificant JSON whitespace without reparsing into `Value`, which
-/// would reorder object keys and normalize number spelling in this workspace.
-fn compact_json_lexically(raw: &str) -> String {
-    let mut output = String::with_capacity(raw.len());
-    let mut in_string = false;
-    let mut escaped = false;
-    for ch in raw.chars() {
-        if in_string {
-            output.push(ch);
-            if escaped {
-                escaped = false;
-            } else if ch == '\\' {
-                escaped = true;
-            } else if ch == '"' {
-                in_string = false;
-            }
-        } else if ch == '"' {
-            in_string = true;
-            output.push(ch);
-        } else if !ch.is_whitespace() {
-            output.push(ch);
-        }
-    }
-    output
 }
 
 fn parse_attrs(input: &str) -> Option<Vec<(String, String)>> {

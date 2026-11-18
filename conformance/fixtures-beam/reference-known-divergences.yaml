@@ -4,8 +4,8 @@
 # is shared by the V2 unified parser and the V1 route (reasoning parser + tool parser):
 # `beam_reference_goldens.rs` replays both and fails on any mismatch not listed here AND
 # on any entry that no longer mismatches, so this list is exact for each route. Every
-# input below is fuzz-generated malformed output; on template-conforming output all
-# three implementations agree on all cases.
+# input below is fuzz-generated. Framing entries cover malformed output; T entries
+# cover schema type constraints the frozen reference does not infer.
 #
 # Classes (the tag opens each reason):
 #   F  — a `<|start|>` inside a body whose own terminator never came. V2 ends the body
@@ -41,6 +41,10 @@
 #        `<|call|>` as content. A stop token never reaches a parser mid-answer in a real
 #        stream, so only fuzzed input shows the difference.
 known_divergences:
+  - id: gen-30
+    reason: "T: `flag` excludes strings with `not: {type: string}`, so V2 emits JSON null for bare null; the frozen reference has no negation inference and keeps the string."
+  - id: gen-470
+    reason: "T: `a.b` excludes strings with `not: {type: string}`, so V2 emits the JSON object; the frozen reference has no negation inference and keeps the object text as a string."
   - id: gen-11
     reason: "F: `<|start|>` inside an unterminated `final` body ends it in V2; the reference keeps the call markup as content. The recovered call also carries C (`<|call|>` inside a value) and is dropped by V2."
   - id: gen-62

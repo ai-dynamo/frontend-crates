@@ -457,7 +457,10 @@ fn get_param_schema_type<'a>(
     if schema_has_type(schema, param, "string", raw) {
         return Some("string");
     }
-    if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
+    if let Some(schema_type) = param.get("type").and_then(Value::as_str)
+        && (crate::tool_calling::arguments::schema::types::categorize_type(schema_type).is_none()
+            || schema_has_type(schema, param, schema_type, raw))
+    {
         return Some(schema_type);
     }
     // Select a scalar hint from a union using the JSON value, not branch order.
@@ -511,14 +514,18 @@ pub fn parse_glm47_invoke(
         .strip_suffix(config.tool_call_end.as_str())
         .unwrap_or(invoke);
 
-    // Extract function name (everything before first <arg_key> or end)
     let arg_key_start = &config.arg_key_start;
-    let function_name = if let Some(pos) = content.find(arg_key_start.as_str()) {
-        content[..pos].trim().to_string()
-    } else {
-        // No arguments, just function name
-        content.trim().to_string()
-    };
+    let header_end = content
+        .find(arg_key_start.as_str())
+        .unwrap_or(content.len());
+    // A second opener before any argument supersedes an unfinished header.
+    let content = content[..header_end]
+        .rfind(config.tool_call_start.as_str())
+        .map_or(content, |at| &content[at + config.tool_call_start.len()..]);
+    let args_start = content
+        .find(arg_key_start.as_str())
+        .unwrap_or(content.len());
+    let function_name = content[..args_start].trim().to_string();
 
     if function_name.is_empty() {
         anyhow::bail!("Empty function name in tool call");
@@ -526,7 +533,7 @@ pub fn parse_glm47_invoke(
 
     // Parse key-value pairs
     let mut arguments = HashMap::new();
-    let args_section = &content[function_name.len()..];
+    let args_section = &content[args_start..];
 
     // Build regex patterns
     let arg_key_start_escaped = regex::escape(&config.arg_key_start);
@@ -598,6 +605,23 @@ pub fn parse_glm47_invoke(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nested_openers_recover_only_within_the_function_header() {
+        let config = Glm47ParserConfig::default();
+        let value = "café <tool_call> is argument data";
+        for prefix in ["", "\" marker before <tool_call>"] {
+            let block = format!(
+                "<tool_call>{prefix} 外部.lookup-v2 <arg_key>cmd</arg_key><arg_value>{value}</arg_value></tool_call>"
+            );
+            let call = parse_tool_call_block(&block, &config, Some(&[])).unwrap();
+            assert_eq!(call.function.name, "外部.lookup-v2");
+            assert_eq!(
+                serde_json::from_str::<Value>(&call.function.arguments).unwrap(),
+                serde_json::json!({"cmd": value})
+            );
+        }
+    }
 
     fn get_test_config() -> Glm47ParserConfig {
         Glm47ParserConfig::default()
@@ -841,7 +865,7 @@ mod tests {
     }
 
     #[test]
-    fn branching_reference_cycles_exhaust_a_shared_budget() {
+    fn branching_reference_cycles_stop_before_expanding_a_shared_budget() {
         let reference = serde_json::json!({"$ref": "#/$defs/Cycle"});
         let schema = serde_json::json!({
             "$defs": {"Cycle": {"anyOf": vec![reference.clone(); 8]}},
@@ -859,7 +883,7 @@ mod tests {
             ),
             None
         );
-        assert_eq!(remaining, 0);
+        assert!(remaining > 0 && remaining < 64);
     }
 
     #[test]

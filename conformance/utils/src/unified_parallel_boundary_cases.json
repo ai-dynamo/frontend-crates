@@ -323,6 +323,59 @@
         }
       ]
     },
+    "mistral_4": {
+      "input_chunks": [
+        "[TOOL_CALLS]f[ARGS]{\"a\":\"1\"}[TOOL_CALLS]g[AR",
+        "GS]{\"b\":\"2\"}",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
     "muse_glimmer": {
       "input_chunks": [
         "<|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name=\"f\"><atem:parameter name=\"a\">\"1\"</atem:parameter></atem:invoke><atem:invoke na",
@@ -433,6 +486,59 @@
       "input_chunks": [
         "<tool_call>\n<function=f>\n<parameter=a>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
         "ction=g>\n<parameter=b>\n2\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "hermes": {
+      "input_chunks": [
+        "<tool_call>{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}}</tool_call><tool_call>{\"na",
+        "me\":\"g\",\"arguments\":{\"b\":\"2\"}}</tool_call>",
         ""
       ],
       "tools": [
@@ -934,6 +1040,81 @@
         }
       ]
     },
+    "mistral_4": {
+      "input_chunks": [
+        "",
+        "[TOOL_CALLS]f[ARGS]{\"x\":\"1\"}[TOOL_CALLS]g[ARGS]{\"x\":\"2\"}[TOOL_CA",
+        "LLS]h[ARGS]{\"x\":\"3\"}",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
     "muse_glimmer": {
       "input_chunks": [
         "",
@@ -1089,6 +1270,81 @@
         "",
         "<tool_call>\n<function=f>\n<parameter=x>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
         "ction=g>\n<parameter=x>\n2\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=h>\n<parameter=x>\n3\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "hermes": {
+      "input_chunks": [
+        "",
+        "<tool_call>{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}}</tool_call><tool_call>{\"na",
+        "me\":\"g\",\"arguments\":{\"x\":\"2\"}}</tool_call><tool_call>{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}</tool_call>",
         ""
       ],
       "tools": [

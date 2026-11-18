@@ -5,6 +5,7 @@ pub mod catalog;
 pub mod codec;
 mod conversion_cache;
 pub mod history;
+pub mod normalization;
 pub mod pipeline;
 pub mod publication;
 pub mod resources;

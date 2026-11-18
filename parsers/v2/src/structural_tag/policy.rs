@@ -121,6 +121,8 @@ pub(crate) fn uses_declared_tool_schema(tool: &Tool, schema_mode: StructuralTagS
 ///   the schema as written, taking this function and canonicalizing only what
 ///   they forward afterwards: Kimi K3. (Beam types its XML arguments from
 ///   `tool.parameters` directly and does not go through either function.)
+/// - Qwen XML also uses this original spelling for empty-call eligibility;
+///   its actual argument grammar continues to use [`resolve_tool_schema`].
 pub(crate) fn declared_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> Value {
     if uses_declared_tool_schema(tool, schema_mode) {
         tool.parameters.clone()

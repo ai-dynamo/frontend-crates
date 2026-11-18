@@ -7,9 +7,10 @@ use serde_json::Value;
 
 use super::super::ToolDefinition;
 use super::super::config::MiniMaxM3ParserConfig;
+use crate::tool_calling::arguments::schema::literals_contradict_type;
 use crate::tool_calling::arguments::{
     MAX_SCHEMA_DEPTH, ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number,
-    literals_contradict_type, normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
+    normalize_decimal_spelling, parsed_json_literal, raw_number_literal,
 };
 
 // Builds the marker that introduces an individual function invocation before attributes.
@@ -66,6 +67,57 @@ pub(crate) fn parse_minimax_m3_invoke(
     Ok(Some((name, arguments)))
 }
 
+/// Appends `null` for omitted keys that are required and provably nullable (M3 omits null args).
+pub(crate) fn append_required_nulls(
+    name: &str,
+    arguments: String,
+    tools: &[ToolDefinition],
+) -> anyhow::Result<String> {
+    let Some(root) = get_arguments_config(name, Some(tools)) else {
+        return Ok(arguments);
+    };
+    let Some(required) = root.get("required").and_then(Value::as_array) else {
+        return Ok(arguments);
+    };
+    // Raw values: arguments may carry integers beyond 64 bits that `Value` rejects.
+    let Ok(present) =
+        serde_json::from_str::<HashMap<String, Box<serde_json::value::RawValue>>>(&arguments)
+    else {
+        return Ok(arguments);
+    };
+    let mut missing = Vec::new();
+    for key in required.iter().filter_map(Value::as_str) {
+        if present.contains_key(key) || missing.contains(&key) {
+            continue;
+        }
+        let Some(schema) = parameter_schema(root, key) else {
+            continue;
+        };
+        let schema: &Value = &schema;
+        let mut walker = SchemaFacts::new(root);
+        if walker.permits_null(schema) == Some(true) && !walker.exhausted {
+            missing.push(key);
+        }
+    }
+    if missing.is_empty() {
+        return Ok(arguments);
+    }
+    let mut arguments = arguments;
+    let close = arguments
+        .pop()
+        .filter(|close| *close == '}')
+        .ok_or_else(|| anyhow::anyhow!("arguments are not a JSON object"))?;
+    for key in missing {
+        if arguments.len() > 1 {
+            arguments.push(',');
+        }
+        arguments.push_str(&serde_json::to_string(key)?);
+        arguments.push_str(":null");
+    }
+    arguments.push(close);
+    Ok(arguments)
+}
+
 // Reads the `name` attribute from `<invoke ...>` using vLLM-compatible quoting variants.
 pub(crate) fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
     let attrs = tag_attrs.trim_start();
@@ -80,7 +132,7 @@ pub(crate) fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
     }
 
     let end = value.find(char::is_whitespace).unwrap_or(value.len());
-    if end == 0 {
+    if end == 0 || value[..end].contains(['\'', '"']) {
         None
     } else {
         Some(value[..end].trim().to_string())
@@ -697,7 +749,7 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) 
     }
 
     if (schemas.has_type(Some(schema), "string")
-        && !schemas.rejects_string_literal(schema, raw)
+        && !schemas.rejects_string_literal(schema, raw, true)
         && (schemas.type_constraint(schema, "string", false) == Some(true)
             || !["integer", "number", "boolean", "object", "array"]
                 .iter()
@@ -712,6 +764,7 @@ fn convert_scalar_value(raw: &str, schema: Option<&Value>, root_schema: &Value) 
         return parsed;
     }
     if schemas.has_type(Some(schema), "number")
+        && (schemas.has_type(Some(schema), "integer") || coerce_integral_number(trimmed).is_none())
         && let Some(number) = coerce_integral_number(trimmed)
             .or_else(|| raw_number_literal(trimmed))
             .or_else(|| normalize_decimal_spelling(trimmed))
@@ -812,6 +865,33 @@ mod tests {
     use super::*;
     use crate::tool_calling::arguments::MAX_SCHEMA_WORK;
     use serde_json::json;
+
+    #[test]
+    fn unquoted_invoke_names_reject_escaped_quotation() {
+        for attrs in [
+            r#"name=\"lookup\""#,
+            r#"name=\'lookup\'"#,
+            r#"name=lookup"bad"#,
+            "name=lookup'bad",
+        ] {
+            assert_eq!(parse_invoke_name(attrs), None, "{attrs}");
+        }
+        for attrs in [
+            r#"name="外部.lookup-v2""#,
+            r#"name='外部.lookup-v2'"#,
+            "name=外部.lookup-v2",
+        ] {
+            assert_eq!(
+                parse_invoke_name(attrs).as_deref(),
+                Some("外部.lookup-v2"),
+                "{attrs}"
+            );
+        }
+        assert_eq!(
+            parse_invoke_name(r#"name="it's.valid""#).as_deref(),
+            Some("it's.valid")
+        );
+    }
 
     #[test]
     fn scalar_hints_preserve_explicit_and_composed_types() {

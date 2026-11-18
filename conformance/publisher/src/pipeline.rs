@@ -345,7 +345,8 @@ pub(crate) fn family_cache_key(
         "policy":catalog["metadata"]["unified_capture_policy"],
         "code":[include_str!("pipeline.rs"), include_str!("source.rs"), include_str!("yaml.rs"),
                 include_str!("history.rs"), include_str!("codec.rs"), include_str!("catalog.rs"),
-                include_str!("conversion_cache.rs")]}),
+                include_str!("conversion_cache.rs"), include_str!("normalization.rs"),
+                include_str!("../../src/normalization.rs")]}),
     )?))
 }
 
@@ -424,7 +425,7 @@ pub(crate) fn converted_family(
         .find(|r| r["kind"] == "inputs-and-golden")
         .context("dataset has no authored family")?;
     let bytes = source::verified(root, input)?;
-    let authored = yaml::load_str(std::str::from_utf8(&bytes)?)?;
+    let authored = crate::normalization::family(&yaml::load_str(std::str::from_utf8(&bytes)?)?)?;
     source::family(&authored, name, &catalog["metadata"]["unified_aliases"])?;
     let mut implementations = BTreeMap::<String, Vec<&Value>>::new();
     for resource in resources {
@@ -439,8 +440,9 @@ pub(crate) fn converted_family(
         let batch =
             catalog["metadata"]["unified_capture_policy"][&implementation]["mode"] == "batch";
         let first = source::verified(root, resources[0])?;
-        let complete = yaml::load_str(std::str::from_utf8(&first)?)?.get("schema_version")
-            == Some(&Node::Int(2.into()));
+        let first_document = yaml::load_str(std::str::from_utf8(&first)?)?;
+        let complete = first_document.get("schema_version") == Some(&Node::Int(2.into()))
+            || crate::normalization::is_normalized(&first_document);
         drop(first);
         if complete {
             for resource in resources {
@@ -656,7 +658,8 @@ pub fn snapshots_cached(
             } else {
                 eprintln!("family conversion: {name} miss");
                 let bytes = source::verified(root, authored_resource)?;
-                let mut authored = yaml::load_str(std::str::from_utf8(&bytes)?)?;
+                let mut authored =
+                    crate::normalization::family(&yaml::load_str(std::str::from_utf8(&bytes)?)?)?;
                 source::family(&authored, name, &catalog["metadata"]["unified_aliases"])?;
                 let mut retained_cases = authored.field("cases")?.clone();
                 let mut snapshots = Vec::new();

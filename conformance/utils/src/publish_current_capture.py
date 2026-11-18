@@ -4,11 +4,12 @@
 """Archive immutable capture evidence before publishing one latest YAML."""
 import argparse
 import base64
+import copy
 import fcntl
 import json
 import os
 import shutil
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 import tarfile
 import tempfile
@@ -16,10 +17,12 @@ import tempfile
 import yaml
 
 import capture_sources as sources
+import dynamo_version
 from capture_versions import capture_release_sort_key
 import unified_archives
 import unified_history
 import migrate_capture_sources
+import normalized_yaml
 
 
 def choose_current(rows, candidate):
@@ -148,9 +151,109 @@ def recover(root, history):
     return recovered
 
 
+def require_current_records(records, family, origin, implementation, version):
+    active = {key for key, case in family.cases.items() if case["lifecycle"] == "active"}
+    if set(records) != active:
+        raise ValueError("latest refresh must cover every active case exactly once")
+    for case_id, record in records.items():
+        document = record["document"]
+        if document.get("capture_origin") != origin or document.get("captured_with", {}).get(implementation) != version:
+            raise ValueError("latest record source differs from the validated producer")
+        if record["stimulus"].get("semantic_sha256") != unified_history._request_digest(family.cases[case_id]["request"]):
+            raise ValueError("latest record request differs from current authored input")
+
+
+def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> list[dict]:
+    """Refresh only current candidate YAML; retained release evidence is immutable."""
+    origin = dynamo_version.validate_capture_provenance(root, provenance)
+    if provenance["kind"] != "unpublished":
+        raise ValueError("latest replacement requires an explicitly unpublished producer")
+    version = origin["crate_version"]
+    directory = f"dynamo_v2-{version}"
+    store_root = root / sources.STORE
+    expected_families = {row["family"] for row in sources.current(root)["captures"]
+                         if row["surface"] == "unified" and row["implementation"] == "dynamo_v2"}
+    incoming_families = {path.name for path in (loose / directory).iterdir() if path.is_dir()}
+    if incoming_families != expected_families:
+        raise ValueError("latest refresh family set differs from the canonical native captures")
+    with unified_history._store_read_lock(store_root):
+        store = unified_history.load_authored_store(store_root)
+        authored_sources = {family.path: family.path.read_bytes() for family in store.families.values()}
+    with tempfile.TemporaryDirectory(prefix=".latest-refresh-", dir=store_root.parent) as temporary:
+        temporary = Path(temporary)
+        shutil.copytree(loose / directory, temporary / directory)
+        unified_history._update_from_loose(
+            store, temporary, complete_snapshot=True,
+            required_capture_dirs={directory},
+        )
+        pairs, results = [], []
+        fingerprints = {path: sources.digest(data) for path, data in authored_sources.items()}
+        for (family, implementation), capture in store.histories.items():
+            target = root / sources.latest_path("unified", family, implementation)
+            require_current_records(capture.resolve(directory), store.families[family], origin, implementation, version)
+            previous = target.read_bytes()
+            authored_path = store.families[family].path
+            authored_storage = unified_history._parse_yaml_raw(authored_path, authored_sources[authored_path])
+            prior_snapshot = normalized_yaml.expand_snapshot(
+                unified_history._parse_yaml_raw(target, previous), authored_storage)
+            if prior_snapshot.get("execution_proof") or prior_snapshot.get("historical_evidence") or any(
+                set(record["value"]["document"].get("record_metadata", {})) - {"parser_path"}
+                for record in prior_snapshot["records"].values()
+            ):
+                raise ValueError("latest refresh must not discard retained execution or recapture evidence")
+            fingerprints[target] = sources.digest(previous)
+            selection = json.loads(previous.split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
+            if capture_release_sort_key(version) < capture_release_sort_key(selection["version"]):
+                raise ValueError("latest refresh cannot move to an older producer version")
+            unified_history._validate_complete_snapshot(
+                target, prior_snapshot, store.families[family], implementation, selection["version"])
+            document = capture.complete_snapshot(directory)
+            logical = f"{sources.STORE}/families/{family}/{directory}.yaml"
+            for case_id, retained in prior_snapshot["records"].items():
+                incoming = document["records"].get(case_id)
+                case = store.families[family].cases.get(case_id)
+                if retained["member"] != logical or incoming is None or case is None or not unified_history.typed_equal(
+                    unified_history.materialized_record(case, retained["value"]),
+                    unified_history.materialized_record(case, incoming["value"]),
+                ):
+                    raise ValueError(
+                        "latest refresh cannot replace retained observations, requests or producer identity; "
+                        "conflicting native captures require archival support"
+                    )
+                # Loose ingestion may enrich bindings or rewrite display aliases;
+                # neither permits replacing the original evidence or its metadata.
+                document["records"][case_id] = copy.deepcopy(retained)
+            unified_history._validate_complete_snapshot(target, document, store.families[family], implementation, version)
+            lineage = copy.deepcopy(selection["lineage"])
+            if not any(row["path"] == logical for row in lineage):
+                lineage.append({"path": logical, **unified_history.source_identity(logical.removeprefix(sources.STORE + "/"))})
+            row = {"source": logical, "surface": "unified", "mode": "unified", "family": family,
+                   "implementation": implementation, "version": version}
+            data = sources.selected_bytes(unified_history.dump_yaml(document).encode(), row, lineage,
+                authored=store.families[family].document, authored_storage=authored_storage)
+            candidate = temporary / f"{family}.yaml"
+            candidate.write_bytes(data)
+            pairs.append((candidate, target))
+            results.append({"family": family, "implementation": implementation, "version": version, "refreshed_latest": True})
+        with ExitStack() as locks:
+            for family, implementation in sorted(store.histories):
+                locks.enter_context(capture_lock(root, family, implementation, "unified"))
+            locks.enter_context(unified_history._store_mutation_lock(store_root))
+            for path, expected in fingerprints.items():
+                if sources.digest(path.read_bytes()) != expected:
+                    raise ValueError("current capture or authored inputs changed during refresh")
+            unified_history.publish_paths_transactionally(pairs, backup_parent=store_root.parent)
+        return results
+
+
 def publish_loose(root: Path, history: Path, loose: Path) -> list[dict]:
     """Use the existing capture importer, then archive each newly recorded snapshot."""
     recover(root, history)
+    feed_path = loose / "unified_results.yaml"
+    if feed_path.is_file():
+        provenance = unified_history.load_yaml(feed_path).get("capture_provenance", {})
+        if provenance.get("kind") == "unpublished":
+            return refresh_unpublished_latest(root, loose, provenance)
     current = sources.current(root)
     previous = {row["source"]: row for row in current["captures"] if row["surface"] == "unified"}
     results = []
@@ -187,7 +290,7 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
             raise ValueError("capture identity must use single components")
     if mode != "unified" and mode not in sources.LEGACY_CORPORA:
         raise ValueError("unsupported capture mode")
-    release_order(version, mode)
+    capture_release_sort_key(version)
     path = sources.latest_path(mode, family, implementation)
     target = root / path
     journal = target.parent / f".capture-update-{implementation}.json"
@@ -197,14 +300,14 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
         data = capture.read_bytes()
         if data.startswith(b"capture_selection: "):
             data = data.split(b"\n", 1)[1]
-        document = yaml.load(data, Loader=unified_history.StrictLoader)
+        document = unified_history._parse_yaml(capture, data)
         # Stable serialization makes independent captures of the same records idempotent.
         data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
         authored_rows, lineage = [], []
         if mode == "unified":
             authored_name = authored_paths(root, family, mode)[0].relative_to(root).as_posix()
             authored_bytes = sources.read(root, authored_name)
-            authored = unified_history._validate_family(root / authored_name, yaml.load(authored_bytes, Loader=unified_history.StrictLoader))
+            authored = unified_history._validate_family(root / authored_name, unified_history._parse_yaml(root / authored_name, authored_bytes))
             unified_history._validate_complete_snapshot(capture, document, authored, implementation, version)
             document = sources.independent_snapshot(document, authored.document)
             data = yaml.safe_dump(document, sort_keys=True, allow_unicode=True, width=4096).encode()
@@ -229,11 +332,12 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
         row = {"source": logical, "surface": mode, "mode": mode, "family": family,
                "implementation": implementation, "version": version}
         selected = sources.selected_bytes(data, row, lineage,
-                                          authored=authored.document if mode == "unified" else None)
+                                          authored=authored.document if mode == "unified" else None,
+                                          authored_storage=unified_history._parse_yaml_raw(root / authored_name, authored_bytes) if mode == "unified" else None)
         previous_data = sources.read(root, path) if target.exists() else None
         previous_selection = json.loads(previous_data.split(b"\n", 1)[0].removeprefix(b"capture_selection: ")) if previous_data else None
         if previous_selection and previous_selection["version"] == version:
-            previous_document = yaml.load(previous_data.split(b"\n", 1)[1], Loader=unified_history.StrictLoader)
+            previous_document = unified_history._parse_yaml(target, previous_data.split(b"\n", 1)[1])
             comparable = sources.independent_snapshot(document, authored.document, source_member=logical) if mode == "unified" else document
             previous_comparable = sources.independent_snapshot(previous_document, authored.document, source_member=logical) if mode == "unified" else previous_document
             if not unified_history.typed_equal(previous_comparable, comparable):
@@ -407,7 +511,9 @@ def reconcile(root, history):
                     continue
             authored = retained_authored(root, history, family) if mode == "unified" else None
             atomic_write(path, sources.selected_bytes(data, descriptor["selection"], descriptor["lineage"],
-                                                     authored=authored))
+                                                     authored=authored, authored_storage=unified_history._parse_yaml_raw(
+                                                         root / sources.STORE / "families" / family / "inputs_and_golden.yaml",
+                                                         (root / sources.STORE / "families" / family / "inputs_and_golden.yaml").read_bytes()) if mode == "unified" else None))
     return {"reconciled": len(grouped)}
 
 

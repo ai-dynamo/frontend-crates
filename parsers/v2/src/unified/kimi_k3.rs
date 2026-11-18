@@ -10,6 +10,8 @@
 
 use std::collections::HashMap;
 
+use uuid::Uuid;
+
 #[cfg(test)]
 use serde_json::Value;
 
@@ -1885,6 +1887,28 @@ impl KimiK3Native {
         let header_end = open_len + sep_at;
         let Some(attrs) = parse_attrs(&self.buffer[open_len..header_end]) else {
             let malformed_len = header_end + sep_len;
+            let competitors: &[Marker] = match self.mode {
+                Mode::Idle => &[
+                    TOOLS_OPEN,
+                    CALL_OPEN,
+                    RESPONSE_OPEN,
+                    THINK_OPEN,
+                    ASSISTANT_MESSAGE_OPEN,
+                ],
+                Mode::Reasoning | Mode::Tools => &[TOOLS_OPEN, CALL_OPEN, RESPONSE_OPEN],
+                _ => &[TOOLS_OPEN, CALL_OPEN],
+            };
+            // Earlier malformed openers cannot restart scans over the same suffix.
+            let malformed_len = competitors
+                .iter()
+                .flat_map(|marker| marker.variants())
+                .filter_map(|marker| {
+                    self.buffer[open_len..malformed_len]
+                        .rfind(marker)
+                        .map(|at| open_len + at)
+                })
+                .max()
+                .unwrap_or(malformed_len);
             tracing::warn!(
                 why = "kimi_k3_malformed_call_header",
                 skipped_bytes = malformed_len,
@@ -1894,10 +1918,8 @@ impl KimiK3Native {
             return true;
         };
         let name = attr_value(&attrs, "tool").unwrap_or_default().to_string();
-        let index = attr_value(&attrs, "index")
-            .filter(|index| !index.is_empty())
-            .map(str::to_string);
-        let id = tool_call_id(&name, index.as_deref());
+        // XTML indices restart on every response and are not conversation-wide IDs.
+        let id = format!("call-{}", Uuid::new_v4());
         self.active_call = Some(ActiveCall {
             progress: KimiProgress::new(self.next_tool_index, name.clone()),
             arguments: NativeArguments::new(header_end + sep_len),
@@ -2800,19 +2822,6 @@ fn attr_value<'a>(attrs: &'a [(String, String)], key: &str) -> Option<&'a str> {
         .map(|(_, value)| value.as_str())
 }
 
-fn tool_call_id(name: &str, index: Option<&str>) -> String {
-    match index.filter(|index| !index.is_empty()) {
-        None => name.to_string(),
-        Some(index) => index.parse::<i64>().map_or_else(
-            |_| format!("{name}:{index}"),
-            |index| match index.checked_sub(1) {
-                Some(normalized) if index > 0 => format!("{name}:{normalized}"),
-                _ => format!("{name}:{index}"),
-            },
-        ),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2823,6 +2832,77 @@ mod tests {
     };
 
     const SEP: &str = "<|sep|>";
+
+    #[test]
+    fn malformed_call_header_preserves_admitted_idle_channels() {
+        for (suffix, expected) in [
+            (
+                format!(
+                    "{}Visible café{}",
+                    RESPONSE_OPEN.canonical, RESPONSE_CLOSE.canonical
+                ),
+                UnifiedEvent::Text {
+                    text: "Visible café".into(),
+                },
+            ),
+            (
+                format!("{}café{}", THINK_OPEN.canonical, THINK_CLOSE.canonical),
+                UnifiedEvent::Reasoning {
+                    text: "café".into(),
+                },
+            ),
+            (
+                format!(
+                    "{}Visible café{}",
+                    ASSISTANT_MESSAGE_OPEN.canonical, MESSAGE_CLOSE.canonical
+                ),
+                UnifiedEvent::Text {
+                    text: "Visible café".into(),
+                },
+            ),
+            (
+                format!(
+                    "<|open|>message role=\"user\"{SEP}Visible café{}",
+                    MESSAGE_CLOSE.canonical
+                ),
+                UnifiedEvent::Text {
+                    text: "Visible café".into(),
+                },
+            ),
+        ] {
+            let input = format!("{} malformed{suffix}", CALL_OPEN.canonical);
+            assert_native_fragmentations(&input, &[expected]);
+        }
+    }
+
+    #[test]
+    fn repeated_malformed_call_headers_scan_linearly() {
+        fn work(repetitions: usize) -> (usize, usize) {
+            crate::tool_calling::kimi_progress::reset_work();
+            let input = format!(
+                "{}{}",
+                CALL_OPEN.canonical.repeat(repetitions),
+                call("run", "1", &arg("cmd", "string", "café"))
+            );
+            assert_eq!(
+                run(&input, UnifiedParserStartingState::Response).0,
+                [UnifiedEvent::ToolCall {
+                    name: "run".into(),
+                    arguments: serde_json::json!({"cmd": "café"}),
+                }]
+            );
+            (crate::tool_calling::kimi_progress::work()[1], input.len())
+        }
+
+        let small = work(128);
+        let large = work(256);
+        eprintln!("malformed header scan work: {small:?} -> {large:?}");
+        assert!(
+            large.0 <= small.0 * 2 + 512,
+            "malformed header scan grew faster than linearly: {small:?} -> {large:?}"
+        );
+        assert!(large.0 <= 16 * large.1, "malformed scan work: {large:?}");
+    }
 
     #[test]
     fn response_recovery_keeps_the_original_typed_string_owner() {
@@ -3276,7 +3356,7 @@ mod tests {
                 deltas.iter().filter(|delta| delta.complete).count(),
                 usize::from(valid)
             );
-            assert_eq!(parser.tool_call_id(0), Some("lookup:0"));
+            assert_uuid_id(parser.tool_call_id(0));
             let expected = if valid {
                 vec![UnifiedEvent::ToolCall {
                     name: "lookup".into(),
@@ -3303,7 +3383,7 @@ mod tests {
                     arguments: serde_json::json!({"n":7})
                 }]
             );
-            assert_eq!(parser.tool_call_id(0), Some("next:0"));
+            assert_uuid_id(parser.tool_call_id(0));
         }
     }
 
@@ -3464,7 +3544,11 @@ mod tests {
         ];
         assert_native_fragmentations(&input, &expected);
         let (_, ids) = run(&input, UnifiedParserStartingState::None);
-        assert_eq!(ids, ["weather:0", "second:raw"]);
+        assert_eq!(ids.len(), 2);
+        for id in &ids {
+            assert_uuid_id(Some(id));
+        }
+        assert_ne!(ids[0], ids[1]);
     }
 
     #[test]
@@ -3657,49 +3741,94 @@ mod tests {
                     .collect();
                 assert_eq!(completed.len(), 1);
                 let index = completed[0].tool_index;
-                assert_eq!(parser.tool_call_id(index), Some("good:1"));
+                assert_uuid_id(parser.tool_call_id(index));
                 assert_eq!(parser.tool_call_id(index + 1), None);
             }
         }
     }
 
+    fn assert_uuid_id(id: Option<&str>) {
+        let uuid = Uuid::parse_str(id.unwrap().strip_prefix("call-").unwrap()).unwrap();
+        assert_eq!(uuid.get_version_num(), 4);
+    }
+
     #[test]
-    fn tool_call_id_preserves_non_positive_and_overflowing_indices() {
-        let cases = [
-            ("0", "weather:0"),
-            ("-2", "weather:-2"),
-            ("+2", "weather:1"),
-            ("9223372036854775807", "weather:9223372036854775806"),
-            ("-9223372036854775808", "weather:-9223372036854775808"),
-        ];
-        for (index, expected) in cases {
-            assert_eq!(tool_call_id("weather", Some(index)), expected);
+    fn repeated_tool_and_index_get_unique_ids_across_turns() {
+        let input = call("Bash", "1", &arg("command", "string", "echo ok"));
+        let mut parser = kimi_k3_unified(&[]);
+        let mut ids = std::collections::HashSet::new();
+        for _ in 0..2 {
+            parser
+                .initialize_request(UnifiedParserInit::default())
+                .unwrap();
+            let mut events = Vec::new();
+            let mut turn_id = None;
+            for ch in input.chars() {
+                let deltas = parser.push(&ch.to_string()).unwrap();
+                if let Some(id) = parser.tool_call_id(0) {
+                    assert_uuid_id(Some(id));
+                    assert_eq!(turn_id.get_or_insert_with(|| id.to_string()), id);
+                }
+                events.extend(deltas);
+            }
+            events.extend(parser.finish().unwrap().events);
+            assert_eq!(
+                assemble(&events),
+                vec![UnifiedEvent::ToolCall {
+                    name: "Bash".into(),
+                    arguments: serde_json::json!({"command":"echo ok"}),
+                }]
+            );
+            let id = parser.tool_call_id(0).unwrap();
+            assert_eq!(turn_id.as_deref(), Some(id));
+            assert!(ids.insert(id.to_string()), "new turns must get new IDs");
+            parser.reset();
+            assert_eq!(parser.tool_call_id(0), None);
         }
     }
 
     #[test]
-    fn tool_call_id_preserves_non_positive_indices_at_every_split() {
-        for index in ["0", "-2", "-9223372036854775808"] {
+    fn repeated_or_missing_indices_get_unique_ids_at_every_split() {
+        for index in [
+            None,
+            Some(""),
+            Some("1"),
+            Some("raw"),
+            Some("0"),
+            Some("-2"),
+            Some("+2"),
+            Some("9223372036854775807"),
+            Some("-9223372036854775808"),
+        ] {
+            let attrs = index
+                .map(|index| format!(" index=\"{index}\""))
+                .unwrap_or_default();
+            let call = format!("{OPEN}call tool=\"Bash\"{attrs}{SEP}{CLOSE}call{SEP}");
             let input = format!(
-                "{}{OPEN}call tool=\"weather\" index=\"{index}\"{}{}{}{}",
-                TOOLS_OPEN.canonical,
-                SEP,
-                arg("city", "string", "Paris"),
-                CALL_CLOSE.canonical,
-                TOOLS_CLOSE.canonical,
+                "{}{call}{call}{}",
+                TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical
             );
             for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
                 let mut parser = kimi_k3_unified(&[]);
-                parser
-                    .initialize_request(UnifiedParserInit::default())
-                    .unwrap();
-                parser.push(&input[..split]).unwrap();
-                parser.push(&input[split..]).unwrap();
-                parser.finish().unwrap();
+                let mut events = parser.push(&input[..split]).unwrap();
+                events.extend(parser.push(&input[split..]).unwrap());
+                events.extend(parser.finish().unwrap().events);
                 assert_eq!(
-                    parser.tool_call_id(0),
-                    Some(tool_call_id("weather", Some(index)).as_str())
+                    assemble(&events),
+                    vec![
+                        UnifiedEvent::ToolCall {
+                            name: "Bash".into(),
+                            arguments: serde_json::json!({}),
+                        };
+                        2
+                    ]
                 );
+                let first = parser.tool_call_id(0);
+                let second = parser.tool_call_id(1);
+                assert_uuid_id(first);
+                assert_uuid_id(second);
+                assert_ne!(first, second, "index={index:?}, split={split}");
+                assert_eq!(parser.tool_call_id(2), None);
             }
         }
     }
@@ -4222,10 +4351,7 @@ mod tests {
                 );
                 if !guided {
                     for index in 0..3 {
-                        assert_eq!(
-                            parser.tool_call_id(index),
-                            Some(format!("weather:{index}").as_str())
-                        );
+                        assert_uuid_id(parser.tool_call_id(index));
                     }
                 }
                 events.extend(parser.finish().unwrap().events);
@@ -4551,7 +4677,8 @@ mod tests {
         assert_eq!(parser.tool_call_id(0), None);
         let body = arg("value", "string", "Zürich");
         let mut events = parser.push(&body).unwrap();
-        assert_eq!(parser.tool_call_id(0), Some("echo:0"));
+        let id = parser.tool_call_id(0).unwrap().to_string();
+        assert_uuid_id(Some(&id));
         assert!(events.iter().all(
             |event| !matches!(event, crate::UnifiedParserEvent::ToolCall(delta) if delta.complete)
         ));
@@ -4562,6 +4689,8 @@ mod tests {
             matches!(&closed[0], crate::UnifiedParserEvent::ToolCall(delta) if delta.complete && delta.name.is_none())
         );
         events.extend(closed);
+        events.extend(parser.finish().unwrap().events);
+        assert_eq!(parser.tool_call_id(0), Some(id.as_str()));
         assert_eq!(
             assemble(&events),
             vec![UnifiedEvent::ToolCall {
@@ -4810,7 +4939,7 @@ mod tests {
                 })],
                 "split at byte {split}"
             );
-            assert_eq!(parser.tool_call_id(0), Some("good:1"));
+            assert_uuid_id(parser.tool_call_id(0));
             assert_eq!(parser.tool_call_id(1), None);
         }
     }
@@ -5080,6 +5209,6 @@ mod tests {
             panic!("expected a tool call")
         };
         assert_eq!(call.tool_index, 0);
-        assert_eq!(parser.tool_call_id(0), Some("second:0"));
+        assert_uuid_id(parser.tool_call_id(0));
     }
 }

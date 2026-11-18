@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { canonicalArguments, sameValue, isMapping, mappingEntries, getField, hasField, setField, deleteField, mergeMappings, compareText, parseJson } from './values.js';
 
-export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Disagreements',
+export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Different than GOLDEN',
   error: 'Parser errors', leak: 'Markup leaks', missing: 'Missing captures', unsupported: 'Unsupported cases',
   blocked: 'Blocked sources', expected: 'Expected errors', uncompared: 'GOLDEN unavailable'};
 
@@ -170,6 +170,13 @@ export function rankUnifiedColumns(tab, metadata) {
   if (tab.id !== 'tab-unified') return;
   const counts = new Map();
   const labels = new Map();
+  const aliases = new Map();
+  for (const [label, owners] of Object.entries(metadata.unified_aliases?.owners || {})) {
+    for (const scenario of owners) {
+      if (!aliases.has(scenario)) aliases.set(scenario, []);
+      aliases.get(scenario).push(label);
+    }
+  }
   const columns = [...tab.columns].sort((a, b) => metadata.unified_taxonomy[a.sub].display_order - metadata.unified_taxonomy[b.sub].display_order);
   for (const column of columns) {
     const taxonomy = metadata.unified_taxonomy[column.sub];
@@ -178,7 +185,7 @@ export function rankUnifiedColumns(tab, metadata) {
     const label = taxonomy.label;
     labels.set(column.label, label);
     column.case_id = `UNIFIED.${column.label}`;
-    Object.assign(column, { label, compact_prefix: prefix, display_number: counts.get(prefix) });
+    Object.assign(column, { label, compact_prefix: prefix, display_number: counts.get(prefix), search_aliases: aliases.get(column.sub) || [] });
   }
   for (const group of tab.glossary || []) group.rows = group.rows.map(([label, description]) => [labels.get(label) || label, description]);
 }
@@ -207,6 +214,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
   const raw = catalog.sources.candidates.filter((item) => item.mode === mode || (tab.id === 'tab-toolcalling-batch' && item.mode === 'batch-on-stream'));
   const unique = new Map();
   for (const source of raw) {
+    if (typeof source.version !== 'string' || !unifiedCaptureVersionPattern.test(source.version)) throw new Error(`invalid capture version: ${source.version}`);
     const version = policy.fold_patch_suffix ? source.version.replace(/\.patch\d+$/, '') : source.version;
     const identity = `${source.implementation}@${source.mode}@${version}`;
     if (!unique.has(identity)) unique.set(identity, { ...source, id: identity, version });
@@ -220,7 +228,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
     : recordedSources;
   const control = (source, key, label, bucket = 'C') => ({
     source,
-    control: { key, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
+    control: { key, implementation: source.implementation, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
       label, label_html: mode === 'unified' ? label : candidateLabelHtml(label), default_bucket: bucket,
       version: source.version, parse_mode: mode === 'unified' ? (source.capture_mode || metadata.unified_capture_policy?.[source.implementation]?.mode || 'stream') : /\([^)]*stream/.test(label) ? 'stream' : /\([^)]*batch/.test(label) ? 'batch' : null,
       language: source.language || metadata.unified_capture_policy?.[source.implementation]?.language || null,
@@ -360,6 +368,12 @@ function captureIssue(cell, key) {
   return null;
 }
 
+export function selectedCapturesDiffer(cell, keys) {
+  const entries = keys.filter(key => key !== 'golden').map(key => cell.cmp?.[key])
+    .filter(entry => entry && entry.na !== 1 && entry.sig != null);
+  return entries.length > 1 && entries.some(entry => !sameValue(entry.sig, entries[0].sig));
+}
+
 export function selectedCaptureOutcome(cell, key, reference = 'golden') {
   if (cell?.variants) {
     const outcomes = cell.variants.filter(isApplicableCell).map(leaf => selectedCaptureOutcome(leaf, key, reference));
@@ -394,6 +408,9 @@ export function provenanceReleaseVersion(version) {
 }
 
 export function compareVersions(left, right) {
+  for (const value of [left, right]) {
+    if (String(value).includes('+')) throw new Error(`invalid capture version: ${value}`);
+  }
   if ([left, right].some((value) => !String(value).includes('-') && /\.patch\d+$/.test(value))) return compareLegacyVersions(left, right);
   const key = (value) => {
     const match = String(value).match(/^(\d+(?:\.\d+)*)(?:\.post(\d+)|-([0-9A-Za-z.-]+)|((?:a|b|rc|alpha|beta|dev)\d*))?$/);
@@ -551,10 +568,9 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
         currentTool = null;
         const text = getField(delta, 'text') || '';
         if (typeof text !== 'string') throw new Error('Unified text delta must contain text');
-        if (events.at(-1)?.kind === kind) events.at(-1).text += text;
-        else events.push({ kind, text });
+        events.push({ kind, text });
       } else if (kind === 'tool_call') {
-        if (name) {
+        if (name != null) { // a name delta opens a new call, an empty name included
           events.push({ kind: 'tool_call', name, arguments: args || '', complete });
           currentTool = events.length - 1;
         } else if (currentTool !== null && args) {
@@ -566,7 +582,12 @@ export function assembleStream(chunks, recordedAssembly = null, preserveArgument
       }
     }
   }
-  const completed = events.filter((event) => event.kind !== 'tool_call' || event.complete);
+  const completed = [];
+  for (const event of events) {
+    if (event.kind === 'tool_call' && !event.complete) continue;
+    if ((event.kind === 'text' || event.kind === 'reasoning') && completed.at(-1)?.kind === event.kind) completed.at(-1).text += event.text;
+    else completed.push(event);
+  }
   const malformed = new Set();
   const projections = new Map();
   for (const event of completed) {

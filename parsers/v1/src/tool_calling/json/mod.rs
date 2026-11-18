@@ -15,6 +15,32 @@ pub use deepseek_v3_parser::{detect_tool_call_start_deepseek_v3, parse_tool_call
 pub use super::config::JsonParserConfig;
 pub use super::response::ToolCallResponse;
 
+/// Remove insignificant JSON whitespace without reparsing into `Value`, which
+/// would reorder object keys and normalize number spelling in this workspace.
+pub(crate) fn compact_json_lexically(raw: &str) -> String {
+    let mut output = String::with_capacity(raw.len());
+    let mut in_string = false;
+    let mut escaped = false;
+    for ch in raw.chars() {
+        if in_string {
+            output.push(ch);
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+        } else if ch == '"' {
+            in_string = true;
+            output.push(ch);
+        } else if !ch.is_whitespace() {
+            output.push(ch);
+        }
+    }
+    output
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Default)]
 pub enum JsonParserType {
     // Basic is generic json parser which can handle most of the cases

@@ -50,7 +50,7 @@ def compatible_artifact(target):
                    and item["filename"].endswith("_x86_64.whl")), None)
     abi = next((item for item in artifacts if (match := re.search(r"-cp(3\d+)-abi3-manylinux[^/]*_x86_64\.whl$", item["filename"]))
                 and int(match[1]) <= 312), None)
-    return source or wheel or native or abi
+    return wheel or native or abi or source
 
 
 def select_artifact(target):
@@ -64,9 +64,12 @@ def select_artifact(target):
     raise ValueError("No source distribution or Python 3.12 x86_64 wheel in the frozen release")
 
 
-def target_artifact_record(target):
-    inspection_only = compatible_artifact(target) is None
-    return {**target, "artifact": select_artifact(target), **({"inspection_only": True,
+def target_artifact_record(target, *, artifact=None):
+    artifact = select_artifact(target) if artifact is None else artifact
+    if artifact not in target["artifacts"]:
+        raise ValueError("selected artifact is absent from frozen release")
+    inspection_only = compatible_artifact({"artifacts": [artifact]}) is None
+    return {**target, "artifact": artifact, **({"inspection_only": True,
             "artifact_selection": "foreign_abi_inspection"} if inspection_only else {})}
 
 
@@ -478,8 +481,8 @@ def coverage_target_rows(work, jobs, targets, documents=None):
                 if blocker:
                     raise ValueError("successful mode has conflicting blocker")
                 target_evidence = json.loads((directory / "target.json").read_text())
-                selected = select_artifact(target)
-                if target_evidence != target_artifact_record(target) or sha256((directory / selected["filename"]).read_bytes()) != selected["sha256"]:
+                selected = target_evidence["artifact"]
+                if target_evidence != target_artifact_record(target, artifact=selected) or sha256((directory / selected["filename"]).read_bytes()) != selected["sha256"]:
                     raise ValueError("execution artifact differs from frozen release")
                 source = validate_source_evidence(work, directory, outcome, target, mode)
             for family, (job_path, job) in jobs["batch" if mode == "batch" else "unified"].items():

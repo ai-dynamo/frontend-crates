@@ -1492,7 +1492,7 @@ window.initializeConformanceController = function (hooks = {}) {
 
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}, { availableIdentities = null } = {}) {
+window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}, { availableIdentities = null, beforeUpdate = () => {} } = {}) {
   const tab = page && page.tabs && page.tabs.find(item => item.id === 'tab-unified');
   if (!tab || !panel) return null;
 
@@ -1750,6 +1750,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     window.history.replaceState(null, '', url.toString());
   }
   function update(notify = true) {
+    beforeUpdate();
     normalizeSlots();
     state.slots.forEach((key, index) => {
       const capture = byKey.get(key);

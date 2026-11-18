@@ -211,10 +211,15 @@ def _request(case):
         "thinking": thinking_enabled,
         "enable_thinking": thinking_enabled,
     }
+    if case.get("family") == "minimax_m3":
+        # MiniMax initializes prefilled reasoning from this template switch, not prompt IDs.
+        chat_template_kwargs["thinking_mode"] = "enabled" if init.get("starting_state") == "Reasoning" else "adaptive"
     tools = openai_tools(case.get("tools"))
+    if not tools and mode != "GuidedJson":
+        tool_choice = "none"
     return ChatCompletionRequest(
         messages=[{"role": "user", "content": "x"}],
-        tools=tools,
+        tools=tools or None,
         tool_choice=tool_choice,
         chat_template_kwargs=chat_template_kwargs or None,
     )
@@ -230,6 +235,8 @@ def _prompt_token_ids(case, family):
         marker = "<|open|>think<|sep|>"
     elif family == "gemma4":
         marker = "<|channel>"
+    elif family == "minimax_m3":
+        marker = "<mm:think>"
     else:
         marker = "<think>"
     if marker not in markers:
@@ -303,13 +310,13 @@ def _capture_cases(cases):
                 "Published manager exposes only native extraction; structured serving uses a separate controller path",
                 observation=True)
             continue
-        req = _request(case)
-        parser_kwargs = {
-            "tools": openai_tools(case.get("tools")),
-            "chat_template_kwargs": req.chat_template_kwargs,
-        }
         per_chunk = []
         try:
+            req = _request(case)
+            parser_kwargs = {
+                "tools": openai_tools(case.get("tools")),
+                "chat_template_kwargs": req.chat_template_kwargs,
+            }
             full_tokenizer = StubTokenizer(fam)
             parser = capture_parser(cls, full_tokenizer, **parser_kwargs)
             full_tokenizer.bind_input(case["input"], marker_at_start=parser.token_engine)

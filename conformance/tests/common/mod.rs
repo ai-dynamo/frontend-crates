@@ -11,6 +11,7 @@
 // The copied historical harness supplies this cfg without editing old manifests.
 #![allow(unexpected_cfgs)]
 
+pub mod authored;
 pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;
@@ -885,6 +886,8 @@ pub struct UnifiedFamily {
     pub native: bool,
     #[serde(default)]
     pub scenario_profile: Option<String>,
+    #[serde(default)]
+    pub shared_scenarios: bool,
     pub reasoning_parser: String,
     pub tool_parser: String,
     pub golden_spec: String,

@@ -106,6 +106,8 @@ pub(crate) fn uses_declared_tool_schema(tool: &ToolDefinition, strict_schema: bo
 ///   function and canonicalizing only what they forward afterwards: `Glm47`
 ///   (`glm_schema` inlines annotation-only refs), `KimiK3` (types XTML
 ///   arguments from resolved refs).
+/// - Qwen XML also uses this original spelling for empty-call eligibility;
+///   its actual argument grammar continues to use [`resolve_tool_schema`].
 pub(crate) fn declared_tool_schema(tool: &ToolDefinition, strict_schema: bool) -> Value {
     // xgrammar uses `true` for syntactically valid but schema-unconstrained JSON.
     let default_schema = json!(true);

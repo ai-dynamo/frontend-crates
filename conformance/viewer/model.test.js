@@ -2,6 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 
+await test('latest and history selectors accept only version numbers', async () => {
+  const { default: assert } = await import('node:assert/strict');
+  const { tabCandidates } = await import('./model.js');
+  for (const mode of ['latest', 'history']) {
+    const catalog = {
+      capture_generation: { mode },
+      metadata: {
+        selection_policy: { unified: { reference: 'dynamo_v2', implementation_order: ['dynamo_v2'], historical_control_aliases: {}, golden_bucket: 'B' } },
+        implementations: [], unified_capture_policy: {},
+      },
+      sources: { candidates: [{ implementation: 'dynamo_v2', mode: 'unified', version: '0.9.7' }] },
+    };
+    const tab = { mode: 'unified' };
+    assert.equal(tabCandidates(catalog, tab)[0].control.version, '0.9.7');
+    for (const suffix of ['+source.' + 'a'.repeat(64), '+sha.abc', '+local']) {
+      catalog.sources.candidates[0].version = '0.9.7' + suffix;
+      assert.throws(() => tabCandidates(catalog, tab), /invalid capture version/);
+    }
+  }
+});
+
 await test('columns cannot omit, duplicate, replace, or combine authored cases', async () => {
   const { default: assert }=await import('node:assert/strict');
   const { validateCaseColumns }=await import('./model.js');

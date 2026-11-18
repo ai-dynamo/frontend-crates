@@ -222,7 +222,8 @@ fn capture_producer_records_init_and_identity() {
         }},
         "reasoning": {"input": "hidden<channel|>visible", "init": {"starting_state": "Reasoning"},
             "chunks": [{"delta_text":"hidden<channel|>visible"}, {"delta_text":""}, {"delta_text":"‹finish›"}]},
-        "native": {"input": "plain response"}
+        "native": {"input": "plain response"},
+        "implicit_finish": {"input": "plain response", "chunks": [{"delta_text":"plain response"}]}
     }});
     std::fs::write(
         inputs.join("init.yaml"),
@@ -237,6 +238,14 @@ fn capture_producer_records_init_and_identity() {
     )
     .unwrap();
     let output = scratch.join("output");
+    let harmony = scratch.join("inputs/gpt_oss");
+    std::fs::create_dir_all(&harmony).unwrap();
+    std::fs::write(
+        harmony.join("scalar.yaml"),
+        serde_json::to_string(&json!({"cases": {"scalar": {
+            "input": "<|start|>assistant<|channel|>commentary to=functions.run <|constrain|>json<|message|>{\"cmd\": \"git log <|call|> --oneline\"}<|call|>"
+        }}})).unwrap(),
+    ).unwrap();
     let result = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
@@ -258,7 +267,7 @@ fn capture_producer_records_init_and_identity() {
         String::from_utf8_lossy(&result.stdout),
         String::from_utf8_lossy(&result.stderr)
     );
-    for key in ["guided", "reasoning", "native"] {
+    for key in ["guided", "reasoning", "native", "implicit_finish"] {
         let doc: Value = serde_yaml::from_str(
             &std::fs::read_to_string(output.join(format!("gemma4/{key}.yaml"))).unwrap(),
         )
@@ -292,7 +301,7 @@ fn capture_producer_records_init_and_identity() {
             assert_eq!(&case["capture_input"]["chunks"], requested);
             assert_eq!(
                 case["chunks"].as_array().unwrap().len(),
-                requested.as_array().unwrap().len()
+                requested.as_array().unwrap().len() + usize::from(key == "implicit_finish")
             );
         }
         let expected_tools = fixture["cases"][key]
@@ -300,15 +309,19 @@ fn capture_producer_records_init_and_identity() {
             .cloned()
             .unwrap_or_else(common::unified_tool_schemas);
         assert_eq!(case["capture_input"]["tools"], expected_tools);
-        assert_eq!(
-            case["capture_input"]["chunks"]
-                .as_array()
-                .unwrap()
-                .last()
-                .unwrap(),
-            &json!({"delta_text":"‹finish›"})
-        );
-        if cfg!(any(conformance_legacy_init, conformance_split_only)) && key != "native" {
+        if key != "implicit_finish" {
+            assert_eq!(
+                case["capture_input"]["chunks"]
+                    .as_array()
+                    .unwrap()
+                    .last()
+                    .unwrap(),
+                &json!({"delta_text":"‹finish›"})
+            );
+        }
+        if cfg!(any(conformance_legacy_init, conformance_split_only))
+            && matches!(key, "guided" | "reasoning")
+        {
             assert!(case["unavailable"].as_str().is_some());
             assert!(case.get("assembled").is_none());
         } else {
@@ -336,6 +349,38 @@ fn capture_producer_records_init_and_identity() {
             .contains("no parser")
     );
     assert!(missing_doc["cases"]["absent"].get("assembled").is_none());
+    // Python's YAML reader must retain argument fragments that look like YAML 1.1 booleans.
+    let python = std::process::Command::new("python3")
+        .args([
+            "-c",
+            "import json, sys, yaml; print(json.dumps(yaml.safe_load(open(sys.argv[1]))))",
+        ])
+        .arg(output.join("gpt_oss/scalar.yaml"))
+        .output()
+        .unwrap();
+    assert!(
+        python.status.success(),
+        "{}",
+        String::from_utf8_lossy(&python.stderr)
+    );
+    let consumed: Value = serde_json::from_slice(&python.stdout).unwrap();
+    let produced: Value =
+        serde_yaml::from_str(&std::fs::read_to_string(output.join("gpt_oss/scalar.yaml")).unwrap())
+            .unwrap();
+    assert_eq!(consumed, produced, "capture scalar types changed in Python");
+    assert!(
+        produced["cases"]["scalar"]["chunks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|chunk| {
+                chunk["expected"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|event| event["arguments"] == "on")
+            })
+    );
     std::fs::remove_dir_all(scratch).unwrap();
 }
 
@@ -754,6 +799,7 @@ fn native_capture(
 ) -> Result<Captured, CaptureFailure> {
     apply_init(parser, init)?;
     let captured = capture::native_capture(parser, chunks)?;
+    capture::check_tool_call_ids(parser.as_ref(), &captured)?;
     let deltas: Vec<_> = captured.iter().flatten().cloned().collect();
     let rows = captured
         .iter()
@@ -1081,11 +1127,20 @@ fn capture_this_build_against_the_current_corpus() {
                     capture_case_with_chunks(&family, input, &schedule, &init, &tool_schemas),
                     &init,
                 );
-                let chunks: Vec<_> = schedule
-                    .into_iter()
-                    .chain(std::iter::once("‹finish›".to_string()))
-                    .map(|text| serde_json::json!({"delta_text":text}))
-                    .collect();
+                // EOF output is recorded separately; an authored schedule remains exact.
+                let chunks: Vec<_> = match recorded {
+                    Some(rows) => rows
+                        .into_iter()
+                        .map(|row| row.delta_text)
+                        .collect::<Vec<_>>(),
+                    None => schedule
+                        .into_iter()
+                        .chain(std::iter::once("‹finish›".to_string()))
+                        .collect(),
+                }
+                .into_iter()
+                .map(|text| serde_json::json!({"delta_text":text}))
+                .collect();
                 let stimulus = serde_json::json!({
                     "input":input,
                     "init": init.applied(),
@@ -1117,7 +1172,8 @@ fn capture_this_build_against_the_current_corpus() {
             doc.insert("cases".into(), serde_yaml::Value::Mapping(one));
             std::fs::write(
                 fam_out.join(format!("{cid}.yaml")),
-                serde_yaml::to_string(&serde_yaml::Value::Mapping(doc)).expect("emit"),
+                // JSON is valid YAML and keeps strings such as `on` typed across YAML versions.
+                serde_json::to_string_pretty(&serde_yaml::Value::Mapping(doc)).expect("emit"),
             )
             .expect("write");
             total += 1;
@@ -1135,14 +1191,7 @@ fn capture_this_build_against_the_current_corpus() {
 
 #[test]
 fn family_jobs_replay_terminal_tool_calls_without_accepting_chunk_metadata() {
-    let document: Value = serde_yaml::from_str(
-        &std::fs::read_to_string(
-            Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("fixtures-unified-v2/families/gemma4/inputs_and_golden.yaml"),
-        )
-        .unwrap(),
-    )
-    .unwrap();
+    let document = common::authored::load(Path::new(env!("CARGO_MANIFEST_DIR")), "gemma4");
     let case = document["cases"]
         .as_object()
         .unwrap()

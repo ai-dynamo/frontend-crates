@@ -59,7 +59,9 @@ def test_compact_historical_insertion_preserves_mixed_key_metadata_and_receipts(
         document = unified_history.load_yaml(path)
         receipt = {"version": version, "job_sha256": "a" * 64, "adapter_sha256": "b" * 64, "source_sha256": "c" * 64}
         document["metadata_changes"] = {"text_only": {implementation + "_capture_provenance": receipt,
-            "verified_recaptures": [{"provenance": receipt, "result": {"old": None}}],
+            "verified_recaptures": [{"provenance": receipt, "resolution": "fresh_execution",
+                "result": {"capture_input": _request(), "chunks": [[{"kind": "text", "text": "old"}]],
+                           "assembled": [{"kind": "text", "text": "old"}], "old": None}}],
             "typed": {1: True, "zero": -0.0}, "missing_vs_null": None}}
         path.write_text(unified_history.dump_yaml(document))
     before = dict(unified_history.load_store(store).histories[("gemma4", implementation)].iter_resolved_snapshots())

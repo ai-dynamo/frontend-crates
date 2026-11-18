@@ -65,6 +65,14 @@ def test_vllm_stable_abi_wheel_supports_python312_without_relabelling():
     assert peers.select_artifact({"artifacts": artifacts}) is artifacts[2]
 
 
+@pytest.mark.parametrize("wheel", ["vllm-0.31.0-cp38-abi3-manylinux_2_28_x86_64.whl",
+                                  "sglang-0.5.22-cp312-cp312-manylinux_2_34_x86_64.whl",
+                                  "sglang-0.5.14-py3-none-any.whl"])
+def test_compatible_wheel_precedes_source_archive_to_retain_native_extensions(wheel):
+    artifacts = [{"filename": "package-1.0.0.tar.gz"}, {"filename": wheel}]
+    assert peers.select_artifact({"artifacts": artifacts}) is artifacts[1]
+
+
 def test_dependency_image_overrides_retain_resolved_immutable_ids(monkeypatch):
     calls = []
 
@@ -291,6 +299,26 @@ def equalize_frozen_artifact(left, right):
     for capture in (right / "captures").glob("*/*.json"):
         if capture.name != "source.json":
             capture.write_bytes(capture.read_bytes().replace(old_digest.encode(), new_digest.encode()))
+
+
+@pytest.mark.parametrize("tampered", [False, True])
+def test_retained_capture_uses_its_recorded_artifact_after_wheel_preference_changes(tmp_path, tampered):
+    work, target = coverage_root(tmp_path, "retained")
+    target["artifacts"].append({"filename": "sglang-1.0.0-py3-none-any.whl", "sha256": "a" * 64})
+    (work / "inventory.yaml").write_text(yaml.safe_dump({"targets": [target]}))
+    path = work / "producers/sglang-1.0.0/target.json"
+    recorded = json.loads(path.read_bytes())
+    recorded["artifacts"] = target["artifacts"]
+    if tampered:
+        recorded["artifact"] = {**recorded["artifact"], "sha256": "b" * 64}
+    path.write_text(json.dumps(recorded))
+    assert peers.select_artifact(target) is target["artifacts"][1]
+    if tampered:
+        with pytest.raises(ValueError, match="artifact|frozen release"):
+            list(peers.coverage_rows(work))
+    else:
+        rows = list(peers.coverage_rows(work))
+        assert len(rows) == 2 and {row["status"] for row in rows} == {"executed"}
 
 
 def test_master_coverage_selects_strongest_and_latest_and_retains_blockers(tmp_path):

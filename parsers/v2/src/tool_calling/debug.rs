@@ -212,12 +212,10 @@ mod tests {
             "<|close|>argument<|sep|><|close|>call<|sep|>",
             "<|close|>tools<|sep|>"
         );
-        let mut unwrapped = KimiK3ToolStreamParser::new(&[]);
-        unwrapped.parse_complete(input).expect("parse unwrapped");
-        let expected = unwrapped.tool_call_id(0).map(str::to_string);
-        let inner = KimiK3ToolStreamParser::create(&[]).expect("create parser");
-        let mut wrapped = DebugToolParser::wrap("kimi_k3", inner);
-        wrapped.parse_complete(input).expect("parse wrapped");
+        let mut inner = KimiK3ToolStreamParser::create(&[]).expect("create parser");
+        inner.parse_complete(input).expect("parse inner");
+        let expected = inner.tool_call_id(0).map(str::to_string);
+        let wrapped = DebugToolParser::wrap("kimi_k3", inner);
         assert_eq!(wrapped.tool_call_id(0), expected.as_deref());
         assert_eq!(wrapped.tool_call_id(1), None);
     }

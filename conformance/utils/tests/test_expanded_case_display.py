@@ -33,6 +33,7 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
         "schema_enum_inferred_integer",
         "schema_const_numeric_bare",
         "schema_enum_const_narrowing",
+        "schema_declared_integer_boolean_number_order",
     }
     for family, document in store.families.items():
         for key, case in document.cases.items():
@@ -60,12 +61,29 @@ def test_expanded_single_family_cases_have_named_sections():
         if len(families) == 1:
             family = next(iter(families))
             assert entry["section"] == f"unified_g{family}"
-            assert entry["section_label"] == taxonomy.UNIFIED_GROUP_LABEL.get(family, f"Family-specific tests: {family}")
+            label_key = taxonomy.UNIFIED_DISPLAY["family_label_aliases"].get(family, family)
+            assert entry["section_label"] == taxonomy.UNIFIED_GROUP_LABEL.get(label_key, f"Family-specific tests: {family}")
+
+
+@pytest.mark.parametrize("family,label_key", [("gemma4", "gemma"), ("glm47", "glm5"), ("kimi_k3", "kimi")])
+def test_family_alias_reaches_curated_section_label(family, label_key):
+    section, label = taxonomy.display_section("tool_only", {family})
+    assert section == f"unified_g{family}"
+    assert label == taxonomy.UNIFIED_GROUP_LABEL[label_key]
+    assert label != f"Family-specific tests: {family}"
+    heading = label.removeprefix("Single Family Test: ")
+    assert f"### {heading}\n" in (ROOT / "conformance/utils/lib/parsers/UNIFIED_CASES.md").read_text()
 
 
 def test_family_section_label_falls_back_for_a_new_family():
     assert taxonomy.display_section("tool_only", {"future_family"}) == (
         "unified_gfuture_family", "Family-specific tests: future_family")
+
+
+def test_gpt_oss_historical_route_boundary_reaches_the_viewer():
+    generations = viewer_catalog._source_metadata(ROOT)["unified_presentation"]["parser_generations"]
+    assert generations["gpt_oss"]["native_unified_since"] == "0.7.28"
+    assert generations["harmony"]["native_unified_v2"] is False
 
 
 def test_related_shared_case_names_use_the_parent_prefix():

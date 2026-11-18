@@ -14,10 +14,15 @@
 //! SGLang, and TensorRT-LLM all take `image_grid_thw` from that HF image
 //! processor, so this planner is the single geometry contract for all three.
 //!
-//! It does not decode, resize pixels, or produce vision embeddings, and it
+//! [`Glm5NextImageProcessor`] adds pixel preprocessing using the same planner.
+//! The metadata-only processor does not produce vision embeddings, and it
 //! does not cover video: GLM expands video frames with the *image* token, so
 //! [`MmFamilyProcessor::layout_from_metadata`] refuses prompts that carry the
 //! video placeholder rather than mis-attributing those positions.
+
+mod image;
+
+pub use image::{Glm5NextImageProcessor, Glm5NextImageSpec};
 
 use crate::processor::{
     DecodedMedia, MediaMetadata, MmFamilyProcessor, ProcessedItem, TokenLayout,
@@ -466,5 +471,28 @@ mod tests {
                 .layout_from_metadata(&[154830, 154854, 154831], &[image])
                 .is_ok()
         );
+    }
+
+    #[test]
+    fn image_processor_refuses_rgba() {
+        let processor = Glm5NextImageProcessor::new(Glm5NextImageSpec {
+            planner: Glm5NextSpec {
+                image_token_id: 154854,
+                video_token_id: None,
+                geometry: glm53_flash(),
+            },
+            image_mean: [0.5; 3],
+            image_std: [0.5; 3],
+            resample: Default::default(),
+        })
+        .unwrap();
+        assert!(matches!(
+            processor.process_item(&DecodedMedia::ImageRgba {
+                rgba: vec![7u8; 448 * 448 * 4],
+                height: 448,
+                width: 448,
+            }),
+            Err(MmError::Unsupported { .. })
+        ));
     }
 }

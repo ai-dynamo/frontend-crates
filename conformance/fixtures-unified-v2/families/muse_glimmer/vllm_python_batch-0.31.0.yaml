@@ -1,0 +1,2941 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.31.0
+    source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+    adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+    job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+document:
+  mode: unified
+changes:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_array_quoted_parameter_close:
+    case_key: arg_array_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: 1ebbe77387a073e3d087b5b4ed5feabc4d6a11dc49e60a5c12413e0184e8f994
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_json_null_ref:
+    case_key: arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 67c1596410ab2fb2b2cf7f94ce811363c57408658b1f635182aef2fda5e2908a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_null_mixed_labels:
+    case_key: arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: abd87670c935a8c941d1914683a8671be9edfbb95afb0e2b5808609a4ae8f672
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_const_decimal:
+    case_key: arg_numeric_14_const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 811cc3d9fd0ad8212e7399139895af404627a4916c22c27aa9e16a6f2f47f970
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_const_exponent:
+    case_key: arg_numeric_14_const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: cd08d996a53f36b30eeb86c8927e22002c54e8f376f4a6439db1ed94a6512c03
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_enum_decimal:
+    case_key: arg_numeric_14_enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 39f98eba514a990b0d70831a59ff35346064c62ad0e43abb80a566c1dd1b0642
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_enum_exponent:
+    case_key: arg_numeric_14_enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 0e0f52e7cfe341d5c44aee1cdf391b8dae5ac97507a9ee9849d9cc8ffef5126b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_large_decimal:
+    case_key: arg_numeric_14_large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: 30dbf45e5241709339527e33375f1579bfc3107e1915866f6e756318ecffe525
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_large_exponent:
+    case_key: arg_numeric_14_large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: ad5c9f826e13f288cefccd2cc8ffbc5f47d0fe7b7d60e899c91a5234e0825850
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_negative:
+    case_key: arg_numeric_14_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 20a0b4606268dd088fb4e85c189aa467bdc414d61e4c9765c9ace080a144becf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_negative_exponent:
+    case_key: arg_numeric_14_negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 5ada68442ae2ed878a971afb9b7ac969c0d6e168369a91dd7de0a66b82fa6882
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_14_zero_underflow:
+    case_key: arg_numeric_14_zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: 826d14757dcf9721e61339f53e9b3b064c4b5b0e32af3a128bf48678b289af03
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_exponent:
+    case_key: arg_numeric_15_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: adb5f02a5bbe80b4a176a760ed2c580dcc392b24252d0f86fb4830a4ddca8b08
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_negative:
+    case_key: arg_numeric_15_negative
+    stimulus:
+      ref: current
+      semantic_sha256: f13ac4a93924abdd4698e288b50f72caad2ae353b2638aa88dec52dccb7b9930
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_ordinary:
+    case_key: arg_numeric_15_ordinary
+    stimulus:
+      ref: current
+      semantic_sha256: 6c54a999df47f2b381ef552b15e026a1a09b81cfb2e94ad8bcc624c2f0452da9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_quarter:
+    case_key: arg_numeric_15_quarter
+    stimulus:
+      ref: current
+      semantic_sha256: bb91946d18bce3396c0064ca58e54366ffefd6ff1306917798b7f0d101a1cf05
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_round_down:
+    case_key: arg_numeric_15_round_down
+    stimulus:
+      ref: current
+      semantic_sha256: aaf4947da8f3b9f6eb55b613062e4e0b5cabb406e685c50167b52a4db3506085
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_round_up:
+    case_key: arg_numeric_15_round_up
+    stimulus:
+      ref: current
+      semantic_sha256: 2ce3646713c53c1be23d416ee314e18398bcf57876b8e20546a76906de43ee14
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_15_small:
+    case_key: arg_numeric_15_small
+    stimulus:
+      ref: current
+      semantic_sha256: 0ffafd122c4791ef9a6e9d0ae40db8a50eb187cfb80af31cfafc22b588790b84
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_nested_exact:
+    case_key: arg_numeric_nested_exact
+    stimulus:
+      ref: current
+      semantic_sha256: 17061b9ed7af71022817e0089155ce66308b7531b05fa93be3a4c383a6af27df
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_overflow_siblings_finite:
+    case_key: arg_numeric_overflow_siblings_finite
+    stimulus:
+      ref: current
+      semantic_sha256: c7bcba99b77ce1604723d2d23e00ef55217a9cb09d05c39304d5b26b3f9382e1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_overflow_siblings_negative:
+    case_key: arg_numeric_overflow_siblings_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 81d5ceb323074860a255cb46ba323f39215658ecad6a8e0a60dae7ab7da2de6f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_numeric_overflow_siblings_positive:
+    case_key: arg_numeric_overflow_siblings_positive
+    stimulus:
+      ref: current
+      semantic_sha256: d471258024476f545b34c316db4ef457c62245dfefbf6745608010d4b190133c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_object_quoted_parameter_close:
+    case_key: arg_object_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: e9764e148124512693e5709b2c567a2b468e0af9cf5579ec7e50ea91b5220ae5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_ref:
+    case_key: arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 8dbf7c490f0d93aa7e8b5c5ba88b634ab3f114b4b00f81d3acdfa4a48ebef3ba
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  blank_framing_after_reasoning:
+    case_key: blank_framing_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 03a8e2ea82c41e1ef220f4fbcc902be9b4426161694a06b099582bed7bdf9d93
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  blank_framing_between_calls_single_chunk:
+    case_key: blank_framing_between_calls_single_chunk
+    stimulus:
+      ref: current
+      semantic_sha256: 628fe38932831aaa14f81114a898a70d586e89a004b1753ad5480d0133c4d6c0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  blank_framing_prose_after_call:
+    case_key: blank_framing_prose_after_call
+    stimulus:
+      ref: current
+      semantic_sha256: 49eada9bd51943687cf41eab72f72dace0b0d0978f7bc763f0ac5a85fb1e0f77
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  blank_framing_tool_only:
+    case_key: blank_framing_tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: 0492e2b0b933adf2b295915a0f237509ba13bdef643aabb115e31dd0617abc4c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  blank_framing_with_prose:
+    case_key: blank_framing_with_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 877d9c1afb9a26e7d72586c7bb7b3a14de238e95af9e219f6df9f4d330a57c2f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  blank_output_without_call:
+    case_key: blank_output_without_call
+    stimulus:
+      ref: current
+      semantic_sha256: 29100324e159669f00e18e159fffd58f862b76f87ef941ad0914f61d84ae44ad
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  conditional_schema_number_types:
+    case_key: conditional_schema_number_types
+    stimulus:
+      ref: current
+      semantic_sha256: 024ccbd7f1b61f9e545108ea6e7f7643e4c26fa153e674756026d99d4ce174a3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  dotted_name_minimal:
+    case_key: dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: f9d96f6e097650655e69c3d66d0d18148bed74892edf19af2b93f200497109b9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  dotted_name_mixed_punctuation:
+    case_key: dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 080d9b87468aa5423876d88ce92cce33c4eb7995c201f7e06fc7c6b5ba0df4af
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  dotted_name_multiple_segments:
+    case_key: dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: e38e9bc77860e64a9ce05e42e9b2c7b96ffe9b3a42e61ea2930ac1cae515b62f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  dotted_name_shared_prefix:
+    case_key: dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: c45bd1a9abb4c4d57a7a750e790c88e239b9e362149bb288e0f804ec7c36b90b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: gpt_oss_multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 1595c19deba4d2603b8160e5b3773d34151ec06114466927cab13c5e13036d4f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  gpt_oss_quoted_message_header_literal:
+    case_key: gpt_oss_quoted_message_header_literal
+    stimulus:
+      ref: current
+      semantic_sha256: a695672e0f73e26890ed299f73ca143524104bc63d9bec3dd06df30a4245d250
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  gpt_oss_quoted_truncated_tool_then_final:
+    case_key: gpt_oss_quoted_truncated_tool_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: 827b69565f95f705d7073654f23b741d71bac21b3d1f9c429563007a544ff26a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    stimulus:
+      ref: current
+      semantic_sha256: 137d4dc711e6b750c18c8152e4db8a15bc0117860ae58c5ea14f69ad094b436c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_native_parameter_string_before_payload:
+    case_key: guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 988a38133540e9538a0ce2898e71e219de590d596ebc468a9484ed8beddda086
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 315fa7e8a2d51710ddd61a2bd8a9294a0e6737acc9ac59b5ee9bf1fd803cce34
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: guided_response_native_wrapper_whitespace_before_prose
+    stimulus:
+      ref: current
+      semantic_sha256: d4673d100ae7b8b49b04962224de9681b683822b1df8e03d927ad3e88ee5d947
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  interrupted_reasoning_then_response:
+    case_key: interrupted_reasoning_then_response
+    stimulus:
+      ref: current
+      semantic_sha256: 15a4e262035ce31e1d851e1cae1b8d8c846659a8751512ec3c36e4e936f8954e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  missing_inner_closers_then_valid_call:
+    case_key: missing_inner_closers_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: 79c818d6502dffe51f576d958ff51f95171659e297a53ef72151956a6168ec7a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_opaque_declared_invoke:
+    case_key: muse_opaque_declared_invoke
+    stimulus:
+      ref: current
+      semantic_sha256: 42442ae1f6a74fecb6454564055a0b19feb1bb6dbae90e7cbb8c50a1b556c5f2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_opaque_undeclared_invoke:
+    case_key: muse_opaque_undeclared_invoke
+    stimulus:
+      ref: current
+      semantic_sha256: 1b9ff96f3c2aefc2c27d3bef046ec7e5a433499f406b4f51271335a9fe91ccbe
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_recovery_second_parameter:
+    case_key: muse_recovery_second_parameter
+    stimulus:
+      ref: current
+      semantic_sha256: 560e61672e9a71f50d3162155ad922031df8630a0f7cad4f16b7cd5109a6c0a5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_unterminated_parameter_then_call:
+    case_key: muse_unterminated_parameter_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_unterminated_parameter_then_empty_call:
+    case_key: muse_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_unterminated_reasoning_guided:
+    case_key: muse_unterminated_reasoning_guided
+    stimulus:
+      ref: current
+      semantic_sha256: c1ba543cddab942b3f5f75b652c8461bfea528bf12207e54c6e6bdc09f2cec3b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_unterminated_reasoning_native:
+    case_key: muse_unterminated_reasoning_native
+    stimulus:
+      ref: current
+      semantic_sha256: e85383d148f31694c3fe7dcaa01abc30f46ea8c61dc2eb5ec45e2c5a64b1c267
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  not_keyword_type_complement:
+    case_key: not_keyword_type_complement
+    stimulus:
+      ref: current
+      semantic_sha256: b94f39b402dffdbb69e766cbc101fd9118802d08667a59ca4440213d7efa4633
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reference_object_recursive_and_composed_types:
+    case_key: reference_object_recursive_and_composed_types
+    stimulus:
+      ref: current
+      semantic_sha256: 5889491fb52e50d929ebe2c844f85de4026a1b5f5add324cf9f4848f65c0dcb6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_numeric_bare:
+    case_key: schema_const_numeric_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 11e832dce82a68c2afb0cc7f84584b54be3555f827576f18f611802e06e12edf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_enum_const_narrowing:
+    case_key: schema_enum_const_narrowing
+    stimulus:
+      ref: current
+      semantic_sha256: 61c0d13626723287cfa70829714f913feb015d5e3e0695d506ca472592adfae7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_enum_inferred_integer:
+    case_key: schema_enum_inferred_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 38a0f2d81e4f5bcabc6e81d8e46297aca80872239131cdc30096b6e09b16b980
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: d52de6591b6b747b7d637924ee86e05d4d6d8ad3766c703a1dbc837a4d39fcb1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  xml_string_type_double_quoted_object:
+    case_key: xml_string_type_double_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 14f684c1955adc9d51673da59bb0272e14bf135da74cd4d3e56c9e59122f2761
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  xml_string_type_single_quoted_object:
+    case_key: xml_string_type_single_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 57c037d9d1fe4e0b4538fefefd9f31356dbdbd3ad78dbbf9a8451c46a597896e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+metadata_changes: {}
+document_overrides:
+  arg_json_null_anyof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_json_null_const:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_json_null_nullable:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_json_null_oneof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_marker_in_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null_const:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null_enum:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null_sibling_anyof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null_sibling_oneof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null_union:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_string_null_untyped_branch:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  arg_unicode:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  content_then_reason:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  content_then_reason_then_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  deepseek_v41_mixed_control_text_in_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  empty_args:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  glm_ref_object:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_after_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_array_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_escaped_string_args:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_gt_in_argument_bare_opener:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_gt_in_argument_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_gt_in_argument_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_invalid_call:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_list_with_broken_element:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_malformed_json:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_marker_inside_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_named_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_narrated_invoke_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_narrated_prefix_inside_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_native_markup_only:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_orphan_reason_close_before_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_orphan_tool_close_before_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_partial_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_prose_before_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_quoted_bare_header_after_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_quoted_bare_header_in_answer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_quoted_bare_tool_header_in_answer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_required_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_schema_error_nameless_element_bare_opener:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_schema_error_nameless_element_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_schema_error_nameless_element_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_schema_error_not_a_call_bare_opener:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_schema_error_not_a_call_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_schema_error_not_a_call_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_stray_prefix_before_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_syntax_error_bare_opener:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_syntax_error_trailing_close:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_syntax_error_wrapped:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_tool_close_after_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_tool_open_before_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_two_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_json_wrapped_in_tool_markup:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_quoted_reasoning_closer_named:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_quoted_reasoning_closer_required:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  interstitial_text:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  local_schema_id_preserves_type:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  malformed_json_then_two_valid_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  muse_quoted_reserved_eom_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  muse_quoted_reserved_eot_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  muse_quoted_reserved_start_argument:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  narrated_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_quoted_control_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_single_quote_contraction_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  nullable_reference_alias_literals:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  orphan_close_after_prose:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_reasoning_redundant_opener:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_reasoning_then_text:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_reasoning_then_text_then_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_reasoning_truncated:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_reasoning_with_guided_json:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_reasoning_with_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  prefilled_response_reasoning_markers_literal:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  qwen_string_null:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_after_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_between_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_interleaved:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_markup_in_arg:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_markup_in_arg_with_text:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_only:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_then_content:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_then_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_tool_reason_tool_reason:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_tool_text_reason_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  reason_unterminated:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__30_14:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__31_33:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__31_34:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__31_35:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__31_37:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__31_40:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  retired__50_2:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_array_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_array_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_array_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_array_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_boolean_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_boolean_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_boolean_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_boolean_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_entity_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_entity_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_entity_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_entity_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_null_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_null_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_null_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_null_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_number_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_number_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_number_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_number_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_object_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_object_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_object_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_object_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_plain_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_plain_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_plain_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_plain_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_quoted_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_quoted_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_quoted_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_quoted_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_space_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_space_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_space_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_space_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_unicode_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_unicode_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_unicode_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_const_unicode_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_array:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_boolean:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_null:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_number:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_object:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_declared_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_enum_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_enum_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_escaped_ref_const:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_id_direct_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_integer_const_ambiguous:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_intersection_anyof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_intersection_oneof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_null_union_ambiguous:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_nullable_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_object_const_union:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_percent_ref_const:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_ref_sibling_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_ref_union_anyof_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_ref_union_anyof_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_ref_union_oneof_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_ref_union_oneof_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_type_array_integer_null:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_type_array_integer_null_null:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_type_array_string_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_array_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_array_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_array_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_array_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_boolean_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_boolean_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_boolean_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_boolean_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_integer_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_integer_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_integer_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_integer_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_null_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_null_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_null_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_null_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_number_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_number_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_number_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_number_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_object_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_object_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_object_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_anyof_object_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_array_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_array_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_array_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_array_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_boolean_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_boolean_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_boolean_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_boolean_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_integer_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_integer_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_integer_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_integer_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_null_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_null_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_null_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_null_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_number_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_number_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_number_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_number_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_object_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_object_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_object_string:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  schema_union_oneof_object_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  text_before_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  text_between_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  text_only:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  text_reason_tool_text_reason_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  text_sandwich:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  tool_block_never_closed_then_text:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  tool_in_reason:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  tool_in_reason_with_text:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  tool_markup_only_emits_nothing:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  tool_no_close:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  tool_only:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  trailing_text_after_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  truncated_tool_eof:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  two_adjacent_reason_spans:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  two_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  two_calls_same_name:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  two_reason_spans:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null
+  unused_reference_graph_parameter_types:
+    capture_provenance:
+      captured_with:
+        vllm_python_batch: 0.31.0
+      capture_origin:
+        crate_version: 0.31.0
+        source_sha256: 0a11a01507ee1f0434b3f3e8e4dcac7daa4d829906599afe4e4fc883b0dd520c
+        adapter_sha256: 74c66dd3bab8658c9a12c8f8d2cba85c67e2116821e6fb45f25d968372bfdc27
+        job_sha256: 41f942d107ebe26cc09c27cca6ab9519178e09763eac44aaa382ff200eb9b360
+      inherited_from: null

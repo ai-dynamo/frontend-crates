@@ -14,8 +14,10 @@
 //! ([`ChatTemplate`]).
 //!
 //! This crate is a *bridge* between OpenAI request types ([`dynamo_protocols`])
-//! and prompt rendering. Most formatters return text; segment-sensitive native
-//! formats can preserve tokenizer policy through [`RenderedPrompt`].
+//! and prompt rendering. Most formatters return text; segment-sensitive
+//! formats (native ones, and chat templates unless
+//! [`ChatTemplate::with_request_control_tokens_as_text`] turns it off)
+//! preserve tokenizer policy through [`RenderedPrompt`].
 
 // TODO:
 // 1. Query if `add_generation_prompt` is present in the prompt template
@@ -38,12 +40,13 @@ pub mod beam;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
+pub mod mistral;
 mod python;
 mod template;
 
 pub use template::{
-    ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, kimi_k3_formatter_for,
-    may_be_fix_tool_schema, native_formatter_for,
+    ChatTemplate, ChatTemplateContentFormat, ChatTemplateValue, ContextMixins, MediaPlaceholders,
+    deepseek_formatter_for, kimi_k3_formatter_for, may_be_fix_tool_schema, native_formatter_for,
 };
 
 /// Selects which context-mixin behaviors a template renders with.
@@ -269,6 +272,13 @@ pub trait OAIChatLikeRequest {
     fn tools(&self) -> Option<Value> {
         None
     }
+    /// Tools exactly as the client sent them, before the schema backfill that
+    /// [`Self::tools`] may apply for Jinja templates. Native renderers that
+    /// reproduce a reference encoder use this; `None` when the request type
+    /// does not keep them apart.
+    fn raw_tools(&self) -> Option<Value> {
+        None
+    }
     /// Namespace/deferred tool definitions retained by a Responses adapter.
     /// The formatter uses these only when its selected template supports them.
     fn template_tools(&self) -> Option<Value> {
@@ -346,6 +356,14 @@ pub trait OAIPromptFormatter: Send + Sync + 'static {
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         self.render(req).map(RenderedPrompt::text)
+    }
+
+    /// Whether this formatter leaves a final assistant turn open by itself
+    /// when [`OAIChatLikeRequest::should_add_generation_prompt`] is false.
+    /// Callers must then skip their marker-and-truncate emulation of
+    /// `continue_final_message`.
+    fn renders_continuation_natively(&self) -> bool {
+        false
     }
 }
 

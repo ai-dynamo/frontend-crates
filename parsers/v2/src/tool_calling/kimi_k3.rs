@@ -48,7 +48,7 @@ impl ToolParser for KimiK3ToolStreamParser {
 mod tests {
     use super::*;
     #[test]
-    fn legacy_projection_preserves_model_call_id() {
+    fn legacy_projection_preserves_unique_call_id() {
         let input = concat!(
             "<|open|>tools<|sep|>",
             "<|open|>call tool=\"weather\" index=\"2\"<|sep|>",
@@ -58,6 +58,15 @@ mod tests {
         );
         let mut parser = KimiK3ToolStreamParser::new(&[]);
         parser.push(input).unwrap();
-        assert_eq!(parser.tool_call_id(0), Some("weather:1"));
+        let id = parser.tool_call_id(0).unwrap().to_string();
+        assert_eq!(
+            uuid::Uuid::parse_str(id.strip_prefix("call-").unwrap())
+                .unwrap()
+                .get_version_num(),
+            4
+        );
+        parser.finish().unwrap();
+        assert_eq!(parser.tool_call_id(0), Some(id.as_str()));
+        assert_eq!(parser.tool_call_id(1), None);
     }
 }

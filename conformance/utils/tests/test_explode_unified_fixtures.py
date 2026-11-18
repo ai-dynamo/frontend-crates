@@ -14,6 +14,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import explode_unified_fixtures as explode  # noqa: E402
+from capture_versions import capture_release_sort_key, provenance_release_version
+from unified_history import CAPTURE_DIRECTORY_RE
 
 
 def test_peer_error_wins_over_partial_output() -> None:
@@ -153,6 +155,62 @@ def test_split_only_family_preserves_authored_request_and_golden() -> None:
     assert row["golden"] == {"assembled": golden}
 
 
+def test_append_authored_inputs_skips_existing_display_id_with_external_case_key(
+    tmp_path, monkeypatch
+) -> None:
+    family = "hermes"
+    scenario = "native_quoted_complete_call_default"
+    display_id = "UNIFIED.8-native_quoted_complete_call_default"
+    registry_path = tmp_path / "utils/src/parser_families.yaml"
+    registry_path.parent.mkdir(parents=True)
+    registry_path.write_text(
+        explode.yaml.safe_dump(
+            {"unified": {family: {"scenario_profile": "native", "golden_spec": "hermes.yaml"}}}
+        )
+    )
+    spec_dir = tmp_path / "unified/golden_spec"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "hermes.yaml").write_text(
+        explode.yaml.safe_dump(
+            {
+                "family": family,
+                "cases": {
+                    f"UNIFIED.{scenario}.{family}": {
+                        "input": "request",
+                        "init": {
+                            "starting_state": "Response",
+                            "tool_output_mode": "Native",
+                            "named_tool": None,
+                        },
+                        "finish_reason": "stop",
+                        "golden": [{"kind": "text", "text": "response"}],
+                    }
+                },
+            }
+        )
+    )
+    existing = {
+        "scenario": scenario,
+        "display_id": display_id,
+        "lifecycle": "active",
+    }
+    store = SimpleNamespace(
+        families={family: SimpleNamespace(cases={display_id: existing})}
+    )
+    monkeypatch.setattr(explode, "CONF", tmp_path)
+    monkeypatch.setattr(explode, "BUILD", tmp_path / "unified")
+    monkeypatch.setattr(explode.capture_sources, "is_current", lambda _root: True)
+
+    def mutate(_root, callback):
+        callback(store)
+        return []
+
+    monkeypatch.setattr(explode.unified_history, "mutate_authored_store", mutate)
+
+    assert explode.append_authored_inputs() == []
+    assert store.families[family].cases == {display_id: existing}
+
+
 def test_split_only_family_rejects_mismatched_family_scope() -> None:
     with pytest.raises(ValueError, match="belongs to qwen3"):
         explode._split_only_cases(
@@ -261,3 +319,30 @@ def test_historical_finish_chunk_ignores_retired_cases_without_request(tmp_path,
         assert explode._historical_finish_chunk("gpt_oss", "new_case") is True
     finally:
         explode._historical_finish_chunks.cache_clear()
+
+
+def test_current_capture_uses_only_crate_version():
+    label = "0.9.7+source." + "a" * 64
+    assert explode._canonical_dynamo_capture_version({"label": label, "crate_version": "0.9.7"}) == "0.9.7"
+    assert provenance_release_version(label) == "0.9.7"
+    assert not CAPTURE_DIRECTORY_RE.fullmatch("dynamo_v2-" + label)
+    for invalid in [label, "0.9.7+source.a", "0.9.7+other." + "a" * 64]:
+        with pytest.raises(ValueError):
+            capture_release_sort_key(invalid)
+
+
+def test_capture_family_requires_authored_native_inputs_and_skips_noncanonical_aliases():
+    registry = {
+        "glm47": {"native": True},
+        "qwen3_coder": {"native": True, "registry": "qwen3_coder", "scenario_profile": "native"},
+        "nemotron_v3": {"native": True, "registry": "qwen3_coder"},
+        "qwen3": {"native": True, "registry": "qwen3_coder"},
+        "deepseek_v3": {"native": False},
+    }
+    assert explode._has_authored_family("glm47", {"glm47"}, registry)
+    assert not explode._has_authored_family("qwen3_coder", {"qwen3"}, registry)
+    assert not explode._has_authored_family("deepseek_v3", {"glm47"}, registry)
+    with pytest.raises(ValueError, match="independently authored canonical input"):
+        explode._has_authored_family("glm47", set(), registry)
+    with pytest.raises(ValueError, match="independently authored canonical input"):
+        explode._has_authored_family("nemotron_v3", {"qwen3"}, registry)

@@ -6842,3 +6842,69 @@ targets:
     yanked: false
     yanked_reason: null
     requires_python: <3.15,>=3.10
+- implementation: vllm
+  version: 0.32.0
+  source_kind: pypi
+  repository: https://github.com/vllm-project/vllm
+  git_commit: 5df63a7203cdb9328d824a27b682e77c7b9928be
+  artifacts:
+  - filename: vllm-0.32.0-cp38-abi3-manylinux_2_28_aarch64.whl
+    url: https://files.pythonhosted.org/packages/02/7b/19ee98705e4a357fdb6158083c4aedb93bf548bf89fa827023449e22c98d/vllm-0.32.0-cp38-abi3-manylinux_2_28_aarch64.whl
+    sha256: d0620dbdf99528bcfebe551a8906347a229921fb1602f887bd1286a920da2d44
+    yanked: false
+    yanked_reason: null
+    requires_python: <3.15,>=3.11
+  - filename: vllm-0.32.0-cp38-abi3-manylinux_2_28_x86_64.whl
+    url: https://files.pythonhosted.org/packages/a5/0d/0b15fda9a56ac485ebb607e466f0e3386c8c115bafeced6514298bd325b5/vllm-0.32.0-cp38-abi3-manylinux_2_28_x86_64.whl
+    sha256: 5e2ecdc5b0baf72921c288486417ca82778456a448e4fe60b62ee43c0dfc8611
+    yanked: false
+    yanked_reason: null
+    requires_python: <3.15,>=3.11
+  - filename: vllm-0.32.0.tar.gz
+    url: https://files.pythonhosted.org/packages/d5/df/5471312c76e335eaa2b8333e87ea39f0d37bfe24f10a582620e34ff12e33/vllm-0.32.0.tar.gz
+    sha256: d2c957d5eee3d0985012151315ddc62cbe0cd368fc96a5fc3510438d9dddf2ad
+    yanked: false
+    yanked_reason: null
+    requires_python: <3.15,>=3.11
+- implementation: sglang
+  version: 0.5.23
+  source_kind: pypi
+  repository: https://github.com/sgl-project/sglang
+  git_commit: 297e54fd105e974cdf401e5b4d20253a22c16f90
+  artifacts:
+  - filename: sglang-0.5.23-cp311-cp311-manylinux_2_34_aarch64.whl
+    url: https://files.pythonhosted.org/packages/ed/40/9a1f4708bdcfebdadc716fc6d4c8971e624b6d89c52c38c08affed6d93ec/sglang-0.5.23-cp311-cp311-manylinux_2_34_aarch64.whl
+    sha256: 4d23d6abe82435c4b1b5db7b6d89e6f398d0128efbd9b873ac3a1ab6ea17b5ee
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.11'
+  - filename: sglang-0.5.23-cp311-cp311-manylinux_2_34_x86_64.whl
+    url: https://files.pythonhosted.org/packages/57/dd/0206d00b2ea5b163bbdd216e91cc4f23ea90fde8620db0a6272d4236b68e/sglang-0.5.23-cp311-cp311-manylinux_2_34_x86_64.whl
+    sha256: 00b3cd5b265ac76c64185fbb6b95424f324ddd9f428d0306b77bc9db9d859937
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.11'
+  - filename: sglang-0.5.23-cp312-cp312-manylinux_2_34_aarch64.whl
+    url: https://files.pythonhosted.org/packages/f5/f2/ec22edeedc4528052b367e5c1ab0fff3d64cbee4a02e98b550be163ae0d4/sglang-0.5.23-cp312-cp312-manylinux_2_34_aarch64.whl
+    sha256: 2d538a89a6e7b1b0707e2ab7f8edef4af6a7beb5da661f9a231cddcdf5308417
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.11'
+  - filename: sglang-0.5.23-cp312-cp312-manylinux_2_34_x86_64.whl
+    url: https://files.pythonhosted.org/packages/ca/5f/fb9c2417fc4c650f62ef98ddee2cc25988456c94e8a6ca8661ef0cbe0b09/sglang-0.5.23-cp312-cp312-manylinux_2_34_x86_64.whl
+    sha256: 8d257a319395b322bb1be327d05e5528859358153c8563b04c0a4a3c8af164b6
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.11'
+  - filename: sglang-0.5.23-cp313-cp313-manylinux_2_34_aarch64.whl
+    url: https://files.pythonhosted.org/packages/05/d6/22cbbff0cb8e4b1caa43ceeb7c37af1e7b16d533ae69506f15c406062b70/sglang-0.5.23-cp313-cp313-manylinux_2_34_aarch64.whl
+    sha256: 03b67b6b8206113aec8906b9b06b8e51139c4553dedac0650228a0ddbb43a4ef
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.11'
+  - filename: sglang-0.5.23-cp313-cp313-manylinux_2_34_x86_64.whl
+    url: https://files.pythonhosted.org/packages/fb/b9/873f06005ec16594eb576b283370785eceecb5ce881a252ed2d47dcbeb85/sglang-0.5.23-cp313-cp313-manylinux_2_34_x86_64.whl
+    sha256: 10f0b2b29c8fea616e4b27cbbbb147f32a879bf3db71c9767425a3d9d77a36cb
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.11'

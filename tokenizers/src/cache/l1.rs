@@ -370,10 +370,17 @@ impl L1Cache {
     /// Look up the longest cached prefix, retaining hashes for extension or population.
     /// The returned offsets and digests must be used with this same input.
     pub(super) fn lookup_prefix(&self, input: &str) -> PrefixLookup {
+        let lookup = self.find_prefix(input);
+        self.record_lookup(matches!(lookup, PrefixLookup::Hit(_)));
+        lookup
+    }
+
+    /// [`Self::lookup_prefix`] without counting the lookup, for a caller that counts
+    /// several as one.
+    pub(super) fn find_prefix(&self, input: &str) -> PrefixLookup {
         let boundaries = self.boundaries(input);
 
         if boundaries.is_empty() {
-            self.record_lookup(false);
             return PrefixLookup::Miss(Vec::new());
         }
 
@@ -381,7 +388,6 @@ impl L1Cache {
 
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(entry) = self.cache.cache.get(&hash_bytes) {
-                self.record_lookup(true);
                 // Share cached tokens to avoid copying the prefix during lookup.
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
@@ -394,7 +400,6 @@ impl L1Cache {
             }
         }
 
-        self.record_lookup(false);
         PrefixLookup::Miss(prefix_hashes)
     }
 

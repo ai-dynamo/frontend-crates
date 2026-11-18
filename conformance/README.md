@@ -13,17 +13,101 @@ Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Un
 
 Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and generate the latest report. Capture changes use normal PR review. CI executes current native Dynamo v2 cases: differences from GOLDEN produce warnings; differences from recorded YAML fail. Generated publication JSON stays outside Git.
 
+## Parser behavior changes and recorded YAML
+
+Whenever a Rust change alters conformance behavior, update the affected latest conformance YAML in the same PR. Always. Include changed final output, argument values, event ordering, completion flags, per-chunk progress, recovery, errors, and support status. For current Dynamo v2, recapture the affected `fixtures-unified-v2/families/<family>/dynamo_v2.yaml` files from the changed source. Parser code, necessary regression cases, and these captures belong in the same delivered PR; regenerating HTML alone is insufficient. Commit/push approval for the fix covers its required YAML updates too. If that approval is absent, prepare the complete bundle and ask once; do not deliver only the code or present an unpushed bundle as the PR's current contents.
+
+Run the existing strict replay before pre-merge delivery:
+
+```bash
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render committed_dynamo_capture_matches_the_live_parsers -- --exact
+```
+
+This test runs current inputs through every registered native Dynamo v2 parser family and compares live output with recorded latest YAML, including assembled events, per-chunk deltas, errors, and missing captures. The `rust` CI job invokes it through the workspace test suite. GOLDEN differences warn; differences from recorded latest output fail. CI can verify only the pushed head, so a green result on the previous head does not validate local Rust/YAML changes. Peer, v1, and historical captures retain their own producer evidence and are not executed by this native v2 replay.
+
+Keep GOLDEN independently authored and justified; do not copy an incorrect parser result into it. Preserve historical and peer observations when updating latest captures. If a Rust edit does not change observable conformance behavior, establish that with replay rather than changing YAML merely to create a diff.
+
 ## Latest captures and retained history
+
+### Normalized current YAML
+
+Current authored cases and latest captures use `schema_version: 3`. This number identifies the storage format. Parser release versions belong to captured observations. Authored files have one `family` header and no GOLDEN producer/version label.
+
+Each family's `inputs_and_golden.yaml` owns frozen `requests` keyed by their complete request SHA-256, reusable ordered `tools` lists, explicit `request_defaults`, and `cases`. Cases reference their request and contain one GOLDEN event list. Default active lifecycle, empty policy/alias lists, and a scenario equal to the case key may be omitted. Older requests needed by current peer observations remain in the frozen library when an authored case changes. Readers resolve definitions and verify request digests before using them.
+
+A request stores its input once. `chunk_sizes` records Unicode scalar counts in delivery order, including zero-length chunks; `finish_step: true` adds the recorder's terminal row. Readers require the sizes to cover the complete input. Literal finish-marker text inside the input remains part of its counted chunks. Author ordinary input/output cases with one whole-input chunk. Add an explicit multi-chunk schedule only when the case tests an observable streaming boundary, intermediate progress, or terminal ordering; describe why each pause is needed. Keep exhaustive fragmentation in the separate split-point tests, rather than making ordinary report inputs character-by-character streams. Exceptional schedules retain explicit `chunks`, and non-string YAML chunk values retain their complete mappings. Initialization overrides replace the complete default initialization object.
+
+Latest capture files share immutable request definitions with their family file. They store origins, producers and record contexts once, select common references through `record_defaults`, and retain explicit exceptions. Record contexts are complete replacements. Observations retain final output, every chunk delta, completion metadata, errors and unavailable results. Repeated recaptures keep previous evidence in `verified_recaptures`; each archive entry retains its own result, request, producer receipt and resolution. Python selection, history validation and execution-manifest conversion validate this archive even when no active recapture is present. Archived requests and producer versions may differ from the current selection. Selection versions remain separate from the actual producer identity. Native unpublished refreshes currently accept only additions or equivalent repeats that preserve all prior resolved records and their complete producer identities. A refresh that changes an earlier request, observation, or producer identity is rejected before publication, including a different Git commit or version even when the output is unchanged. This latest-only path does not consult retained history to authorize replacement. Supporting conflicting native candidates requires a separate archival implementation.
+
+Python, native Rust and browser readers expand the format into the existing validated case/observation model. Historical capture files and archives retain their original bytes and compatibility readers. To normalize current files or check that their representation is canonical, run:
+
+```bash
+python3 conformance/utils/src/normalize_current.py --root .
+python3 conformance/utils/src/normalize_current.py --root . --check
+```
+
 ### Historical back-captures
 
 Back-capture is useful, but not absolutely needed. There is no need to back-capture everything or rerun every historical version when adding a case. Capture the current candidate; use a relevant baseline when needed to demonstrate a before/after change. State which versions actually ran and leave uncaptured results explicitly unmeasured. Preserve existing historical inputs, observations, and provenance; never label current output as an older parser result.
 
 
-The implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Add 77 complete versionless latest files beside the existing captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`, across 12 families, including Muse Spark. Batch and jail variants remain separate implementations. Authored requests and GOLDEN stay in each family's `inputs_and_golden.yaml`.
+The earlier implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Versionless latest observations live beside retained captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`. Batch and jail variants remain separate implementations. Authored cases and their frozen request library stay in each family's `inputs_and_golden.yaml`.
 
-No backfill is needed. Keep all 689 existing versioned v2 capture files, all 12 authored input/GOLDEN files, and existing legacy archives unchanged at their original paths. Versioned v2 files will be removed in later PRs. Historical moves, archive expansion, and new compression are deferred.
+No backfill is needed. Historical versioned captures and legacy archives retain their original bytes and paths. Current authored requests and GOLDEN retain their values through storage normalization. Versioned capture removal, historical moves, and archive expansion remain separate work.
 
-Each latest file contains complete records and sealed request bindings, so it needs no historical parent. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
+Each latest capture contains complete observation records and resolves sealed request references through its current family file. These files require no historical parent. All selectable conformance versions and capture filenames use plain version numbers, including local candidates and published latest/history reports. Source hashes and Git revisions belong only in provenance metadata; they must never appear as version suffixes or selectable versions. The writer, source readers, native publisher, browser model, and publication qualification reject such selections. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
+
+### Capture peer releases and update YAML
+
+Peer captures are produced manually by replaying the authored family inputs through the published vLLM and SGLang parser packages in Docker, in both stream and batch modes. This runs the parsers directly; it does not serve a model or generate model responses. From the repository root, with the conformance Python dependencies, Docker, and dependency images installed, run:
+
+```bash
+python3 conformance/utils/src/capture_peer_unified_versions.py \
+  --work /path/to/new-output-directory \
+  --versions 0.31.0 0.32.0 0.5.22 0.5.23 \
+  --mode all
+```
+
+The work directory must not already exist. The runner freezes the authored requests for every registered family, executes hash-verified published parser packages, and retains the image IDs, source hashes, producer receipts, and logs. `--vllm-image` and `--sglang-image` can select installed dependency images; the measured parser version comes from the frozen published package. Unsupported combinations remain explicit unavailable results.
+
+Results are saved as `captures/<implementation>-<version>/<family>.json` beneath the work directory. Stream implementations are `vllm_python` and `sglang_python`; batch implementations add `_batch`. Each JSON file contains `results` keyed by case ID and a `provenance` receipt. For example:
+
+```bash
+jq '.results["UNIFIED.prefilled_reasoning_then_text.minimax_m3"].assembled' \
+  /path/to/new-output-directory/captures/vllm_python-0.32.0/minimax_m3.json
+jq '.results["UNIFIED.tool_only.minimax_m3"].batch_final' \
+  /path/to/new-output-directory/captures/vllm_python_batch-0.32.0/minimax_m3.json
+```
+
+The first command shows the ordered reasoning/text/tool events; the second shows the batch parser's final reasoning, text, and tool-call fields. The full stream record also retains per-chunk output.
+
+Capture and YAML import are separate steps. These releases were imported using the `import_capture` and `import_capture_groups` APIs in `utils/src/import_peer_unified.py`, against a staging copy of the versioned store. The importer checks the frozen request and producer receipts and retains existing observations when adding verified recaptures. The selected newest snapshots were then written to versionless `<implementation>.yaml`, normalized to schema 3, validated, and published with the changed versioned YAML through the transactional store writer. The capture command alone does not update YAML. MiniMax uses `thinking_mode="enabled"` for prefilled Reasoning and `"adaptive"` for ordinary and Response starts. A full family recapture refreshes every selected record's execution receipt; older observations and receipts remain retained. The importer is a versioned-history API; do not point it directly at the mixed current/history store, and its standalone `--bundle` CLI expects a different manifest format from this runner.
+
+CI replays current native Dynamo v2 cases and validates the stored peer captures, history, and report; peer recapture is manual. Follow [Generate the latest or history report](#generate-the-latest-or-history-report) to inspect imported results in the browser. The [public Unified viewer](https://ai-dynamo.org/frontend-crates/?tab=tab-unified) shows published captures; use a local report or the PR's validated publication artifact for unmerged captures.
+
+### Prepare GOLDEN and refresh latest Dynamo v2 observations
+
+Run from the repository root after installing the conformance Python dependencies. Before implementation, declare the family and markers in `conformance/utils/src/parser_families.yaml`, author scenarios in `conformance/utils/src/gen_unified_golden.py`, and assign stable IDs in `conformance/utils/src/unified_taxonomy.py`. Generate independent review specs without invoking a parser:
+
+```bash
+python3 conformance/utils/src/gen_unified_golden.py
+```
+
+Review `conformance/unified/golden_spec/<golden_spec>` using the filename declared for the family in the registry. For a completely new family, author its initial schema-3 `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml` independently as well; use existing family documents and the normalized current YAML schema above as the storage contract. The registry does not create that canonical file. For additional native-profile cases in an existing family, this command appends authored cases without replacing old requests or expected outputs:
+
+```bash
+python3 conformance/utils/src/explode_unified_fixtures.py --authored-inputs
+```
+
+That append mode is not a new-family bootstrap and does not update an existing case's GOLDEN. Review both generated specs and canonical inputs/GOLDEN, resolve differences with a documented reason, and obtain human approval before implementing the parser. Do not use observed parser output to define the expected result.
+
+After implementation, use the maintained workflow to capture current Dynamo v2 output, package observations, validate the store, and run shared v2 checks:
+
+```bash
+bash conformance/utils/regenerate_unified.sh
+```
+
+This command writes generated files and may update authored inputs and current capture YAML; inspect the complete diff before staging. It executes current v2 code, not historical versions. Preserve existing observations and their provenance; historical backfills and new v1 captures are outside this workflow. A failed command remains a failed check even if an intermediate capture or report was produced. Then [generate the latest report](#generate-the-latest-or-history-report) and visually compare the affected cases against reviewed GOLDEN.
 
 ### Generate the latest or history report
 
@@ -125,7 +209,28 @@ The report contains one Unified comparison matrix without a tab strip. Three eng
 
 Each selected card shows a segmented status bar and labeled nonzero outcome counts. The report has no parser percentage, aggregate score, ranking, or better-parser label. Matches GOLDEN, documented differences, disagreements, parser errors, markup leaks, missing captures, unsupported cases, blocked sources, expected errors, and unavailable GOLDEN remain separate outcomes. Each applicable underlying case is counted once per family and capture, as an individual case. Orientation does not change totals.
 
-The toolbar starts with Split cells, All focus, all categories enabled, and empty search. Search and category selection update the matrix and card counts together. All, Disagreements, and Problems are mutually exclusive focus toggle buttons. All is selected by default; selecting either filter removes case and model axes without matching selected-capture results, and selecting the active filter again returns to All. Clicking All shows every result. Empty category headings disappear. Split cells retain all selected capture segments, while stacked layouts also remove capture/model axes without matches. Capture-card totals stay based on search and categories. Filter availability is determined before focus filtering; unavailable filters are disabled, and a selection that invalidates the active filter returns to All. Vertical case names use a wider label column and wrap within two lines, including long underscore-separated names; the label stays sticky on wide screens and wrapped lines use a hanging indent. Problems means a GOLDEN mismatch, documented difference, parser error, or markup leak; uncaptured output, unavailable sources, and unsupported cases are not problems. The layout switch appears only with two or more selected captures: Stacked columns in Vertical mode and Stacked rows horizontally. Stacked columns fit the result marks and their padding, and stacked rows use compact parser/version labels and tighter vertical padding. Full capture descriptions remain in the header hover text and accessibility labels. Thicker boundaries separate model families in both stacked layouts, with font-relative space on both sides of each boundary while parser results within a family remain compact.
+### Outcome colors and focus filters
+
+The status palette is part of the conformance GUI contract. Apply the same meaning to matrix segments, legends, capture-card counts, and status bars in both orientations and both themes. A difference from GOLDEN must remain distinguishable from leaked markup and a parser failure; do not collapse these outcomes into one failure color.
+
+| GUI outcome | Meaning | Light theme | Dark theme |
+| --- | --- | --- | --- |
+| Matches GOLDEN | Observed output matches the independently authored expected result | Green `#3fa34d` | Green `#3f9e4c` |
+| Different than GOLDEN | Parsed output differs from GOLDEN without a more specific error, leak, or documented-difference classification | Yellow `#f0a92a` | Yellow `#d9952a` |
+| Markup leaks | Control markup is incorrectly present in reasoning or visible text | Red `#e0484b` | Red `#d9474a` |
+| Parser errors | Unexpected parser exception or parsing failure | Purple `#9b4fd6` | Purple `#a465dc` |
+| Expected errors | The fixture records an expected error rather than ordinary parsed output | Dark purple `#7353ba` | Dark purple `#8768d0` |
+| Documented differences | A mismatch has an explicit matching intentional-difference explanation | Blue `#7fa8e8` | Blue `#5b86c9` |
+
+Missing captures use an outlined empty swatch; unsupported cases use a gray hatch; blocked sources and unavailable GOLDEN use their labeled neutral styles. A dash means the case is not applicable to that family and is excluded from applicable result counts. These outcomes must not be colored as parser errors. The labels, popup details, and accessibility descriptions retain each outcome's meaning so color is not the only indication. Muted passing segments in a focused view still mean Matches GOLDEN.
+
+**All** shows every outcome within the search and selected categories. **Different than GOLDEN** selects ordinary disagreements, not parser errors or markup leaks. **Errors** selects unexpected parser errors and markup leaks, excluding expected errors, documented differences, missing captures, and unsupported cases. **Difference**, when offered for multiple captures, compares the selected parsers with one another; it is independent of agreement with GOLDEN. Focus filtering does not redefine an outcome's color or the capture-card totals.
+
+The palette owner is `utils/src/assets/conformance.css`; `viewer/model.js` classifies outcomes, `viewer/comparison.js` applies focus filters, and `viewer/viewer.css` maps status classes onto the palette. Coverage-only work preserves these meanings, colors, and filters unless the user explicitly requests a GUI behavior change. Review the complete branch diff against the actual base, including combined merge diffs, to catch presentation changes introduced during integration.
+
+Changes to this contract require updated documentation and independent browser assertions. `test_status_palette_preserves_distinct_outcome_meanings` in [test_browser_viewer.py](utils/tests/test_browser_viewer.py) pins yellow disagreements, red leaks, and purple parser errors in both themes and both global/Unified scopes. The existing `test_selected_capture_family_union_and_box_spacing` checks rendered cell/legend agreement in both orientations. Keep both: agreement between a cell and its legend cannot catch both being recolored incorrectly. A palette regression must fail when disagreements are assigned the leak color; expected colors must not be derived from the CSS under test. Filter semantics are checked separately in [comparison.test.js](viewer/comparison.test.js).
+
+The toolbar starts with Split cells, All focus, all categories enabled, and empty search. Search and category selection update the matrix and card counts together. All, Different than GOLDEN, Difference when available, and Errors are mutually exclusive focus toggle buttons. All is selected by default; selecting a filter removes case and model axes without matching selected-capture results, and selecting the active filter again returns to All. Clicking All shows every result. Empty category headings disappear. Split cells retain all selected capture segments, while stacked layouts also remove capture/model axes without matches. Capture-card totals stay based on search and categories. Filter availability is determined before focus filtering; unavailable filters are disabled, and a selection that invalidates the active filter returns to All. Vertical case names use a wider label column and wrap within two lines, including long underscore-separated names; the label stays sticky on wide screens and wrapped lines use a hanging indent. The layout switch appears only with two or more selected captures: Stacked columns in Vertical mode and Stacked rows horizontally. Stacked columns fit the result marks and their padding, and stacked rows use compact parser/version labels and tighter vertical padding. Full capture descriptions remain in the header hover text and accessibility labels. Thicker boundaries separate model families in both stacked layouts, with font-relative space on both sides of each boundary while parser results within a family remain compact.
 
 Search uses implicit AND between words, explicit AND/OR, quoted whole-word phrases, parenthesized groups, and minus exclusions. Recognized model-family prefixes select those families; other words match case names and category headings across all families. For example, `beam (guided decoding OR TC)` selects Beam and the Guided Decoding or TC cases; `TC Trun` selects the truncation category across all families. Spaces within a recognized family name are joined, so `deep seek` matches DeepSeek. Use `parser:` (or `model:`) to require a family match, `col:` for case/category names, and `description:` for case descriptions. Bare words match word prefixes, while quoted phrases require whole words. Invalid syntax keeps the last valid filter visible and explains the error.
 
@@ -171,6 +276,8 @@ The accounting covers 828 version/mode selections and 5,212 active family/case p
 | Missing evidence | 0 | No combination lacks a recorded outcome or explicit blocker. |
 
 Both direct batch and batch + jail-buffer observations project final reasoning text, visible content, and ordered tool calls into final events. Those events are compared to the original ordered GOLDEN. Lost reasoning/content/tool interleaving is a mismatch even when every final field retains its text. The matrix, case popups, and Detailed table use the same selected captures against GOLDEN. Popups show the actual final fields and label batch rows “Order/chunk not applicable for batch”; batch observations contain no synthetic chunk emissions. JSON includes per-capture accounting and mismatch counts. Considered counts active family/case pairs checked against a version; attempted counts pipeline invocations, including parser exceptions. Captured counts successful final observations; unsupported modes/families, source blockers, and missing captures are separate.
+
+For crate builds exposing the ownership-aware APIs, Dynamo adapters pass `ReasoningOutput` segments through context-aware batch parsing or the contextual jail stream. `NormalTextSegment::Literal` preserves visible bytes without interpreting them again as protocol; `Protocol` retains native tool parsing. `capture_dynamo_unified_batch.py` compiler-probes the actual public types and methods before enabling `conformance_reasoning_context`, which is recorded in the producer compatibility flags. Older crates retain their historical flat-text pipeline under the same frozen requests, including its measured disagreements. Current Dynamo v1 batch and jail-buffer adapters retain each `batch_final` call argument as the parser's raw JSON string, preserving number spellings and key order. Historical captures keep their producer-specific typed observations and are never relabeled. Existing raw-text method signatures and response wire formats remain unchanged.
 
 The batch adapters execute native/default initialization with stop or length termination. Dynamo and SGLang also apply native Reasoning initialization through their public historical APIs. vLLM requests requiring an explicit initial reasoning state remain unsupported by this adapter. Verified recaptures retain the original observations and bind supplemental results to their producer receipts. Missing registrations and unsupported request modes remain explicit unavailable observations; parser exceptions retain their own observation code. Published Dynamo v1 `3.0.0` is included in both batch modes. Its 5,212 jail-buffer results report `unsupported_capture_mode` because that crate has no public `JailedStream`; no jail parser execution is claimed. The nonpublished Dynamo v1 `9.2.13` direct-batch and jail-buffer observations remain retained historical source blockers outside the frozen denominator.
 

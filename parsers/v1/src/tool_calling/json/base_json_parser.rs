@@ -475,6 +475,10 @@ pub fn try_tool_call_parse_basic_json(
     // including an empty array, which is a valid empty result and must not fall
     // through to truncation recovery.
     if let Some(calls) = parse_calls(json, config.allow_name_only_call)? {
+        // Unmarked arrays with no calls are ordinary content, not empty tool output.
+        if calls.is_empty() && !has_start_token && !config.bare_json_mode {
+            return Ok((calls, Some(message.to_string())));
+        }
         return Ok((calls, Some(normal_text)));
     }
 

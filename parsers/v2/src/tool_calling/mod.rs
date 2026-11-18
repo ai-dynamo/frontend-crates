@@ -15,6 +15,8 @@ pub mod kimi_k3;
 pub(crate) mod kimi_progress;
 pub mod minimax_m2;
 pub mod minimax_m3;
+/// Mistral has no tool-only parser; the unified parser is its only entry point.
+pub(crate) mod mistral;
 pub mod muse_glimmer;
 // Spark has different recipient semantics but shares Glimmer's ATEM scanner.
 pub mod muse_spark;

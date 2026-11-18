@@ -9,17 +9,14 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 use std::collections::BTreeMap;
 
-mod schema;
+pub(crate) mod schema;
 pub(crate) use schema::MAX_SCHEMA_DEPTH;
 #[cfg(test)]
 pub(crate) use schema::MAX_SCHEMA_WORK;
 pub(crate) use schema::SchemaFacts;
 #[cfg(test)]
 pub(crate) use schema::schema_type_match;
-pub(crate) use schema::{
-    has_unsupported_schema_ref_scope, literals_contradict_type, resolve_local_schema_ref,
-    schema_has_type, schema_permits_null,
-};
+pub(crate) use schema::{schema_has_type, schema_permits_null};
 
 #[derive(Debug)]
 pub(crate) enum ParsedValue {

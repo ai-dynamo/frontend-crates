@@ -47,9 +47,73 @@ assert.deepEqual(latestCandidates.filter(item => item.source.implementation === 
 assert.deepEqual(latestCandidates.filter(item => item.source.implementation === 'vllm_python').map(item => item.source.version), ['0.8.5.post1']);
 assert.deepEqual(latestCandidates.filter(item => item.source.implementation === 'sglang_python').map(item => item.source.version), ['0.4.4.post3']);
 const request = { input: 'sample', init: { starting_state: 'None', tool_output_mode: 'Native', named_tool: null }, finish_reason: 'stop', tools: [], chunks: [{ delta_text: 'sample' }] };
-const input = { lifecycle: 'active', scenario: 'tool_only', description: 'sample', policy: [], display_id: 'UNIFIED.1-tool_only', historical_ids: [], request, golden: { assembled: [] } };
+const input = { lifecycle: 'active', scenario: 'tool_only', description: 'Shared stimulus. Oracle: Family-specific argument ownership.', policy: [], display_id: 'UNIFIED.1-tool_only', historical_ids: [], request, golden: { assembled: [] } };
+catalog.metadata.unified_taxonomy.tool_only.description = 'Explicit shared summary.';
 const document = { input_document: { family: 'qwen3' }, golden_document: { family: 'qwen3' }, cases: { id: input } };
 const identity = { path: 'capture.yaml', implementation: 'dynamo_v2', version: '1.0.0' };
+for (const implementation of ['dynamo_v1', 'dynamo_v1_jail', 'vllm_python_batch', 'sglang_python_batch']) {
+  const batchCatalog = structuredClone(catalog);
+  batchCatalog.sources.candidates.push({ mode: 'unified', implementation, version: '1.0.0' });
+  const descriptor = tabCandidates(batchCatalog, { id: 'tab-unified', mode: 'unified' })
+    .find(item => item.source.implementation === implementation);
+  assert.equal(descriptor.control.parse_mode, 'batch');
+  const batchInput = structuredClone(input);
+  const call = { kind: 'tool_call', name: 'lookup', arguments: { city: 'Paris' } };
+  const text = { kind: 'text', text: 'Done.' };
+  batchInput.golden.assembled = [call, text];
+  const batchDocument = { ...document, cases: { id: batchInput } };
+  for (const normalText of ['Done.', 'Lost text']) {
+    const final = { reasoning_text: '', normal_text: normalText, calls: [{ name: 'lookup', arguments: '{"city":"Paris"}' }] };
+    const capture = { provenance: { status: 'captured', origin: { crate_version: '1.0.0', source_sha256: 'a'.repeat(64) } },
+      document: { record_metadata: { batch_final: final, producer_origin: { git_commit: 'b'.repeat(40) }, inherited_from: '0.9.0' } },
+      changes: { id: { case_key: input.display_id, stimulus: { ref: 'current' }, observation: { value: {
+        assembled: [{ kind: 'text', text: normalText }, call],
+      } } } }, metadata_changes: {}, document_overrides: {} };
+    const reader = { unifiedInputs: async () => ({ value: batchDocument }), unified: async () => ({
+      records: resolveUnified([{ ...identity, implementation, document: capture }], '1.0.0'),
+    }) };
+    const panel = await unifiedPanel(batchCatalog, reader, { selected: [descriptor.control.key], reference: null });
+    const candidate = toolOnlyCell(panel).tooltip.candidates.find(item => item.key === descriptor.control.key);
+    assert.equal(candidate.parse_mode, 'batch', implementation);
+    assert.deepEqual(candidate.block.batch_final, final, 'popup retains actual final fields');
+    assert.deepEqual(candidate.block.producer_origin, { git_commit: 'b'.repeat(40) }, 'popup retains the actual observation producer');
+    assert.equal(candidate.block.inherited_from, '0.9.0');
+    assert.equal(candidate.block.verdict, normalText === 'Done.' ? 'ORDER' : 'LOSS', 'final-field projection must distinguish ordering from text loss');
+    assert.deepEqual(batchInput.golden.assembled, [call, text], 'display cannot reorder the authored oracle');
+  }
+}
+for (const [version, recorded, nativeFamilies, boundary, expected] of [
+  ['0.7.27', undefined, [], '0.7.28', 'split'],
+  ['0.7.28', undefined, [], '0.7.28', 'unified'],
+  ['0.7.29', 'split', ['qwen3'], '0.7.28', 'split'],
+  ['0.7.27', 'unified', [], '0.7.28', 'unified'],
+  ['0.7.27', undefined, [], undefined, null],
+  ['0.7.27', undefined, ['qwen3'], undefined, 'unified'],
+]) {
+  const routeCatalog = structuredClone(catalog);
+  routeCatalog.sources.candidates.push({ mode: 'unified', implementation: 'dynamo_v2', version,
+    native_unified_families: nativeFamilies });
+  routeCatalog.metadata.unified_presentation.parser_generations.qwen3.native_unified_since = boundary;
+  const routes = { provenance: { status: 'captured', origin: { crate_version: version, source_sha256: 'a'.repeat(64) } },
+    document: recorded === undefined ? {} : { parser_path: recorded },
+    changes: { id: { case_key: input.display_id, stimulus: { ref: 'current' }, observation: { value: {
+      assembled: [{ kind: 'text', text: 'assembled' }], chunks: [{ expected: [{ kind: 'text', text: 'stream' }] }],
+    } } } },
+    metadata_changes: {}, document_overrides: { id: { capture_provenance: {
+      captured_with: { dynamo_v2: '0.7.24' }, capture_origin: null, inherited_from: '0.7.24',
+    } } } };
+  const routeReader = { unifiedInputs: async () => ({ value: document }),
+    unified: async () => ({ records: resolveUnified([{ ...identity, version, document: routes }], version) }) };
+  const key = `dynamo@${version}`;
+  const routePanel = await unifiedPanel(routeCatalog, routeReader, { selected: [key], reference: null });
+  const candidate = toolOnlyCell(routePanel).tooltip.candidates.find(candidate => candidate.key === key);
+  assert.equal(candidate.parse_mode, expected, `${version}: recorded=${recorded}, native=${nativeFamilies}, boundary=${boundary}`);
+  assert.ok(candidate.label.includes(expected === 'unified' ? 'UnifiedParser' : expected === 'split' ? 'split' : 'recorded history'));
+  assert.deepEqual(candidate.block.events, [{ kind: 'text', text: expected === 'split' ? 'assembled' : 'stream' }]);
+  assert.ok(candidate.block.explanation.includes('Inherited from v2 0.7.24'));
+  assert.ok(candidate.block.explanation.includes(`selected release route: ${expected === 'unified' ? 'UnifiedParser' : expected || 'unknown'}`));
+  if (expected === 'split') assert.ok(candidate.block.explanation.includes('v1 reasoning + v2 tool parsing.'));
+}
 for (const observation of [{ error: { code: 'panic', detail: 'parser failed' } }, { value: { assembled: [], chunks: [{ expected: [] }] } },
   ...['unsupported_request_mode', 'unsupported_capture_mode', 'unsupported_family', 'source_unavailable'].map(code => ({ unavailable: { code, detail: 'Capability unavailable' } }))]) {
   const capture = { provenance: { status: 'captured', origin: { crate_version: '1.0.0', source_sha256: 'a'.repeat(64) } },
@@ -60,6 +124,13 @@ for (const observation of [{ error: { code: 'panic', detail: 'parser failed' } }
   const panel = await unifiedPanel(catalog, reader);
   assert.equal(panel.rows[0].model_label, 'qwen3');
   const cell = toolOnlyCell(panel);
+  assert.equal(cell.tooltip.description, input.description);
+  assert.equal(panel.columns.find(column => column.sub === 'tool_only').desc, 'Explicit shared summary.');
+  assert.equal(panel.glossary.flatMap(group => group.rows).find(([label]) => label === catalog.metadata.unified_taxonomy.tool_only.canonical_label)[1], 'Explicit shared summary.');
+  const fallbackCatalog = structuredClone(catalog);
+  delete fallbackCatalog.metadata.unified_taxonomy.tool_only.description;
+  const fallback = await unifiedPanel(fallbackCatalog, reader);
+  assert.equal(fallback.columns.find(column => column.sub === 'tool_only').desc, input.description);
   const candidate = cell.tooltip.candidates.find((candidate) => candidate.key === 'dynamo');
   if (observation.error) {
     assert.equal(cell.status, 'problem');
@@ -97,6 +168,33 @@ for (const [expected,actual,verdict] of [
   assert.equal(cell.cmp.dynamo.sig===cell.cmp.golden.sig,verdict==='MATCH');
 }
 assert.equal(unifiedComparisonFailure(request, { capture_input: request }), null);
+const terminalRequest = { ...request, chunks: [...request.chunks, { delta_text: '‹finish›' }] };
+assert.equal(unifiedComparisonFailure(request, { capture_input: terminalRequest }), null);
+assert.equal(unifiedComparisonFailure(terminalRequest, { capture_input: request }), null);
+for (const terminal of [{ delta_text: '‹finish›', token_ids: [1] }, { delta_text: '‹finish›', finish_reason: 'stop' }]) {
+  assert.match(unifiedComparisonFailure(request, { capture_input: { ...request, chunks: [...request.chunks, terminal] } }), /mismatch \(chunks\)/);
+}
+const literalFinish = { ...request, input: request.input + '‹finish›', chunks: terminalRequest.chunks };
+assert.equal(unifiedComparisonFailure(literalFinish, { capture_input: literalFinish }), null);
+assert.match(unifiedComparisonFailure(literalFinish, { capture_input: { ...literalFinish, chunks: request.chunks } }), /mismatch \(chunks\)/);
+assert.match(unifiedComparisonFailure(request, { capture_input: { ...terminalRequest, chunks: [{ delta_text: 'changed' }, { delta_text: '‹finish›' }] } }), /mismatch \(chunks\)/);
+const finishEvents = [{ kind: 'text', text: 'sample' }];
+const finishRecord = { value: { case_key: input.display_id, stimulus: { inline: terminalRequest }, document: {},
+  observation: { value: { assembled: finishEvents, chunks: [{ expected: [] }, { expected: finishEvents }] } } } };
+for (const recordedRequest of [request, terminalRequest]) for (const authoredRequest of [request, terminalRequest]) {
+  finishRecord.value.stimulus.inline = recordedRequest;
+  const finishDocument = structuredClone(document);
+  finishDocument.cases.id.request = authoredRequest;
+  finishDocument.cases.id.golden.assembled = finishEvents;
+  const finishReader = { unifiedInputs: async () => ({ value: finishDocument }), unified: async () => ({ records: new Map([['id', finishRecord]]) }) };
+  const finishCell = toolOnlyCell(await unifiedPanel(catalog, finishReader));
+  assert.equal(finishCell.tooltip.candidates.find(candidate => candidate.key === 'dynamo').block.verdict, 'MATCH');
+  assert.equal(finishCell.tooltip.input.chunks.length, authoredRequest.chunks.length);
+  const terminal = authoredRequest === request ? finishCell.tooltip.input.finish : finishCell.tooltip.input.chunks[1];
+  assert.equal(terminal.delta_text, '‹finish›');
+  assert.deepEqual(terminal.expected.dynamo, finishEvents);
+  if (authoredRequest === terminalRequest) assert.equal(finishCell.tooltip.input.finish, null);
+}
 assert.match(unifiedComparisonFailure(request, {}), /Original input/);
 assert.match(unifiedComparisonFailure(request, { capture_input: { ...request, tools: null } }), /Original tool schema/);
 assert.match(unifiedComparisonFailure(request, { capture_input: { ...request, input: 'different' } }), /mismatch \(input\)/);
@@ -332,10 +430,11 @@ const aliasName = `${input.display_id}.retired`;
 const aliasInputs = structuredClone(document);
 aliasInputs.cases.id.historical_ids = [aliasName];
 aliasInputs.cases.retired = { ...structuredClone(input), lifecycle: 'retired', display_id: null, historical_ids: [], request: null, golden: null };
-const aliasReader = (exactError, reverse, mismatch, extraRetired = false) => ({
+const aliasReader = (exactError, reverse, mismatch, extraRetired = false, bindings = {}) => ({
   unifiedInputs: async () => ({ value: aliasInputs }),
   unified: async () => {
     const oldRequest = structuredClone(request);
+    if (mismatch === 'synthetic_finish') oldRequest.chunks.push({ delta_text: '‹finish›' });
     if (mismatch === 'chunks') oldRequest.chunks.push({ delta_text: 'finish' });
     if (mismatch === 'input') oldRequest.input = 'older input';
     const capture = { provenance: { status: 'legacy', captured_with: { dynamo_v2: '1.0.0' } }, document: {},
@@ -343,6 +442,8 @@ const aliasReader = (exactError, reverse, mismatch, extraRetired = false) => ({
         id: { case_key: input.display_id, stimulus: { ref: 'current' }, observation: exactError ? { error: { code: 'panic', detail: 'recorded error' } } : { value: { assembled: [], chunks: [] } } },
         retired: { case_key: aliasName, stimulus: { inline: oldRequest }, observation: { value: { assembled: [{ kind: 'text', text: 'old result' }], chunks: [] } } },
       }, metadata_changes: {}, document_overrides: {} };
+    if (bindings.normalizedActive) capture.changes.id.stimulus = { inline: structuredClone(oldRequest) };
+    if (bindings.sameObservation) capture.changes.retired.observation = structuredClone(capture.changes.id.observation);
     await validateUnifiedCapture(capture, aliasInputs, identity);
     const entries = [...resolveUnified([{ ...identity, document: capture }], '1.0.0')];
     if (extraRetired) {
@@ -354,13 +455,22 @@ const aliasReader = (exactError, reverse, mismatch, extraRetired = false) => ({
     return { records: new Map(reverse ? entries.reverse() : entries) };
   },
 });
-for (const exactError of [false, true]) for (const reverse of [false, true]) for (const mismatch of ['chunks', 'input']) for (const extraRetired of [false, true]) {
+for (const exactError of [false, true]) for (const reverse of [false, true]) for (const mismatch of ['chunks', 'input', 'synthetic_finish']) for (const extraRetired of [false, true]) {
   const result = await unifiedPanel(catalog, aliasReader(exactError, reverse, mismatch, extraRetired), { selected: ['dynamo'], reference: null });
   assert.equal(selectedCaptureOutcome(toolOnlyCell(result), 'dynamo'), exactError ? 'error' : 'pass', 'retired request mismatches cannot replace or conflict with an exact capture binding');
 }
 for (const reverse of [false, true]) {
   await assert.rejects(unifiedPanel(catalog, aliasReader(false, reverse, null), { selected: ['dynamo'], reference: null }),
     /conflicting historical aliases/, 'contradictory exact request bindings must still fail');
+}
+for (const exactError of [false, true]) for (const reverse of [false, true]) {
+  await assert.rejects(unifiedPanel(catalog, aliasReader(exactError, reverse, 'synthetic_finish', false,
+    { normalizedActive: true }), { selected: ['dynamo'], reference: null }),
+  /conflicting historical aliases/, 'normalization cannot hide contradictory equally ranked observations');
+  const consistent = await unifiedPanel(catalog, aliasReader(exactError, reverse, 'synthetic_finish', false,
+    { normalizedActive: true, sameObservation: true }), { selected: ['dynamo'], reference: null });
+  assert.equal(selectedCaptureOutcome(toolOnlyCell(consistent), 'dynamo'), exactError ? 'error' : 'pass',
+    'equivalent normalized observations remain readable in either alias order');
 }
 console.log('historical alias resolution preserves exact request bindings and rejects real conflicts');
 

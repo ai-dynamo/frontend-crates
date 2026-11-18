@@ -5,6 +5,8 @@
 import copy
 import re
 
+from capture_stimulus import validate_recapture_archive
+
 from viewer_codec import canonical_typed, typed_equal as _equal, typed_key_identity
 
 FIELDS = {"schema_version", "family", "implementation", "version", "checkpoint", "cases", "defaults", "exceptions"}
@@ -91,6 +93,8 @@ def _canonical_receipt(value):
 
 def compact(document, *, family, implementation, version, receipt_documents=None, receipt_names=None):
     metadata = copy.deepcopy(document["metadata_changes"])
+    for value in metadata.values():
+        validate_recapture_archive(value, implementation=implementation)
     proof = copy.deepcopy(document.get("execution_proof"))
     if not metadata and proof is None:
         return None
@@ -182,5 +186,7 @@ def expand(manifest, *, family, implementation, version, receipt_documents=None)
         source_reference(digest, "receipts")
         if not isinstance(members, list) or not members or any(not isinstance(case, str) for case in members) or len(members) != len(set(members)) or set(members) != observed.get(digest, set()):
             raise ValueError("execution receipt case membership mismatch")
+    for value in metadata.values():
+        validate_recapture_archive(value, implementation=implementation)
     return {**copy.deepcopy(checkpoint), "metadata_changes": metadata,
             **({"execution_proof": proof} if proof is not None else {})}

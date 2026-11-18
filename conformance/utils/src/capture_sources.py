@@ -19,9 +19,11 @@ import tempfile
 
 import yaml
 import yaml_fast  # noqa: F401
+import normalized_yaml
 import ci_publication_cache
 import unified_archives
 from viewer_codec import typed_equal
+from capture_versions import capture_release_sort_key
 
 PIN = "conformance/historic-baseline.json"
 HISTORIC = "conformance/historic"
@@ -213,12 +215,20 @@ def independent_snapshot(document: dict, authored: dict, *, source_member: str |
     return document
 
 
-def selected_bytes(data: bytes, row: dict, lineage: list[dict], *, authored: dict | None = None) -> bytes:
+def selected_bytes(data: bytes, row: dict, lineage: list[dict], *, authored: dict | None = None, authored_storage: dict | None = None) -> bytes:
     # Latest downloads use the supplied complete snapshot; producer metadata stays intact.
+    capture_release_sort_key(row["version"])
     body = data.split(b"\n", 1)[1] if data.startswith(b"capture_selection: ") else data
     if authored is not None:
-        body = yaml.safe_dump(independent_snapshot(yaml.safe_load(body), authored, source_member=row["source"]),
-                              sort_keys=True, allow_unicode=True, width=4096).encode()
+        document = yaml.safe_load(body)
+        if document.get("schema_version") == normalized_yaml.SCHEMA:
+            if authored_storage is None:
+                raise ValueError("normalized capture requires its frozen request library")
+            document = normalized_yaml.expand_snapshot(document, authored_storage)
+        document = independent_snapshot(document, authored, source_member=row["source"])
+        if authored_storage is not None and authored_storage.get("schema_version") == normalized_yaml.SCHEMA:
+            document = normalized_yaml.encode_snapshot(document, authored_storage)
+        body = yaml.safe_dump(document, sort_keys=False, allow_unicode=True, width=4096).encode()
     selection = {key: value for key, value in row.items() if key not in {"path", "size", "sha256"}}
     selection.update(payload_sha256=digest(body), lineage=sorted(lineage, key=lambda item: item["path"]))
     return b"capture_selection: " + encoded(selection).rstrip(b"\n") + b"\n" + body
@@ -245,6 +255,7 @@ def current(root: Path) -> dict:
             if previous != item:
                 raise ValueError("conflicting observation lineage")
         row = {**selection, **identity(name, data)}
+        capture_release_sort_key(row["version"])
         surface = "unified" if path in latest else path.parent.parent.name
         if (row["surface"] != surface or row["family"] != path.parent.name
                 or row["implementation"] != path.stem or row["mode"] != row["surface"]):

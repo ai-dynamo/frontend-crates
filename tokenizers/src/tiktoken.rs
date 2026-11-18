@@ -111,6 +111,7 @@ impl Encoder for TikTokenTokenizer {
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
         let mut token_ids = Vec::new();
         for segment in segments {
+            let start = token_ids.len();
             for_each_reference_piece(segment.text, |piece| {
                 if segment.allow_special {
                     token_ids.extend(self.bpe.encode_with_special_tokens(piece));
@@ -118,6 +119,12 @@ impl Encoder for TikTokenTokenizer {
                     token_ids.extend(self.bpe.encode_ordinary(piece));
                 }
             });
+            if !segment.allow_special {
+                crate::reject_control_ids_in_ordinary_segment(
+                    &token_ids[start..],
+                    &self.special_token_ids,
+                )?;
+            }
         }
         Ok(Encoding::Sp(token_ids))
     }
@@ -289,12 +296,11 @@ pub(crate) fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
         // it still ships the Kimi tiktoken tokenizer file, so the KIMI_PATTERN BPE regex is the
         // correct pattern to use.  No pure DeepSeek V3 model uses tiktoken.model files
         // (they use tokenizer.json instead) so this match is safe.
-        "kimi" | "kimi_k2" | "kimi_k25" | "kimi_k3" | "kimi_linear" | "deepseek_v3" => {
-            Ok(KIMI_PATTERN)
-        }
+        "kimi" | "kimi_k2" | "kimi_k25" | "kimi_k3" | "kimi_k31" | "kimi_linear"
+        | "deepseek_v3" => Ok(KIMI_PATTERN),
         _ => Err(Error::msg(format!(
             "Unsupported tiktoken model_type '{model_type}'. \
-             Currently supported: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_linear, deepseek_v3. \
+             Currently supported: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31, kimi_linear, deepseek_v3. \
              To add a new model type, extend detect_bpe_pattern() in lib/tokenizers/src/tiktoken.rs \
              with the appropriate BPE regex pattern. \
              Alternatively, provide a tokenizer.json (HuggingFace format) instead."
@@ -611,6 +617,16 @@ mod tests {
 
         let decoded: String = tokenizer.decode(ids, false).unwrap().into();
         assert_eq!(decoded, "hello world");
+
+        // K3.1 ships the same tiktoken vocabulary format under a new model type.
+        create_test_config(dir.path(), "kimi_k31");
+        let k31_tokenizer = TikTokenTokenizer::from_file_auto(&file_path).unwrap();
+        assert_eq!(
+            k31_tokenizer.encode("hello world").unwrap().token_ids(),
+            ids
+        );
+        let decoded: String = k31_tokenizer.decode(ids, false).unwrap().into();
+        assert_eq!(decoded, "hello world");
     }
 
     #[test]
@@ -624,8 +640,10 @@ mod tests {
     #[test]
     fn test_kimi_k3_uses_kimi_bpe_pattern() {
         let dir = tempfile::tempdir().unwrap();
-        create_test_config(dir.path(), "kimi_k3");
-        assert_eq!(detect_bpe_pattern(dir.path()).unwrap(), KIMI_PATTERN);
+        for model_type in ["kimi_k3", "kimi_k31"] {
+            create_test_config(dir.path(), model_type);
+            assert_eq!(detect_bpe_pattern(dir.path()).unwrap(), KIMI_PATTERN);
+        }
     }
 
     #[test]

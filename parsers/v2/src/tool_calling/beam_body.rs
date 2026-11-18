@@ -19,6 +19,9 @@
 //!   between parameters, so a malformed or truncated body is an error and never `{}`;
 //! * the last duplicate key wins and keeps its first position.
 
+use crate::tool_calling::arguments::schema::types::{
+    LiteralTypes, SchemaType, categorize_type, collect_allowed_types,
+};
 use crate::tool_calling::arguments::{
     coerce_integral_number, is_integer_literal, normalize_decimal_spelling,
 };
@@ -227,8 +230,8 @@ impl JsonKeys {
 /// framed it. Under `{"type": "object", "anyOf": [{"type": "string"}, {"type":
 /// "object"}]}` the grammar's list contains `string`, so the slot was emitted as raw
 /// text and may legitimately hold an unfinished `{`; the conjunctive reading would
-/// claim it as JSON and wait forever. Private to the framing decision; the typing and
-/// coercion contract is unchanged.
+/// claim it as JSON and wait forever. Typing reuses this native declaration order
+/// for coercion preference; the shared resolver separately determines allowed types.
 fn framing_types(schema: &Value) -> Vec<String> {
     let Value::Object(map) = schema else {
         return Vec::new();
@@ -792,63 +795,31 @@ pub fn typed_parameters(parameters: &Value) -> Value {
 /// Typing only. How the native grammar FRAMED a slot (raw text or JSON) is decided by
 /// the reference's union rule in [`framing_types`], because the grammar that emitted the
 /// bytes used that rule; see [`JsonKeys`].
-pub fn schema_types(schema: &serde_json::Value) -> Vec<String> {
-    let serde_json::Value::Object(map) = schema else {
-        return Vec::new();
-    };
-    let declared: Option<Vec<String>> = match map.get("type") {
-        Some(serde_json::Value::String(t)) => Some(vec![t.clone()]),
-        Some(serde_json::Value::Array(list)) => Some(
-            list.iter()
-                .filter_map(|v| v.as_str())
-                .map(str::to_string)
-                .collect(),
-        ),
-        _ => None,
-    };
-    let mut branches: Option<Vec<String>> = None;
-    for union in ["anyOf", "oneOf"] {
-        if let Some(serde_json::Value::Array(choices)) = map.get(union) {
-            let mut union_types: Vec<String> = Vec::new();
-            for choice in choices {
-                let choice_types = schema_types(choice);
-                if choice_types.is_empty() {
-                    // An untyped branch admits every type.
-                    union_types = JSON_TYPES.iter().map(|t| t.to_string()).collect();
-                    break;
-                }
-                for t in choice_types {
-                    if !union_types.contains(&t) {
-                        union_types.push(t);
-                    }
-                }
-            }
-            branches = Some(match branches {
-                None => union_types,
-                Some(previous) => previous
-                    .into_iter()
-                    .filter(|t| union_types.contains(t))
-                    .collect(),
-            });
+pub fn schema_types(schema: &Value) -> Vec<String> {
+    effective_types(
+        schema,
+        collect_allowed_types(schema, schema, LiteralTypes::DeclaredFirst, &mut 4096).0,
+    )
+    .0
+}
+
+fn effective_types(schema: &Value, allowed: HashSet<SchemaType>) -> (Vec<String>, bool) {
+    let admits = |kind: &str| categorize_type(kind).is_some_and(|kind| allowed.contains(&kind));
+    let mut types = framing_types(schema);
+    types.retain(|kind| admits(kind));
+    let declared_integer = types
+        .iter()
+        .any(|kind| categorize_type(kind) == Some(SchemaType::Integer));
+    for kind in JSON_TYPES {
+        if admits(kind) && !types.iter().any(|existing| existing == kind) {
+            types.push(kind.to_string());
         }
     }
-    let mut types = match (declared, branches) {
-        (None, None) => Vec::new(),
-        (Some(d), None) => d,
-        (None, Some(b)) => b,
-        (Some(d), Some(b)) => {
-            let both: Vec<String> = d.iter().filter(|t| b.contains(t)).cloned().collect();
-            // A contradictory schema admits nothing; keep the explicit declaration.
-            if both.is_empty() { d } else { both }
-        }
-    };
-    let nullable = map
-        .get("nullable")
-        .is_some_and(|v| PyValue::from_json(v).is_truthy());
-    if nullable && !types.iter().any(|t| t == "null") {
-        types.push("null".to_string());
+    let admits_integer = allowed.contains(&SchemaType::Integer);
+    if !declared_integer && types.iter().any(|kind| kind == "number") {
+        types.retain(|kind| kind != "integer");
     }
-    types
+    (types, admits_integer)
 }
 
 fn json_type_names(value: &PyValue) -> &'static [&'static str] {
@@ -1002,33 +973,71 @@ pub(crate) fn recipient_admits_empty_arguments(tools: &[Tool], name: &str) -> Op
     Some(!required)
 }
 
+pub(crate) struct ParameterSchema {
+    schema: Value,
+    types: Vec<String>,
+    admits_integer: bool,
+}
+
+impl ParameterSchema {
+    fn new(root: &Value, schema: &Value) -> Self {
+        let prepared = typed_schema(schema, root, &BTreeSet::new());
+        let (allowed, constrained) =
+            collect_allowed_types(root, schema, LiteralTypes::DeclaredFirst, &mut 4096);
+        let allowed = if constrained {
+            allowed
+        } else {
+            collect_allowed_types(root, &prepared, LiteralTypes::DeclaredFirst, &mut 4096).0
+        };
+        let (types, admits_integer) = effective_types(&prepared, allowed);
+        Self {
+            admits_integer,
+            schema: prepared,
+            types,
+        }
+    }
+}
+
 /// The typed `properties` of tool `name`. The reference builds its name -> schema map
 /// in order, so the LAST definition wins; `None` for an unknown tool or a schema
 /// without an object `properties` map (every parameter then keeps its text).
-pub(crate) fn recipient_properties(tools: &[Tool], name: &str) -> Option<Map<String, Value>> {
+pub(crate) fn recipient_properties(
+    tools: &[Tool],
+    name: &str,
+) -> Option<std::collections::BTreeMap<String, ParameterSchema>> {
     let tool = tools.iter().rev().find(|tool| tool.name == name)?;
-    match typed_parameters(&tool.parameters).get("properties") {
-        Some(Value::Object(properties)) => Some(properties.clone()),
-        _ => None,
-    }
+    let properties = tool.parameters.get("properties")?.as_object()?;
+    Some(
+        properties
+            .iter()
+            .map(|(key, schema)| (key.clone(), ParameterSchema::new(&tool.parameters, schema)))
+            .collect(),
+    )
 }
 
 /// The typed value of one parameter: a schema `const`/`enum` naming the text keeps it a
 /// string, otherwise the declared types coerce it ([`coerce`]). The streaming emitter and
 /// the completed-body reading both go through here, so they can never disagree.
-pub(crate) fn typed_value(schema: Option<&Value>, raw: &str) -> PyValue {
-    if schema.is_some_and(|schema| string_literal_admits(schema, raw)) {
+pub(crate) fn typed_value(schema: Option<&ParameterSchema>, raw: &str) -> PyValue {
+    if schema.is_some_and(|schema| string_literal_admits(&schema.schema, raw)) {
         return PyValue::Str(raw.to_string());
     }
-    let types = schema.map(schema_types).unwrap_or_default();
+    let mut types = schema
+        .map(|schema| schema.types.clone())
+        .unwrap_or_default();
+    if schema.is_some_and(|schema| !schema.admits_integer)
+        && coerce_integral_number(raw.trim()).is_some()
+    {
+        types.retain(|kind| kind != "number");
+    }
     coerce(raw, &types)
 }
 
 /// Whether [`typed_value`] serves this parameter's text verbatim as a JSON string: no
 /// declared type, or only `string`. Such a value can stream before it is complete.
-pub(crate) fn verbatim_string(schema: Option<&Value>) -> bool {
+pub(crate) fn verbatim_string(schema: Option<&ParameterSchema>) -> bool {
     schema
-        .map(schema_types)
+        .map(|schema| schema.types.as_slice())
         .unwrap_or_default()
         .iter()
         .all(|t| t == "string")
@@ -1316,7 +1325,7 @@ mod tests {
         assert_eq!(list(&nullable_string), ["string", "null"]);
         // Typing intersects; framing does not.
         assert_eq!(schema_types(&sibling_union), ["object"]);
-        assert_eq!(schema_types(&conflict), ["integer"]);
+        assert!(schema_types(&conflict).is_empty());
 
         let parameters = json!({
             "type": "object",
@@ -1454,7 +1463,7 @@ mod tests {
             + &param("i", " 7 ");
         assert_eq!(
             arguments_json(&body, "t", &tools).unwrap(),
-            r#"{"a": "null", "b": "null", "c": "null", "d": null, "e": "null", "f": "null", "g": null, "h": 12345678901234567890123, "i": " 7 "}"#
+            r#"{"a": "null", "b": "null", "c": "null", "d": null, "e": "null", "f": "null", "g": null, "h": "12345678901234567890123", "i": " 7 "}"#
         );
     }
 
@@ -1614,7 +1623,8 @@ mod tests {
             ("3.0000000000000001", r#""3.0000000000000001""#),
         ] {
             assert_eq!(
-                super::typed_value(Some(&integer), raw).dumps(),
+                super::typed_value(Some(&super::ParameterSchema::new(&integer, &integer)), raw)
+                    .dumps(),
                 expected,
                 "{raw}"
             );
@@ -1624,7 +1634,11 @@ mod tests {
             (json!({"type": ["string", "integer"]}), r#""3.0""#),
             (json!({"type": "number"}), "3.0"),
         ] {
-            assert_eq!(super::typed_value(Some(&schema), "3.0").dumps(), expected);
+            assert_eq!(
+                super::typed_value(Some(&super::ParameterSchema::new(&schema, &schema)), "3.0")
+                    .dumps(),
+                expected
+            );
         }
     }
 

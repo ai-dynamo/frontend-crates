@@ -20,6 +20,15 @@
     ]
   },
   {
+    "name": "declared_integer_boolean_number_order",
+    "schema": {
+      "type": ["integer", "boolean", "number"]
+    },
+    "value": 1,
+    "raw": "1",
+    "invalid_raw": ["wrong"]
+  },
+  {
     "name": "declared_number",
     "schema": {
       "type": "number"
