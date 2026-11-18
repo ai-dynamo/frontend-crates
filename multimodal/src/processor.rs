@@ -44,6 +44,14 @@ pub enum Modality {
 /// Grows a variant per modality as families that need it are ported.
 #[non_exhaustive]
 pub enum DecodedMedia {
+    /// Owned, interleaved f32 PCM, in frame/channel order. `samples.len()`
+    /// must be divisible by `channels`; sample count metadata counts frames,
+    /// not scalar channel samples. No resampling or channel mixing is implied.
+    Audio {
+        samples: Vec<f32>,
+        sample_rate: u32,
+        channels: u16,
+    },
     /// HWC u8 RGB.
     Image {
         rgb: Vec<u8>,
@@ -76,6 +84,7 @@ impl DecodedMedia {
         match self {
             Self::Image { .. } | Self::ImageRgba { .. } => Modality::Image,
             Self::Video { .. } => Modality::Video,
+            Self::Audio { .. } => Modality::Audio,
         }
     }
 }
@@ -94,6 +103,7 @@ pub enum MediaMetadata {
         num_frames: u32,
     },
     Audio {
+        /// Source sample frames, before resampling, truncation or padding.
         num_samples: u64,
         sample_rate: u32,
     },
