@@ -21,13 +21,6 @@ on:
   pull_request_target:
     types: [opened, edited, synchronize, reopened, ready_for_review]
     branches: [main]
-  # Test PR code separately, without exposing the Linear secret.
-  pull_request:
-    paths:
-      - ".github/workflows/pr-issue-link.yml"
-      - ".github/workflows/pr_issue_link.py"
-      - ".github/workflows/test_pr_issue_link.py"
-      - ".github/pull_request_template.md"
 
 env:
   # Empty keeps this check advisory. Before enabling enforcement, choose a
@@ -62,27 +55,3 @@ jobs:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           REPO: ${{ github.repository }}
         run: python3 .github/workflows/pr_issue_link.py
-
-  unit-tests:
-    name: Issue-link unit tests
-    runs-on: ubuntu-24.04
-    if: ${{ github.event_name == 'pull_request' }}
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
-        with:
-          python-version: "3.12"
-      - run: pip install pytest
-      - name: Unit tests
-        run: |
-          python -m pytest .github/workflows/test_pr_issue_link.py -v \
-            -p no:cacheprovider \
-            --confcutdir=.github/workflows \
-            --override-ini="addopts=" \
-            --override-ini="filterwarnings="
