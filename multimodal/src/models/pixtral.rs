@@ -158,8 +158,13 @@ impl PixtralProcessor {
         ))
     }
 
-    /// Each `[IMG]` becomes its item's grid: `cols` feature positions per row,
-    /// then `[IMG_BREAK]`, with `[IMG_END]` closing the last row.
+    fn image_grid(&self, media: &MediaMetadata) -> Result<(u32, u32)> {
+        let MediaMetadata::Image { width, height } = *media else {
+            return Err(MmError::unsupported("pixtral supports only images"));
+        };
+        self.grid(width, height)
+    }
+
     fn expand(&self, input_ids: &[i32], grids: &[(u32, u32)]) -> Result<TokenLayout> {
         let image = self.spec.image_token_id;
         let mut layout = layout_by_placeholder(input_ids, image, &vec![0; grids.len()])?;
@@ -196,14 +201,9 @@ impl MmFamilyProcessor for PixtralProcessor {
     /// The prompt span `rows * (cols + 1)` that the HF processor call writes;
     /// `rows * cols` of them take embeddings.
     fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize> {
-        match media {
-            MediaMetadata::Image { width, height } => {
-                let (rows, cols) = self.grid(*width, *height)?;
-                usize::try_from(u64::from(rows) * (u64::from(cols) + 1))
-                    .map_err(|_| MmError::limit_exceeded("pixtral: token count exceeds usize"))
-            }
-            _ => Err(MmError::unsupported("pixtral supports only images")),
-        }
+        let (rows, cols) = self.image_grid(media)?;
+        usize::try_from(u64::from(rows) * (u64::from(cols) + 1))
+            .map_err(|_| MmError::limit_exceeded("pixtral: token count exceeds usize"))
     }
 
     fn layout_from_metadata(
@@ -213,10 +213,7 @@ impl MmFamilyProcessor for PixtralProcessor {
     ) -> Result<TokenLayout> {
         let grids = media
             .iter()
-            .map(|item| match item {
-                MediaMetadata::Image { width, height } => self.grid(*width, *height),
-                _ => Err(MmError::unsupported("pixtral supports only images")),
-            })
+            .map(|item| self.image_grid(item))
             .collect::<Result<Vec<_>>>()?;
         self.expand(input_ids, &grids)
     }

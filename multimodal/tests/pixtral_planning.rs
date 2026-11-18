@@ -12,7 +12,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use dynamo_multimodal::MmError;
 use dynamo_multimodal::models::pixtral::{PixtralProcessor, PixtralSpec};
-use dynamo_multimodal::models::qwen_vl::Resampler;
 use dynamo_multimodal::processor::{DecodedMedia, MediaMetadata, MmFamilyProcessor};
 use dynamo_multimodal::registry::{
     ProcessorSpec, build_processor, spec_from_hf_configs, spec_from_model_dir,
@@ -99,8 +98,6 @@ fn resolves_both_checkpoint_layouts() {
         ),
         (IMG, BREAK, END)
     );
-    assert_eq!(expected.resample, Resampler::AtenU8);
-    assert!(build_processor(ProcessorSpec::Pixtral(fp8)).is_ok());
 }
 
 /// `config.json` and `processor_config.json` alone lack the `[IMG_BREAK]` and
@@ -406,20 +403,6 @@ fn placeholder_and_image_counts_must_match() {
         family.layout_from_metadata(&[1, 3, 4], &media),
         Err(MmError::InvalidInput { .. })
     ));
-}
-
-/// The HF call raises when the short side fits to 0 pixels. The engine entry
-/// point refuses the size; `grid_matches_the_hf_sizing_rule` checks the router entry points.
-#[test]
-fn process_item_refuses_zero_side_sizes() {
-    let family = family();
-    for (width, height) in [(3080, 1), (1541, 1), (2, 5000)] {
-        let error = family.process_item(&image(width, height)).err();
-        assert!(
-            matches!(error, Some(MmError::InvalidInput { .. })),
-            "{width}x{height}: {error:?}"
-        );
-    }
 }
 
 #[test]

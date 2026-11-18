@@ -858,24 +858,10 @@ fn read_optional_json(dir: &std::path::Path, name: &str) -> Result<Option<Value>
     }
 }
 
-/// Nested `image_processor` knobs whose value must hold for the Rust
-/// arithmetic to match HF's. Without padding HF cannot batch images of
-/// different sizes, so `do_pad` stays on.
+/// Checked before [`PINNED`], whose other knobs Pixtral shares. Without
+/// padding HF cannot batch images of different sizes, so `do_pad` stays on.
 const PIXTRAL_PINNED: &[(&str, Predicate)] = &[
-    ("do_resize", |v| v.as_bool() == Some(true)),
-    ("do_rescale", |v| v.as_bool() == Some(true)),
-    ("do_normalize", |v| v.as_bool() == Some(true)),
-    ("do_convert_rgb", |v| v.as_bool() == Some(true)),
     ("do_pad", |v| v.as_bool() == Some(true)),
-    ("do_center_crop", |v| {
-        v.is_null() || v.as_bool() == Some(false)
-    }),
-    ("resample", |v| v.as_i64() == Some(3)),
-    ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
-    ("data_format", |v| v.as_str() == Some("channels_first")),
-    ("input_data_format", |v| {
-        v.is_null() || v.as_str() == Some("channels_first")
-    }),
     ("image_processor_type", |v| {
         matches!(
             v.as_str(),
@@ -884,17 +870,6 @@ const PIXTRAL_PINNED: &[(&str, Predicate)] = &[
             )
         )
     }),
-];
-
-/// Nested knobs that do not reach the output. `patch_size` is one of them:
-/// `PixtralProcessor` passes its own patch on every call.
-const PIXTRAL_INERT: &[&str] = &[
-    "patch_size",
-    "crop_size",
-    "default_to_square",
-    "disable_grouping",
-    "return_tensors",
-    "processor_class",
 ];
 
 /// `params.json` `vision_encoder` holds the `[IMG_BREAK]` and `[IMG_END]` ids,
@@ -973,10 +948,17 @@ fn resolve_pixtral(params: &Value, config: Option<&Value>, pre: &Value) -> Resul
 
     for (knob, value) in knobs {
         let knob = knob.as_str();
-        if matches!(knob, "size" | "image_mean" | "image_std") || PIXTRAL_INERT.contains(&knob) {
+        // `PixtralProcessor` passes its own `patch_size` on every call.
+        if matches!(knob, "size" | "image_mean" | "image_std" | "patch_size")
+            || INERT.contains(&knob)
+        {
             continue;
         }
-        match PIXTRAL_PINNED.iter().find(|(name, _)| *name == knob) {
+        match PIXTRAL_PINNED
+            .iter()
+            .chain(PINNED)
+            .find(|(name, _)| *name == knob)
+        {
             Some((_, honored)) if honored(value) => {}
             None if value.is_null() => {}
             _ => {

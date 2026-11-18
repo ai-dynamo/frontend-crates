@@ -8,17 +8,13 @@ sizing sweep."""
 import json
 import types
 
-import numpy as np
-import PIL
 import tokenizers
-import torch
-import torchvision
 import transformers
 from PIL import Image
 from transformers.image_utils import ChannelDimension
 from transformers.models.pixtral.image_processing_pixtral import get_resize_output_image_size
 
-from frameworks import hf
+from frameworks import hf, versions
 
 FILE = "mistral-large-4.json"
 TARGET = "hf"
@@ -257,11 +253,7 @@ def files(model_dir):
         "generator": "multimodal/tests/fixtures/mm_parity/generate.py --family pixtral",
         "model": MODEL,
         "revision": REVISION,
-        "transformers": transformers.__version__,
-        "torch": torch.__version__,
-        "torchvision": torchvision.__version__,
-        "pillow": PIL.__version__,
-        "numpy": np.__version__,
+        **versions(),
         "tokenizers": tokenizers.__version__,
     }
     head = {"provenance": provenance, "checkpoint": checkpoint(model_dir)}
