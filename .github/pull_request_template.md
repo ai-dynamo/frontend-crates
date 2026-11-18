@@ -8,6 +8,10 @@ For changes that affect parser behavior, use the [parser-specific template](http
 
 <!-- Explain the implementation and link the related issue when required. -->
 
+Link a GitHub issue (`Fixes #123` / `Part of #123`) or a Linear ticket
+(`Closes DIS-1234`; an issue ID in the branch name also counts).
+The PR Issue Link check is advisory while `BLOCKING_BRANCH` is empty.
+
 ## Bug Fix Evidence
 
 For bug fixes, complete all three subsections below with concrete input and before/after outputs.
