@@ -135,6 +135,10 @@ pub(crate) fn is_call_name_char(ch: char) -> bool {
     ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')
 }
 
+pub(crate) fn is_argument_key_char(ch: char) -> bool {
+    is_call_name_char(ch) || (!ch.is_ascii() && !ch.is_whitespace() && !ch.is_control())
+}
+
 pub fn is_call_prefix_boundary(input: &str, idx: usize) -> bool {
     idx == 0
         || input[..idx]
@@ -268,8 +272,7 @@ fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
     let start = cur.pos;
     while let Some(ch) = cur.rest().chars().next() {
         // Argument keys may contain Unicode, unlike the ASCII call-name grammar.
-        // Preserve the existing ASCII punctuation and reject whitespace/controls.
-        if is_call_name_char(ch) || (!ch.is_ascii() && !ch.is_whitespace() && !ch.is_control()) {
+        if is_argument_key_char(ch) {
             cur.pos += ch.len_utf8();
         } else {
             break;

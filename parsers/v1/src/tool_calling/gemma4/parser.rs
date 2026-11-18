@@ -567,7 +567,6 @@ fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
     let start = cur.pos;
     while let Some(ch) = cur.rest().chars().next() {
         // Argument keys may contain Unicode, unlike the ASCII call-name grammar.
-        // Preserve the existing ASCII punctuation and reject whitespace/controls.
         if ch.is_ascii_alphanumeric()
             || matches!(ch, '_' | '-' | '.')
             || (!ch.is_ascii() && !ch.is_whitespace() && !ch.is_control())

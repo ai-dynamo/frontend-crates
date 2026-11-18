@@ -207,6 +207,39 @@ fn unicode_argument_keys_preserve_the_entire_object_at_every_split() {
 }
 
 #[test]
+fn unicode_argument_keys_recover_after_an_unterminated_string() {
+    for key in ["city", "備考", "field_備考", "cafe\u{301}", "🔑"] {
+        let input = format!(
+            "<|tool_call>call:broken{{note:<|\"|>unterminated<|tool_call>call:get_weather{{{key}:<|\"|>NYC<|\"|>}}<tool_call|>"
+        );
+        for chunks in chunkings(&input) {
+            assert_adapters(
+                "gemma4",
+                &weather_tools(),
+                &chunks,
+                "",
+                &[("get_weather", serde_json::json!({key: "NYC"}))],
+            );
+        }
+    }
+}
+
+#[test]
+fn unicode_argument_keys_preserve_top_level_source_order() {
+    for key in ["city", "備考", "field_備考", "cafe\u{301}", "🔑"] {
+        let input = format!("<|tool_call>call:get_weather{{{key}:1,count:2}}<tool_call|>");
+        let expected = format!("{{\"{key}\":1,\"count\":2}}");
+        for chunks in chunkings(&input) {
+            let mut parser = create_tool_parser_for_family("gemma4", &weather_tools()).unwrap();
+            let output = drive_tool(parser.as_mut(), &chunks);
+            assert_eq!(output.normal_text, "");
+            assert_eq!(output.calls.len(), 1, "key={key:?}, chunks={chunks:?}");
+            assert_eq!(output.calls[0].arguments, expected, "chunks={chunks:?}");
+        }
+    }
+}
+
+#[test]
 fn invalid_argument_key_characters_keep_malformed_object_fallback() {
     for key in ["bad/key", "bad?key", "bad\u{2003}key", "bad\u{85}key"] {
         let input = format!("<|tool_call>call:get_weather{{{key}:true}}<tool_call|>");
