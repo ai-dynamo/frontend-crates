@@ -262,6 +262,27 @@ impl HuggingFaceTokenizer {
         );
         Ok(batch)
     }
+
+    /// Encode one input on the calling thread, appending its ids to `out`.
+    ///
+    /// [`PipelineTokenizer::encode`] is not used for a single input: it sends any input of
+    /// 16 KiB or more to a process-wide rayon pool sized to the machine. A frontend already
+    /// runs one request per thread, and waking pool threads costs several times the CPU of
+    /// the encode it splits, because a rayon worker sweeps every other worker's queue before
+    /// it sleeps again. `encode_into` is the pipeline's serial entry point and returns the
+    /// same ids.
+    fn encode_into(
+        &self,
+        pipeline: &PipelineTokenizer,
+        input: &str,
+        options: &EncodeOptions,
+        out: &mut Vec<PipelineToken>,
+    ) -> Result<()> {
+        pipeline
+            .encode_into(input, options, out)
+            .map_err(|err| Error::msg(format!("Error tokenizing input: {err}")))
+            .with_context(|| self.source.clone())
+    }
 }
 
 fn read_pipeline(config: &Value, source: &str) -> Result<PipelineTokenizer> {
@@ -383,9 +404,10 @@ pub fn merge_special_tokens_from_config(config: &mut Value, model_dir: &Path) {
 impl Encoder for HuggingFaceTokenizer {
     fn encode(&self, input: &str) -> Result<Encoding> {
         let options = self.encode_options(self.options.add_special_tokens);
-        let batch = self.encode_with(&self.pipeline, input, 1, &options)?;
+        let mut ids = Vec::with_capacity(input.len() / 4);
+        self.encode_into(&self.pipeline, input, &options, &mut ids)?;
         Ok(Encoding::Sp(
-            PipelineToken::cast_slice(batch[0].ids()).to_vec(),
+            ids.into_iter().map(PipelineToken::id).collect(),
         ))
     }
 
@@ -408,15 +430,14 @@ impl Encoder for HuggingFaceTokenizer {
             } else {
                 ordinary
             };
-            let batch = self.encode_with(pipeline, segment.text, 1, &options)?;
-            let segment_ids = batch[0].ids();
+            let segment_start = ids.len();
+            self.encode_into(pipeline, segment.text, &options, &mut ids)?;
             if !segment.allow_special {
                 crate::reject_control_ids_in_ordinary_segment(
-                    PipelineToken::cast_slice(segment_ids),
+                    PipelineToken::cast_slice(&ids[segment_start..]),
                     &self.added_ids,
                 )?;
             }
-            ids.extend_from_slice(segment_ids);
         }
         if self.options.add_special_tokens {
             let processed = self
@@ -944,6 +965,50 @@ mod segmented_tests {
             );
         }
     }
+    /// A single input is encoded on the calling thread; a batch goes through the pipeline's
+    /// thread pool once it is large enough. Both must give the same ids for an input that the
+    /// pool would split at its special token.
+    #[test]
+    fn single_input_encode_matches_the_pipelines_batch_path() {
+        let mut vocab = serde_json::json!({"<unk>":0,"<|call|>":1,"<bos>":2});
+        for ch in "<|cal>".chars() {
+            let id = vocab.as_object().unwrap().len();
+            vocab[ch.to_string()] = serde_json::json!(id);
+        }
+        let config = serde_json::json!({
+            "version":"1.0", "truncation":null, "padding":null,
+            "normalizer":null, "pre_tokenizer":null, "decoder":{"type":"Fuse"},
+            "added_tokens":[{"id":1,"content":"<|call|>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false},
+                {"id":2,"content":"<bos>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false}],
+            "post_processor":{"type":"TemplateProcessing","single":[{"SpecialToken":{"id":"<bos>","type_id":0}},{"Sequence":{"id":"A","type_id":0}}],
+                "pair":[{"Sequence":{"id":"A","type_id":0}},{"Sequence":{"id":"B","type_id":1}}],"special_tokens":{"<bos>":{"id":"<bos>","ids":[2],"tokens":["<bos>"]}}},
+            "model":{"type":"BPE","vocab":vocab,"merges":[],"unk_token":"<unk>"}
+        });
+        // Two stretches of text, each over the pool's 8 KiB task size, around one special token.
+        let input = format!("{}<|call|>{}", "call".repeat(3_000), "lac".repeat(3_000));
+        assert!(input.len() > 16 * 1024);
+        for add_special_tokens in [false, true] {
+            let tokenizer = HuggingFaceTokenizer::from_json(config.clone())
+                .unwrap()
+                .with_options(TokenizerOptions { add_special_tokens });
+            let single = tokenizer.encode(&input).unwrap();
+            let batch = tokenizer.encode_batch(&[input.as_str()]).unwrap();
+            assert_eq!(single.token_ids(), batch[0].token_ids());
+            let segmented = tokenizer
+                .encode_segments(&[EncodeSegment::control(&input)])
+                .unwrap();
+            assert_eq!(single.token_ids(), segmented.token_ids());
+
+            let ids = single.token_ids();
+            assert_eq!(ids.len(), 21_001 + usize::from(add_special_tokens));
+            assert_eq!(ids.iter().filter(|id| **id == 1).count(), 1);
+            assert_eq!(
+                ids.iter().filter(|id| **id == 2).count(),
+                usize::from(add_special_tokens)
+            );
+        }
+    }
+
     #[test]
     fn segmented_hf_encodes_non_special_added_tokens_as_text() {
         // HF's `encode_special_tokens` skips only `special: true` entries;
