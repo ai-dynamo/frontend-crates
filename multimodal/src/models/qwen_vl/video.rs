@@ -29,6 +29,11 @@ impl QwenVlProcessor {
             ));
         };
         let num_frames = frame_indices.len();
+        if num_frames == 0 {
+            return Err(MmError::invalid_input(
+                "qwen_vl: video has no sampled frames",
+            ));
+        }
         let frame_len = h.checked_mul(w).and_then(|n| n.checked_mul(3));
         if frame_len.and_then(|n| n.checked_mul(num_frames)) != Some(rgb.len()) {
             return Err(MmError::invalid_input(
@@ -764,6 +769,22 @@ mod tests {
         spec.video.as_mut().unwrap().pre_resized = true;
         assert_eq!(grid(&spec, 32).unwrap(), [1, 2, 2]);
         assert!(matches!(grid(&spec, 40), Err(MmError::InvalidInput { .. })));
+
+        let empty = DecodedMedia::Video {
+            rgb: vec![],
+            height: 32,
+            width: 32,
+            frame_indices: vec![],
+            fps: 30.0,
+        };
+        for pre_resized in [false, true] {
+            spec.video.as_mut().unwrap().pre_resized = pre_resized;
+            let proc = QwenVlProcessor::new(spec.clone()).unwrap();
+            assert!(matches!(
+                proc.process_item(&empty),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
     }
 
     /// A video layout needs the host's text encoder; items must come in
