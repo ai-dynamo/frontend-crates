@@ -500,10 +500,7 @@ impl<'a> Cursor<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        let bytes = self.src.as_bytes();
-        while self.pos < bytes.len() && bytes[self.pos].is_ascii_whitespace() {
-            self.pos += 1;
-        }
+        self.pos += self.rest().len() - self.rest().trim_start().len();
     }
 
     fn peek_byte(&self) -> Option<u8> {
@@ -563,23 +560,31 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
     Ok(Value::Object(map))
 }
 
+// Bare keys end at a same-line colon and cannot contain Gemma framing tokens.
+// Callers trim surrounding Unicode whitespace and preserve all interior text.
+fn argument_key_end(input: &str) -> Option<usize> {
+    let end = input.find([':', '\n', '\r'])?;
+    let key = &input[..end];
+    (input.as_bytes()[end] == b':'
+        && !key.trim().is_empty()
+        && ![
+            TOOL_CALL_START,
+            TOOL_CALL_END,
+            STRING_DELIM,
+            "<|channel>",
+            "<channel|>",
+        ]
+        .iter()
+        .any(|marker| key.contains(marker)))
+    .then_some(end)
+}
+
 fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
-    let start = cur.pos;
-    while let Some(ch) = cur.rest().chars().next() {
-        // Argument keys may contain Unicode, unlike the ASCII call-name grammar.
-        if ch.is_ascii_alphanumeric()
-            || matches!(ch, '_' | '-' | '.')
-            || (!ch.is_ascii() && !ch.is_whitespace() && !ch.is_control())
-        {
-            cur.pos += ch.len_utf8();
-        } else {
-            break;
-        }
-    }
-    if cur.pos == start {
-        anyhow::bail!("expected bare key at offset {}", start);
-    }
-    Ok(cur.src[start..cur.pos].to_string())
+    let end = argument_key_end(cur.rest())
+        .ok_or_else(|| anyhow::anyhow!("expected bare key at offset {}", cur.pos))?;
+    let key = cur.rest()[..end].trim().to_owned();
+    cur.pos += end;
+    Ok(key)
 }
 
 /// Consume `keyword` ASCII-case-insensitively, only when the next byte is not
@@ -734,6 +739,15 @@ mod tests {
             "𐐀",
             "🔑",
             "field_日本語.v2-1",
+            "$ref",
+            "@type",
+            "a/b",
+            "bad/key",
+            "user name",
+            "備考　欄",
+            "bad?key",
+            "bad\u{2003}key",
+            "bad\u{85}key",
         ] {
             let input = format!(
                 "<|tool_call>call:update_customer_remarks{{custom_fields:{{{key}:<|\"|>Prefers email contact<|\"|>}},count:2,items:[{{{key}:true}}]}}<tool_call|>"
@@ -753,8 +767,30 @@ mod tests {
     }
 
     #[test]
-    fn invalid_argument_key_characters_keep_malformed_object_fallback() {
-        for key in ["bad/key", "bad?key", "bad\u{2003}key", "bad\u{85}key"] {
+    fn surrounding_unicode_whitespace_is_trimmed_from_argument_keys() {
+        let input = "<|tool_call>call:f{\u{3000}custom_fields\u{2003}:{\u{3000}備考\u{2003}:<|\"|>NYC<|\"|>},\u{3000}count\u{3000}:2\u{3000}}<tool_call|>";
+        assert_eq!(
+            extract_first(input).1,
+            serde_json::json!({"custom_fields": {"備考": "NYC"}, "count": 2})
+        );
+    }
+
+    #[test]
+    fn argument_keys_cannot_consume_framing_tokens() {
+        for marker in [
+            TOOL_CALL_START,
+            TOOL_CALL_END,
+            STRING_DELIM,
+            "<|channel>",
+            "<channel|>",
+        ] {
+            assert!(parse_args_object(&format!("bad{marker}key:true")).is_err());
+        }
+    }
+
+    #[test]
+    fn empty_or_multiline_argument_keys_keep_malformed_object_fallback() {
+        for key in ["", " \t\u{3000}", "bad\nkey", "bad\rkey"] {
             let input = format!("<|tool_call>call:f{{{key}:true}}<tool_call|>");
             assert_eq!(
                 extract_first(&input).1,

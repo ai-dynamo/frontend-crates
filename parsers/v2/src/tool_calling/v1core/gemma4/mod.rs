@@ -6,6 +6,6 @@
 mod parser;
 
 pub(crate) use parser::{
-    has_recoverable_tool_call_boundaries_gemma4, is_argument_key_char, is_call_name_char,
+    argument_key_end, has_recoverable_tool_call_boundaries_gemma4, is_call_name_char,
 };
 pub use parser::{is_call_prefix_boundary, parse_one_tool_call_gemma4};

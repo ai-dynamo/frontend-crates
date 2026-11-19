@@ -168,6 +168,15 @@ fn unicode_argument_keys_preserve_the_entire_object_at_every_split() {
         "𐐀",
         "🔑",
         "field_日本語.v2-1",
+        "$ref",
+        "@type",
+        "a/b",
+        "bad/key",
+        "user name",
+        "備考　欄",
+        "bad?key",
+        "bad\u{2003}key",
+        "bad\u{85}key",
     ] {
         for strict in [false, true] {
             let tools = [Tool {
@@ -208,7 +217,18 @@ fn unicode_argument_keys_preserve_the_entire_object_at_every_split() {
 
 #[test]
 fn unicode_argument_keys_recover_after_an_unterminated_string() {
-    for key in ["city", "備考", "field_備考", "cafe\u{301}", "🔑"] {
+    for key in [
+        "city",
+        "備考",
+        "field_備考",
+        "cafe\u{301}",
+        "🔑",
+        "$ref",
+        "@type",
+        "a/b",
+        "user name",
+        "備考　欄",
+    ] {
         let input = format!(
             "<|tool_call>call:broken{{note:<|\"|>unterminated<|tool_call>call:get_weather{{{key}:<|\"|>NYC<|\"|>}}<tool_call|>"
         );
@@ -226,7 +246,18 @@ fn unicode_argument_keys_recover_after_an_unterminated_string() {
 
 #[test]
 fn unicode_argument_keys_preserve_top_level_source_order() {
-    for key in ["city", "備考", "field_備考", "cafe\u{301}", "🔑"] {
+    for key in [
+        "city",
+        "備考",
+        "field_備考",
+        "cafe\u{301}",
+        "🔑",
+        "$ref",
+        "@type",
+        "a/b",
+        "user name",
+        "備考　欄",
+    ] {
         let input = format!("<|tool_call>call:get_weather{{{key}:1,count:2}}<tool_call|>");
         let expected = format!("{{\"{key}\":1,\"count\":2}}");
         for chunks in chunkings(&input) {
@@ -240,8 +271,31 @@ fn unicode_argument_keys_preserve_top_level_source_order() {
 }
 
 #[test]
-fn invalid_argument_key_characters_keep_malformed_object_fallback() {
-    for key in ["bad/key", "bad?key", "bad\u{2003}key", "bad\u{85}key"] {
+fn surrounding_unicode_whitespace_is_trimmed_from_argument_keys() {
+    let input = "<|tool_call>call:get_weather{\u{3000}custom_fields\u{2003}:{\u{3000}備考\u{2003}:<|\"|>NYC<|\"|>},\u{3000}count\u{3000}:2\u{3000}}<tool_call|>";
+    for chunks in chunkings(input) {
+        assert_adapters(
+            "gemma4",
+            &weather_tools(),
+            &chunks,
+            "",
+            &[(
+                "get_weather",
+                serde_json::json!({"custom_fields": {"備考": "NYC"}, "count": 2}),
+            )],
+        );
+        let mut parser = create_tool_parser_for_family("gemma4", &weather_tools()).unwrap();
+        let output = drive_tool(parser.as_mut(), &chunks);
+        assert_eq!(
+            output.calls[0].arguments,
+            "{\"custom_fields\":{\"備考\":\"NYC\"},\"count\":2}"
+        );
+    }
+}
+
+#[test]
+fn empty_or_multiline_argument_keys_keep_malformed_object_fallback() {
+    for key in ["", " \t\u{3000}", "bad\nkey", "bad\rkey"] {
         let input = format!("<|tool_call>call:get_weather{{{key}:true}}<tool_call|>");
         for chunks in chunkings(&input) {
             assert_adapters(

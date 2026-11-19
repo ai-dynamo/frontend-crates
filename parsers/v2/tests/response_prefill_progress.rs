@@ -314,10 +314,20 @@ fn response_prefill_boundary_owned_native_body_stays_outside_guided_payload() {
 fn response_prefill_native_string_json_is_not_a_guided_call() {
     // Corpus initialization cannot choose all three public invalid-payload policies.
     let payload = r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#;
-    for (prefix, key) in ["", "{}"]
-        .into_iter()
-        .flat_map(|prefix| ["x", "備考", "field_備考"].map(move |key| (prefix, key)))
-    {
+    for (prefix, key) in ["", "{}"].into_iter().flat_map(|prefix| {
+        [
+            "x",
+            "備考",
+            "field_備考",
+            "$ref",
+            "@type",
+            "a/b",
+            "user name",
+            "備考　欄",
+            "　備考　",
+        ]
+        .map(move |key| (prefix, key))
+    }) {
         let native = format!(
             r#"<|tool_call>call:f{{{key}:<|"|>[{{"name":"get_weather","arguments":{{"city":"Rome"}}}}]<|"|>}}<tool_call|>"#
         );
