@@ -364,20 +364,6 @@ mod tests {
         }
     }
 
-    /// Parser-level invariant: the json-family parser is byte-stable — it
-    /// doesn't see `finish_reason` and produces the same output regardless
-    /// of the upstream stream-end reason. Real PIPELINE.finish_reason coverage (stop /
-    /// tool_calls / length mapping) lives in
-    /// `lib/llm/tests/test_streaming_tool_parsers.rs` and belongs in the
-    /// cross-parser finish_reason mapping work-item (tracked separately).
-    #[test]
-    fn test_nemotron_deci_parser_output_independent_of_upstream_finish() {
-        let config = nemotron_deci_config();
-        let input = r#"<TOOLCALL>[{"name":"get_weather","arguments":{"city":"NYC"}}]</TOOLCALL>"#;
-        let (calls, _) = try_tool_call_parse_json(input, &config, None).unwrap();
-        assert_eq!(calls.len(), 1);
-    }
-
     /// TOOLCALLING.batch.6 — empty args. A no-arg call (`{}`) must still be returned
     /// with the function name intact.
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.6.a in tests/parity/toolcalling/fixtures/nemotron_deci/TOOLCALLING.batch.6.yaml.

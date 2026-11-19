@@ -1102,37 +1102,6 @@ mod tests {
         );
     }
 
-    /// Parser-level invariant: the kimi_k2 parser does NOT filter by
-    /// `tool_choice` — it returns every well-formed call it sees, and the
-    /// jail / response builder above this layer is responsible for filtering
-    /// per `tool_choice=named`/`required`/`none`. This test exists to
-    /// catch accidental in-parser filtering. Real FRONTEND.tool_choice coverage lives at
-    /// the integration layer (`lib/llm/tests/tool_choice.rs`).
-    #[test]
-    fn test_parser_does_not_filter_by_tool_choice() {
-        let config = default_config();
-        let input = r#"<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_call_begin|>functions.get_time:1<|tool_call_argument_begin|>{"timezone":"EST"}<|tool_call_end|><|tool_calls_section_end|>"#;
-        let (calls, _) = try_tool_call_parse_kimi_k2(input, &config, None).unwrap();
-        // Parser returns BOTH calls; tool_choice="get_weather" filtering would
-        // happen above this layer. Pin the parser-level invariant.
-        assert_eq!(calls.len(), 2);
-    }
-
-    /// Parser-level invariant: the kimi_k2 parser is byte-stable — it doesn't
-    /// see `finish_reason` and produces the same output for any upstream
-    /// stream-end reason. Real PIPELINE.finish_reason coverage (stop / tool_calls / length
-    /// mapping) lives in `lib/llm/tests/test_streaming_tool_parsers.rs` and
-    /// belongs in cross-parser finish_reason mapping work-item (tracked separately).
-    #[test]
-    fn test_parser_output_independent_of_upstream_finish() {
-        let config = default_config();
-        // Same payload, two "logical" finish_reasons (stop vs length truncation):
-        // the parser sees only the bytes, so behavior must be identical.
-        let stop_input = r#"<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>"#;
-        let (calls_stop, _) = try_tool_call_parse_kimi_k2(stop_input, &config, None).unwrap();
-        assert_eq!(calls_stop.len(), 1);
-    }
-
     /// `TOOLCALLING.batch.9` — empty / null content variants. Empty section already
     /// covered by `test_parse_empty_tool_section`; this pins the
     /// truly-empty (zero bytes) and null-ish ("\n", whitespace-only) inputs.

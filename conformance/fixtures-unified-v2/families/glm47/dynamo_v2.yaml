@@ -1,11 +1,15 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"7f0cfd713af55347460554f83d42c452acb27384f64a4e28c96a773f10fca28c","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"b629a7e5931e82e8d570fad7a18d0282bd33727517020ab883433888b4894e45","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_883f78c28b7d2088
+  origin: origin_f457b65d31427dcd
 origins:
+  origin_f457b65d31427dcd:
+    crate_version: 0.10.7
+    source_sha256: 39a40d77e46a561e8264e75b6fa9cf6bf79051240c29277de7c19890aeaa642e
+    git_commit: e67a5509193bbc79a8fdf4abf86d51d11b5db1eb
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -15,6 +19,10 @@ producers:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_883f78c28b7d2088
+  producer_aad5f6f536370a6c:
+    captured_with:
+      dynamo_v2: 0.10.7
+    capture_origin: origin_f457b65d31427dcd
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
@@ -22,11 +30,12 @@ contexts:
       parser_path: unified
 record_defaults:
   member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml
-  producer: producer_446828e67b23fad3
+  producer: producer_aad5f6f536370a6c
   context: context_cdf0b3c0134ec96f
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_default
+    producer: producer_446828e67b23fad3
     request: 8ec0fc62d4f0aed90c0573c4826e5970671355dd3a8be2b49f076ab0b1ece4d4
     output:
       assembled:
@@ -46,6 +55,7 @@ records:
       - expected: []
   UNIFIED.40-native_raw_string_before_reasoning_closer:
     case_key: UNIFIED.40-native_raw_string_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: da632a1ae3342d8ceb8f07bed5f7198499052ae06dc11e23328809293ef07fad
     output:
       assembled:
@@ -69,6 +79,7 @@ records:
           text: .
   UNIFIED.8-native_quoted_complete_call_default:
     case_key: UNIFIED.8-native_quoted_complete_call_default
+    producer: producer_446828e67b23fad3
     request: 8354fe38c4dde1367ffdf0d3f696665a52406b23708cd2b372007c37f273d8fc
     output:
       assembled:
@@ -96,6 +107,7 @@ records:
           text: .
   adjacent_calls_partial_header:
     case_key: UNIFIED.2-adjacent_calls_partial_header
+    producer: producer_446828e67b23fad3
     request: 4f053eeac46e11a87197be4e4c11eb54fd19b9b11b1ba1881ecce5e73e176ff2
     output:
       assembled:
@@ -136,11 +148,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: record
-          arguments: '{"value":["é \\\" </atem:parameter>"]}'
+          arguments: '{"value":["é \\\" </atem:parameter>"]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_json_null:
@@ -159,11 +175,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":null}'
+          arguments: '{"city":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_json_null_anyof:
@@ -182,11 +202,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":null}'
+          arguments: '{"city":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_json_null_const:
@@ -205,11 +229,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":null}'
+          arguments: '{"city":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_json_null_nullable:
@@ -228,11 +256,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":null}'
+          arguments: '{"city":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_json_null_oneof:
@@ -251,11 +283,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":null}'
+          arguments: '{"city":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_json_null_ref:
@@ -274,11 +310,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":null}'
+          arguments: '{"city":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_marker_in_string:
@@ -295,15 +335,27 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: 'git log '
+          complete: false
       - expected: []
       - expected: []
       - expected:
         - kind: tool_call
-          name: run
-          arguments: '{"cmd":"git log </tool_call> --oneline"}'
+          name: null
+          arguments: </tool_call> --oneline"
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_null_mixed_labels:
@@ -322,14 +374,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: set_labels
+          arguments: '{"label":null'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -337,8 +386,31 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: set_labels
-          arguments: '{"label":null,"note":null,"literal":"null"}'
+          name: null
+          arguments: ',"note":null'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"literal":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: 'null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_const_decimal:
@@ -357,11 +429,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_const_exponent:
@@ -380,11 +456,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_enum_decimal:
@@ -403,11 +483,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_enum_exponent:
@@ -426,11 +510,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_fraction_fallback:
@@ -449,11 +537,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":"42.5"}'
+          arguments: '{"value":"42.5"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_fraction_near_integer:
@@ -472,11 +564,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":"42.0000000000000001"}'
+          arguments: '{"value":"42.0000000000000001"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_fraction_underflow:
@@ -495,11 +591,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":"1e-400"}'
+          arguments: '{"value":"1e-400"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_large_decimal:
@@ -518,11 +618,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":9007199254740993}'
+          arguments: '{"value":9007199254740993'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_large_exponent:
@@ -541,11 +645,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":9007199254740993}'
+          arguments: '{"value":9007199254740993'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_negative:
@@ -564,11 +672,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":-42}'
+          arguments: '{"value":-42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_negative_exponent:
@@ -587,11 +699,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_14_zero_underflow:
@@ -610,11 +726,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":0}'
+          arguments: '{"value":0'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_exponent:
@@ -633,11 +753,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":9.0071992547409925e15}'
+          arguments: '{"value":9.0071992547409925e15'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_negative:
@@ -656,11 +780,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":-9007199254740992.5}'
+          arguments: '{"value":-9007199254740992.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_ordinary:
@@ -679,11 +807,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":42.5}'
+          arguments: '{"value":42.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_quarter:
@@ -702,11 +834,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":9007199254740993.25}'
+          arguments: '{"value":9007199254740993.25'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_round_down:
@@ -725,11 +861,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":9007199254740992.5}'
+          arguments: '{"value":9007199254740992.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_round_up:
@@ -748,11 +888,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":9007199254740993.1}'
+          arguments: '{"value":9007199254740993.1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_15_small:
@@ -771,11 +915,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"value":0.10000000000000000001}'
+          arguments: '{"value":0.10000000000000000001'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_nested_exact:
@@ -794,8 +942,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: inspect
+          arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400}'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -803,12 +954,18 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: inspect
-          arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+          name: null
+          arguments: ',"values":[9007199254740993,-9007199254740993]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_numeric_overflow_siblings_finite:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
+    producer: producer_446828e67b23fad3
     request: c80abbd6e796c9990767e62ee14e41ca531564e56ede9a598ef8ceb3db730cd9
     output:
       assembled:
@@ -824,6 +981,7 @@ records:
       - expected: []
   arg_numeric_overflow_siblings_negative:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
+    producer: producer_446828e67b23fad3
     request: e5867c16302a137ae74fc8d34d4d96483937890d8eedd5dab07773f03866400b
     output:
       assembled:
@@ -839,6 +997,7 @@ records:
       - expected: []
   arg_numeric_overflow_siblings_positive:
     case_key: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
+    producer: producer_446828e67b23fad3
     request: 2bb5954210567ce4f5cc95ce00d38cefdbc45506643e29b1b42202306071e160
     output:
       assembled:
@@ -870,11 +1029,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: record
-          arguments: '{"value":{"s":"</atem:parameter>"}}'
+          arguments: '{"value":{"s":"</atem:parameter>"}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_const:
@@ -893,11 +1056,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_enum:
@@ -914,13 +1081,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: 'null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_ref:
@@ -939,11 +1118,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_sibling_anyof:
@@ -962,11 +1145,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_sibling_oneof:
@@ -985,11 +1172,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_union:
@@ -1008,11 +1199,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_string_null_untyped_branch:
@@ -1031,11 +1226,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   arg_unicode:
@@ -1052,13 +1251,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"São Paulo 東京"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: São Paulo 東京
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   blank_framing_after_reasoning:
@@ -1099,13 +1310,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -1115,6 +1338,7 @@ records:
       - expected: []
   blank_framing_between_calls_single_chunk:
     case_key: UNIFIED.8-blank_framing_between_calls_single_chunk
+    producer: producer_446828e67b23fad3
     request: ebcf626b05d3ab1bfa8881337776d11bf2ccc06e128c825ed9b62e679f390451
     output:
       assembled:
@@ -1188,13 +1412,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -1231,13 +1467,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -1274,13 +1522,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -1290,6 +1550,7 @@ records:
       - expected: []
   blank_output_without_call:
     case_key: UNIFIED.3-blank_output_without_call
+    producer: producer_446828e67b23fad3
     request: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
     output:
       assembled:
@@ -1308,6 +1569,7 @@ records:
       - expected: []
   closed_command_quote_before_reasoning_closer:
     case_key: UNIFIED.40-closed_command_quote_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: 4c4d56f0ed35b32a61314759ccc935fa3423b2d0b484117ebb5c35e894dbe4fc
     output:
       assembled:
@@ -1338,8 +1600,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"amount":21.5'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -1347,12 +1612,18 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"amount":21.5,"retries":37}'
+          name: null
+          arguments: ',"retries":37'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   content_then_reason:
     case_key: UNIFIED.11-content_then_reason
+    producer: producer_446828e67b23fad3
     request: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
     output:
       assembled:
@@ -1407,17 +1678,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   decade_apostrophe_before_reasoning_closer:
     case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: a9e8f53fa894d198aa56725ba3bc7dba4d004295b613d7ad03c4fe47faadc37e
     output:
       assembled:
@@ -1434,6 +1718,7 @@ records:
           text: 'Yes'
   decade_apostrophe_before_reasoning_closer_leading_apostrophe:
     case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+    producer: producer_446828e67b23fad3
     request: 0a0d9446e430656f4bef4fad97910011bb15caae9599bd82fc2b963d886849db
     output:
       assembled:
@@ -1452,6 +1737,7 @@ records:
           text: ''''
   decade_apostrophe_before_reasoning_closer_mixed_quotes:
     case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+    producer: producer_446828e67b23fad3
     request: 86932f70a0a02c3a6c5d04ff7076c1ffb9f8926818718ff5137894d25e86a7bc
     output:
       assembled:
@@ -1482,25 +1768,62 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ' '
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: <think>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: quoted
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: </think>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ' '
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: <tool_call>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ' '
+          complete: false
       - expected: []
       - expected: []
       - expected:
         - kind: tool_call
-          name: f
-          arguments: '{"x":" <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "}'
+          name: null
+          arguments: </tool_call> &amp; \"x\"\\\n "
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   dotted_name_minimal:
     case_key: UNIFIED.1-dotted_name_minimal
+    producer: producer_446828e67b23fad3
     request: 446323d014299bace36cebdd9e895c3540c039768549bdb33c78dc2a55527ec7
     output:
       assembled:
@@ -1530,13 +1853,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: my-tool.v2
-          arguments: '{"location":"Beijing"}'
+          arguments: '{"location":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Beijing
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   dotted_name_multiple_segments:
@@ -1553,13 +1888,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: server.tools.weather
-          arguments: '{"location":"Beijing"}'
+          arguments: '{"location":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Beijing
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   dotted_name_shared_prefix:
@@ -1579,17 +1926,26 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: server.weather
-          arguments: '{"location":"Beijing"}'
+          arguments: '{"location":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Beijing
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
-      - expected: []
-      - expected: []
-      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1598,11 +1954,27 @@ records:
       - expected:
         - kind: tool_call
           name: server.time
-          arguments: '{"timezone":"Asia/Shanghai"}'
+          arguments: '{"timezone":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Asia/Shanghai
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   empty_args:
     case_key: UNIFIED.6-empty_args
+    producer: producer_446828e67b23fad3
     request: b82ccf3696eca98e17f0a04afb91a32ca9278997dd4da81c6a45174f7baa26b4
     output:
       assembled:
@@ -1620,6 +1992,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    producer: producer_446828e67b23fad3
     request: 9c54c5a5b6d5a7ab55549dbca23802a6358961be93971fce6894fd218f4e9fd8
     output:
       assembled:
@@ -1647,10 +2020,16 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: 'before '
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -1658,8 +2037,14 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: run
-          arguments: '{"cmd":"before </tool_call><tool_call>get_weather</tool_call> after"}'
+          name: null
+          arguments: </tool_call><tool_call>get_weather</tool_call> after"
+          complete: false
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
   glm47_reference_type_intersection:
     case_key: UNIFIED.glm5-reference_type_intersection
@@ -1677,8 +2062,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"payload":"{\"x\":1}"'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -1686,8 +2074,13 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"payload":"{\"x\":1}","count":42}'
+          name: null
+          arguments: ',"count":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   glm_ref_encoded_targets:
@@ -1706,14 +2099,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"space":42'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -1721,8 +2111,23 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"space":42,"utf8_plus":42,"pointer":42}'
+          name: null
+          arguments: ',"utf8_plus":42'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"pointer":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   glm_ref_json_looking_strings:
@@ -1741,20 +2146,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"object_text":"{\"x\":1}"'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -1762,8 +2158,41 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}'
+          name: null
+          arguments: ',"array_text":"[1,2]"'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"quoted_text":"\"hello\""'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"inline_text":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '{\"x\":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   glm_ref_object:
@@ -1782,11 +2211,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: capture_payload
-          arguments: '{"payload":{"x":1}}'
+          arguments: '{"payload":{"x":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   glm_ref_scalar_types:
@@ -1805,20 +2238,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count":42'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -1826,12 +2250,38 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
+          name: null
+          arguments: ',"ratio":3.5'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"flag":true'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"narrowed":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   gpt_oss_multiple_unknown_and_empty_tools:
     case_key: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    producer: producer_446828e67b23fad3
     request: 0c791eae45f7d5976e07d4db5216d0e69cdc9b8af2609a1a27a65a3847341768
     output:
       assembled:
@@ -1865,6 +2315,7 @@ records:
       - expected: []
   gpt_oss_quoted_call_header_then_visible_prose:
     case_key: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    producer: producer_446828e67b23fad3
     request: 0d3febd2c7adb86915def552c6bc681d49c69c04885d03e82d2d0f002fa6f226
     output:
       assembled:
@@ -1890,6 +2341,7 @@ records:
           text: trailing
   guided_json_after_reasoning:
     case_key: UNIFIED.30-guided_json_after_reasoning
+    producer: producer_446828e67b23fad3
     request: 9348dd38350a4606e62d922ab84c2d0e4771c2274c64cd683bc8dd3b7465d48b
     output:
       assembled:
@@ -1912,6 +2364,7 @@ records:
       - expected: []
   guided_json_array_argument:
     case_key: UNIFIED.30-guided_json_array_argument
+    producer: producer_446828e67b23fad3
     request: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
     output:
       assembled:
@@ -1927,6 +2380,7 @@ records:
       - expected: []
   guided_json_bare_tool_header_recovers_inside_a_thought:
     case_key: UNIFIED.34-guided_json_bare_tool_header_recovers_inside_a_thought
+    producer: producer_446828e67b23fad3
     request: 705af94c779f63eee3efaf774805b98b81970968e9b0a622bc8c7c96591c8402
     output:
       assembled:
@@ -1949,6 +2403,7 @@ records:
       - expected: []
   guided_json_escaped_string_args:
     case_key: UNIFIED.30-guided_json_escaped_string_args
+    producer: producer_446828e67b23fad3
     request: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
     output:
       assembled:
@@ -1964,6 +2419,7 @@ records:
       - expected: []
   guided_json_gt_in_argument_bare_opener:
     case_key: UNIFIED.30-guided_json_gt_in_argument_bare_opener
+    producer: producer_446828e67b23fad3
     request: c51da4ae9ebcdbd8ac3336d26f70c7b853ff12d79e8744c86ce24dfcf1a96dbc
     output:
       assembled:
@@ -1979,6 +2435,7 @@ records:
       - expected: []
   guided_json_gt_in_argument_trailing_close:
     case_key: UNIFIED.30-guided_json_gt_in_argument_trailing_close
+    producer: producer_446828e67b23fad3
     request: 4714f971c70e9a7139771603f6a5269dcb9683d20a98de498227c7330ba30097
     output:
       assembled:
@@ -1995,6 +2452,7 @@ records:
       - expected: []
   guided_json_gt_in_argument_wrapped:
     case_key: UNIFIED.30-guided_json_gt_in_argument_wrapped
+    producer: producer_446828e67b23fad3
     request: 765110f5fc06248de6344f181a93fb470854210f374382d696b73976ac762e91
     output:
       assembled:
@@ -2012,6 +2470,7 @@ records:
       - expected: []
   guided_json_invalid_call:
     case_key: UNIFIED.31-guided_json_invalid_call
+    producer: producer_446828e67b23fad3
     request: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
     output:
       assembled:
@@ -2024,6 +2483,7 @@ records:
       - expected: []
   guided_json_list_with_broken_element:
     case_key: UNIFIED.31-guided_json_list_with_broken_element
+    producer: producer_446828e67b23fad3
     request: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
     output:
       assembled:
@@ -2036,6 +2496,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
   guided_json_malformed_json:
     case_key: UNIFIED.31-guided_json_malformed_json
+    producer: producer_446828e67b23fad3
     request: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
     output:
       assembled:
@@ -2048,6 +2509,7 @@ records:
           text: '{"name": "get_weather", "arguments": {"city": "Par'
   guided_json_marker_inside_argument:
     case_key: UNIFIED.30-guided_json_marker_inside_argument
+    producer: producer_446828e67b23fad3
     request: ca789bd52e78fed52bfd5121d5635d208d5c53561d5803dd3cb0d3d5d2cf36fe
     output:
       assembled:
@@ -2065,6 +2527,7 @@ records:
       - expected: []
   guided_json_named_tool:
     case_key: UNIFIED.30-guided_json_named_tool
+    producer: producer_446828e67b23fad3
     request: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
     output:
       assembled:
@@ -2080,6 +2543,7 @@ records:
       - expected: []
   guided_json_narrated_invoke_in_reasoning:
     case_key: UNIFIED.34-guided_json_narrated_invoke_in_reasoning
+    producer: producer_446828e67b23fad3
     request: 2ecd823dd3828ca66a3b11d211b628297dd38042d6404a4b65e36744daf77775
     output:
       assembled:
@@ -2106,6 +2570,7 @@ records:
       - expected: []
   guided_json_narrated_prefix_inside_reasoning:
     case_key: UNIFIED.34-guided_json_narrated_prefix_inside_reasoning
+    producer: producer_446828e67b23fad3
     request: cd2915d465f0c982d0c220a6348455de29711d01ebf22e307de7d1fd84ef49ee
     output:
       assembled:
@@ -2128,6 +2593,7 @@ records:
       - expected: []
   guided_json_native_markup_only:
     case_key: UNIFIED.32-guided_json_native_markup_only
+    producer: producer_446828e67b23fad3
     request: 93995eabe1d3a58ce2cb87bb2502b13629a14a715df23397a200bac969a6fc1b
     output:
       assembled: []
@@ -2144,6 +2610,7 @@ records:
       - expected: []
   guided_json_native_parameter_array_before_payload:
     case_key: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    producer: producer_446828e67b23fad3
     request: 205038e8e59969fbcffdadde0ff5b6fa38a4963fd8f0530d859ec2e4c2cf6d76
     output:
       assembled:
@@ -2182,6 +2649,7 @@ records:
       - expected: []
   guided_json_native_parameter_object_before_payload:
     case_key: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    producer: producer_446828e67b23fad3
     request: 21047325e002df0fa4c76ab5d91788a4b9b585fce8fedcd2cc004b8088b0ea89
     output:
       assembled:
@@ -2220,6 +2688,7 @@ records:
       - expected: []
   guided_json_native_parameter_string_before_payload:
     case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    producer: producer_446828e67b23fad3
     request: de9175d4c218fac146315e8e841066cb84f9dd8a108432816021aed21143a6f5
     output:
       assembled:
@@ -2258,6 +2727,7 @@ records:
       - expected: []
   guided_json_noncall_before_native_array_before_payload:
     case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    producer: producer_446828e67b23fad3
     request: 779b96fd9cd9cacacf0219b5043227e0535912b09f7246ac9fc2a3136e60c7b9
     output:
       assembled:
@@ -2296,6 +2766,7 @@ records:
       - expected: []
   guided_json_orphan_reason_close_before_payload:
     case_key: UNIFIED.34-guided_json_orphan_reason_close_before_payload
+    producer: producer_446828e67b23fad3
     request: a5500df8d15d33e91db98982739fcd3dcee56713895c983c78a2a684b68cc26c
     output:
       assembled:
@@ -2312,6 +2783,7 @@ records:
       - expected: []
   guided_json_orphan_tool_close_before_payload:
     case_key: UNIFIED.32-guided_json_orphan_tool_close_before_payload
+    producer: producer_446828e67b23fad3
     request: e62e327e61c6848e2781bea7494fc3c1be220966e8e1abb8fe01820e800fe8e6
     output:
       assembled:
@@ -2328,6 +2800,7 @@ records:
       - expected: []
   guided_json_partial_calls:
     case_key: UNIFIED.31-guided_json_partial_calls
+    producer: producer_446828e67b23fad3
     request: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
     output:
       assembled:
@@ -2340,6 +2813,7 @@ records:
       - expected: []
   guided_json_prose_before_reasoning:
     case_key: UNIFIED.34-guided_json_prose_before_reasoning
+    producer: producer_446828e67b23fad3
     request: 32d11eb6d0c1e0769679828c850e84003f92e86b092da753cf95291235054e73
     output:
       assembled:
@@ -2367,6 +2841,7 @@ records:
       - expected: []
   guided_json_quoted_bare_header_after_payload:
     case_key: UNIFIED.35-guided_json_quoted_bare_header_after_payload
+    producer: producer_446828e67b23fad3
     request: 5cefeefa7f53b674cbe8044c3d95e9f5b997ce4a474aef72bd107a19fba07192
     output:
       assembled:
@@ -2395,6 +2870,7 @@ records:
       - expected: []
   guided_json_quoted_bare_header_in_answer:
     case_key: UNIFIED.35-guided_json_quoted_bare_header_in_answer
+    producer: producer_446828e67b23fad3
     request: 0b98d9ea003826c68b37d3ed9503a5992495030bc5bd1a15bc963b89892623d6
     output:
       assembled:
@@ -2424,6 +2900,7 @@ records:
       - expected: []
   guided_json_required_tool:
     case_key: UNIFIED.30-guided_json_required_tool
+    producer: producer_446828e67b23fad3
     request: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
     output:
       assembled:
@@ -2439,6 +2916,7 @@ records:
       - expected: []
   guided_json_schema_error_nameless_element_bare_opener:
     case_key: UNIFIED.33-guided_json_schema_error_nameless_element_bare_opener
+    producer: producer_446828e67b23fad3
     request: e6da0b02afb836cd2adbf333ecc03bb0848986320e40d8cdb07f2db7be53d3b4
     output:
       assembled:
@@ -2451,6 +2929,7 @@ records:
       - expected: []
   guided_json_schema_error_nameless_element_trailing_close:
     case_key: UNIFIED.33-guided_json_schema_error_nameless_element_trailing_close
+    producer: producer_446828e67b23fad3
     request: 19dcae466aac0cc43d0e51be5ee4174782af29e770cdfc55effa78270b529bc5
     output:
       assembled:
@@ -2464,6 +2943,7 @@ records:
       - expected: []
   guided_json_schema_error_nameless_element_wrapped:
     case_key: UNIFIED.33-guided_json_schema_error_nameless_element_wrapped
+    producer: producer_446828e67b23fad3
     request: 761ad9d10d543db788af954b4c13b52efba3c541b1314fa3f0d02aada8daec08
     output:
       assembled:
@@ -2478,6 +2958,7 @@ records:
       - expected: []
   guided_json_schema_error_not_a_call_trailing_close:
     case_key: UNIFIED.33-guided_json_schema_error_not_a_call_trailing_close
+    producer: producer_446828e67b23fad3
     request: 22e0a507a61dc6fb1e226f2ac66326e1f88de803e7d4cd2a0aab6a3a4d2ae932
     output:
       assembled:
@@ -2491,6 +2972,7 @@ records:
       - expected: []
   guided_json_schema_error_not_a_call_wrapped:
     case_key: UNIFIED.33-guided_json_schema_error_not_a_call_wrapped
+    producer: producer_446828e67b23fad3
     request: e30b7ad7188129773911a3a42c908c10c9d06b25b06b4c83d46e25f3ced4f303
     output:
       assembled:
@@ -2505,6 +2987,7 @@ records:
       - expected: []
   guided_json_stray_prefix_before_reasoning:
     case_key: UNIFIED.34-guided_json_stray_prefix_before_reasoning
+    producer: producer_446828e67b23fad3
     request: ebcdc4c2dc9c516e7a49e612a67c19d77bf00341071f62d57d9e561e432388a6
     output:
       assembled:
@@ -2527,6 +3010,7 @@ records:
       - expected: []
   guided_json_syntax_error_bare_opener:
     case_key: UNIFIED.33-guided_json_syntax_error_bare_opener
+    producer: producer_446828e67b23fad3
     request: 4156f50eedf1ef7287bc2acf92924b01fcb1aa52ffa41a13cb1e8271b9101972
     output:
       assembled:
@@ -2539,6 +3023,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city": '
   guided_json_syntax_error_trailing_close:
     case_key: UNIFIED.33-guided_json_syntax_error_trailing_close
+    producer: producer_446828e67b23fad3
     request: 4e03bb9288bbe3b46051ce54c63f901ac1dee798331db620ecd5fa5cd98cdf01
     output:
       assembled:
@@ -2552,6 +3037,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_syntax_error_wrapped:
     case_key: UNIFIED.33-guided_json_syntax_error_wrapped
+    producer: producer_446828e67b23fad3
     request: b1e103158bd144f532b738a698d640559d1477f940dbb0bdf04b7ad8de8d22a9
     output:
       assembled:
@@ -2566,6 +3052,7 @@ records:
           text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_tool_close_after_payload:
     case_key: UNIFIED.32-guided_json_tool_close_after_payload
+    producer: producer_446828e67b23fad3
     request: 8ec33fbe473e122f62b0a908dfa11a1eb7f7b4cbab2477fcff1fae784eeb1b7b
     output:
       assembled:
@@ -2582,6 +3069,7 @@ records:
       - expected: []
   guided_json_tool_open_before_payload:
     case_key: UNIFIED.32-guided_json_tool_open_before_payload
+    producer: producer_446828e67b23fad3
     request: 2c46635a1d6dd67d37476270f8c20ea22f36d18636f2c038c0322426361f1d7b
     output:
       assembled:
@@ -2598,6 +3086,7 @@ records:
       - expected: []
   guided_json_two_calls:
     case_key: UNIFIED.30-guided_json_two_calls
+    producer: producer_446828e67b23fad3
     request: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
     output:
       assembled:
@@ -2620,6 +3109,7 @@ records:
       - expected: []
   guided_json_unterminated_reasoning_then_wrapped_payload:
     case_key: UNIFIED.34-guided_json_unterminated_reasoning_then_wrapped_payload
+    producer: producer_446828e67b23fad3
     request: ce4c657faf6b663bc02583a6c669fa05f669ef9d1ad99c0b605beb18779dea5b
     output:
       assembled:
@@ -2643,6 +3133,7 @@ records:
       - expected: []
   guided_json_wrapped_in_tool_markup:
     case_key: UNIFIED.32-guided_json_wrapped_in_tool_markup
+    producer: producer_446828e67b23fad3
     request: ba094fdbe56ea33ac7e6b083b59be55c06603a8bee4b9126f7415078db95ea16
     output:
       assembled:
@@ -2660,6 +3151,7 @@ records:
       - expected: []
   guided_quoted_reasoning_closer_named:
     case_key: UNIFIED.34-guided_quoted_reasoning_closer_named
+    producer: producer_446828e67b23fad3
     request: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
     output:
       assembled:
@@ -2687,6 +3179,7 @@ records:
       - expected: []
   guided_quoted_reasoning_closer_required:
     case_key: UNIFIED.34-guided_quoted_reasoning_closer_required
+    producer: producer_446828e67b23fad3
     request: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
     output:
       assembled:
@@ -2714,6 +3207,7 @@ records:
       - expected: []
   guided_response_native_wrapper_whitespace_before_prose:
     case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    producer: producer_446828e67b23fad3
     request: 53754698352a5e0d695e4196263c886c4a9e7062bf9a5b1cdd21ad9d81a7526f
     output:
       assembled:
@@ -2742,6 +3236,7 @@ records:
       - expected: []
   guided_response_quoted_control_braces_named:
     case_key: UNIFIED.35-guided_response_quoted_control_braces_named
+    producer: producer_446828e67b23fad3
     request: 286e85f73135a80bcd8d4db01fc1936f8fd4d5fd733d68516dfe288ba2fe5ada
     output:
       assembled:
@@ -2765,6 +3260,7 @@ records:
       - expected: []
   guided_response_quoted_control_braces_required:
     case_key: UNIFIED.35-guided_response_quoted_control_braces_required
+    producer: producer_446828e67b23fad3
     request: fdb2357e67bdadd97e4c4fbef96ba82edec429d097c5b51c6015759f65e36db7
     output:
       assembled:
@@ -2788,6 +3284,7 @@ records:
       - expected: []
   inch_mark_before_reasoning_closer:
     case_key: UNIFIED.40-inch_mark_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: fd453812decf50ed7d49af92561485893e355cfa666b8ae05699d4856decf9ec
     output:
       assembled:
@@ -2804,6 +3301,7 @@ records:
           text: 'Yes'
   inch_mark_before_reasoning_closer_quoted_answer:
     case_key: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+    producer: producer_446828e67b23fad3
     request: a25cd2bb559cf7a4d92b15cdb0b7b7073f3ff9e8ec9e16468544b29c88628089
     output:
       assembled:
@@ -2844,13 +3342,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   local_schema_id_preserves_type:
@@ -2869,15 +3379,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: capture_payload
-          arguments: '{"count":42}'
+          arguments: '{"count":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-malformed_json_then_two_valid_calls
+    producer: producer_446828e67b23fad3
     request: 84e8a9ea473ff97589606f714a092df4793bce23741607a2d3c4c22f54de67ac
     output:
       assembled:
@@ -2907,6 +3422,7 @@ records:
       - expected: []
   missing_inner_closers_then_valid_call:
     case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+    producer: producer_446828e67b23fad3
     request: 51571e40a6365a09853006529e4c49a891d3587159f1a3048f129c684bec3d59
     output:
       assembled:
@@ -2929,6 +3445,7 @@ records:
       - expected: []
   mixed_quotes_before_reasoning_closer:
     case_key: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: 0fb1c9d4b222a6ab6afea7ab400bb1d263cdb021aa732c9447f6ad9787bb54f3
     output:
       assembled:
@@ -2971,13 +3488,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -2987,13 +3516,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -3003,17 +3544,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   native_quoted_control_in_reasoning:
     case_key: UNIFIED.40-native_quoted_control_in_reasoning
+    producer: producer_446828e67b23fad3
     request: 18dfbc13e6ea1cd3555406f8da79e056f9a762307dd9db14ba58ed632e117231
     output:
       assembled:
@@ -3028,6 +3582,7 @@ records:
       - expected: []
   native_quoted_control_in_response:
     case_key: UNIFIED.8-native_quoted_control_in_response
+    producer: producer_446828e67b23fad3
     request: 16b96b5e7e55d3c91d8a89585d6fe816904a3652c26191ee2c3a8e96143ce361
     output:
       assembled:
@@ -3061,13 +3616,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   native_quoted_control_then_call_progress:
@@ -3084,11 +3651,15 @@ records:
       - expected:
         - kind: text
           text: The literal "
-      - expected: []
       - expected:
         - kind: tool_call
           name: run
-          arguments: '{"cmd":"Paris"}'
+          arguments: '{"cmd":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris"}
           complete: true
       - expected: []
   native_quoted_incomplete_header:
@@ -3107,11 +3678,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '` header is part of the explanation.'
+          complete: false
       - expected: []
   native_quoted_reasoning_closer_in_sentence:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    producer: producer_446828e67b23fad3
     request: 8af32ebdcd8fcaa9851bcb19b027fe59ac8f4c0f7fc810f60428acc402ff3dde
     output:
       assembled:
@@ -3130,6 +3710,7 @@ records:
           text: paths
   native_quoted_reasoning_closer_then_answer:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    producer: producer_446828e67b23fad3
     request: a4876338bfda7cc3a1dc239ac7bef87b76ef163a0241cba1334fa070f674b926
     output:
       assembled:
@@ -3148,6 +3729,7 @@ records:
           text: Answer
   native_reasoning_closer_in_quoted_sentence:
     case_key: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    producer: producer_446828e67b23fad3
     request: bfcf9f083c45a75f02a94dc1e43463076c567c631516c3155bf2e1a8edf076b1
     output:
       assembled:
@@ -3164,6 +3746,7 @@ records:
       - expected: []
   native_single_quote_contraction_reasoning:
     case_key: UNIFIED.40-native_single_quote_contraction_reasoning
+    producer: producer_446828e67b23fad3
     request: 82bab31940c9db4cf83a712e31651565d68619bb8373b83e98caa4dce49a7a8a
     output:
       assembled:
@@ -3178,6 +3761,7 @@ records:
       - expected: []
   native_single_quote_contraction_response:
     case_key: UNIFIED.8-native_single_quote_contraction_response
+    producer: producer_446828e67b23fad3
     request: 7373efc5089a145deed48da5bdd5db9ed31aff4081263066bfab7e804cff0022
     output:
       assembled:
@@ -3192,6 +3776,7 @@ records:
       - expected: []
   native_single_quoted_word_control:
     case_key: UNIFIED.8-native_single_quoted_word_control
+    producer: producer_446828e67b23fad3
     request: f3155d7b41c6e17e2d7255aef81ca5625a8f81a6334756236720d4f28ee84b35
     output:
       assembled:
@@ -3225,17 +3810,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   native_unquoted_reasoning_closer_in_sentence:
     case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    producer: producer_446828e67b23fad3
     request: 31231374e4ae37fb4f617d6f24635721105e3b33ef447d464b085a775a610591
     output:
       assembled:
@@ -3254,6 +3852,7 @@ records:
           text: marker
   native_unquoted_reasoning_closer_in_sentence_then_closer:
     case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+    producer: producer_446828e67b23fad3
     request: 5fa11fd6bf79ada6c3a6f2deb0d1017d1275e3d44f005074f86d26698ac41aac
     output:
       assembled:
@@ -3286,8 +3885,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count":-2500'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -3295,8 +3897,13 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"count":-2500,"text":"42"}'
+          name: null
+          arguments: ',"text":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   nullable_reference_alias_literals:
@@ -3315,8 +3922,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"const_text":"null"'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -3324,12 +3934,18 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"const_text":"null","enum_text":"null"}'
+          name: null
+          arguments: ',"enum_text":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   orphan_close_after_prose:
     case_key: UNIFIED.5-orphan_close_after_prose
+    producer: producer_446828e67b23fad3
     request: 7f903163d8e6a1a2572c1c3d77e35833514bc0d40d55ec5a193fb2753a0f3e6c
     output:
       assembled:
@@ -3364,17 +3980,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"London"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: London
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   prefilled_reasoning_then_text:
     case_key: UNIFIED.40-prefilled_reasoning_then_text
+    producer: producer_446828e67b23fad3
     request: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
     output:
       assembled:
@@ -3422,13 +4051,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   prefilled_reasoning_truncated:
@@ -3450,11 +4091,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Par
+          complete: false
       - expected: []
   prefilled_reasoning_with_guided_json:
     case_key: UNIFIED.40-prefilled_reasoning_with_guided_json
+    producer: producer_446828e67b23fad3
     request: f8be7bfb62ba76e8388e3debc3e1558ccf2d7bf01a54c46375a8e3b86f60032e
     output:
       assembled:
@@ -3496,13 +4146,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   prefilled_response_reasoning_markers_literal:
@@ -3533,17 +4195,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   quoted_name_backtick_nonpossessive_s_name:
     case_key: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
+    producer: producer_446828e67b23fad3
     request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
     output:
       assembled:
@@ -3583,6 +4258,7 @@ records:
           text: .
   quoted_name_backtick_nonpossessive_some:
     case_key: UNIFIED.40-quoted_name_backtick_nonpossessive_some
+    producer: producer_446828e67b23fad3
     request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
     output:
       assembled:
@@ -3622,6 +4298,7 @@ records:
           text: .
   quoted_name_backtick_possessive_guided:
     case_key: UNIFIED.34-quoted_name_backtick_possessive_guided
+    producer: producer_446828e67b23fad3
     request: 39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336
     output:
       assembled:
@@ -3654,6 +4331,7 @@ records:
       - expected: []
   quoted_name_backtick_possessive_reasoning:
     case_key: UNIFIED.40-quoted_name_backtick_possessive_reasoning
+    producer: producer_446828e67b23fad3
     request: 031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930
     output:
       assembled:
@@ -3690,6 +4368,7 @@ records:
           text: .
   quoted_name_backtick_possessive_then_call:
     case_key: UNIFIED.40-quoted_name_backtick_possessive_then_call
+    producer: producer_446828e67b23fad3
     request: a670662fead6237578fc663ff5a9854c0ec8ec82f47649d6041cb4b9d71e6f01
     output:
       assembled:
@@ -3735,6 +4414,7 @@ records:
           text: .
   quoted_name_double_quote_nonpossessive_s_name:
     case_key: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
+    producer: producer_446828e67b23fad3
     request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
     output:
       assembled:
@@ -3774,6 +4454,7 @@ records:
           text: .
   quoted_name_double_quote_nonpossessive_some:
     case_key: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
+    producer: producer_446828e67b23fad3
     request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
     output:
       assembled:
@@ -3813,6 +4494,7 @@ records:
           text: .
   quoted_name_double_quote_possessive_guided:
     case_key: UNIFIED.34-quoted_name_double_quote_possessive_guided
+    producer: producer_446828e67b23fad3
     request: dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638
     output:
       assembled:
@@ -3845,6 +4527,7 @@ records:
       - expected: []
   quoted_name_double_quote_possessive_reasoning:
     case_key: UNIFIED.40-quoted_name_double_quote_possessive_reasoning
+    producer: producer_446828e67b23fad3
     request: ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae
     output:
       assembled:
@@ -3881,6 +4564,7 @@ records:
           text: .
   quoted_name_double_quote_possessive_then_call:
     case_key: UNIFIED.40-quoted_name_double_quote_possessive_then_call
+    producer: producer_446828e67b23fad3
     request: 87d7fe17fb8ea6acc9d29310e782b1e30aa22f648afc967f7c93ed4a1e833587
     output:
       assembled:
@@ -3926,6 +4610,7 @@ records:
           text: .
   quoted_name_possessive_inline_closer:
     case_key: UNIFIED.40-quoted_name_possessive_inline_closer
+    producer: producer_446828e67b23fad3
     request: 650fc6d18b09ecda0770925216ed69680a3cf262779f10bc874ee754b6e13e86
     output:
       assembled:
@@ -3956,13 +4641,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"null"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: 'null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   reason_after_tool:
@@ -3992,13 +4689,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
       - expected:
@@ -4032,13 +4741,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
       - expected: []
@@ -4050,13 +4771,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   reason_interleaved:
@@ -4085,13 +4818,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
       - expected: []
@@ -4103,13 +4848,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   reason_markup_in_arg:
@@ -4126,19 +4883,40 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: log
-          arguments: '{"note":"<think>reconsider</think>"}'
+          arguments: '{"note":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: <think>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: reconsider
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: </think>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   reason_markup_in_arg_empty_span_then_text:
     case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    producer: producer_446828e67b23fad3
     request: acf70b967a32a94ee3659cfb1665d0873d10fe3fada65b3418a3014744a5c8b0
     output:
       assembled:
@@ -4154,6 +4932,7 @@ records:
       - expected: []
   reason_markup_in_arg_empty_span_then_text_with_path:
     case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+    producer: producer_446828e67b23fad3
     request: f02ec74d75b1eec33fce66d50a2b3eec4f05a5a361fd4094bcad194433fd686d
     output:
       assembled:
@@ -4188,15 +4967,35 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: log
-          arguments: '{"note":"<think>reconsider</think>"}'
+          arguments: '{"note":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: <think>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: reconsider
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: </think>
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -4206,6 +5005,7 @@ records:
           text: done.
   reason_only:
     case_key: UNIFIED.10-reason_only
+    producer: producer_446828e67b23fad3
     request: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
     output:
       assembled:
@@ -4222,6 +5022,7 @@ records:
       - expected: []
   reason_then_content:
     case_key: UNIFIED.10-reason_then_content
+    producer: producer_446828e67b23fad3
     request: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
     output:
       assembled:
@@ -4266,13 +5067,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   reason_tool_reason_tool_reason:
@@ -4303,13 +5116,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
       - expected: []
@@ -4321,13 +5146,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
       - expected: []
@@ -4363,13 +5200,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -4386,17 +5235,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   reason_unterminated:
     case_key: UNIFIED.10-reason_unterminated
+    producer: producer_446828e67b23fad3
     request: 6681944af0bc996378ee85b771af8f34380668a46a7e49aa2f35612175318c08
     output:
       assembled:
@@ -4426,20 +5288,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"category":{"label":"Garden Tools","children":[]}'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -4447,8 +5300,33 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"category":{"label":"Garden Tools","children":[]},"tree":{"label":"root","children":[{"label":"leaf","children":[]}]},"retries":37,"dry_run":false}'
+          name: null
+          arguments: ',"tree":{"label":"root","children":[{"label":"leaf","children":[]}]}'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"retries":37'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"dry_run":false'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_array_allof:
@@ -4467,11 +5345,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"[1,2]"}'
+          arguments: '{"value":"[1,2]"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_array_bare:
@@ -4490,11 +5372,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"[1,2]"}'
+          arguments: '{"value":"[1,2]"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_array_ref:
@@ -4513,11 +5399,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"[1,2]"}'
+          arguments: '{"value":"[1,2]"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_array_typed:
@@ -4536,11 +5426,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"[1,2]"}'
+          arguments: '{"value":"[1,2]"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_boolean_allof:
@@ -4559,11 +5453,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"true"}'
+          arguments: '{"value":"true"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_boolean_bare:
@@ -4582,11 +5480,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"true"}'
+          arguments: '{"value":"true"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_boolean_ref:
@@ -4605,11 +5507,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"true"}'
+          arguments: '{"value":"true"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_boolean_typed:
@@ -4628,11 +5534,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"true"}'
+          arguments: '{"value":"true"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_entity_allof:
@@ -4651,11 +5561,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"&lt;"}'
+          arguments: '{"value":"&lt;"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_entity_bare:
@@ -4674,11 +5588,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"&lt;"}'
+          arguments: '{"value":"&lt;"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_entity_ref:
@@ -4697,11 +5615,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"&lt;"}'
+          arguments: '{"value":"&lt;"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_entity_typed:
@@ -4720,11 +5642,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"&lt;"}'
+          arguments: '{"value":"&lt;"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_null_allof:
@@ -4743,11 +5669,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"null"}'
+          arguments: '{"value":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_null_bare:
@@ -4766,11 +5696,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"null"}'
+          arguments: '{"value":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_null_ref:
@@ -4789,11 +5723,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"null"}'
+          arguments: '{"value":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_null_typed:
@@ -4812,11 +5750,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"null"}'
+          arguments: '{"value":"null"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_number_allof:
@@ -4835,11 +5777,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_number_bare:
@@ -4858,11 +5804,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_number_ref:
@@ -4881,11 +5831,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_number_typed:
@@ -4904,15 +5858,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_numeric_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_numeric_bare
+    producer: producer_446828e67b23fad3
     request: 377e892c70c953f5f633d618258c1336ac346aeb39e997c9724e2316fd5b5184
     output:
       assembled:
@@ -4942,11 +5901,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{\"x\":1}"}'
+          arguments: '{"value":"{\"x\":1}"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_object_bare:
@@ -4965,11 +5928,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{\"x\":1}"}'
+          arguments: '{"value":"{\"x\":1}"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_object_ref:
@@ -4988,11 +5955,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{\"x\":1}"}'
+          arguments: '{"value":"{\"x\":1}"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_object_typed:
@@ -5011,11 +5982,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{\"x\":1}"}'
+          arguments: '{"value":"{\"x\":1}"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_plain_allof:
@@ -5034,11 +6009,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_plain_bare:
@@ -5057,11 +6036,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_plain_ref:
@@ -5080,11 +6063,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_plain_typed:
@@ -5103,11 +6090,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_quoted_allof:
@@ -5126,11 +6117,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"\"hello\""}'
+          arguments: '{"value":"\"hello\""'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_quoted_bare:
@@ -5149,11 +6144,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"\"hello\""}'
+          arguments: '{"value":"\"hello\""'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_quoted_ref:
@@ -5172,11 +6171,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"\"hello\""}'
+          arguments: '{"value":"\"hello\""'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_quoted_typed:
@@ -5195,11 +6198,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"\"hello\""}'
+          arguments: '{"value":"\"hello\""'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_space_allof:
@@ -5218,11 +6225,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"  spaced  "}'
+          arguments: '{"value":"  spaced  "'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_space_bare:
@@ -5241,11 +6252,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"  spaced  "}'
+          arguments: '{"value":"  spaced  "'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_space_ref:
@@ -5264,11 +6279,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"  spaced  "}'
+          arguments: '{"value":"  spaced  "'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_space_typed:
@@ -5287,11 +6306,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"  spaced  "}'
+          arguments: '{"value":"  spaced  "'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_unicode_allof:
@@ -5310,11 +6333,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"café"}'
+          arguments: '{"value":"café"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_unicode_bare:
@@ -5333,11 +6360,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"café"}'
+          arguments: '{"value":"café"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_unicode_ref:
@@ -5356,11 +6387,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"café"}'
+          arguments: '{"value":"café"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_const_unicode_typed:
@@ -5379,11 +6414,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"café"}'
+          arguments: '{"value":"café"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_array:
@@ -5402,11 +6441,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":[1,2]}'
+          arguments: '{"value":[1,2]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_boolean:
@@ -5425,11 +6468,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":true}'
+          arguments: '{"value":true'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_integer:
@@ -5448,15 +6495,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_integer_boolean_number_order:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    producer: producer_446828e67b23fad3
     request: f38bc218e60170a3773b6886dbea86eb2285b3b4e3df56d1a91ea238604512de
     output:
       assembled:
@@ -5486,11 +6538,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_number:
@@ -5509,11 +6565,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":3.5}'
+          arguments: '{"value":3.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_object:
@@ -5532,11 +6592,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":{"x":1}}'
+          arguments: '{"value":{"x":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_declared_string:
@@ -5553,17 +6617,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"plain"}'
+          arguments: '{"value":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: plain
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_enum_const_narrowing:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_const_narrowing
+    producer: producer_446828e67b23fad3
     request: 98b2482f6320f5db05f4db3ed10a8d1ce3ae69b7d7866d4d0b9524380f92edd5
     output:
       assembled:
@@ -5579,6 +6656,7 @@ records:
       - expected: []
   schema_enum_inferred_integer:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_inferred_integer
+    producer: producer_446828e67b23fad3
     request: 41b1651e4fec567b0f56778b48cbb011299b4cf489fdc5f15fefea3826e6e566
     output:
       assembled:
@@ -5608,11 +6686,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_enum_string:
@@ -5629,13 +6711,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_escaped_ref_const:
@@ -5654,11 +6748,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"\"hello\""}'
+          arguments: '{"value":"\"hello\""'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_id_direct_integer:
@@ -5677,11 +6775,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_integer_const_ambiguous:
@@ -5700,11 +6802,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_intersection_anyof:
@@ -5723,11 +6829,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_intersection_oneof:
@@ -5746,11 +6856,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_null_union_ambiguous:
@@ -5769,11 +6883,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_nullable_string:
@@ -5792,11 +6910,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_object_const_union:
@@ -5815,11 +6937,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{\"x\":1}"}'
+          arguments: '{"value":"{\"x\":1}"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_percent_ref_const:
@@ -5838,11 +6964,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_ref_sibling_integer:
@@ -5861,11 +6991,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_ref_union_anyof_integer:
@@ -5884,11 +7018,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":-7}'
+          arguments: '{"value":-7'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_ref_union_anyof_string:
@@ -5907,11 +7045,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_ref_union_oneof_integer:
@@ -5930,11 +7072,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":-7}'
+          arguments: '{"value":-7'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_ref_union_oneof_string:
@@ -5953,11 +7099,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_type_array_integer_null:
@@ -5976,11 +7126,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_type_array_integer_null_null:
@@ -5999,11 +7153,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_type_array_string_integer:
@@ -6022,11 +7180,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"42"}'
+          arguments: '{"value":"42"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_array_reverse_string:
@@ -6045,11 +7207,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_array_reverse_typed:
@@ -6068,11 +7234,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":[1,2]}'
+          arguments: '{"value":[1,2]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_array_string:
@@ -6091,11 +7261,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_array_typed:
@@ -6114,11 +7288,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":[1,2]}'
+          arguments: '{"value":[1,2]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_boolean_reverse_string:
@@ -6137,11 +7315,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_boolean_reverse_typed:
@@ -6160,11 +7342,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":true}'
+          arguments: '{"value":true'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_boolean_string:
@@ -6183,11 +7369,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_boolean_typed:
@@ -6206,11 +7396,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":true}'
+          arguments: '{"value":true'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_integer_reverse_string:
@@ -6229,11 +7423,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_integer_reverse_typed:
@@ -6252,11 +7450,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_integer_string:
@@ -6275,11 +7477,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_integer_typed:
@@ -6298,11 +7504,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_null_reverse_string:
@@ -6321,11 +7531,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_null_reverse_typed:
@@ -6344,11 +7558,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_null_string:
@@ -6367,11 +7585,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_null_typed:
@@ -6390,11 +7612,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_number_reverse_string:
@@ -6413,11 +7639,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_number_reverse_typed:
@@ -6436,11 +7666,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":3.5}'
+          arguments: '{"value":3.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_number_string:
@@ -6459,11 +7693,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_number_typed:
@@ -6482,11 +7720,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":3.5}'
+          arguments: '{"value":3.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_object_reverse_string:
@@ -6505,11 +7747,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_object_reverse_typed:
@@ -6528,11 +7774,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":{"x":1}}'
+          arguments: '{"value":{"x":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_object_string:
@@ -6551,11 +7801,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_anyof_object_typed:
@@ -6574,11 +7828,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":{"x":1}}'
+          arguments: '{"value":{"x":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_array_reverse_string:
@@ -6597,11 +7855,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_array_reverse_typed:
@@ -6620,11 +7882,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":[1,2]}'
+          arguments: '{"value":[1,2]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_array_string:
@@ -6643,11 +7909,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_array_typed:
@@ -6666,11 +7936,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":[1,2]}'
+          arguments: '{"value":[1,2]'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_boolean_reverse_string:
@@ -6689,11 +7963,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_boolean_reverse_typed:
@@ -6712,11 +7990,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":true}'
+          arguments: '{"value":true'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_boolean_string:
@@ -6735,11 +8017,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_boolean_typed:
@@ -6758,11 +8044,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":true}'
+          arguments: '{"value":true'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_integer_reverse_string:
@@ -6781,11 +8071,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_integer_reverse_typed:
@@ -6804,11 +8098,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_integer_string:
@@ -6827,11 +8125,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_integer_typed:
@@ -6850,11 +8152,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":42}'
+          arguments: '{"value":42'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_null_reverse_string:
@@ -6873,11 +8179,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_null_reverse_typed:
@@ -6896,11 +8206,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_null_string:
@@ -6919,11 +8233,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_null_typed:
@@ -6942,11 +8260,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":null}'
+          arguments: '{"value":null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_number_reverse_string:
@@ -6965,11 +8287,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_number_reverse_typed:
@@ -6988,11 +8314,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":3.5}'
+          arguments: '{"value":3.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_number_string:
@@ -7011,11 +8341,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_number_typed:
@@ -7034,11 +8368,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":3.5}'
+          arguments: '{"value":3.5'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_object_reverse_string:
@@ -7057,11 +8395,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_object_reverse_typed:
@@ -7080,11 +8422,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":{"x":1}}'
+          arguments: '{"value":{"x":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_object_string:
@@ -7103,11 +8449,15 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"auto"}'
+          arguments: '{"value":"auto"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   schema_union_oneof_object_typed:
@@ -7126,15 +8476,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":{"x":1}}'
+          arguments: '{"value":{"x":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   sql_fragment_before_reasoning_closer:
     case_key: UNIFIED.40-sql_fragment_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: 0a351ec6831a4828665f02897e3df9f67f0251a45d4ab1ffe011882751be3dff
     output:
       assembled:
@@ -7153,17 +8508,18 @@ records:
           text: ''''
   structured_response_after_reasoning:
     case_key: UNIFIED.36-structured_response_after_reasoning
+    producer: producer_446828e67b23fad3
     request: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
     output:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: "Check London météo\U0001F642 before answering; this is prose, not "
+          text: 'Check London météo🙂 before answering; this is prose, not '
       - expected:
         - kind: reasoning
           text: JSON.
@@ -7190,13 +8546,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   text_between_calls:
@@ -7218,13 +8586,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -7234,17 +8614,30 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   text_only:
     case_key: UNIFIED.3-text_only
+    producer: producer_446828e67b23fad3
     request: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
     output:
       assembled:
@@ -7292,13 +8685,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -7315,13 +8720,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   text_sandwich:
@@ -7345,13 +8762,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -7361,6 +8790,7 @@ records:
           text: After.
   three_calls_partial_header:
     case_key: UNIFIED.2-three_calls_partial_header
+    producer: producer_446828e67b23fad3
     request: a14da43adef5fadfdf886a9c8187d12e06cf9988491fa0cd7b401eb52cbf8a15
     output:
       assembled:
@@ -7393,6 +8823,7 @@ records:
       - expected: []
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4-tool_block_never_closed_then_text
+    producer: producer_446828e67b23fad3
     request: 64c108f4625c5d298b4c607041afb47ace6014eab910a067574a47234f4a177b
     output:
       assembled: []
@@ -7402,6 +8833,7 @@ records:
       - expected: []
   tool_call_ids_unique:
     case_key: UNIFIED.2-tool_call_ids_unique
+    producer: producer_446828e67b23fad3
     request: b2c8dc6305b90675d0bfd5ad91f787bb519fbbb782d5339e3aa3c44b52036cea
     output:
       assembled:
@@ -7444,13 +8876,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: reasoning
@@ -7488,13 +8932,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: reasoning
@@ -7510,6 +8966,7 @@ records:
           text: go.
   tool_markup_only_emits_nothing:
     case_key: UNIFIED.4-tool_markup_only_emits_nothing
+    producer: producer_446828e67b23fad3
     request: 96e965db21e9dfdf19e11586becc5e3efb332028beee89229369fd9f36b1ce09
     output:
       assembled: []
@@ -7530,13 +8987,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
   tool_only:
     case_key: UNIFIED.1-tool_only
@@ -7552,13 +9021,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   trailing_text_after_tool:
@@ -7577,13 +9058,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected:
         - kind: text
@@ -7609,11 +9102,20 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Par
+          complete: false
       - expected: []
   two_adjacent_reason_spans:
     case_key: UNIFIED.10-two_adjacent_reason_spans
+    producer: producer_446828e67b23fad3
     request: e3ee307214ba9614e2905612a2d4d90cf08d1589d7dfa821915934f730bd48cf
     output:
       assembled:
@@ -7659,17 +9161,26 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: f
-          arguments: '{"x":"1"}'
+          arguments: '{"x":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '1'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
-      - expected: []
-      - expected: []
-      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7678,7 +9189,22 @@ records:
       - expected:
         - kind: tool_call
           name: g
-          arguments: '{"y":"2"}'
+          arguments: '{"y":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '2'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   two_calls_same_name:
@@ -7698,30 +9224,55 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Paris"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
       - expected: []
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: get_weather
-          arguments: '{"city":"Tokyo"}'
+          arguments: '{"city":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Tokyo
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   two_reason_spans:
     case_key: UNIFIED.10-two_reason_spans
+    producer: producer_446828e67b23fad3
     request: 146922888215906a77df4f335b4b49c0d2e34e8f9e062482be0182882ddbcc35
     output:
       assembled:
@@ -7757,6 +9308,7 @@ records:
           text: done
   unclosed_backtick_before_reasoning_closer:
     case_key: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: 0bfd6ddcf8e7fc3fa807e93142a6f620937b55d940310118ece733832d7968ed
     output:
       assembled:
@@ -7773,6 +9325,7 @@ records:
       - expected: []
   unclosed_command_backtick_before_reasoning_closer:
     case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: 4339065b4c0af2a2c2fcd98f9221de4bcd773a1a629a6ada18f427123cbfb266
     output:
       assembled:
@@ -7791,6 +9344,7 @@ records:
           text: pytest
   unclosed_command_backtick_before_reasoning_closer_later_backticks:
     case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+    producer: producer_446828e67b23fad3
     request: 21adf7e2971a3aaebaa2284c20bc3c56e122075a387a7d754d2023af8ca4edef
     output:
       assembled:
@@ -7807,6 +9361,7 @@ records:
       - expected: []
   unclosed_command_quote_before_reasoning_closer:
     case_key: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+    producer: producer_446828e67b23fad3
     request: bdbdb00044984e69ca1938a3947fb32d2a84e2196c1d9793920a7d68edee8de5
     output:
       assembled:
@@ -7833,14 +9388,11 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"count":42'
+          complete: false
       - expected: []
       - expected: []
       - expected: []
@@ -7848,8 +9400,31 @@ records:
       - expected: []
       - expected:
         - kind: tool_call
-          name: capture_payload
-          arguments: '{"count":42,"flag":false,"text":"null"}'
+          name: null
+          arguments: ',"flag":false'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ',"text":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: 'null'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   xml_string_type_double_quoted_object:
@@ -7866,13 +9441,25 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{\"a\":1}"}'
+          arguments: '{"value":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '{\"a\":1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
   xml_string_type_single_quoted_object:
@@ -7889,12 +9476,24 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected: []
-      - expected: []
-      - expected: []
       - expected:
         - kind: tool_call
           name: schema_probe
-          arguments: '{"value":"{''a'':1}"}'
+          arguments: '{"value":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '{''a'':1}'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
           complete: true
       - expected: []
