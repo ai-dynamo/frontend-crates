@@ -1923,6 +1923,22 @@ Remember, San Francisco weather can be quite unpredictable, particularly with it
     }
 
     #[tokio::test]
+    async fn test_deepseek_v3_1_parser_basic() {
+        let input = r#"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_current_weather<｜tool▁sep｜>{"location": "Tokyo"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_current_weather<｜tool▁sep｜>{"location": "Paris"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜end▁of▁sentence｜>"#;
+        let (result, content) = detect_and_parse_tool_call(input, Some("deepseek_v3_1"), None)
+            .await
+            .unwrap();
+        assert_eq!(content, Some("".to_string()));
+        assert_eq!(result.len(), 2);
+        let (name, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(name, "get_current_weather");
+        assert_eq!(args["location"], "Tokyo");
+        let (name, args) = extract_name_and_args(result[1].clone());
+        assert_eq!(name, "get_current_weather");
+        assert_eq!(args["location"], "Paris");
+    }
+
+    #[tokio::test]
     async fn test_deepseek_v3_2_single_tool_call() {
         let input = r#"<｜DSML｜function_calls>
 <｜DSML｜invoke name="get_datetime">
