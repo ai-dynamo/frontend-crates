@@ -1371,18 +1371,32 @@ def test_latest_refresh_archives_new_execution_and_rejects_invalid_requests(spli
             retained = updated["records"][key]["value"]
             assert retained["observation"] == wrapped["value"]["observation"]
             assert retained["stimulus"] == wrapped["value"]["stimulus"]
-            supplement = retained["document"]["record_metadata"]["verified_recapture"]
-            assert supplement["provenance"]["git_commit"] == origin["git_commit"]
+            supplement = retained["document"].get("record_metadata", {}).get("verified_recapture")
+            if change == "output":
+                assert supplement["provenance"]["git_commit"] == origin["git_commit"]
+            else:
+                assert supplement is None
+                assert updated["provenance"]["origin"] == origin
         stable = (root / latest).read_bytes()
         publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
         assert (root / latest).read_bytes() == stable
-        previous_active = copy.deepcopy(updated["records"]["text_only"]["value"]["document"]["record_metadata"]["verified_recapture"])
+        previous_active = copy.deepcopy(updated["records"]["text_only"]["value"]["document"].get("record_metadata", {}).get("verified_recapture"))
+        if change == "output":
+            origin["git_commit"] = "d" * 40
+            record["capture_origin"] = copy.deepcopy(origin)
+            record_path.write_text(unified_history.dump_yaml(record))
+            publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+            refreshed = unified_history.load_yaml(root / latest)
+            assert refreshed["provenance"]["origin"] == origin
+            metadata = refreshed["records"]["text_only"]["value"]["document"]["record_metadata"]
+            assert metadata["verified_recapture"] == previous_active
+            assert "verified_recaptures" not in metadata
         record["cases"][case_id]["assembled"] = [{"kind": "text", "text": "another execution"}]
         record["cases"][case_id]["chunks"][0]["expected"] = record["cases"][case_id]["assembled"]
         record_path.write_text(unified_history.dump_yaml(record))
         publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
         archived = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]["document"]["record_metadata"]
-        assert archived["verified_recaptures"] == [previous_active]
+        assert archived.get("verified_recaptures", []) == ([previous_active] if previous_active else [])
         assert archived["verified_recapture"]["result"]["assembled"] == record["cases"][case_id]["assembled"]
     else:
         with pytest.raises(ValueError, match="cannot replace retained|missing active cases|every active case|stimulus digest differs"):

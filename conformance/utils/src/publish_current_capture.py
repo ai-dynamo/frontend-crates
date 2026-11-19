@@ -213,37 +213,47 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
                 case = store.families[family].cases.get(case_id)
                 if retained["member"] != selection["source"] or incoming is None or case is None:
                     raise ValueError("latest refresh cannot replace retained requests or omit observations")
-                before, before_document = unified_history.materialized_record(case, retained["value"])
-                measured, measured_document = unified_history.materialized_record(case, incoming["value"])
+                before, _ = unified_history.materialized_record(case, retained["value"])
+                measured, _ = unified_history.materialized_record(case, incoming["value"])
                 if not unified_history.typed_equal(before.get("capture_input"), measured.get("capture_input")):
                     raise ValueError("latest refresh cannot replace retained requests")
                 preserved = copy.deepcopy(retained)
                 preserved["member"] = logical
-                if not unified_history.typed_equal((before, before_document), (measured, measured_document)):
-                    metadata = preserved["value"]["document"].setdefault("record_metadata", {})
-                    if adapter is None:
-                        adapter = sources.digest(sources.encoded([
-                            sources.identity(path, sources.read(root, path)) for path in (
-                                "conformance/tests/unified_render.rs", "conformance/tests/common/unified_capture.rs",
-                                "conformance/tests/common/mod.rs",
-                            )
-                        ]))
-                    supplement = {
-                        "result": measured,
-                        "provenance": {**origin, "implementation": implementation, "version": version,
-                                       "adapter_sha256": adapter,
-                                       "job_sha256": sources.digest(sources.encoded(measured["capture_input"]))},
-                        "resolution": "fresh_execution",
-                    }
-                    active = metadata.get("verified_recapture")
-                    if active is not None and not unified_history.typed_equal(active, supplement):
-                        archive = metadata.setdefault("verified_recaptures", [])
-                        if not any(unified_history.typed_equal(active, item) for item in archive):
-                            archive.append(active)
-                    metadata["verified_recapture"] = supplement
-                    original = {**before, **metadata}
-                    capture_stimulus.select_peer_observation(original, case["request"],
-                                                            implementation=implementation, version=version)
+                active = preserved["value"]["document"].get("record_metadata", {}).get("verified_recapture")
+                if active is None and unified_history.typed_equal(before, measured):
+                    document["records"][case_id] = preserved
+                    continue
+                if (active is not None and active["provenance"]["version"] == version
+                        and unified_history.typed_equal(active["result"], measured)):
+                    capture_stimulus.select_peer_observation(
+                        {**before, **preserved["value"]["document"]["record_metadata"]},
+                        case["request"], implementation=implementation, version=version,
+                    )
+                    document["records"][case_id] = preserved
+                    continue
+                metadata = preserved["value"]["document"].setdefault("record_metadata", {})
+                if adapter is None:
+                    adapter = sources.digest(sources.encoded([
+                        sources.identity(path, sources.read(root, path)) for path in (
+                            "conformance/tests/unified_render.rs", "conformance/tests/common/unified_capture.rs",
+                            "conformance/tests/common/mod.rs",
+                        )
+                    ]))
+                supplement = {
+                    "result": measured,
+                    "provenance": {**origin, "implementation": implementation, "version": version,
+                                   "adapter_sha256": adapter,
+                                   "job_sha256": sources.digest(sources.encoded(measured["capture_input"]))},
+                    "resolution": "fresh_execution",
+                }
+                if active is not None and not unified_history.typed_equal(active, supplement):
+                    archive = metadata.setdefault("verified_recaptures", [])
+                    if not any(unified_history.typed_equal(active, item) for item in archive):
+                        archive.append(active)
+                metadata["verified_recapture"] = supplement
+                original = {**before, **metadata}
+                capture_stimulus.select_peer_observation(original, case["request"],
+                                                        implementation=implementation, version=version)
                 document["records"][case_id] = preserved
             unified_history._validate_complete_snapshot(target, document, store.families[family], implementation, version)
             lineage = copy.deepcopy(selection["lineage"])
