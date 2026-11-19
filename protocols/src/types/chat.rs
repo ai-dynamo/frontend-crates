@@ -15,7 +15,9 @@ use uuid::Uuid;
 
 use crate::error::OpenAIError;
 
+mod allowed_tools;
 mod custom_tools;
+pub use allowed_tools::*;
 pub use custom_tools::*;
 
 // ---------------------------------------------------------------------------

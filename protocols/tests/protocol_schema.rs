@@ -10,6 +10,7 @@ use utoipa::{OpenApi, ToSchema};
 
 #[derive(OpenApi)]
 #[openapi(components(schemas(
+    CreateChatCompletionInput,
     CreateChatCompletionRequest,
     CreateCompletionRequest,
     CreateChatCompletionResponse,
@@ -119,6 +120,7 @@ fn unannotated_dependency_types_are_explicit_import_slots() {
 #[test]
 fn named_and_string_tool_choices_have_no_variant_wrapper() {
     let schema = validator::<ChatCompletionToolChoiceOption>();
+    let input_schema = validator::<CreateChatCompletionInput>();
     for value in [
         json!("none"),
         json!("auto"),
@@ -127,10 +129,38 @@ fn named_and_string_tool_choices_have_no_variant_wrapper() {
         json!({"type":"custom","custom":{"name":"run_python"}}),
     ] {
         assert!(schema.is_valid(&value), "{value}");
+        let input = json!({"model":"test","messages":[],"tool_choice":&value});
+        assert!(input_schema.is_valid(&input), "{input}");
         canonical::<ChatCompletionToolChoiceOption>(value);
     }
     assert!(!schema.is_valid(&json!({"Named":{"type":"function","function":{"name":"lookup"}}})));
     assert!(!schema.is_valid(&json!("invalid")));
+}
+
+#[test]
+fn chat_input_schema_accepts_allowed_tools_with_supported_modes_and_function_refs() {
+    let schema = validator::<CreateChatCompletionInput>();
+    for mode in ["auto", "required", "none"] {
+        let input = json!({
+            "model":"test","messages":[],
+            "tool_choice":{"type":"allowed_tools","allowed_tools":{
+                "mode":mode,"tools":[{"type":"function","function":{"name":"lookup"}}]
+            }}
+        });
+        assert_eq!(schema.is_valid(&input), mode != "none", "{input}");
+        assert_eq!(
+            serde_json::from_value::<CreateChatCompletionInput>(input).is_ok(),
+            mode != "none"
+        );
+    }
+    let input = json!({
+        "model":"test","messages":[],
+        "tool_choice":{"type":"allowed_tools","allowed_tools":{
+            "mode":"auto","tools":[{"type":"custom","custom":{"name":"run_python"}}]
+        }}
+    });
+    assert!(!schema.is_valid(&input));
+    assert!(serde_json::from_value::<CreateChatCompletionInput>(input).is_err());
 }
 
 #[test]
