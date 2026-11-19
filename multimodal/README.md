@@ -249,9 +249,9 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | --- | --- | --- |
 | boot, per model | `serde_json::from_str::<Qwen3VlVideo>` | `video_preprocessor_config.json` → the Qwen3-VL / Cosmos3 sizing rule |
 | boot | `VideoDecodeLimits::default()` | operator caps: 8192² frames, 512 MiB output, 512 MiB WebM / Matroska file |
-| per video | `video_decode::Video::open` | `&bytes` or any `ByteSource` (a file, a ranged download) + limits → the demuxed video; `info()` gives `VideoInfo` (codec, size, duration, fps, frame count) without decoding |
+| per video | `video_decode::Video::open` | `&bytes` or any `ByteSource` (a file, a ranged download) + limits → the demuxed video; `info()` gives `VideoInfo` (codec, size, duration, fps, torchcodec's `average_fps`, frame count) without decoding |
 | per video | `video::resolve_num_frames` | request `VideoOptions` (`fps` / `max_frames` / `num_frames`) + duration + frame count → frames to keep |
-| per video | `Video::decode` | indices (display order, non-decreasing) + `Option<&dyn Fit>` + limits → `VideoFrames` |
+| per video | `Video::decode` (`decode_with` takes an `RgbConversion`) | indices (display order, non-decreasing) + `Option<&dyn Fit>` + limits → `VideoFrames` |
 | per video, no rule | `Video::decode_sampled` | `num_frames` + limits → evenly spaced frames at source size (`sample_indices` gives the same indices for `decode`) |
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
@@ -304,6 +304,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `image::resize::resize_rgb(AtenF32Bilinear)` | torchvision v1 `transforms.functional.resize(BILINEAR)` on a uint8 tensor (f32 antialias, then round); torchvision v2 runs it only under x86 DEFAULT dispatch, because v2 keeps uint8 on AVX2, AVX-512 and aarch64 | **bitwise** against torch's x86 DEFAULT CPU dispatch (`ATEN_CPU_CAPABILITY=default`, no FMA) for outputs at least 2 pixels wide and downscales below 1,000,000x; builds that fuse multiply-adds (x86 AVX2, and ARM even under DEFAULT) can differ by one |
 | `QwenVlProcessor::process_item(Video)` | `Qwen3VLVideoProcessor` with `do_sample_frames=False` (resize, or none with `pre_resized` as `do_resize=False`, normalize, last frame repeated to a whole temporal patch, patchify) | **bitwise** (transformers 5.19.0 goldens in `tests/fixtures/qwen3_vl_video`) |
 | `QwenVlProcessor::layout_with_text` / `positions_with_features` | `Qwen3VLProcessor.__call__` (`replace_video_token`, `_calculate_timestamps`) and `Qwen3VLModel.get_rope_index` | **bitwise** ids and positions when a special token precedes each video placeholder, as in Qwen's chat template (transformers 5.19.0 goldens with the model's tokenizer) |
+| `video_decode::Video::decode_with(.., RgbConversion::Swscale)` | torchcodec 0.17.0 `VideoDecoder` on an x86-64 CPU (FFmpeg 6.1 swscale) | **bitwise** on the BT.601 and BT.709 VP9 fixtures (`swscale_conversion_matches_torchcodec`); frames of odd height are refused |
+| `video_decode::VideoInfo::average_fps` | torchcodec's `metadata.average_fps` | WebM / Matroska from the packet scan; MP4 gives `fps` (the gaps are in its rustdoc) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
