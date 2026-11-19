@@ -41,3 +41,41 @@ fn init_pool_arms_fanout_and_pins_the_thread_count() {
         Err(MmError::InvalidInput { .. })
     ));
 }
+
+#[cfg(feature = "video-decode")]
+#[test]
+fn armed_cpu_decode_matches_the_inline_decode() {
+    use dynamo_multimodal::video_decode::{VideoDecodeLimits, decode_frames, sample_indices};
+    execution::init_pool(2).unwrap();
+    let limits = VideoDecodeLimits::default();
+    for name in [
+        "gop_vp8.webm",
+        "gop_vp9.webm",
+        "vp9_altref.webm",
+        "vp9_invisible.webm",
+    ] {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/video_decode")
+            .join(name);
+        let bytes = std::fs::read(&path).unwrap();
+        let n = dynamo_multimodal::video_decode::probe(&bytes)
+            .unwrap()
+            .frame_count;
+        for set in [
+            (0..n).collect(),
+            sample_indices(n, 4).unwrap(),
+            vec![n / 2, n / 2, n - 1],
+        ] {
+            let armed = decode_frames(&bytes, &set, None, &limits).unwrap();
+            // On a pool thread every helper runs inline.
+            let inline = execution::in_pool(|| decode_frames(&bytes, &set, None, &limits)).unwrap();
+            for k in 0..set.len() {
+                assert!(
+                    armed.frame(k) == inline.frame(k),
+                    "{name}: frame {k} of {set:?}"
+                );
+            }
+            assert_eq!(armed.timestamps(), inline.timestamps(), "{name} {set:?}");
+        }
+    }
+}

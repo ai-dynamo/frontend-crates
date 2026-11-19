@@ -65,6 +65,13 @@ fn armed() -> Option<&'static rayon::ThreadPool> {
     POOL.get()
 }
 
+/// The armed pool when the caller is not one of its threads: a caller that
+/// would block on the pool from inside it runs inline.
+#[cfg(feature = "parallel")]
+fn armed_outside() -> Option<&'static rayon::ThreadPool> {
+    armed().filter(|pool| pool.current_thread_index().is_none())
+}
+
 /// Map `items`, stopping when an error is observed. With the pool armed,
 /// which error is returned is unspecified, and other items may already have
 /// run. Successful output order matches input order.
@@ -82,6 +89,25 @@ where
         return pool.install(|| items.par_iter().map(&f).collect());
     }
     items.iter().map(f).collect()
+}
+
+/// The number of threads a caller may fan out over: the pool size once armed,
+/// else 1, and 1 on a pool thread.
+pub fn threads() -> usize {
+    #[cfg(feature = "parallel")]
+    if let Some(pool) = armed_outside() {
+        return pool.current_num_threads();
+    }
+    1
+}
+
+/// Run `f` on the pool without waiting for it, or inline while unarmed.
+pub fn spawn(f: impl FnOnce() + Send + 'static) {
+    #[cfg(feature = "parallel")]
+    if let Some(pool) = armed() {
+        return pool.spawn(f);
+    }
+    f()
 }
 
 /// Apply `f(chunk_index, chunk)` over disjoint `chunk_size`-element windows of
