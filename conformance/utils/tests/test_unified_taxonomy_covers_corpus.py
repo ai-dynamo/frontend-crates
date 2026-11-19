@@ -2519,8 +2519,8 @@ def _assert_structural_quoted_json_call(family: str, case: dict) -> None:
     family = G.unified_grammar_family(family)
     # Serialized newlines are the two literal bytes backslash+n. Attribute and
     # JSON-string escapes instead make the native payload malformed.
-    if family in {"qwen3", "glm47"}:
-        arguments = {"q": "\\nx\\n" if family == "qwen3" else "x"}
+    if family in {"qwen3", "qwen3_coder", "glm47"}:
+        arguments = {"q": "x" if family == "glm47" else r"\nx\n"}
     elif family in {"gemma4", "kimi_k2"}:
         arguments = {}
     else:
