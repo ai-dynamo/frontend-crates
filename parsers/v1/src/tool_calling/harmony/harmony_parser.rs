@@ -3543,21 +3543,6 @@ mod tests {
         assert!(tool_calls.is_empty());
     }
 
-    /// Parser-level invariant: the harmony parser is byte-stable — it
-    /// doesn't see `finish_reason` and produces the same output regardless
-    /// of the upstream stream-end reason. Real PIPELINE.finish_reason coverage (stop /
-    /// tool_calls / length mapping) lives in
-    /// `lib/llm/tests/test_streaming_tool_parsers.rs` and belongs in the
-    /// cross-parser finish_reason mapping work-item (tracked separately).
-    #[tokio::test]
-    async fn test_harmony_parser_output_independent_of_upstream_finish() {
-        let text = r#"<|channel|>commentary to=functions.get_current_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|>"#;
-        let (tool_calls, _) = parse_tool_calls_harmony_complete(text, &Default::default(), None)
-            .await
-            .unwrap();
-        assert_eq!(tool_calls.len(), 1);
-    }
-
     /// TOOLCALLING.batch.6 — empty args. A no-arg harmony call (`{}`) must still surface
     /// the function name.
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.6.a in tests/parity/toolcalling/fixtures/harmony/TOOLCALLING.batch.6.yaml.
