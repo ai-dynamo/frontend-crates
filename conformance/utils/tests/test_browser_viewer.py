@@ -247,9 +247,9 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
 @pytest.mark.parametrize("implementation,scenario,has_origin", [
     ("dynamo_v1", "tool_only", True),
     ("dynamo_v1_jail", "tool_only", True),
-    ("dynamo_v2", "tool_only", True),
+    ("dynamo_v2", "tool_only", False),
     ("dynamo_v2", "gpt_oss_native_builtin_python_raw", True),
-    *[(implementation, "gpt_oss_assistant_default_channel_visible_response", implementation == "dynamo_v2")
+    *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
       for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
 ])
 def test_unified_popup_keeps_provenance_without_dumping_receipts(historical_published_viewer, implementation, scenario, has_origin):
