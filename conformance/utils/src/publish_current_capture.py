@@ -223,15 +223,6 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
                 if active is None and unified_history.typed_equal(before, measured):
                     document["records"][case_id] = preserved
                     continue
-                if (active is not None and active["provenance"]["version"] == version
-                        and unified_history.typed_equal(active["result"], measured)):
-                    capture_stimulus.select_peer_observation(
-                        {**before, **preserved["value"]["document"]["record_metadata"]},
-                        case["request"], implementation=implementation, version=version,
-                    )
-                    document["records"][case_id] = preserved
-                    continue
-                metadata = preserved["value"]["document"].setdefault("record_metadata", {})
                 if adapter is None:
                     adapter = sources.digest(sources.encoded([
                         sources.identity(path, sources.read(root, path)) for path in (
@@ -246,6 +237,14 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
                                    "job_sha256": sources.digest(sources.encoded(measured["capture_input"]))},
                     "resolution": "fresh_execution",
                 }
+                if active is not None and unified_history.typed_equal(active, supplement):
+                    capture_stimulus.select_peer_observation(
+                        {**before, **preserved["value"]["document"]["record_metadata"]},
+                        case["request"], implementation=implementation, version=version,
+                    )
+                    document["records"][case_id] = preserved
+                    continue
+                metadata = preserved["value"]["document"].setdefault("record_metadata", {})
                 if active is not None and not unified_history.typed_equal(active, supplement):
                     archive = metadata.setdefault("verified_recaptures", [])
                     if not any(unified_history.typed_equal(active, item) for item in archive):
