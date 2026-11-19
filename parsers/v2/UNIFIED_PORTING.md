@@ -15,7 +15,7 @@ Reuse these features from `src/tool_calling/scan.rs` and the guided router in `s
 - reasoning open/close, and EOF promotion of an unterminated thought
 - tool-open break-out from INSIDE a thought, and resume after the call closes (invariant `I3`; case `12-2`)
 - guided-JSON decoding, including the reasoning envelope around the payload
-- a grammar-aware invoke scan for families whose markers cannot delimit a call on their own (`InvokeScan`)
+- a grammar-aware invoke scan for families whose markers cannot delimit a call on their own (`InvokeBoundary`, built by `InvokeBoundaryFactory`)
 - an optional structural role label after the reasoning opener (`ReasoningSpec::start_label`)
 
 The Gemma4 port added invoke scanning and optional reasoning labels. Extend these shared hooks before adding a family-specific drain loop.
