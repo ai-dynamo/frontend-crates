@@ -352,7 +352,8 @@ fn invalid(message: impl Into<String>) -> anyhow::Error {
 /// `json.dumps(value, ensure_ascii=False)`.
 fn python_json(value: &Value) -> String {
     let mut buf = Vec::new();
-    let mut serializer = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter);
+    let mut serializer =
+        serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter::default());
     value
         .serialize(&mut serializer)
         .expect("serializing a JSON value into a Vec cannot fail");
