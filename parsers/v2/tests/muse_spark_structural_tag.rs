@@ -193,23 +193,124 @@ fn parameterless_tools_and_non_strict_arguments_remain_usable() {
     assert!(!tag.to_string().contains("atem:parameter"));
 }
 
-#[test]
-fn unsupported_raw_string_constraints_are_errors_instead_of_weaker_grammars() {
+const STRING_ATOM: &str = r"(?:[^<]|<[^/|])";
+
+fn city_grammar(city: Value, choice: StructuralTagToolChoice<'_>) -> Value {
     let mut tools = tools();
-    tools[0].parameters["properties"]["city"] =
-        json!({"type":"string", "pattern":"^A", "minLength":4, "contentMediaType":"text/plain"});
-    let error = structural_tag_builder_for_family("muse_spark_open")
-        .unwrap()
-        .build(&StructuralTagContext {
-            tool_choice: StructuralTagToolChoice::Required,
-            tools: &tools,
-            parallel_tool_calls: None,
-            schema_mode: StructuralTagSchemaMode::Strict,
-            structured_output_schema: None,
-            starts_in_reasoning: false,
-        })
-        .unwrap_err();
-    assert!(error.to_string().contains("unsupported"));
+    tools[0].parameters["properties"]["city"] = city;
+    grammar(choice, None, None, &tools)
+}
+
+fn has_regex(tag: &Value, pattern: &str) -> bool {
+    tag.to_string()
+        .contains(&format!("\"pattern\":{}", json!(pattern)))
+}
+
+fn has_grammar(tag: &Value, budget: &str, body: &str) -> bool {
+    let grammar = format!("root ::= body\nbody{budget} ::= {body}\natom ::= [^<] | \"<\" [^/|]");
+    tag.to_string()
+        .contains(&format!("\"grammar\":{}", json!(grammar)))
+}
+
+#[test]
+fn raw_string_length_bounds_use_a_character_budget() {
+    for (city, budget, body) in [
+        (
+            json!({"type":"string", "minLength":3, "maxLength":8}),
+            "[max_chars=8]",
+            "atom{3} atom*",
+        ),
+        (json!({"type":"string", "minLength":2}), "", "atom{2} atom*"),
+        (
+            json!({"type":"string", "maxLength":0}),
+            "[max_chars=0]",
+            "atom*",
+        ),
+        (
+            json!({"type":"string", "maxLength":4096}),
+            "[max_chars=4096]",
+            "atom*",
+        ),
+    ] {
+        for choice in [
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("weather.lookup"),
+        ] {
+            let tag = city_grammar(city.clone(), choice);
+            assert!(has_grammar(&tag, budget, body), "{city} -> {tag}");
+            assert!(!tag.to_string().contains(&format!("{STRING_ATOM}{{")));
+        }
+    }
+    let tag = city_grammar(
+        json!({"type":"string", "minLength":3, "maxLength":8}),
+        StructuralTagToolChoice::Required,
+    );
+    capture(
+        "string_length_bounds",
+        &tag,
+        vec![
+            call("Rome", "2", "<|eot|>"),
+            call("a < b", "2", "<|eot|>"),
+            call("<b>Rome", "2", "<|eot|>"),
+        ],
+        vec![
+            call("Ro", "2", "<|eot|>"),
+            call("Rome, Italy", "2", "<|eot|>"),
+            call("a</b>", "2", "<|eot|>"),
+            call("a<|eot|>", "2", "<|eot|>"),
+        ],
+    );
+}
+
+#[test]
+fn raw_string_length_bounds_above_the_counted_limit_stay_unbounded_text() {
+    for city in [
+        json!({"type":"string", "maxLength":4097}),
+        json!({"type":"string", "minLength":4097}),
+    ] {
+        let tag = city_grammar(city, StructuralTagToolChoice::Required);
+        assert!(!tag.to_string().contains("max_chars"));
+        assert!(!tag.to_string().contains("\"grammar\""));
+        assert!(tag.to_string().contains("any_text"));
+    }
+}
+
+#[test]
+fn raw_string_patterns_take_precedence_over_length_bounds() {
+    for (city, pattern) in [
+        (
+            json!({"type":"string", "pattern":"^A", "minLength":4, "contentMediaType":"text/plain"}),
+            format!("(?:A){STRING_ATOM}*"),
+        ),
+        (
+            json!({"type":"string", "pattern":"^[A-Z]{3}-[0-9]{4}$"}),
+            "(?:[A-Z]{3}-[0-9]{4})".to_string(),
+        ),
+        (
+            json!({"type":"string", "pattern":"price\\$"}),
+            format!(r"{STRING_ATOM}*(?:price\$){STRING_ATOM}*"),
+        ),
+        (
+            json!({"type":"string", "pattern":".*"}),
+            format!("{STRING_ATOM}*(?:.*){STRING_ATOM}*"),
+        ),
+    ] {
+        let tag = city_grammar(city.clone(), StructuralTagToolChoice::Required);
+        assert!(has_regex(&tag, &pattern), "{city} -> {tag}");
+    }
+    let tag = city_grammar(
+        json!({"type":"string", "pattern":"^[A-Z]{3}-[0-9]{4}$"}),
+        StructuralTagToolChoice::Required,
+    );
+    capture(
+        "string_pattern",
+        &tag,
+        vec![call("ABC-1234", "2", "<|eot|>")],
+        vec![
+            call("abc-1234", "2", "<|eot|>"),
+            call("ABC-12345", "2", "<|eot|>"),
+        ],
+    );
 }
 
 #[test]
@@ -338,32 +439,6 @@ fn none_uses_a_native_final_message_and_disallows_tool_channels() {
         vec![" to=user<|message|>Hello.<|eot|>".into()],
         vec![call("Paris", "2", "<|eot|>")],
     );
-}
-
-#[test]
-fn raw_string_constraints_that_cannot_exclude_xml_delimiters_are_rejected() {
-    for schema in [
-        json!({"type":"string","pattern":".*"}),
-        json!({"type":"string","minLength":1}),
-    ] {
-        let mut tools = tools();
-        tools[0].parameters["properties"]["city"] = schema;
-        tools[0].parameters["properties"]["city"]["contentMediaType"] = json!("text/plain");
-        let result = structural_tag_builder_for_family("muse_spark_open")
-            .unwrap()
-            .build(&StructuralTagContext {
-                tool_choice: StructuralTagToolChoice::Named("weather.lookup"),
-                tools: &tools,
-                parallel_tool_calls: None,
-                schema_mode: StructuralTagSchemaMode::Strict,
-                structured_output_schema: None,
-                starts_in_reasoning: false,
-            });
-        assert!(
-            result.is_err(),
-            "a raw-text regex must not admit parameter-closing delimiters as value data"
-        );
-    }
 }
 
 #[test]
