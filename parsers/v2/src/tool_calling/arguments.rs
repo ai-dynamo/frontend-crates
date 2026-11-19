@@ -13,9 +13,9 @@ pub(crate) mod schema;
 pub(crate) use schema::MAX_SCHEMA_DEPTH;
 #[cfg(test)]
 pub(crate) use schema::MAX_SCHEMA_WORK;
-pub(crate) use schema::SchemaFacts;
 #[cfg(test)]
 pub(crate) use schema::schema_type_match;
+pub(crate) use schema::{NativeText, SchemaFacts};
 pub(crate) use schema::{schema_has_type, schema_permits_null};
 
 #[derive(Debug)]

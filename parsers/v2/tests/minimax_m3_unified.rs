@@ -1208,3 +1208,54 @@ fn required_nullable_omitted_argument_is_null() {
     let s = note(json!({"type":["string","null"]}), json!(["note"]));
     assert_splits(&call(""), s, init(), &[expected(json!({"note":null}))]);
 }
+
+#[test]
+fn nested_child_references_resolve_in_their_enclosing_id_resource() {
+    let schema = json!({
+        "type": "object",
+        "$defs": {"T": {"type": "integer"}},
+        "properties": {"payload": {
+            "$id": "https://example.test/payload",
+            "$defs": {"T": {"type": "boolean"}},
+            "type": "object",
+            "properties": {"value": {"anyOf": [{"$ref": "#/$defs/T"}, {"type": "string"}]}}
+        }}
+    });
+    let n = "]<]minimax[>[";
+    let input = call(&format!("{n}<payload>{n}<value>42{n}</value>{n}</payload>"));
+    let mut p = parser(schema);
+    let mut output = p.push(&input).unwrap();
+    output.extend(p.finish().unwrap().events);
+    // `#/$defs/T` belongs to the payload resource, so the root's integer
+    // definition must not type the text.
+    assert_eq!(
+        assemble(&output),
+        [expected(json!({"payload": {"value": "42"}}))]
+    );
+}
+
+#[test]
+fn intersected_child_declarations_keep_their_enclosing_id_resource() {
+    let schema = json!({
+        "type": "object",
+        "$defs": {"T": {"type": "integer"}},
+        "properties": {"payload": {
+            "$id": "https://example.test/payload",
+            "$defs": {"T": {"type": "boolean"}},
+            "type": "object",
+            "allOf": [
+                {"properties": {"value": {"anyOf": [{"$ref": "#/$defs/T"}, {"type": "string"}]}}},
+                {"properties": {"value": {"type": ["string", "integer"]}}}
+            ]
+        }}
+    });
+    let n = "]<]minimax[>[";
+    let input = call(&format!("{n}<payload>{n}<value>42{n}</value>{n}</payload>"));
+    let mut p = parser(schema);
+    let mut output = p.push(&input).unwrap();
+    output.extend(p.finish().unwrap().events);
+    assert_eq!(
+        assemble(&output),
+        [expected(json!({"payload": {"value": "42"}}))]
+    );
+}
