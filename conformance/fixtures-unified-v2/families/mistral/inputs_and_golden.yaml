@@ -183,6 +183,7 @@ tools:
           type: object
       required:
       - value
+  tools_9db8284c68087826: []
   tools_eb14ad8c4a7a4413:
   - name: capture_payload
     parameters:
@@ -597,6 +598,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_ac03f4607c61c9ce:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+      required:
+      - cmd
   tools_edce2cf72af57686:
   - name: schema_probe
     parameters:
@@ -1099,6 +1109,18 @@ tools:
       - value
       additionalProperties: false
     strict: false
+  tools_a7861137bdb03589:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+      - path
+      - content
   tools_56ea48eeba7ec14b:
   - name: schema_probe
     parameters:
@@ -1317,7 +1339,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_9db8284c68087826: []
   tools_7f03b4392817a770:
   - name: capture_payload
     parameters:
@@ -1700,6 +1721,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_f7439c846ab88b86:
   - name: get_weather
     parameters:
@@ -1865,6 +1895,16 @@ requests:
   0add627c5565f4ee9e055c6f0848bf97f05e09b6f6754d81ab0a45a7f35acdbc:
     input: '[TOOL_CALLS][{"name":"get_weather","arguments":{"value":{"note":"[/TOOL_CALLS]"}}}][/TOOL_CALLS]'
     tools: tools_5bae9e9b644a5834
+  0b9654ac659e8f05ac9cdb663151778e0fc30fee0542f84c4e9eefe2c2c346f9:
+    input: Let me think, I should run this command "grep -v '[/THINK]' ..."
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 64
+    finish_step: true
   0d22b2834a6938b9b7c08b9795c1930fbf71ef4fa29d29fea5c911a2f16cd95b:
     input: '[TOOL_CALLS][{"name":"capture_payload","arguments":{"payload":{"x":1}}}][/TOOL_CALLS]'
     tools: tools_eb14ad8c4a7a4413
@@ -1899,6 +1939,16 @@ requests:
   11b56c90aada8efe89e083c09abaf68b9072b32ad239ebb59690d5e425a091d1:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":3.5}}][/TOOL_CALLS]'
     tools: tools_7c3821d79a8dd3d3
+  11fc1d6c5f8335a6c6ceb244d0bef9610cace4cd38443c4402fbc75f164278da:
+    input: '''90s[/THINK]''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 20
+    finish_step: true
   127482c5a10504f2c7faa60d2e4bc3b9675486fb7a52d73c9842d5c93064a184:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"[1,2]"}}][/TOOL_CALLS]'
     tools: tools_1c0b6cc6a42cfbde
@@ -1961,6 +2011,16 @@ requests:
   1ecd99af9617a8d7bf94a1d64041eca34504a74f75d1853105bd6bd2a8e1ab68:
     input: '[THINK]check[/THINK][THINK]ing[/THINK]'
     tools: tools_cbf47ccf5fd2ef00
+  1ef8e6ba19a8e7df73924d8c0bad2b0067a6891dd904eb7591fb7a3dcf403403:
+    input: Let me think, I should try `pytest -x[/THINK]Run pytest
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 55
+    finish_step: true
   1f6f21a62f483e7bf96241bae2d5ec93a129ec98b02780a8274fcd3f9218f783:
     input: '[TOOL_CALLS][{"name":"get_weather","arguments":{"value":["[/TOOL_CALLS]"]}}][/TOOL_CALLS]'
     tools: tools_8a00d152710c5e39
@@ -2007,6 +2067,39 @@ requests:
   303596b01f8895007628cddd6046d0735efd86e5fc1b903587321e45585ea484:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"auto"}}][/TOOL_CALLS]'
     tools: tools_d0a5a1d2f9e7df17
+  303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0:
+    input: Use re.split(r'(\s)', text). Let's final.[/THINK]The code prints ['a', ' ', 'b'].
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 7
+    - 32
+    finish_step: true
+  30a0cdb63913ff1bee3c9dbd09a6d47a8a4edda4f9de982e0ea084d37f798a18:
+    input: Let me think, the year is 80s'[/THINK]Yes
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 41
+    finish_step: true
+  31e19c6d8003389826725346fbe7dc6ee391e6ae805f2278fe8c8bd5e51fea93:
+    input: 27"[/THINK]"Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 19
+    finish_step: true
   328400cd74281484184e178245df74f2f6f6ff1cfc8d7d68506a4aa2f622336d:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":{"x":1}}}][/TOOL_CALLS]'
     tools: tools_3e9459ef2d935104
@@ -2063,6 +2156,18 @@ requests:
 
       Done.'
     tools: tools_cbf47ccf5fd2ef00
+  3c9ecd6632c1a4bb7cacd2f5c53df9f7cec45fa9299f73dd2c2fe084cbfedce1:
+    input: The literal "[TOOL_CALLS]" marker is part of the explanation. [TOOL_CALLS][{"name":"run","arguments":{"cmd":"Paris"}}][/TOOL_CALLS]
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 62
+    - 47
+    - 22
+    finish_step: true
   3d6f881d4cfdd5303a038bedc8f2e4afe9669b3760e332ccf235ea51722869f7:
     input: '[TOOL_CALLS][{"name":"get_weather","arguments":{"value":9.007199254740993e15}}][/TOOL_CALLS]'
     tools: tools_3b9cefdb4fbe7e81
@@ -2097,6 +2202,16 @@ requests:
   4076da4568cda1830ceb43946a2441680e4874d9be85a6b3f4a955aa2624f80d:
     input: '[TOOL_CALLS][{"name":"get_weather","arguments":{"city":"null"}}][/TOOL_CALLS]'
     tools: tools_f3cbb76569c2b8fd
+  410651a0e669c5b119e4eef31cc51caed4e933acfa3866cb1c2c6616c12ce729:
+    input: Let me think, this SQL fragment is '1'='1[/THINK]'Yes'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 54
+    finish_step: true
   415ca1cd13699a7daf41d54026909c7643cbb77ea881c7f74fa01da51dcf0758:
     init:
       starting_state: None
@@ -2140,6 +2255,19 @@ requests:
       named_tool: null
     input: The literal "[TOOL_CALLS]" marker is part of the explanation.
     tools: tools_cbf47ccf5fd2ef00
+  4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8:
+    input: analysis "[/THINK]Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 7
+    - 7
+    finish_step: true
   4eb1fc7e17f1adb3365db1934455230ca1b0f450e77b649a6c86e3232fa503b2:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":42}}][/TOOL_CALLS]'
     tools: tools_9d7e29c38b45febb
@@ -2185,6 +2313,16 @@ requests:
   58fde936585dc3d0c9e1af5e1fc6d7c0cc757c8b03c4ce8c64ae0f99814dd42b:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"42"}}][/TOOL_CALLS]'
     tools: tools_f9599a86b7b8e1d2
+  592550cad76041319931d0cdc302ede368d96597d023dbadf7318e5af1fd131f:
+    input: Let me think, "The marker [/THINK] is a special marker"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 55
+    finish_step: true
   59f40eaebdef13a65919bfd0761c500c5ad9e00e3fdf12a29ef04a609cd9215e:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"[1,2]"}}][/TOOL_CALLS]'
     tools: tools_84d891e8e63c96d4
@@ -2292,6 +2430,16 @@ requests:
   714cfef0b124dbbc4763c065e8cce8f566cda40e340ee6f8a555dc1a6b9813b9:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"auto"}}][/TOOL_CALLS]'
     tools: tools_1ffd69270532e13e
+  71d23ec03bfa613c7e992f69f7153622dcf9b2b5853a2796f3c5bddf6b9a3ba1:
+    input: Let me think, user is asking if [/THINK] is special[/THINK]Yes
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 62
+    finish_step: true
   722abb5faddaa97e142539c45b734cd038040ec26cbec1214c9dba5aee2c41ee:
     input: '[THINK]first thought[/THINK]interlude [THINK]second thought[/THINK]done'
     tools: tools_cbf47ccf5fd2ef00
@@ -2335,6 +2483,16 @@ requests:
   7bffca1d684fd3c55b1f9698e0be193465e816f600e1897c2b99906508322339:
     input: '[THINK]A[/THINK][TOOL_CALLS][{"name":"f","arguments":{"x":"1"}}][/TOOL_CALLS][THINK]B[/THINK][TOOL_CALLS][{"name":"g","arguments":{"y":"2"}}][/TOOL_CALLS][THINK]C[/THINK]'
     tools: tools_cbf47ccf5fd2ef00
+  7c16a7fc7e030181743192df395a80e6a45bf5f62c11e641879c327611222921:
+    input: '[TOOL_CALLS][{"name":"write_file","arguments":{"path":"/tmp/literal.txt","content":"<think></think>answer"}}][/TOOL_CALLS]'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_a7861137bdb03589
+    chunk_sizes:
+    - 122
+    finish_step: true
   7cf9dd2b28335fb351e214993f110058feecadfa261cf00464a256ed83838deb:
     input: Hello there. [THINK]let me recall[/THINK]The capital is Paris.
     tools: tools_cbf47ccf5fd2ef00
@@ -2414,6 +2572,16 @@ requests:
   856401d04dc97ff86b77c5eb9f6b8316901cae1ec11b58d73744e22db1e13b7e:
     input: '[TOOL_CALLS][{"name":"f","arguments":{"x":"1"}}][/TOOL_CALLS] then [TOOL_CALLS][{"name":"g","arguments":{"y":"2"}}][/TOOL_CALLS]'
     tools: tools_cbf47ccf5fd2ef00
+  85940dfb44e4ed988b8adb5bde469ec92b3b98efb8b72468db5fcb993128521f:
+    input: The special "[/THINK]" marker is used to delineate parser paths
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 63
+    finish_step: true
   8727ec7a263724dd1d18446f7a97821d302b591fdee1a096439ca7a6fb206797:
     input: '
 
@@ -2500,6 +2668,18 @@ requests:
   a067a06147077e9dd71d2fd630cacafbe1db9a7f0183ee5e58694214e50ac4a7:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"42"}}][/TOOL_CALLS]'
     tools: tools_7351122c3d50bd6e
+  a06b589a428879fc6a2262b0502c858514b35e8b1e12c8c87706a127faa90d7c:
+    input: 'f''" OR x -- ''
+
+      [/THINK]"Answer"'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    finish_step: true
   a09e39b16c2a96f6e462f037ae7be15d5c2e4288692530aab36b263242629b14:
     input: '[TOOL_CALLS][{"name":"get_weather","arguments":{"value":-9007199254740992.5}}][/TOOL_CALLS]'
     tools: tools_be922244cdee705c
@@ -2531,6 +2711,16 @@ requests:
   a5cb91e68f1d11337fc267771e04d8ad5fe89fc3e64455fa54ab77daff79ed94:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"café"}}][/TOOL_CALLS]'
     tools: tools_3632e66e77144cef
+  a7315936be34a10ea6927f01d33e17caffd904522f983c9b96023a95dc21331b:
+    input: '''[/THINK]''[/THINK]Answer'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 24
+    finish_step: true
   a7481acc33e8d64629de2169faa7325f8902b897b047b595566315e917f85a11:
     init:
       starting_state: Response
@@ -2564,6 +2754,26 @@ requests:
   ac5569f74bda064a270077f1895be01c4c1c2cf7fa36c5823c4fc87d2e675372:
     input: '[TOOL_CALLS][{"name":"capture_payload","arguments":{"metrics":["temperature","humidity"],"count":5}}][/TOOL_CALLS]'
     tools: tools_7f03b4392817a770
+  ac8b4e3b9662a820c39b02839c11e472edef8ddac2e971c1b5ead303e7476260:
+    input: Let me think, the marker [/THINK] is a special marker
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 53
+    finish_step: true
+  ad2a52481487bf04a3d9f1ca26ff60f52ab2c95bb4f4fbb0b2f5e510df821050:
+    input: Let me think, the reference is 80s' music[/THINK]'Yes'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 54
+    finish_step: true
   ad4bcf2c7663ce8559cef4020a70a2c17ff7d8af0a42e40b88ccb2e8920cea72:
     input: '[THINK]Check weather.[/THINK]
 
@@ -2625,6 +2835,16 @@ requests:
   ba2b6e0861dcd07c3527026f01f10dc3b2ffff6c7314fda358caf81d7b6dbfe1:
     input: '[TOOL_CALLS][{"name":"echo","arguments":{"city":"Paris","value":1e400}}][/TOOL_CALLS]'
     tools: tools_81ef407beab6fe3e
+  baf5239a4a4c8b90cac623cdac7f8b5b22931070d0bed1523eabb85f12685d24:
+    input: Let me think, the TV size is 40"[/THINK]Yes
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 43
+    finish_step: true
   bb9ab03610fcc190cfaa8dd1f9f55e09e39a0544b9bfbb1073eaaf7d1e335138:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"\"hello\""}}][/TOOL_CALLS]'
     tools: tools_4b74086a372173ba
@@ -2652,6 +2872,16 @@ requests:
   c114a05fd58b85bec5202eedcf1e683655a9969c74a5168d072a777bfb91fe1e:
     input: '[TOOL_CALLS][{"name":"echo","arguments":{"city":"Paris","value":1.5}}][/TOOL_CALLS]'
     tools: tools_81ef407beab6fe3e
+  c1d1fe543ae50b05acacf2bc04939a7783f60dbcdde4b2e5f1f51b93a429577c:
+    input: '`name[/THINK]`Answer`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 21
+    finish_step: true
   c2fa30f1ae491b55eaceaa3350e9da231897d7ebb2f2deeab201f0b3e2107789:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"auto"}}][/TOOL_CALLS]'
     tools: tools_354f5c938f5eb5c2
@@ -2759,6 +2989,16 @@ requests:
   d86dc4248526e50acb268581efaf1d9fc51da7d35c29e78a8089417e558297a8:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"auto"}}][/TOOL_CALLS]'
     tools: tools_1348faa3b84df9fd
+  d959895c8f225307af2d428350272ed5d2dddb7313df7b9d09bf870177999c08:
+    input: Let me think, I should run this command "grep -v '[/THINK]
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 58
+    finish_step: true
   de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c:
     init:
       starting_state: None
@@ -2790,6 +3030,16 @@ requests:
   e9f448ec9ea8a93589c4df6d27285658d2e7ac6215bbd2bf6e0f75d0225ae01b:
     input: before[TOOL_CALLS][{"name":"get_weather","arguments":{"city":"[THINK]literal[/THINK]"}}][/TOOL_CALLS]after
     tools: tools_cbf47ccf5fd2ef00
+  eaee9ba1768cbe86284c07d7a47e946c9771ef4059f3965356f6aa5f85bad787:
+    input: '`name`''s path.[/THINK]''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    finish_step: true
   eba48bca655873187180362b035fc43282e494a1b517c23e9a922d7e52304d54:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":"auto"}}][/TOOL_CALLS]'
     tools: tools_b96fcb423a7855d0
@@ -2806,6 +3056,16 @@ requests:
   ec4f0efd6b61deeb695b977fa2b0fb812bef1901986f923a28c468aa934dc840:
     input: '[TOOL_CALLS][{"name":"schema_probe","arguments":{"value":3}}][/TOOL_CALLS]'
     tools: tools_19a5070486dcbf53
+  ed446a7841ebbc70ee1956fd2889e6888cbda08abc9c8d2460af6d47f9678fe2:
+    input: '[TOOL_CALLS][{"name":"write_file","arguments":{"content":"<think></think>answer"}}][/TOOL_CALLS]'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 96
+    finish_step: true
   ed9f658bc51f85bbf5aebf93a26d2c0cc4b699d546a6aadd212d35e124d77806:
     input: '[TOOL_CALLS][{"name":"get_weather","arguments":{"city":null}}][/TOOL_CALLS]'
     tools: tools_f7439c846ab88b86
@@ -2854,6 +3114,16 @@ requests:
 
       '
     tools: tools_cbf47ccf5fd2ef00
+  f4aeaf9be9619adf432f70a1eb2c2b9d34004e935552719a0f1703ec07216c0e:
+    input: '`pytest -x[/THINK]Run `pytest`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    finish_step: true
   f574eb2385428ffe8be3f2fde92f00816a3a4074569448b2db6334664f54bb7d:
     init:
       starting_state: Response
@@ -5838,32 +6108,32 @@ cases:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: 4c1983d3cf10ac2c0e1fbe5a95206c0172e9eb3aee08ad91d8e2507d7777d041
     golden:
     - kind: reasoning
-      text: The literal "[TOOL_CALLS]" marker is part of the explanation.
+      text: The literal "
   native_quoted_control_in_response:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: cf4242ea0541ec89917a66b5cc040a0064d23080c3e17f380a23e893b1bf61c6
     golden:
     - kind: text
-      text: The literal "[TOOL_CALLS]" marker is part of the explanation.
+      text: The literal "
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 40009a3362723aeedf5edde04b0d5ea50d44f6df41c1d268d96b832d2413fc0f
     golden:
     - kind: text
-      text: The literal "[TOOL_CALLS]" marker is part of the explanation.
+      text: The literal "
     - kind: tool_call
       name: get_weather
       arguments:
@@ -5872,42 +6142,42 @@ cases:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: fe1ab7930c7b090cc4762c9441d3d5007d550ce02486c541c6c63854f4c5e23f
     golden:
     - kind: text
-      text: The literal `[TOOL_CALLS][{"name":"get_weather","arguments":{"city":"` header is part of the explanation.
+      text: The literal `
   native_single_quote_contraction_reasoning:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: d6bec4e608c666a1cade99467945ead6ed0e42ff777e0f9835e2009578822428
     golden:
     - kind: reasoning
-      text: The literal 'doesn't [TOOL_CALLS] marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 7fc7cc8a3b5b9054c6582afc5100a64482114cc792bd2fbe54e7fc244dc6ab16
     golden:
     - kind: text
-      text: The literal 'doesn't [TOOL_CALLS] marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: 18651614bb40aff2776b32a51bc9d5d15acfdc11389e24ca8e908aea3105c082
     golden:
     - kind: text
-      text: The literal 'example [TOOL_CALLS] marker' is part of the explanation.
+      text: 'The literal ''example '
   native_unmatched_quote_then_call:
     policy:
     - I7
@@ -5949,21 +6219,21 @@ cases:
     - I3
     - I5
     - I7
-    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    description: A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: bf196326dc1f722145b5663b563f1297bf432580c8fb68c7dfd1a7c58a4f29dd
     golden:
     - kind: text
-      text: '"[TOOL_CALLS][{\"name\":\"lookup\",\"arguments\":{\"q\":\"x\"}}][/TOOL_CALLS]" trailing'
+      text: '"" trailing'
   guided_response_quoted_control_braces_named:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 9529acc3af89f9b8fded2d31c32b7b5f518786af6aaf6d28e00c819f01921355
     golden:
     - kind: text
-      text: 'The literal "[TOOL_CALLS] { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -5971,12 +6241,12 @@ cases:
   guided_response_quoted_control_braces_required:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: f574eb2385428ffe8be3f2fde92f00816a3a4074569448b2db6334664f54bb7d
     golden:
     - kind: text
-      text: 'The literal "[TOOL_CALLS] { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -6004,9 +6274,9 @@ cases:
       arguments:
         value: '{''a'':1}'
   arg_json_null_ref:
-    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
     policy:
     - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
     request: 08279ba490cbe6b09a40fc6ac82088137535bff6b59cdcfd5c1c2637b89ac3b6
     golden:
@@ -6015,9 +6285,9 @@ cases:
       arguments:
         city: null
   arg_string_null_ref:
-    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
     policy:
     - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
     request: 4076da4568cda1830ceb43946a2441680e4874d9be85a6b3f4a955aa2624f80d
     golden:
@@ -6025,3 +6295,299 @@ cases:
       name: get_weather
       arguments:
         city: 'null'
+  native_quoted_reasoning_closer_default:
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    policy:
+    - I2
+    - I5
+    request: 4e1aa3256dc270b60766a2f57d2260b7d088b9a8c3e640677ccda559b9d8f3a8
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+  native_raw_string_before_reasoning_closer:
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    policy:
+    - I2
+    - I5
+    request: 303c85adc356746e2c8d5e4b4a640e7ba89aba62f8261279c0153748d1e018e0
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+  inch_mark_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: baf5239a4a4c8b90cac623cdac7f8b5b22931070d0bed1523eabb85f12685d24
+    golden:
+    - kind: reasoning
+      text: Let me think, the TV size is 40"
+    - kind: text
+      text: 'Yes'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer
+  decade_apostrophe_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 30a0cdb63913ff1bee3c9dbd09a6d47a8a4edda4f9de982e0ea084d37f798a18
+    golden:
+    - kind: reasoning
+      text: Let me think, the year is 80s'
+    - kind: text
+      text: 'Yes'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: ad2a52481487bf04a3d9f1ca26ff60f52ab2c95bb4f4fbb0b2f5e510df821050
+    golden:
+    - kind: reasoning
+      text: Let me think, the reference is 80s' music
+    - kind: text
+      text: '''Yes'''
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first the native reasoning closer could be a literal mention in the question; only the second closer would end reasoning, leaving text=Yes.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 71d23ec03bfa613c7e992f69f7153622dcf9b2b5853a2796f3c5bddf6b9a3ba1
+    golden:
+    - kind: reasoning
+      text: 'Let me think, user is asking if '
+    - kind: text
+      text: ' is specialYes'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+  native_unquoted_reasoning_closer_in_sentence:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: even without quotation marks, the wording mentions the marker as a subject. A reader could expect the whole sentence to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: ac8b4e3b9662a820c39b02839c11e472edef8ddac2e971c1b5ead303e7476260
+    golden:
+    - kind: reasoning
+      text: 'Let me think, the marker '
+    - kind: text
+      text: ' is a special marker'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+  native_reasoning_closer_in_quoted_sentence:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the whole quotation discusses the marker. A reader could expect the complete quoted sentence to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 592550cad76041319931d0cdc302ede368d96597d023dbadf7318e5af1fd131f
+    golden:
+    - kind: reasoning
+      text: 'Let me think, "The marker '
+    - kind: text
+      text: ' is a special marker"'
+    display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+  closed_command_quote_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the grep command quotes a literal search pattern. A reader could expect the entire command, including the native reasoning closer, to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 0b9654ac659e8f05ac9cdb663151778e0fc30fee0542f84c4e9eefe2c2c346f9
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    - kind: text
+      text: ''' ..."'
+    display_id: UNIFIED.40-closed_command_quote_before_reasoning_closer
+  unclosed_command_quote_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the unfinished grep command may be quoting a literal the native reasoning closer search pattern. A reader could retain the entire unfinished command in reasoning through EOF.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: d959895c8f225307af2d428350272ed5d2dddb7313df7b9d09bf870177999c08
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    display_id: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+  unclosed_command_backtick_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this could be an unfinished code snippet containing a literal the native reasoning closer. The unfinished backtick does not by itself establish which boundary was intended.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 1ef8e6ba19a8e7df73924d8c0bad2b0067a6891dd904eb7591fb7a3dcf403403
+    golden:
+    - kind: reasoning
+      text: Let me think, I should try `pytest -x
+    - kind: text
+      text: Run pytest
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+  sql_fragment_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: a reader treating the fragment as quoted SQL data could keep the native reasoning closer inside reasoning. The incomplete SQL and quotation make intent uncertain.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 410651a0e669c5b119e4eef31cc51caed4e933acfa3866cb1c2c6616c12ce729
+    golden:
+    - kind: reasoning
+      text: Let me think, this SQL fragment is '1'='1
+    - kind: text
+      text: '''Yes'''
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+  quoted_name_possessive_inline_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: eaee9ba1768cbe86284c07d7a47e946c9771ef4059f3965356f6aa5f85bad787
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+  inch_mark_before_reasoning_closer_quoted_answer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 31e19c6d8003389826725346fbe7dc6ee391e6ae805f2278fe8c8bd5e51fea93
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+  unclosed_backtick_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the backtick that closes after the marker could make the native reasoning closer literal code within reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: c1d1fe543ae50b05acacf2bc04939a7783f60dbcdde4b2e5f1f51b93a429577c
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 11fc1d6c5f8335a6c6ceb244d0bef9610cace4cd38443c4402fbc75f164278da
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the later backtick could close a code span containing the native reasoning closer, keeping that marker in reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: f4aeaf9be9619adf432f70a1eb2c2b9d34004e935552719a0f1703ec07216c0e
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+  mixed_quotes_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this code-shaped fragment could be read as quoted reasoning data containing the native reasoning closer, rather than a channel boundary.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: a06b589a428879fc6a2262b0502c858514b35e8b1e12c8c87706a127faa90d7c
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+  native_quoted_reasoning_closer_then_answer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first quoted the native reasoning closer could be literal reasoning data; only the second closer would end reasoning, leaving text=Answer.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: a7315936be34a10ea6927f01d33e17caffd904522f983c9b96023a95dc21331b
+    golden:
+    - kind: reasoning
+      text: ''''
+    - kind: text
+      text: '''Answer'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+  native_quoted_reasoning_closer_in_sentence:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the sentence explicitly discusses the marker. A reader could expect the entire sentence, including the quoted the native reasoning closer, to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 85940dfb44e4ed988b8adb5bde469ec92b3b98efb8b72468db5fcb993128521f
+    golden:
+    - kind: reasoning
+      text: The special "
+    - kind: text
+      text: '" marker is used to delineate parser paths'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    policy:
+    - I7
+    request: ed446a7841ebbc70ee1956fd2889e6888cbda08abc9c8d2460af6d47f9678fe2
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    policy:
+    - I7
+    request: 7c16a7fc7e030181743192df395a80e6a45bf5f62c11e641879c327611222921
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        path: /tmp/literal.txt
+        content: <think></think>answer
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+  native_quoted_control_then_call_progress:
+    description: '#595: start in Response with Native output and offered run(cmd:string). The structural prose opener owns and drops its incomplete body; recover the following complete call. Three content chunks expose pre-EOF progress. A literal reading would instead retain the quoted marker and explanation.'
+    policy:
+    - I3
+    - I7
+    - P2
+    request: 3c9ecd6632c1a4bb7cacd2f5c53df9f7cec45fa9299f73dd2c2fe084cbfedce1
+    golden:
+    - kind: text
+      text: The literal "
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: Paris
+    display_id: UNIFIED.8-native_quoted_control_then_call_progress

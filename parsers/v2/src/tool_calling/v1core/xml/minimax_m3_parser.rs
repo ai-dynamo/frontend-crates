@@ -132,7 +132,7 @@ pub(crate) fn parse_invoke_name(tag_attrs: &str) -> Option<String> {
     }
 
     let end = value.find(char::is_whitespace).unwrap_or(value.len());
-    if end == 0 {
+    if end == 0 || value[..end].contains(['\'', '"']) {
         None
     } else {
         Some(value[..end].trim().to_string())
@@ -277,7 +277,7 @@ pub(crate) fn native_union_children_ambiguous(root: &Value, schema: &Value) -> b
 
 #[derive(Clone, Copy)]
 pub(crate) enum M3ParameterKind {
-    LiteralString { streamable: bool },
+    LiteralString,
     Typed,
     // Repeated array tags and unknown-schema tags can aggregate earlier values.
     Buffered,
@@ -330,7 +330,7 @@ fn path_kind(root: &Value, path: &[String]) -> M3ParameterKind {
         .iter()
         .any(|&schema| is_literal_string(Some(schema), root))
     {
-        M3ParameterKind::LiteralString { streamable: false }
+        M3ParameterKind::LiteralString
     } else {
         M3ParameterKind::Buffered
     }
@@ -345,9 +345,7 @@ fn schema_kind(root: &Value, schema: &Value) -> M3ParameterKind {
         || walker.has_type(Some(schema), "number")
         || walker.has_type(Some(schema), "boolean");
     if string && !object && !array && !walker.exhausted {
-        return M3ParameterKind::LiteralString {
-            streamable: !scalar && walker.permits_null(schema) == Some(false),
-        };
+        return M3ParameterKind::LiteralString;
     }
     if !array && (object || scalar) && !walker.exhausted {
         M3ParameterKind::Typed
@@ -392,7 +390,7 @@ fn match_close_tags(
                 path.push(name.to_string());
                 if matches!(
                     path_kind(root_schema, &path),
-                    M3ParameterKind::LiteralString { .. }
+                    M3ParameterKind::LiteralString
                 ) {
                     let close = format!("{namespace_token}</{name}>");
                     if let Some(at) = body[value_start..].find(&close) {
@@ -865,6 +863,33 @@ mod tests {
     use super::*;
     use crate::tool_calling::arguments::MAX_SCHEMA_WORK;
     use serde_json::json;
+
+    #[test]
+    fn unquoted_invoke_names_reject_escaped_quotation() {
+        for attrs in [
+            r#"name=\"lookup\""#,
+            r#"name=\'lookup\'"#,
+            r#"name=lookup"bad"#,
+            "name=lookup'bad",
+        ] {
+            assert_eq!(parse_invoke_name(attrs), None, "{attrs}");
+        }
+        for attrs in [
+            r#"name="外部.lookup-v2""#,
+            r#"name='外部.lookup-v2'"#,
+            "name=外部.lookup-v2",
+        ] {
+            assert_eq!(
+                parse_invoke_name(attrs).as_deref(),
+                Some("外部.lookup-v2"),
+                "{attrs}"
+            );
+        }
+        assert_eq!(
+            parse_invoke_name(r#"name="it's.valid""#).as_deref(),
+            Some("it's.valid")
+        );
+    }
 
     #[test]
     fn scalar_hints_preserve_explicit_and_composed_types() {
@@ -1931,18 +1956,18 @@ mod tests {
             json!({"unknown": "null"})
         );
 
-        // A non-nullable scoped string streams while open; a nullable one waits.
+        // Both string shapes own literal tags until the matching parameter closer.
         let tools = vec![ToolDefinition {
             name: "f".into(),
             parameters: Some(parameters.clone()),
         }];
         assert!(matches!(
             parameter_kind("f", "plain", &tools),
-            M3ParameterKind::LiteralString { streamable: true }
+            M3ParameterKind::LiteralString
         ));
         assert!(matches!(
             parameter_kind("f", "text", &tools),
-            M3ParameterKind::LiteralString { streamable: false }
+            M3ParameterKind::LiteralString
         ));
     }
 

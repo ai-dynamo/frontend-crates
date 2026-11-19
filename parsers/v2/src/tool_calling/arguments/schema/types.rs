@@ -78,8 +78,7 @@ pub(crate) fn collect_allowed_types(
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LiteralTypes<'a> {
-    All,
-    // Beam and MiniMax keep the declared type when no literal has that type.
+    // Contradicting literals must not erase the declared coercion type.
     DeclaredFirst,
     // GLM keeps mixed string enums ambiguous for scalar coercion.
     ScalarHints,
@@ -187,7 +186,7 @@ fn collect_type_constraints(
     if infer_literals
         && let Some(values) = schema.get("enum").and_then(Value::as_array)
         && match context.literals {
-            LiteralTypes::All | LiteralTypes::DeclaredFirst => true,
+            LiteralTypes::DeclaredFirst => true,
             LiteralTypes::StringHint(raw) => values.iter().any(|value| value.as_str() == Some(raw)),
             LiteralTypes::ScalarHints => values.iter().all(|value| !value.is_string()),
             LiteralTypes::None => false,
@@ -254,10 +253,8 @@ fn collect_type_constraints(
                     &mut option_context,
                 ) {
                     Some(types) => alternatives.push(types),
-                    None if !matches!(
-                        context.literals,
-                        LiteralTypes::All | LiteralTypes::DeclaredFirst
-                    ) && !option_context.has_type_constraints => {}
+                    None if !matches!(context.literals, LiteralTypes::DeclaredFirst)
+                        && !option_context.has_type_constraints => {}
                     None => unknown = true,
                 }
             }

@@ -467,12 +467,8 @@ mod tests {
     //   - FRONTEND.tool_choice  tool_choice            (lib/llm/tests/tool_choice.rs ::
     //                                      test_deepseek_v4_tool_choice_{auto,required_pins_current_behavior,
     //                                      named_correct_tool_passes,named_wrong_tool_filtered};
-    //                                      parser-level invariant in
-    //                                      test_parser_does_not_filter_by_tool_choice_v4;
     //                                      cross-parser tool_choice parametrisation work-item (tracked separately) covers full cross-parser parametrisation)
-    //   - PIPELINE.finish_reason  finish-reason          (parser-level invariant in
-    //                                      test_parser_output_independent_of_upstream_finish_v4;
-    //                                      cross-parser stop/tool_calls/length mapping is
+    //   - PIPELINE.finish_reason  finish-reason          (cross-parser stop/tool_calls/length mapping is
     //                                      cross-parser finish_reason mapping work-item (tracked separately); lib/llm/tests/test_streaming_tool_parsers
     //                                      covers ToolCalls / Stop on E2E fixtures)
     //   - TOOLCALLING.batch.8  interleaved-text       (test_parse_deepseek_v4_multiple_tool_calls prefix text;
@@ -1346,43 +1342,6 @@ mod tests {
         let (calls, normal_text) = try_tool_call_parse_dsml(input, &config).unwrap();
         assert!(calls.is_empty());
         assert_eq!(normal_text.as_deref(), Some(input));
-    }
-
-    /// Parser-level invariant: the dsml parser does NOT filter by
-    /// `tool_choice` — it returns every well-formed invoke, and the jail /
-    /// response builder above this layer is responsible for filtering per
-    /// `tool_choice=named`/`required`/`none`. Real FRONTEND.tool_choice coverage lives
-    /// at the integration layer (`lib/llm/tests/tool_choice.rs`).
-    #[test]
-    fn test_parser_does_not_filter_by_tool_choice_v4() {
-        let input = "<｜DSML｜tool_calls>\n\
-<｜DSML｜invoke name=\"get_weather\">\n\
-<｜DSML｜parameter name=\"city\" string=\"true\">NYC</｜DSML｜parameter>\n\
-</｜DSML｜invoke>\n\
-<｜DSML｜invoke name=\"get_time\">\n\
-<｜DSML｜parameter name=\"tz\" string=\"true\">EST</｜DSML｜parameter>\n\
-</｜DSML｜invoke>\n\
-</｜DSML｜tool_calls>";
-        let config = get_v4_test_config();
-        let (calls, _) = try_tool_call_parse_dsml(input, &config).unwrap();
-        assert_eq!(calls.len(), 2);
-    }
-
-    /// Parser-level invariant: the dsml parser is byte-stable — it doesn't
-    /// see `finish_reason` and produces the same output for any upstream
-    /// stream-end reason. Real PIPELINE.finish_reason coverage (stop / tool_calls / length
-    /// mapping) lives in `lib/llm/tests/test_streaming_tool_parsers.rs` and
-    /// belongs in cross-parser finish_reason mapping work-item (tracked separately).
-    #[test]
-    fn test_parser_output_independent_of_upstream_finish_v4() {
-        let input = "<｜DSML｜tool_calls>\n\
-<｜DSML｜invoke name=\"get_weather\">\n\
-<｜DSML｜parameter name=\"city\" string=\"true\">NYC</｜DSML｜parameter>\n\
-</｜DSML｜invoke>\n\
-</｜DSML｜tool_calls>";
-        let config = get_v4_test_config();
-        let (calls, _) = try_tool_call_parse_dsml(input, &config).unwrap();
-        assert_eq!(calls.len(), 1);
     }
 
     /// `TOOLCALLING.batch.9` — empty / null content variants. Pin behavior on truly

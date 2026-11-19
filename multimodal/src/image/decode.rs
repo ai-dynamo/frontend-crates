@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+mod native;
 mod smart;
 
+pub(crate) use native::decode_native;
 pub use smart::decode_rgb_smart;
 
 use crate::{MmError, Result};

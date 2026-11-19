@@ -472,4 +472,27 @@ mod tests {
                 .is_ok()
         );
     }
+
+    #[test]
+    fn image_processor_refuses_rgba() {
+        let processor = Glm5NextImageProcessor::new(Glm5NextImageSpec {
+            planner: Glm5NextSpec {
+                image_token_id: 154854,
+                video_token_id: None,
+                geometry: glm53_flash(),
+            },
+            image_mean: [0.5; 3],
+            image_std: [0.5; 3],
+            resample: Default::default(),
+        })
+        .unwrap();
+        assert!(matches!(
+            processor.process_item(&DecodedMedia::ImageRgba {
+                rgba: vec![7u8; 448 * 448 * 4],
+                height: 448,
+                width: 448,
+            }),
+            Err(MmError::Unsupported { .. })
+        ));
+    }
 }

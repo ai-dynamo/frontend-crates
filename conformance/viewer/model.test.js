@@ -329,4 +329,18 @@ assert.equal(classifyUnified('sample', [{ kind: 'tool_call', name: 'f', argument
 assert.equal(classifyUnified('sample', [{ kind: 'reasoning', text: 'x' }, { kind: 'text', text: 'y' }], [{ kind: 'text', text: 'y' }, { kind: 'reasoning', text: 'x' }], markers), 'ORDER');
 console.log('viewer model semantics passed');
 
+  const argumentMarkers = { common: ['<tool>'], families: {} };
+  const call = argumentsValue => [{kind: 'tool_call', name: 'f', arguments: JSON.stringify(argumentsValue)}];
+  assert.equal(classifyUnified('sample', call({items: [{text: '<tool>'}]}), call({items: [{text: '<tool> changed'}]}), argumentMarkers), 'ARG_MISMATCH');
+  assert.equal(classifyUnified('sample', call({items: [{text: '<tool>'}]}), call({items: [{text: '<tool><tool>'}]}), argumentMarkers), 'LEAK');
+  assert.equal(classifyUnified('sample', call({items: [{text: '<tool>'}]}), call({items: [{other: '<tool>'}]}), argumentMarkers), 'LEAK');
+  assert.equal(classifyUnified('sample', call({text: 'ok'}), call({text: 'different'}), argumentMarkers), 'ARG_MISMATCH');
+  assert.equal(classifyUnified('sample', call({}), call({text: '<tool>'}), argumentMarkers), 'LEAK');
+
+
+  const f = {kind: 'tool_call', name: 'f', arguments: {text: '<tool>'}};
+  const g = {kind: 'tool_call', name: 'g', arguments: {text: 'plain'}};
+  assert.equal(classifyUnified('sample', [f, g], [g, f], argumentMarkers), 'ORDER');
+  assert.equal(classifyUnified('sample', call({}), call({'<tool>': 'value'}), argumentMarkers), 'LEAK');
+
 });

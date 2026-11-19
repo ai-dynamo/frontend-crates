@@ -516,6 +516,15 @@ tools:
       required:
       - city
       - value
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_3e9459ef2d935104:
   - name: schema_probe
     parameters:
@@ -969,6 +978,18 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_a7861137bdb03589:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+      - path
+      - content
   tools_3b245127a58a1723:
   - name: schema_probe
     parameters:
@@ -1390,6 +1411,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_ac03f4607c61c9ce:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+      required:
+      - cmd
   tools_1ffd69270532e13e:
   - name: schema_probe
     parameters:
@@ -1997,6 +2027,16 @@ requests:
       named_tool: null
     input: 'The literal "functools[ { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
     tools: tools_cbf47ccf5fd2ef00
+  32f2c92aa9bfcaaa3afb92311feea2ed84e37d62db4d50deb95789293eccc32d:
+    input: functools[{"name":"write_file","arguments":{"content":"<think></think>answer"}}]
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 80
+    finish_step: true
   333e3e9e8019dc3e280942b0d4cc837925e2abe4520aa44cbee380c3047fe2f2:
     init:
       starting_state: None
@@ -2188,6 +2228,16 @@ requests:
   7383632081f80c861bcef467d0e5fc2305d15f76a6f4506c29ab3dda28e4736f:
     input: functools[{"name":"schema_probe","arguments":{"value":"  spaced  "}}]
     tools: tools_d8f16597f742e3d4
+  74bec1dd0c61480801c75ea900e1c38487ff5686d4a0e0e78f81ff71395bd3c7:
+    input: functools[{"name":"write_file","arguments":{"path":"/tmp/literal.txt","content":"<think></think>answer"}}]
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_a7861137bdb03589
+    chunk_sizes:
+    - 106
+    finish_step: true
   75454fdfddbab10fd0cf20ed351560e678ab256bc467d22e469b9686be9bb9d8:
     input: functools[{"name":"schema_probe","arguments":{"value":null}}]
     tools: tools_3b245127a58a1723
@@ -2456,6 +2506,18 @@ requests:
   ba933c98a118394c32b429fb2b72eac773eb59a885fc4834df6a383486a2153f:
     input: functools[{"name":"schema_probe","arguments":{"value":"42"}}]
     tools: tools_0e1126661e4ae595
+  bb088fceb57a5b39705dad73f3e1faed31f568025229cb28e85c918cab8bf993:
+    input: The literal "functools[" marker is part of the explanation. functools[{"name":"run","arguments":{"cmd":"Paris"}}]
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 60
+    - 44
+    - 9
+    finish_step: true
   bc779fc3953531a76dc309ae4ff8dc47295da908201eec2ae00ca88e279b2c8a:
     input: functools[{"name":"schema_probe","arguments":{"value":true}}]
     tools: tools_1ffd69270532e13e
@@ -5161,22 +5223,22 @@ cases:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: dd5fffaf7358065910dca795028bded4b21d0f61a02299a371c5cfe141b03a80
     golden:
     - kind: text
-      text: The literal "functools[" marker is part of the explanation.
+      text: The literal "
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: c5cae9b4c1179d5deaa08e364fd0b5af4ecc280494595b5eb62f2b51cf124194
     golden:
     - kind: text
-      text: The literal "functools[" marker is part of the explanation.
+      text: The literal "
     - kind: tool_call
       name: get_weather
       arguments:
@@ -5185,32 +5247,32 @@ cases:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: eea1ff3547b65d08d65a2d19818de4610745536f8871175bc3b9c21f8434b596
     golden:
     - kind: text
-      text: The literal `functools[{"name":"get_weather","arguments":{"city":"` header is part of the explanation.
+      text: The literal `
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: ad71909763371548bd594fa5d8a923c80cb4056b60a11554a7798cae524a76b3
     golden:
     - kind: text
-      text: The literal 'doesn't functools[ marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: 61a97784b3b496150be5f1140d42aab85a52d3a2aa16168da245446440290a14
     golden:
     - kind: text
-      text: The literal 'example functools[ marker' is part of the explanation.
+      text: 'The literal ''example '
   native_unmatched_quote_then_call:
     policy:
     - I7
@@ -5252,21 +5314,21 @@ cases:
     - I3
     - I5
     - I7
-    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    description: A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: d3ab019cf5871f54596ef407493bcc5dce87d89ef735ee23785e9a06d22a55e8
     golden:
     - kind: text
-      text: '"functools[{\"name\":\"lookup\",\"arguments\":{\"q\":\"x\"}}]" trailing'
+      text: '"" trailing'
   guided_response_quoted_control_braces_named:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 1500b82e9504871ce2cede3c5466137ce22f16cffe3d84df13ceedd023e8f0ff
     golden:
     - kind: text
-      text: 'The literal "functools[ { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -5274,12 +5336,12 @@ cases:
   guided_response_quoted_control_braces_required:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: 32d67d497865c5f8b33cb47e30ed3d518107ea0034885ad91172c1df9b2b0928
     golden:
     - kind: text
-      text: 'The literal "functools[ { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -5307,9 +5369,9 @@ cases:
       arguments:
         value: '{''a'':1}'
   arg_json_null_ref:
-    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
     policy:
     - I7
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
     display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
     request: f09fb2c64ab511dfc21c8a2b3b46ad34cd75b6690f022d4dbed52fd82a253b40
     golden:
@@ -5318,9 +5380,9 @@ cases:
       arguments:
         city: null
   arg_string_null_ref:
-    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
     policy:
     - I7
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
     display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
     request: 128f268c86127015bb2661f89f63f222d5ada48f35bd4aebcba15bf9994811f1
     golden:
@@ -5328,3 +5390,41 @@ cases:
       name: get_weather
       arguments:
         city: 'null'
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    policy:
+    - I7
+    request: 32f2c92aa9bfcaaa3afb92311feea2ed84e37d62db4d50deb95789293eccc32d
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    policy:
+    - I7
+    request: 74bec1dd0c61480801c75ea900e1c38487ff5686d4a0e0e78f81ff71395bd3c7
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        path: /tmp/literal.txt
+        content: <think></think>answer
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+  native_quoted_control_then_call_progress:
+    description: '#595: start in Response with Native output and offered run(cmd:string). The structural prose opener owns and drops its incomplete body; recover the following complete call. Three content chunks expose pre-EOF progress. A literal reading would instead retain the quoted marker and explanation.'
+    policy:
+    - I3
+    - I7
+    - P2
+    request: bb088fceb57a5b39705dad73f3e1faed31f568025229cb28e85c918cab8bf993
+    golden:
+    - kind: text
+      text: The literal "
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: Paris
+    display_id: UNIFIED.8-native_quoted_control_then_call_progress

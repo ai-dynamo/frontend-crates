@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 """The evidence boundary rejects damaged pins and keeps current reads local."""
+import copy
 import io
 import json
 from pathlib import Path
@@ -578,6 +579,28 @@ def current_source_catalog(split_evidence):
                "metadata": {"tabs": [{"suite": "unified"}]}, "sources": {"unified": []}}
     (root / "conformance/viewer-catalog.json").write_bytes(sources.encoded(catalog))
     return root, catalog
+
+
+def test_retained_native_index_has_fragment_for_every_checkpoint(
+    historical_unified_sources: tuple[Path, list[dict]],
+    native_publisher: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root, resources = historical_unified_sources
+    monkeypatch.setenv("CONFORMANCE_PUBLISHER", str(native_publisher))
+    _inventory, _documents, indexed = viewer_catalog._native_catalog_document_index(
+        root,
+        conversion_context={"dataset": "retained", "metadata": viewer_catalog._source_metadata()},
+    )
+    expected = {(row["family"], row["implementation"], row["version"])
+                for row in resources if row["kind"] == "history"}
+    actual = set()
+    for (family, implementation), rows in indexed["snapshots"].items():
+        for row in rows:
+            checkpoint = family, implementation, row["runtime_version"]
+            actual.add(checkpoint)
+            assert isinstance(row.get("fragment"), str) and row["fragment"], checkpoint
+    assert actual == expected
 
 
 def test_history_generation_pairs_latest_readers_without_ci_copy(history_source, tmp_path, monkeypatch):
@@ -1299,3 +1322,332 @@ def test_published_latest_downloads_its_complete_source_and_keeps_producer(split
     assert latest["records"]["text_only"]["member"] == published["source"]
     assert unified_history.typed_equal(latest["records"]["text_only"]["value"]["document"], before)
     assert latest["records"]["text_only"]["value"]["document"]["captured_with"]["dynamo_v2"] == "0.5.0"
+
+
+def test_latest_refresh_rejects_release_and_invalid_source_before_writes(tmp_path, monkeypatch):
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance",
+                        lambda root, provenance: {"crate_version": "0.10.7"})
+    with pytest.raises(ValueError, match="explicitly unpublished"):
+        publish_current_capture.refresh_unpublished_latest(tmp_path, tmp_path, {"kind": "release"})
+    def reject_source(root, provenance):
+        raise ValueError("capture feed source identity differs")
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", reject_source)
+    with pytest.raises(ValueError, match="source identity differs"):
+        publish_current_capture.refresh_unpublished_latest(tmp_path, tmp_path, {"kind": "unpublished"})
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_latest_records_reject_missing_cases_stale_origin_and_stale_request():
+    request = {"input": "hello", "init": {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None}, "tools": [], "chunks": [{"delta_text": "hello"}], "finish_reason": "stop"}
+    family = SimpleNamespace(cases={"case": {"lifecycle": "active", "request": request}})
+    origin = {"crate_version": "0.10.7", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    record = {"document": {"capture_origin": origin, "captured_with": {"dynamo_v2": "0.10.7"}},
+              "stimulus": {"ref": "current", "semantic_sha256": unified_history._request_digest(request)}}
+    publish_current_capture.require_current_records({"case": record}, family, origin, "dynamo_v2", "0.10.7")
+    with pytest.raises(ValueError, match="every active case"):
+        publish_current_capture.require_current_records({}, family, origin, "dynamo_v2", "0.10.7")
+    stale = {**record, "document": {**record["document"], "capture_origin": {**origin, "source_sha256": "c" * 64}}}
+    with pytest.raises(ValueError, match="record source differs"):
+        publish_current_capture.require_current_records({"case": stale}, family, origin, "dynamo_v2", "0.10.7")
+    stale = {**record, "stimulus": {"inline": {**request, "input": "old"}, "semantic_sha256": "d" * 64}}
+    with pytest.raises(ValueError, match="record request differs"):
+        publish_current_capture.require_current_records({"case": stale}, family, origin, "dynamo_v2", "0.10.7")
+
+
+@pytest.mark.parametrize("incoming", [{"glm47"}, {"glm47", "beam", "extra"}])
+def test_latest_refresh_rejects_missing_or_extra_native_families(tmp_path, monkeypatch, incoming):
+    root = tmp_path / "repo"
+    loose = tmp_path / "loose"
+    for family in incoming:
+        (loose / "dynamo_v2-0.10.7" / family).mkdir(parents=True)
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance",
+                        lambda root, provenance: {"crate_version": "0.10.7"})
+    monkeypatch.setattr(unified_history, "load_authored_store", lambda root: SimpleNamespace())
+    monkeypatch.setattr(sources, "current", lambda root: {"captures": [
+        {"family": family, "surface": "unified", "implementation": "dynamo_v2"}
+        for family in ("glm47", "beam")
+    ]})
+    with pytest.raises(ValueError, match="family set differs"):
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert not root.exists()
+
+
+def _seed_unpublished_latest(root, source, latest, origin):
+    for name in ("conformance/tests/unified_render.rs", "conformance/tests/common/unified_capture.rs", "conformance/tests/common/mod.rs"):
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes((Path(__file__).resolve().parents[3] / name).read_bytes())
+    snapshot = unified_history.load_yaml(source)
+    snapshot["provenance"] = {"status": "captured", "origin": copy.deepcopy(origin)}
+    for wrapped in snapshot["records"].values():
+        wrapped["value"]["document"].update(
+            capture_origin=copy.deepcopy(origin), captured_with={"dynamo_v2": origin["crate_version"]})
+    logical = f"{sources.STORE}/families/gemma4/dynamo_v2-{origin['crate_version']}.yaml"
+    row = {"source": logical, "surface": "unified", "mode": "unified", "family": "gemma4",
+           "implementation": "dynamo_v2", "version": origin["crate_version"]}
+    family = unified_history.load_authored_store(root / sources.STORE).families["gemma4"]
+    lineage = [{"path": logical, **unified_history.source_identity(logical.removeprefix(sources.STORE + "/"))}]
+    (root / latest).write_bytes(sources.selected_bytes(
+        unified_history.dump_yaml(snapshot).encode(), row, lineage, authored=family.document))
+
+
+@pytest.mark.parametrize("change", ["output", "origin", "request", "referenced_request", "missing", "newer_version", "member"])
+def test_latest_refresh_archives_new_execution_and_rejects_invalid_requests(split_evidence, monkeypatch, change):
+    root, history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    _seed_unpublished_latest(root, source, latest, origin)
+    if change == "member":
+        retained = unified_history.load_yaml(root / latest)
+        selection = retained.pop(sources.SELECTION)
+        member = f"{sources.STORE}/families/gemma4/dynamo_v2-0.5.2.yaml"
+        retained["records"]["text_only"]["member"] = member
+        selection["lineage"].append({"path": member, **unified_history.source_identity(member.removeprefix(sources.STORE + "/"))})
+        (root / latest).write_bytes(sources.selected_bytes(
+            unified_history.dump_yaml(retained).encode(), selection, selection["lineage"]))
+    if change == "referenced_request":
+        retained = unified_history.load_yaml(root / latest)
+        current = unified_history.load_authored_store(root / sources.STORE).families["gemma4"].cases["text_only"]
+        retained["records"]["text_only"]["value"]["stimulus"] = {
+            "ref": "current", "semantic_sha256": unified_history._request_digest(current["request"])}
+        selection = retained.pop(sources.SELECTION)
+        (root / latest).write_bytes(sources.selected_bytes(
+            unified_history.dump_yaml(retained).encode(), selection, selection["lineage"]))
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    record_path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+    record = unified_history.load_yaml(record_path)
+    case_id = next(iter(record["cases"]))
+    if change == "output":
+        record["cases"][case_id]["assembled"] = [{"kind": "text", "text": "changed"}]
+        record["cases"][case_id]["chunks"][0]["expected"] = [{"kind": "text", "text": "changed"}]
+    elif change == "origin":
+        origin["git_commit"] = "c" * 40
+        record["capture_origin"] = copy.deepcopy(origin)
+    elif change == "newer_version":
+        origin["crate_version"] = "0.5.4"
+        (loose / "dynamo_v2-0.5.3").rename(loose / "dynamo_v2-0.5.4")
+        record_path = loose / "dynamo_v2-0.5.4/gemma4" / record_path.name
+        record["capture_origin"] = copy.deepcopy(origin)
+        record["captured_with"] = {"dynamo_v2": "0.5.4"}
+    elif change in {"request", "referenced_request"}:
+        def mutate(store):
+            request = store.families["gemma4"].cases["text_only"]["request"]
+            request.update(input="changed", chunks=[{"delta_text": "changed"}])
+        unified_history.mutate_authored_store(root / sources.STORE, mutate)
+        record["cases"][case_id]["capture_input"].update(input="changed", chunks=[{"delta_text": "changed"}])
+    elif change == "missing":
+        record["cases"] = {}
+    record_path.write_text(unified_history.dump_yaml(record))
+    before = {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")}
+    before_history = {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()}
+    if change in {"output", "origin", "newer_version"}:
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        updated = unified_history.load_yaml(root / latest)
+        original = unified_history._parse_yaml_raw(root / latest, before[Path(latest)])
+        for key, wrapped in original["records"].items():
+            retained = updated["records"][key]["value"]
+            assert retained["observation"] == wrapped["value"]["observation"]
+            assert retained["stimulus"] == wrapped["value"]["stimulus"]
+            supplement = retained["document"].get("record_metadata", {}).get("verified_recapture")
+            if change == "output":
+                assert supplement["provenance"]["git_commit"] == origin["git_commit"]
+            else:
+                assert supplement is None
+                assert updated["provenance"]["origin"] == origin
+        stable = (root / latest).read_bytes()
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        assert (root / latest).read_bytes() == stable
+        previous_active = copy.deepcopy(updated["records"]["text_only"]["value"]["document"].get("record_metadata", {}).get("verified_recapture"))
+        if change == "output":
+            origin["git_commit"] = "d" * 40
+            record["capture_origin"] = copy.deepcopy(origin)
+            record_path.write_text(unified_history.dump_yaml(record))
+            publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+            refreshed = unified_history.load_yaml(root / latest)
+            assert refreshed["provenance"]["origin"] == origin
+            metadata = refreshed["records"]["text_only"]["value"]["document"]["record_metadata"]
+            assert metadata["verified_recapture"]["provenance"]["git_commit"] == origin["git_commit"]
+            assert metadata["verified_recapture"]["result"] == previous_active["result"]
+            assert metadata.get("verified_recaptures", []) == []
+            refreshed_active = copy.deepcopy(metadata["verified_recapture"])
+        record["cases"][case_id]["assembled"] = [{"kind": "text", "text": "another execution"}]
+        record["cases"][case_id]["chunks"][0]["expected"] = record["cases"][case_id]["assembled"]
+        record_path.write_text(unified_history.dump_yaml(record))
+        publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        archived = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]["document"]["record_metadata"]
+        expected_archive = [refreshed_active] if change == "output" else ([previous_active] if previous_active else [])
+        assert archived.get("verified_recaptures", []) == expected_archive
+        assert archived["verified_recapture"]["result"]["assembled"] == record["cases"][case_id]["assembled"]
+    else:
+        with pytest.raises(ValueError, match="cannot replace retained|missing active cases|every active case|stimulus digest differs"):
+            publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+        assert {p.relative_to(root): p.read_bytes() for p in (root / sources.STORE).rglob("*.yaml")} == before
+    assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
+
+
+def test_latest_refresh_preservation_uses_the_fingerprinted_snapshot_bytes(split_evidence, monkeypatch):
+    root, _history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64}
+    _seed_unpublished_latest(root, source, latest, origin)
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    record_path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+    record = unified_history.load_yaml(record_path)
+    value = next(iter(record["cases"].values()))
+    changed = [{"kind": "text", "text": "replacement"}]
+    value["assembled"] = changed
+    value["chunks"][0]["expected"] = changed
+    record_path.write_text(unified_history.dump_yaml(record))
+    raced = unified_history.load_yaml(root / latest)
+    observation = raced["records"]["text_only"]["value"]["observation"]["value"]
+    observation["assembled"] = changed
+    observation["chunks"][0]["expected"] = changed
+    load = unified_history.load_yaml
+    monkeypatch.setattr(unified_history, "load_yaml", lambda path:
+                        copy.deepcopy(raced) if path == root / latest else load(path))
+    before = (root / latest).read_bytes()
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    updated = unified_history._parse_yaml_raw(root / latest, (root / latest).read_bytes())
+    original = unified_history._parse_yaml_raw(root / latest, before)
+    assert updated["records"]["text_only"]["value"]["observation"] == original["records"]["text_only"]["value"]["observation"]
+    assert updated["records"]["text_only"]["value"]["document"]["record_metadata"]["verified_recapture"]["result"]["assembled"] == changed
+
+
+@pytest.mark.parametrize("append_case", [False, True])
+def test_latest_refresh_preserves_same_identity_and_allows_only_new_cases(split_evidence, monkeypatch, append_case):
+    root, history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    _seed_unpublished_latest(root, source, latest, origin)
+    before_snapshot = unified_history.load_yaml(root / latest)
+    selection = before_snapshot.pop(sources.SELECTION)
+    prior_member = f"{sources.STORE}/families/gemma4/dynamo_v2-0.5.2.yaml"
+    selection["lineage"].append({"path": prior_member, **unified_history.source_identity(prior_member.removeprefix(sources.STORE + "/"))})
+    (root / latest).write_bytes(sources.selected_bytes(
+        unified_history.dump_yaml(before_snapshot).encode(), selection, selection["lineage"]))
+    before_history = {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()}
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    if append_case:
+        def append(store):
+            case = copy.deepcopy(store.families["gemma4"].cases["text_only"])
+            case.update(scenario="reason_then_content", display_id=unified_history.unified_taxonomy.numbered_id("reason_then_content"))
+            case["request"].update(input="new", chunks=[{"delta_text": "new"}])
+            case["golden"] = {"assembled": [{"kind": "text", "text": "new"}]}
+            store.families["gemma4"].cases["reason_then_content"] = case
+        unified_history.mutate_authored_store(root / sources.STORE, append)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    if append_case:
+        path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+        document = unified_history.load_yaml(path)
+        case = store.families["gemma4"].cases["reason_then_content"]
+        record = copy.deepcopy(next(iter(document["cases"].values())))
+        record["capture_input"] = case["request"]
+        record["assembled"] = case["golden"]["assembled"]
+        record["chunks"] = [{"delta_text": "new", "expected": record["assembled"]}]
+        document["cases"] = {case["display_id"]: record}
+        (path.parent / (case["display_id"] + ".yaml")).write_text(unified_history.dump_yaml(document))
+    retained_files = {p.relative_to(root): p.read_bytes()
+                      for p in (root / sources.STORE).rglob("*.yaml") if p != root / latest}
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    after = unified_history.load_yaml(root / latest)
+    assert after["records"]["text_only"]["value"] == before_snapshot["records"]["text_only"]["value"]
+    assert set(after["records"]) == ({"text_only", "reason_then_content"} if append_case else {"text_only"})
+    assert after[sources.SELECTION]["lineage"] == sorted(selection["lineage"], key=lambda row: row["path"])
+    stable = (root / latest).read_bytes()
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert (root / latest).read_bytes() == stable
+    assert {p.relative_to(root): p.read_bytes()
+            for p in (root / sources.STORE).rglob("*.yaml") if p != root / latest} == retained_files
+    assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
+
+
+@pytest.mark.parametrize("append_case,relative_root", [(False, False), (True, False), (False, True)])
+def test_latest_refresh_binds_the_authored_snapshot_before_ingestion(split_evidence, monkeypatch, append_case, relative_root):
+    root, _history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64}
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance",
+                        lambda _root, _provenance: origin)
+    loose = root / "loose"
+    (loose / "dynamo_v2-0.5.3/gemma4").mkdir(parents=True)
+    _seed_unpublished_latest(root, source, latest, origin)
+    snapshot = unified_history.load_yaml(root / latest)
+    snapshot.pop(sources.SELECTION)
+    record = snapshot["records"]["text_only"]["value"]
+    record["document"]["capture_origin"] = origin
+    record["document"]["captured_with"] = {"dynamo_v2": "0.5.3"}
+    store_root = root / sources.STORE
+    held = []
+    original_lock = publish_current_capture.capture_lock
+    original_publish = unified_history.publish_paths_transactionally
+
+    @contextmanager
+    def capture_writer_lock(owner, family, implementation, mode):
+        with original_lock(owner, family, implementation, mode):
+            held.append((family, implementation, mode))
+            try:
+                yield
+            finally:
+                held.pop()
+
+    def publish(pairs, **options):
+        if any(target.resolve() == root / latest for _candidate, target in pairs):
+            assert held == [("gemma4", "dynamo_v2", "unified")]
+        return original_publish(pairs, **options)
+
+    monkeypatch.setattr(publish_current_capture, "capture_lock", capture_writer_lock)
+    monkeypatch.setattr(unified_history, "publish_paths_transactionally", publish)
+
+    def ingest(store, _temporary, **_options):
+        record["stimulus"] = {
+            "ref": "current",
+            "semantic_sha256": unified_history._request_digest(store.families["gemma4"].cases["text_only"]["request"]),
+        }
+        store.histories["gemma4", "dynamo_v2"] = SimpleNamespace(
+            resolve=lambda _selection: {"text_only": record},
+            complete_snapshot=lambda _selection: copy.deepcopy(snapshot),
+        )
+        if append_case:
+            def append(current):
+                case = copy.deepcopy(current.families["gemma4"].cases["text_only"])
+                scenario = "reason_then_content"
+                case.update(scenario=scenario, display_id=unified_history.unified_taxonomy.numbered_id(scenario))
+                case["request"].update(input="new", chunks=[{"delta_text": "new"}])
+                case["golden"] = {"assembled": [{"kind": "text", "text": "new"}]}
+                current.families["gemma4"].cases[scenario] = case
+            unified_history.mutate_authored_store(store_root, append)
+
+    monkeypatch.setattr(unified_history, "_update_from_loose", ingest)
+    before = (root / latest).read_bytes()
+    owner = root
+    if relative_root:
+        monkeypatch.chdir(root.parent)
+        owner = Path(root.name)
+    if append_case:
+        with pytest.raises(ValueError, match="authored inputs changed during refresh"):
+            publish_current_capture.refresh_unpublished_latest(owner, loose, {"kind": "unpublished"})
+        assert (root / latest).read_bytes() == before
+    else:
+        result = publish_current_capture.refresh_unpublished_latest(owner, loose, {"kind": "unpublished"})
+        assert result == [{"family": "gemma4", "implementation": "dynamo_v2", "version": "0.5.3", "refreshed_latest": True}]
+        assert set(unified_history.load_yaml(root / latest)["records"]) == {"text_only"}
+    assert held == []
+
+
+def test_unpublished_loose_capture_recovers_pending_publications_first(tmp_path, monkeypatch):
+    loose = tmp_path / "loose"
+    loose.mkdir()
+    (loose / "unified_results.yaml").write_text("capture_provenance: {kind: unpublished}\n")
+    calls = []
+    monkeypatch.setattr(publish_current_capture, "recover", lambda *_args: calls.append("recover"))
+    monkeypatch.setattr(publish_current_capture, "refresh_unpublished_latest",
+                        lambda *_args: calls.append("refresh") or [])
+    assert publish_current_capture.publish_loose(tmp_path, tmp_path / "history", loose) == []
+    assert calls == ["recover", "refresh"]

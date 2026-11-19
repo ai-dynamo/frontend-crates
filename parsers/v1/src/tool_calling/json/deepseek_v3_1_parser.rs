@@ -307,25 +307,6 @@ mod tests {
         (call.function.name, args)
     }
 
-    // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.2.b in tests/parity/toolcalling/fixtures/deepseek_v3_1/TOOLCALLING.batch.2.yaml.
-    #[test] // TOOLCALLING.batch.2
-    fn test_parse_tool_calls_deepseek_v3_1_basic() {
-        let text = r#"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_current_weather<｜tool▁sep｜>{"location": "Tokyo"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_current_weather<｜tool▁sep｜>{"location": "Paris"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜end▁of▁sentence｜>"#;
-        let config = match ToolCallConfig::deepseek_v3_1().parser_config {
-            super::super::config::ParserConfig::Json(cfg) => cfg,
-            _ => panic!("Expected JSON parser config"),
-        };
-        let (result, content) = parse_tool_calls_deepseek_v3_1(text, &config, None).unwrap();
-        assert_eq!(content, Some("".to_string()));
-        assert_eq!(result.len(), 2);
-        let (name, args) = extract_name_and_args(result[0].clone());
-        assert_eq!(name, "get_current_weather");
-        assert_eq!(args["location"], "Tokyo");
-        let (name, args) = extract_name_and_args(result[1].clone());
-        assert_eq!(name, "get_current_weather");
-        assert_eq!(args["location"], "Paris");
-    }
-
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.8.a in tests/parity/toolcalling/fixtures/deepseek_v3_1/TOOLCALLING.batch.8.yaml.
     #[test] // TOOLCALLING.batch.8
     fn test_parse_tool_calls_deepseek_v3_1_with_normal_text() {

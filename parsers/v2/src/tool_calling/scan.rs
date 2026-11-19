@@ -48,7 +48,7 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use crate::tool_calling::debug::env_is_truthy;
+use crate::tool_calling::debug::is_truthy;
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedTurnScope, Kind, MalformedToolCall,
@@ -1236,34 +1236,9 @@ pub(crate) enum InvokeLatch {
     Always,
 }
 
-/// Grammar-aware overrides for locating invokes when marker-only scanning is
-/// insufficient.
-///
-#[cfg(test)]
-#[derive(Clone, Copy)]
-pub(crate) struct InvokeScan {
-    /// End of the invoke that begins at byte zero, just past its closer. `flush`
-    /// allows a family to recover a balanced body whose closer never arrived.
-    /// `tool_index` is the invoke's position in this stream (0 for the first
-    /// call) -- some best-effort recoveries are only justified for the first
-    /// call in a response (see `kimi_invoke_end`'s doc comment).
-    pub end: fn(text: &str, flush: bool, tool_index: usize) -> Option<usize>,
-    /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
-    pub opens: fn(text: &str, at: usize) -> bool,
-    /// Additional trailing bytes to retain while an opener is still arriving.
-    pub holdback: fn(text: &str) -> usize,
-    /// Find a later complete wrapped invoke after the current one proved
-    /// malformed. Families with ambiguous string syntax own this scan so a
-    /// block marker inside argument data cannot become a resynchronization
-    /// point. The hook must inspect `text` in linear time.
-    pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
-}
-
 /// Immutable family recipe for a request-local invoke boundary.
 #[derive(Clone)]
 pub(crate) enum InvokeBoundaryFactory {
-    #[cfg(test)]
-    Stateless(InvokeScan),
     Custom(fn() -> Box<dyn InvokeBoundary>),
     /// Native XML boundaries with a separate guided-prefix grammar.
     NativeOnly(fn() -> Box<dyn InvokeBoundary>),
@@ -1290,15 +1265,8 @@ pub(crate) enum GuidedInvokePrefix {
 }
 
 impl InvokeBoundaryFactory {
-    #[cfg(test)]
-    pub(crate) const fn stateless(stateless: InvokeScan) -> Self {
-        Self::Stateless(stateless)
-    }
-
     pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
         match self {
-            #[cfg(test)]
-            Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
             Self::Custom(create) | Self::NativeOnly(create) => create(),
             Self::Configured(create) => create(),
         }
@@ -1384,7 +1352,9 @@ pub(crate) trait InvokeBoundary: Send {
         None
     }
 
-    /// Advance the bound candidate with newly appended bytes only.
+    /// Advance the bound candidate with newly appended bytes only. Returns the end of
+    /// the invoke at byte zero, just past its closer; `flush` may recover a balanced
+    /// body whose closer never arrived, and `tool_index` is 0 for the stream's first call.
     fn end_append(
         &mut self,
         candidate: &str,
@@ -1392,6 +1362,7 @@ pub(crate) trait InvokeBoundary: Send {
         flush: bool,
         tool_index: usize,
     ) -> Option<usize>;
+    /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
     fn opens(&self, text: &str, at: usize) -> bool;
     fn accepts_buffer_start(&self, _previous: Option<char>) -> bool {
         true
@@ -1416,12 +1387,15 @@ pub(crate) trait InvokeBoundary: Send {
     fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
         self.opens(text, at)
     }
+    /// Trailing bytes to retain while an opener is still arriving.
     fn holdback(&self, text: &str) -> usize;
     /// The Unified consumer owns a separate input buffer from the wrapped scanner.
     /// Keep consumer-specific incremental scans apart when a boundary is shared.
     fn holdback_for_unified_input(&self, text: &str) -> usize {
         self.holdback(text)
     }
+    /// Find a later complete invoke after the current one proved malformed, so a block
+    /// marker inside argument data never becomes a resync point. Must run in linear time.
     fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
     fn reset(&mut self) {}
 
@@ -1436,36 +1410,6 @@ pub(crate) trait InvokeBoundary: Send {
 
     fn channel_body_at_eos(&mut self, body: &str) -> BodyScan {
         self.channel_body(body, true)
-    }
-}
-
-#[cfg(test)]
-struct StatelessInvokeBoundary {
-    scan: InvokeScan,
-}
-
-#[cfg(test)]
-impl InvokeBoundary for StatelessInvokeBoundary {
-    fn end_append(
-        &mut self,
-        candidate: &str,
-        _append: &str,
-        flush: bool,
-        tool_index: usize,
-    ) -> Option<usize> {
-        (self.scan.end)(candidate, flush, tool_index)
-    }
-
-    fn opens(&self, text: &str, at: usize) -> bool {
-        (self.scan.opens)(text, at)
-    }
-
-    fn holdback(&self, text: &str) -> usize {
-        (self.scan.holdback)(text)
-    }
-
-    fn resync(&mut self, text: &str, _flush: bool, tool_index: usize) -> Option<usize> {
-        self.scan.resync.and_then(|resync| resync(text, tool_index))
     }
 }
 
@@ -1651,9 +1595,13 @@ pub(crate) trait InvokeEmitter {
 }
 
 /// Whether quotes in model output can make a reasoning or tool-call marker literal text.
+/// Disabled by default; an explicitly nontruthy setting restores quote-aware parsing.
 fn quote_aware_parsing() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
-    *ENABLED.get_or_init(|| !env_is_truthy("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING"))
+    *ENABLED.get_or_init(|| {
+        std::env::var_os("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING")
+            .is_some_and(|value| !value.to_str().is_some_and(is_truthy))
+    })
 }
 
 #[derive(Clone, Copy, Default)]
@@ -4270,6 +4218,13 @@ mod tests {
     use super::test_support::failing_scanner;
     use super::*;
 
+    mod quote_policy {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/quote_policy.rs"
+        ));
+    }
+
     #[test]
     fn open_invoke_block_end_search_is_linear() {
         let tools = [crate::tool_calling::traits::Tool {
@@ -4310,6 +4265,11 @@ mod tests {
 
     #[test]
     fn speculative_prose_quote_tail_advances_once_and_clear_releases_state() {
+        if !quote_policy::quote_aware_process(
+            "tool_calling::scan::tests::speculative_prose_quote_tail_advances_once_and_clear_releases_state",
+        ) {
+            return;
+        }
         let mut prose = ProseControlState::default();
         prose.consume("Quoted \"");
         let mut input = String::from("<control>");
@@ -4338,6 +4298,11 @@ mod tests {
 
     #[test]
     fn possessive_suffix_requires_a_closed_span_and_a_word_boundary() {
+        if !quote_policy::quote_aware_process(
+            "tool_calling::scan::tests::possessive_suffix_requires_a_closed_span_and_a_word_boundary",
+        ) {
+            return;
+        }
         for quote in ['`', '"'] {
             let name = format!("{quote}config{quote}");
             for (suffix, expected) in [
@@ -4367,36 +4332,6 @@ mod tests {
             state.resolve_apostrophe(None);
             assert_eq!(state.quote, Some('\''), "{escaped:?}");
         }
-    }
-
-    #[test]
-    fn invoke_boundary_factory_constructs_and_dispatches_stateless_callbacks() {
-        fn end(text: &str, flush: bool, tool_index: usize) -> Option<usize> {
-            (flush && tool_index == 2).then_some(text.len())
-        }
-        fn opens(text: &str, at: usize) -> bool {
-            text[at..].starts_with("open")
-        }
-        fn holdback(text: &str) -> usize {
-            text.len().min(3)
-        }
-        fn resync(text: &str, tool_index: usize) -> Option<usize> {
-            (tool_index == 2).then(|| text.find("resume")).flatten()
-        }
-
-        let factory = InvokeBoundaryFactory::stateless(InvokeScan {
-            end,
-            opens,
-            holdback,
-            resync: Some(resync),
-        });
-        let mut boundary = factory.create();
-
-        assert_eq!(boundary.end_append("call", "call", false, 2), None);
-        assert_eq!(boundary.end_append("call", "", true, 2), Some(4));
-        assert!(boundary.opens("open-call", 0));
-        assert_eq!(boundary.holdback("abcdef"), 3);
-        assert_eq!(boundary.resync("skip resume", false, 2), Some(5));
     }
 
     #[test]

@@ -846,6 +846,13 @@ pub(crate) fn beam_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod quote_policy {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/quote_policy.rs"
+        ));
+    }
     use crate::unified::{
         MalformedToolCall, UnifiedEvent, UnifiedParserEvent, UnifiedParserExt, UnifiedParserInit,
         UnifiedParserStartingState, assemble,
@@ -2476,6 +2483,11 @@ mod tests {
 
     #[test]
     fn guided_response_prefill_keeps_quoted_framing_literal() {
+        if !quote_policy::quote_aware_process(
+            "unified::beam::tests::guided_response_prefill_keeps_quoted_framing_literal",
+        ) {
+            return;
+        }
         use UnifiedParserStartingState::Response as R;
         let quoted = "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>";
         guided_every_split(

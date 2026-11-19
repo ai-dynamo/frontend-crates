@@ -4250,7 +4250,10 @@ impl GuidedState {
                 );
                 let len = self
                     .native_header
-                    .body_end(suffix, &self.grammar.invoke_end, flush);
+                    .body_end(suffix, &self.grammar.invoke_end, flush)
+                    // EOF settles ownership, not call completeness. Drop an
+                    // unfinished native envelope while retaining prose before it.
+                    .or_else(|| flush.then_some(suffix.len()));
                 if let Some(len) = len {
                     if self
                         .native_header

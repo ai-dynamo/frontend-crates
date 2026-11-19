@@ -231,6 +231,7 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_9db8284c68087826: []
   tools_87f9a4e69313cc76:
   - name: schema_probe
     parameters:
@@ -476,6 +477,15 @@ tools:
           type: string
       required:
       - value
+  tools_ac03f4607c61c9ce:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+      required:
+      - cmd
   tools_c74338ba0ea3bd75:
   - name: schema_probe
     parameters:
@@ -905,6 +915,18 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_a7861137bdb03589:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+      - path
+      - content
   tools_12306e4c8a078513:
   - name: schema_probe
     parameters:
@@ -1420,7 +1442,6 @@ tools:
       required:
       - location
       additionalProperties: false
-  tools_9db8284c68087826: []
   tools_51bb61b12cbf4d8a:
   - name: schema_probe
     parameters:
@@ -1645,6 +1666,15 @@ tools:
         Café:
           const: '42'
     strict: true
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_9c8a74c317d60415:
   - name: schema_probe
     parameters:
@@ -1850,16 +1880,16 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_6943558dd8046b7b
   031398ada20f5fab55a4012ed94d5a10b2e4b7e621b4be728d867f7a07fb2930:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -1868,6 +1898,10 @@ requests:
     - 45
     - 41
   033637755be287f9e99bc962d333677b71eb3bdf287ec03f8e3fc6a3899fbdb5:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
     input: '<think>before <invoke name="f">
 
       <parameter name="x">
@@ -1877,10 +1911,6 @@ requests:
       </parameter>
 
       </invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-    init:
-      starting_state: None
-      tool_output_mode: GuidedJson
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -1907,6 +1937,10 @@ requests:
     - 9
     - 20
   03e66bb538ba0af5883100946de84846fe26fc9019b65cc6c8e3423c39b9d2e0:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think><minimax:tool_call>
@@ -1925,10 +1959,6 @@ requests:
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -1988,18 +2018,18 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">  spaced  </parameter></invoke></minimax:tool_call>
     tools: tools_944c6af93200d6d4
   076cceb3ec481511ebcbdf284d7bae7eef77aa857d9dbddf5bad9afddb55746f:
-    input: '<invoke name="[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<invoke name="[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
     tools: tools_cbf47ccf5fd2ef00
   079d722c34a8d25c60c31e8d446addd2da520c1207af780601f05fb2f4a677db:
-    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": </minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": </minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   07e19e8a6a970bbccb67e07fe68c7d493897151f1d6f973433585ce1da9e3c17:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">{"x":1}</parameter></invoke></minimax:tool_call>
@@ -2019,18 +2049,48 @@ requests:
   0a05c3da908d1742c577f36f50413d64dac980cd87595b31e4edb0c036525d19:
     input: <think>first thought</think>interlude <think>second thought</think>done
     tools: tools_cbf47ccf5fd2ef00
+  0a0d9446e430656f4bef4fad97910011bb15caae9599bd82fc2b963d886849db:
+    input: '''90s</think>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 20
+    finish_step: true
+  0a351ec6831a4828665f02897e3df9f67f0251a45d4ab1ffe011882751be3dff:
+    input: Let me think, this SQL fragment is '1'='1</think>'Yes'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 54
+    finish_step: true
   0a759e698dbffea7f7487a6ca369c73d2d34a49b3e4d7bca7dc8c5be128a16a5:
     input: <minimax:tool_call><invoke name="f"><parameter name="x">雪 </minimax:tool_call> <think>literal</think></parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   0b0ed5875b0f2c4da3a7aca57331891d4f53afdf9364618a5e1f022900573fd3:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">1</parameter></invoke></minimax:tool_call>
     tools: tools_87f9a4e69313cc76
+  0bfd6ddcf8e7fc3fa807e93142a6f620937b55d940310118ece733832d7968ed:
+    input: '`name</think>`Answer`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 21
+    finish_step: true
   0c02a04b7991a6ac7b6178b3ff2a3632861e19cab963ac78780a5e1fdea97fcb:
-    input: '[{"name": "log", "arguments": {"note": "</think>"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '[{"name": "log", "arguments": {"note": "</think>"}}]'
     tools: tools_cbf47ccf5fd2ef00
   0c0fa268447eddd03a5932e006fc8baab5cecd39683aabd3c6a8c9233bfb8d48:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">4.2e1</parameter></invoke></minimax:tool_call>
@@ -2047,18 +2107,30 @@ requests:
   0f4492fc38efd32d15f2c5026089696df32d6ec9e648427b51125ced3c745528:
     input: <minimax:tool_call><invoke name="set_labels"><parameter name="label">null</parameter><parameter name="note">null</parameter><parameter name="literal">null</parameter></invoke></minimax:tool_call>
     tools: tools_357b7150e2dd7639
-  0fcdbcaaeef9c3ef20534a2e81ee4eefcb84e74b68ef7e49347a1af7600f2e95:
-    input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
-    tools: tools_9d7e29c38b45febb
-  117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a:
-    input: '"load_config"''s_name </think> marker'' stays quoted.</think>
+  0fb1c9d4b222a6ab6afea7ab400bb1d263cdb021aa732c9447f6ad9787bb54f3:
+    input: 'f''" OR x -- ''
 
-
-      I''ve found the bug in `app.py`.'
+      </think>"Answer"'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    finish_step: true
+  0fcdbcaaeef9c3ef20534a2e81ee4eefcb84e74b68ef7e49347a1af7600f2e95:
+    input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
+    tools: tools_9d7e29c38b45febb
+  117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '"load_config"''s_name </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -2073,11 +2145,11 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">"hello"</parameter></invoke></minimax:tool_call>
     tools: tools_4b74086a372173ba
   12366ede3c6e47165cfc5e8772302be093f50725d7a5132f2c526adea6cdda6d:
-    input: The literal "<minimax:tool_call>" marker is part of the explanation.
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal "<minimax:tool_call>" marker is part of the explanation.
     tools: tools_cbf47ccf5fd2ef00
   13bedbf245253e3777583bd7a425b1bba2cc20229413ee72f5c2fa46ba670b06:
     input: <think>A</think><minimax:tool_call><invoke name="f"><parameter name="x">1</parameter></invoke></minimax:tool_call><think>B</think><minimax:tool_call><invoke name="g"><parameter name="y">2</parameter></invoke></minimax:tool_call>
@@ -2136,25 +2208,35 @@ requests:
     input: <minimax:tool_call><invoke name="capture_payload"><parameter name="object_text">{"x":1}</parameter><parameter name="array_text">[1,2]</parameter><parameter name="quoted_text">"hello"</parameter><parameter name="inline_text">{"x":1}</parameter></invoke></minimax:tool_call>
     tools: tools_fb2820fd626f73c0
   2172f0bf3ae60d826ef24b40b74ab3407e8778d731a6936a8321f44c8f03b806:
-    input: '[{"name": "get_weather", "arguments": {"city": </minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": </minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   21799d6ddbf9607b02bd6904b132ba7d243cebb965508295c7b7b55e4f41f386:
-    input: '<invoke name="[{"name": "get_weather", "arguments": {"city": '
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<invoke name="[{"name": "get_weather", "arguments": {"city": '
     tools: tools_cbf47ccf5fd2ef00
+  21adf7e2971a3aaebaa2284c20bc3c56e122075a387a7d754d2023af8ca4edef:
+    input: '`pytest -x</think>Run `pytest`'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    finish_step: true
   2250e915d85431ab59be8b8a5be0aa269c347cc9757d31c92fa73f9c6fac0bc5:
-    input: '<think>literal</think><invoke name="f"><parameter name="x">"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think>literal</think><invoke name="f"><parameter name="x">"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -2167,11 +2249,11 @@ requests:
     - 9
     - 57
   22ee77ad043ab2fe92849741a8c29207cbbc06e565ba2da07a943c521ad50953:
-    input: '<think>literal</think><invoke name="f"><parameter name="x">{"city":"Rome"}</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think>literal</think><invoke name="f"><parameter name="x">{"city":"Rome"}</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -2190,22 +2272,22 @@ requests:
     input: <minimax:tool_call><invoke name="get_weather"></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   27e6c092114d6a0c1e69900010798585c628fb3144e629ce77e04747b8d1713b:
-    input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   2829a5d4ba65db44f8177d12592e9ddff1b35ee9a2ad63d9b2c1a129ea573250:
-    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   282abda38d7d70c96edd50514b588c3f240d962a86de559cd14401a68ae8df24:
-    input: <minimax:tool_call><invoke name="f"><parameter name="a">1</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="g"><parameter name="b">2</parameter></invoke></minimax:tool_call>
     finish_reason: tool_calls
+    input: <minimax:tool_call><invoke name="f"><parameter name="a">1</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="g"><parameter name="b">2</parameter></invoke></minimax:tool_call>
     tools: tools_51d6dcfd07ccb5f2
     chunk_sizes:
     - 132
@@ -2250,6 +2332,18 @@ requests:
 
       </minimax:tool_call>'
     tools: tools_c08ba43a47843267
+  2910a84864b46552d11612075b5d65bfc947f2f71d3503fbc882298cded69cbd:
+    input: The literal "<minimax:tool_call>" marker is part of the explanation. <minimax:tool_call><invoke name="run"><parameter name="cmd">Paris</parameter></invoke></minimax:tool_call>
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_ac03f4607c61c9ce
+    chunk_sizes:
+    - 69
+    - 60
+    - 46
+    finish_step: true
   295e930fbb6188dc1ce0e3c5f71f99edba1e86641621c46d5a3657349e09a73f:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">bad</invoke></minimax:tool_call><minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
@@ -2260,11 +2354,11 @@ requests:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">null</parameter></invoke></minimax:tool_call>
     tools: tools_b61bcb374d1c66b2
   2b72e353edee9f0c21e06bdaeb9fcf15e684f686bffb9372bf8e0cc71d6ce4b4:
-    input: The literal "<minimax:tool_call>" marker is part of the explanation.<minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal "<minimax:tool_call>" marker is part of the explanation.<minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   2c94f700007d591440a5a37d7a970156b0ea55b36e78176b634d83cb421383e2:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">42</parameter></invoke></minimax:tool_call>
@@ -2273,15 +2367,27 @@ requests:
     input: Hello there. <think>let me recall</think>The capital is Paris.
     tools: tools_cbf47ccf5fd2ef00
   2d8653552e587c5ae6421f92413bcac41b01d85abfdb7ad644ffada4b05a8faf:
-    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   2eadaa6c4b82342d46edfc8c27a275b2615c4da34fde936619817c6d4353bee0:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">null</parameter></invoke></minimax:tool_call>
     tools: tools_ca0b5b673641dda3
+  3086cadf76396b64b66539cf952ed2087cc1dc1a626793c13a2cda47b7c388f0:
+    input: 'Example: "<minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>".'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 115
+    - 2
+    finish_step: true
   3086f4b15e8afd4c7ce76dbfde59bb6e01bcb700e302bc01dcfde6e5600a8f04:
     input: <minimax:tool_call><invoke name="server.weather"><parameter name="location">Beijing</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="server.time"><parameter name="timezone">Asia/Shanghai</parameter></invoke></minimax:tool_call>
     tools: tools_cd234037a001916f
@@ -2300,12 +2406,22 @@ requests:
     - 19
     - 84
   30f4d561eadbfe33654436f515445c014b71e3690bf16594333dc87b753e4e9f:
-    input: "<minimax:tool_call><invoke name=\"f\"><parameter name=\"x\">{\"city\":\"Rome\"}</parameter></invoke></minimax:tool_call> \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+    input: "<minimax:tool_call><invoke name=\"f\"><parameter name=\"x\">{\"city\":\"Rome\"}</parameter></invoke></minimax:tool_call> \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
     tools: tools_cbf47ccf5fd2ef00
+  31231374e4ae37fb4f617d6f24635721105e3b33ef447d464b085a775a610591:
+    input: Let me think, the marker </think> is a special marker
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 53
+    finish_step: true
   31497b2b0220406c489f554348f00ff3093f7a0654ab2f569aa3cb0131fa85b7:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">null</parameter></invoke></minimax:tool_call>
     tools: tools_1ceb5fd473b8ba0a
@@ -2313,11 +2429,11 @@ requests:
     input: <minimax:tool_call><invoke name="f"><parameter name="x">1</parameter></invoke></minimax:tool_call><think>mid</think><minimax:tool_call><invoke name="g"><parameter name="y">2</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   31b18954f7555a4319f2bd259fe526a6c41e238ed7b0609575fc743476da0ae9:
-    input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: null
+    input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 21
@@ -2361,13 +2477,13 @@ requests:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>The forecast shows clear skies for the rest of the week.
     tools: tools_cbf47ccf5fd2ef00
   39f57122a1f843eede930f96c9adc06ae3641e81a085e6c71e0d514cd81b3336:
-    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
-
-      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
+
+      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -2383,12 +2499,12 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">"hello"</parameter></invoke></minimax:tool_call>
     tools: tools_d7ee0d5304d6d110
   3b31c44f5a50864b065a4469b3da131afcb45d3b745a3e65f5f7a18eb4ea2162:
-    input: 'I mean <think>self literal</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
     finish_reason: tool_calls
+    input: 'I mean <think>self literal</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -2456,15 +2572,25 @@ requests:
   4327634f559bdfdc8ea8d5f372d96080a92bd1811044268da8c44c1e21ef22c8:
     input: Sure. <think>check A</think><minimax:tool_call><invoke name="f"><parameter name="x">1</parameter></invoke></minimax:tool_call> and <think>check B</think><minimax:tool_call><invoke name="g"><parameter name="y">2</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
+  4339065b4c0af2a2c2fcd98f9221de4bcd773a1a629a6ada18f427123cbfb266:
+    input: Let me think, I should try `pytest -x</think>Run pytest
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 55
+    finish_step: true
   4357dad261c955bcbf3fd7b4dae0a51a51d9dee98142f456016f98c58417aec1:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_a6aee3f30418a3a4
   443aae769670d1cdaf27a2768b354b5156e168fa06e575c5e8d6bab23fbfb93e:
-    input: '<invoke name="get_weather[{"name": "get_weather", "arguments": {"city": "a "> b"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<invoke name="get_weather[{"name": "get_weather", "arguments": {"city": "a "> b"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 77
@@ -2481,18 +2607,18 @@ requests:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">still thinking about it
     tools: tools_cbf47ccf5fd2ef00
   45729309f0d89ac50dccdc2b36758c3391d1c9dde44cb04183d4555cb6fbf715:
-    input: The literal `<minimax:tool_call><invoke name="get_weather"><parameter name="city">` header is part of the explanation.
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal `<minimax:tool_call><invoke name="get_weather"><parameter name="city">` header is part of the explanation.
     tools: tools_cbf47ccf5fd2ef00
   45d98209816fc99919d410f14e28e36c54761d0903153ff27c6fb47b5311d4cf:
-    input: He said "maybe<minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: He said "maybe<minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   46b7254f663241e64225e886462655002f4aed0bde5a3b898578eebf13e59ded:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
@@ -2501,19 +2627,19 @@ requests:
     input: <minimax:tool_call><invoke name="echo"><parameter name="city">Paris</parameter><parameter name="value">1.5</parameter></invoke></minimax:tool_call>
     tools: tools_81ef407beab6fe3e
   485feeead29a57f8bbe9aa90a3c2b73dad3acdc1bbcd211d2b76602344aa0200:
-    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "a > b"}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "a > b"}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   48ce062fd453ab21870d952820bc4297a339cfef1d7e4d728fff7e58dc6834d4:
-    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean <think>self literal</think>'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
     finish_reason: tool_calls
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean <think>self literal</think>'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 64
@@ -2529,6 +2655,16 @@ requests:
   4c183b7d1b34ea16e65765dcacb356c0cae4a4abfc8deb3abd332b63e7d67cd2:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_746b20394956becb
+  4c4d56f0ed35b32a61314759ccc935fa3423b2d0b484117ebb5c35e894dbe4fc:
+    input: Let me think, I should run this command "grep -v '</think>' ..."
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 64
+    finish_step: true
   4d112d74d20169b6e7d4ca6da48c47675a35bf61f6ecafd5c475e24b88342cde:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">[1,2]</parameter></invoke></minimax:tool_call>
     tools: tools_8de7a56dafcceaa4
@@ -2540,11 +2676,11 @@ requests:
     input: checking</think><minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   4d9d7286dade621493e7e7fb67daa01873222b41845cd9a4437996a306853033:
-    input: '<think>literal</think><invoke name="f"><parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think>literal</think><invoke name="f"><parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -2578,31 +2714,31 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">{"x":1}</parameter></invoke></minimax:tool_call>
     tools: tools_3142468a2190e640
   52df3c1dab8ec896ddcd7f36e01ce2bd4ac71d490fe7c5e9e117b8c2bb4dcf16:
-    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   5503e400b724481bb1cb4b3afd639c24411fc97e936a91c5fcf9902c374324f7:
     input: <minimax:tool_call><invoke name="capture_payload"><parameter name="amount">21.5</parameter><parameter name="retries">37</parameter></invoke></minimax:tool_call>
     tools: tools_7b239a503c923593
   55a91ade697fbd02ca15b66d6c6d518bc2e86c0ab1a837f62346ace10f565709:
-    input: The literal "<minimax:tool_call>" marker is part of the explanation.
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: The literal "<minimax:tool_call>" marker is part of the explanation.
     tools: tools_cbf47ccf5fd2ef00
   5684bc468f64d292f052f9ec1677b7aac12652f75741a88a66a6ec068b9ede97:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
   56ff508b3e1a0d0737bdc499b16c1e8adf617e5d50200602759f27c5dda7235e:
-    input: The literal 'example <minimax:tool_call> marker' is part of the explanation.
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal 'example <minimax:tool_call> marker' is part of the explanation.
     tools: tools_cbf47ccf5fd2ef00
   58e186852a58db1598304bec80995d1a934abe8b09b7d0dd10aed93579c2a0da:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>
@@ -2615,14 +2751,14 @@ requests:
     input: '{"name": "get_weather", "arguments": {"city": "Par'
     tools: tools_cbf47ccf5fd2ef00
   58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a:
-    input: '`load_config`''s_name </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`load_config`''s_name </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -2634,11 +2770,11 @@ requests:
     - 8
     - 33
   5938fceb190c174a48c0488078604e8dbe2c35d3a53c88aaf29a3b88cc00bcb7:
-    input: '</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   59b445e17c0191faa1cb8f2f30634d8692d7092d1cccd298cdda8e7f1af2f164:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">42</parameter></invoke></minimax:tool_call>
@@ -2649,6 +2785,16 @@ requests:
   5c5210da730d166b87299d6f22a7b2f4904a40e1c205fefaba717cca3d74c1cb:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_20ef8090724eb9f3
+  5ce7bb751a0492fd9035b42717fec7c8b1d19c13c02980733ffa2cba479e178e:
+    input: <minimax:tool_call><invoke name="write_file"><parameter name="path">/tmp/literal.txt</parameter><parameter name="content"><think></think>answer</parameter></invoke></minimax:tool_call>
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_a7861137bdb03589
+    chunk_sizes:
+    - 184
+    finish_step: true
   5cfe0c14e43fd8f932c42281b7182b6d28a445beebc24b2e3aeb992e79ca398b:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">2</parameter></invoke></minimax:tool_call>
     tools: tools_12306e4c8a078513
@@ -2658,16 +2804,26 @@ requests:
   5ea052cd85e89c612f7dd230582e74633a97e8d31fa07bbeb88dc7e01ee64ebc:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_799032ba2fa9936f
+  5fa11fd6bf79ada6c3a6f2deb0d1017d1275e3d44f005074f86d26698ac41aac:
+    input: Let me think, user is asking if </think> is special</think>Yes
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 62
+    finish_step: true
   60f20bdda8c4f2c4520a888a0fc9dd08f5f68530ab98d5ebc1366cafa953ba62:
     input: <think>let me think</think>The answer is 42.
     tools: tools_cbf47ccf5fd2ef00
   61053dbdc51e45125262a176292deff7b8c274c78e6968a4c0ecf7c4d067f345:
-    input: '<think>thinking<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
     finish_reason: tool_calls
+    input: '<think>thinking<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   6217ba7609ecdd8da73bf8c2453cff3688ee1d910dd68bc59b7d68e8c9b11a58:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">-4.2E+1</parameter></invoke></minimax:tool_call>
@@ -2679,18 +2835,28 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_d0a5a1d2f9e7df17
   64b922c5a4a7927aca23a74baa74cfb44f6ba1aee731986f1ef8819820a57f0e:
-    input: 'The literal "<minimax:tool_call> { example }" stays visible. {"city": "Paris"}'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: get_weather
+    input: 'The literal "<minimax:tool_call> { example }" stays visible. {"city": "Paris"}'
     tools: tools_cbf47ccf5fd2ef00
+  650fc6d18b09ecda0770925216ed69680a3cf262779f10bc874ee754b6e13e86:
+    input: '`name`''s path.</think>''Answer'''
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    finish_step: true
   663dd94825e1a3475bf878a69290a234b3109ec5d596e1f541aa4a49a80a39fd:
-    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   66fbc12040e30521c8700403bd09aa74e7712bb0c302e0f79450729e5d321aa7:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">42</parameter></invoke></minimax:tool_call>
@@ -2705,21 +2871,21 @@ requests:
     input: 'On it: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   696620499381f848bfa561ff1b14af6ff8fb3d79cc9df9faf2661c86f371dd58:
-    input: '<think>I''ll use <minimax:tool_call> next</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think>I''ll use <minimax:tool_call> next</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   6ae6dc283d6c96270d14b127674b590cc34f8b56bee2f84c864282324c178b07:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">&lt;</parameter></invoke></minimax:tool_call>
     tools: tools_1b23518e992e91ed
   6c95fac5f198d75498b75706b1c01de9b49470bf48dbc254cc3b8ee0e3203802:
-    input: '<think>I''ll call <invoke name="get_weather</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think>I''ll call <invoke name="get_weather</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   6cabc2b8a515184af820545c7f04884f68e0b47ad2c7aa6b8b5a27d8c6e2a03a:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
@@ -2768,11 +2934,11 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">null</parameter></invoke></minimax:tool_call>
     tools: tools_97ab5757d6f3f219
   6fca98c42d9b67fcdd54e56eb516187e15dcaba012e019003b01203d1982f81b:
-    input: The literal 'doesn't <minimax:tool_call> marker' stays quoted.
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal 'doesn't <minimax:tool_call> marker' stays quoted.
     tools: tools_cbf47ccf5fd2ef00
   700198bfa1f65aeb65a2a1c768c12cfcccb0d5755eb9e1d5eb12962676a9c616:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">  spaced  </parameter></invoke></minimax:tool_call>
@@ -2827,11 +2993,11 @@ requests:
       '
     tools: tools_cbf47ccf5fd2ef00
   811ecae9f5443ca6d909b5e2f0256ba0f8325f47937e8822e2256c74854e2ad5:
-    input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"city": "Paris"}'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: get_weather
+    input: 'The literal ''doesn''t </think> marker'' stays quoted.</think>{"city": "Paris"}'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 21
@@ -2856,11 +3022,11 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_56ea48eeba7ec14b
   8387791a6c97d2c1c8ae49da1b10acab3e75c5263cc6ce520b59415ef175d580:
-    input: '<invoke name="<think>secret</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<invoke name="<think>secret</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   84808f9e34bb1f04f493c7f75dc6e0c226442ea15c8eb189a4ce7ba4359fb7ee:
     init:
@@ -2872,6 +3038,16 @@ requests:
   86283236f8a6e1fab1ff77cdf3ae09b341acf9d62126dd7bc2ba9096f24ba04c:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">9007199254740993.25</parameter></invoke></minimax:tool_call>
     tools: tools_be922244cdee705c
+  86932f70a0a02c3a6c5d04ff7076c1ffb9f8926818718ff5137894d25e86a7bc:
+    input: Let me think, the reference is 80s' music</think>'Yes'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 54
+    finish_step: true
   87a2e42d3bb8bc3f78eb736f84b0fdbab8cc5855011ff9c8154485c33c80fbc9:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">9.0071992547409925e15</parameter></invoke></minimax:tool_call>
     tools: tools_be922244cdee705c
@@ -2881,6 +3057,16 @@ requests:
   899a353be9262e626d3a4f2e538cd3ae8b476d0c5f3d36410df0b6be4d6174e2:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">42.5</parameter></invoke></minimax:tool_call>
     tools: tools_3b9cefdb4fbe7e81
+  8af32ebdcd8fcaa9851bcb19b027fe59ac8f4c0f7fc810f60428acc402ff3dde:
+    input: The special "</think>" marker is used to delineate parser paths
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 63
+    finish_step: true
   8af6c487ad84f2a48daf40bc4d394de1c8b7f8ece41dd1da2c47771bb347a5ab:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_354f5c938f5eb5c2
@@ -2899,6 +3085,19 @@ requests:
   8e1b2cda9932952c97c9d6a6f78915f7a27b588a78b010648e00f42a6597ee6b:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_d634a43e2a693178
+  8ec0fc62d4f0aed90c0573c4826e5970671355dd3a8be2b49f076ab0b1ece4d4:
+    input: analysis "</think>Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 10
+    - 1
+    - 7
+    - 7
+    finish_step: true
   90db90e0c55eed4b19832430ee2991eaf29ee863a0b59b85b97f709d6d26ddea:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="city">null</parameter></invoke></minimax:tool_call>
     tools: tools_e4f3ce0956c11ca0
@@ -3017,6 +3216,26 @@ requests:
   a1eceb2c30d4a13957ab18619b07bb4806b469563079b4fb892d6e8bd91ab6da:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_def252fc833e1bdc
+  a25cd2bb559cf7a4d92b15cdb0b7b7073f3ff9e8ec9e16468544b29c88628089:
+    input: 27"</think>"Answer"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 19
+    finish_step: true
+  a4876338bfda7cc3a1dc239ac7bef87b76ef163a0241cba1334fa070f674b926:
+    input: '''</think>''</think>Answer'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 24
+    finish_step: true
   a7c89f588a7c10bbd18798476e04cb482aa159684227656b7ff27390b4a8f333:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">café</parameter></invoke></minimax:tool_call>
     tools: tools_d3a7035c9b3abb76
@@ -3026,6 +3245,16 @@ requests:
   a9cc28fee56c631109f4c2ccdf7c3a24e605e65dc039a98bc2a4512a9350b6d8:
     input: <think>A</think><minimax:tool_call><invoke name="f"><parameter name="x">1</parameter></invoke></minimax:tool_call><think>B</think><minimax:tool_call><invoke name="g"><parameter name="y">2</parameter></invoke></minimax:tool_call><think>C</think>
     tools: tools_cbf47ccf5fd2ef00
+  a9e8f53fa894d198aa56725ba3bc7dba4d004295b613d7ad03c4fe47faadc37e:
+    input: Let me think, the year is 80s'</think>Yes
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 41
+    finish_step: true
   aa89396f861a30a46a73aabca15e306880c3de068cf21e46fd2b1ab65d551ff5:
     init:
       starting_state: Response
@@ -3040,8 +3269,8 @@ requests:
     input: <minimax:tool_call><invoke name="echo"><parameter name="city">Paris</parameter><parameter name="value">-1E+400</parameter></invoke></minimax:tool_call>
     tools: tools_81ef407beab6fe3e
   ac7efee179ba25a63513b29ee0fec39ff694a8ce3f9de2b2a05bd8ccd04bcebb:
-    input: <minimax:tool_call><invoke name="f"><parameter name="x">1</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="g"><parameter name="x">2</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="h"><parameter name="x">3</parameter></invoke></minimax:tool_call>
     finish_reason: tool_calls
+    input: <minimax:tool_call><invoke name="f"><parameter name="x">1</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="g"><parameter name="x">2</parameter></invoke></minimax:tool_call><minimax:tool_call><invoke name="h"><parameter name="x">3</parameter></invoke></minimax:tool_call>
     tools: tools_66a922ef94c2db73
     chunk_sizes:
     - 0
@@ -3049,28 +3278,28 @@ requests:
     - 64
     - 0
   ad7e90469b27b2824bd9c06b229ee95d009eabcb3a5e2e49136e1ded6e01abfb:
-    input: '<invoke name="{"unexpected": "shape"}'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<invoke name="{"unexpected": "shape"}'
     tools: tools_cbf47ccf5fd2ef00
   add694d6b62806c041bea3955322a39338e77a06abc56ad2561efad48dcc4204:
-    input: <think><invoke name="éaaaaaaaaax
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: <think><invoke name="éaaaaaaaaax
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
     - 25
   ae83cb5f64f3ca05ded79969f54749affb4145256c002265fee16b41cd420687:
-    input: '<think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   af5942dc1c2a38425afb16d6e5bb68a0b16e9304137e8efdac87ff9861ac9124:
     input: '
@@ -3086,29 +3315,29 @@ requests:
     - 120
     finish_step: true
   b1438c1b5e20e5c586d1b398e51e8039e4810d8d0480d543565e8210cedc1e38:
-    input: 'Sure. <think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: 'Sure. <think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   b154278a0c9b3dcba469975f21a3871353db66e86f171f2870a2caac3ad17644:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">0.10000000000000000001</parameter></invoke></minimax:tool_call>
     tools: tools_be922244cdee705c
   b15ee06e76cf50b5704617422df7f8d9a350122a5f70bdbec0f0961d84618759:
-    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   b1e871e226662eae495864e5cab3fcf41fd5688e76dcddef2455d48660e7c4c6:
-    input: 'thinking <minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: null
     finish_reason: tool_calls
+    input: 'thinking <minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 9
@@ -3155,14 +3384,14 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">true</parameter></invoke></minimax:tool_call>
     tools: tools_70f2b5e9ad67ba1e
   b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709:
-    input: '"load_config"''some </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '"load_config"''some </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -3179,6 +3408,16 @@ requests:
   bda3bd5855a090804a07a48fe07622af429ff1a2e9ed04584326c1a28e2cf075:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">42</parameter></invoke></minimax:tool_call>
     tools: tools_9df3142224567b2c
+  bdbdb00044984e69ca1938a3947fb32d2a84e2196c1d9793920a7d68edee8de5:
+    input: Let me think, I should run this command "grep -v '</think>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 58
+    finish_step: true
   bf129a5356a5e56bd7e640fca7189bd94e355d82d39c93a79a789426ec4a3dc2:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">9007199254740993.1</parameter></invoke></minimax:tool_call>
     tools: tools_be922244cdee705c
@@ -3188,22 +3427,32 @@ requests:
   bf787edb95b91a7cb5975117cde2ba1f85b4dec99eb94ed73daadaccb401a8c6:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_b96fcb423a7855d0
+  bfcf9f083c45a75f02a94dc1e43463076c567c631516c3155bf2e1a8edf076b1:
+    input: Let me think, "The marker </think> is a special marker"
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 55
+    finish_step: true
   bfeacf8035cee8f2e2f83b76420f2cd8853aef9536e3ec12b9fccf5d6527da82:
-    input: '{"unexpected": "shape"}</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '{"unexpected": "shape"}</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   c031b42d47e19ce54d5fb3edbd09be8d6a99e54a0644207d289c79db83c22c22:
     input: <minimax:tool_call><invoke name="capture_payload"><parameter name="category">{"label":"Garden Tools","children":[]}</parameter><parameter name="tree">{"label":"root","children":[{"label":"leaf","children":[]}]}</parameter><parameter name="retries">37</parameter><parameter name="dry_run">false</parameter></invoke></minimax:tool_call>
     tools: tools_5d30b2f70e9f541a
   c0ab385ab1d30d9694e63c7e26f123fac9d86c16a55dac912590d5ee600cee89:
-    input: '<invoke name="[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<invoke name="[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
     tools: tools_cbf47ccf5fd2ef00
   c0e5ed6a48581fae0e204d968bf6b62bc41cff2b37ea506831fd4e4346a1be83:
     input: '<minimax:tool_call>
@@ -3239,6 +3488,10 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_1ffd69270532e13e
   c5cb156a0c2fcbc7710aae3f2a166c00c586b1996aa6de95c07dbca6f523c304:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
     input: '<think>before <invoke name="f">
 
       <parameter name="x">
@@ -3248,10 +3501,6 @@ requests:
       </parameter>
 
       </invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-    init:
-      starting_state: None
-      tool_output_mode: GuidedJson
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -3283,11 +3532,11 @@ requests:
     input: <minimax:tool_call><invoke name="capture_payload"><parameter name="const_text">null</parameter><parameter name="enum_text">null</parameter></invoke></minimax:tool_call>
     tools: tools_9f0d61d69494be95
   c9a4aed9565e98b2b4624dcc4b637b45867b3261fa93b49604dbdb665b8d87cd:
-    input: '</minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '</minimax:tool_call>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   cb096fc963bf35dbcc7f57a20d8a2b0ef8001034b95a731e1f91e0601996357e:
     input: '"<minimax:tool_call>\n<invoke name="lookup">\n<parameter name="q">\nx\n</parameter>\n</invoke>\n</minimax:tool_call>" trailing'
@@ -3296,14 +3545,14 @@ requests:
     input: <minimax:tool_call><invoke name="inspect"><parameter name="nested">{"fraction":9007199254740992.5,"tiny":1e-400}</parameter><parameter name="values">[9007199254740993,-9007199254740993]</parameter></invoke></minimax:tool_call>
     tools: tools_d37e0a92eadeb518
   cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf:
-    input: '`load_config`''some </think> marker'' stays quoted.</think>
-
-
-      I''ve found the bug in `app.py`.'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`load_config`''some </think> marker'' stays quoted.</think>
+
+
+      I''ve found the bug in `app.py`.'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -3335,16 +3584,16 @@ requests:
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
     tools: tools_cbf47ccf5fd2ef00
   ce2e2f316ead79eede3fb2adec4fe20daa96d7aaac6143b168f62c2ad2e819ae:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -3367,6 +3616,16 @@ requests:
   d4011a3fd95713bd2f0765769ac26741fd3b804c32a805247087e09c15926e3d:
     input: <minimax:tool_call><invoke name="run"><parameter name="cmd">git log </minimax:tool_call> --oneline</parameter></invoke></minimax:tool_call>
     tools: tools_cbf47ccf5fd2ef00
+  d4602456acb767902454e6fa289a88eac3e3cac789e618605592c540f1c1b04f:
+    input: <minimax:tool_call><invoke name="write_file"><parameter name="content"><think></think>answer</parameter></invoke></minimax:tool_call>
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 133
+    finish_step: true
   d55a710a90810a302dc26df05923a68564363ee66d836ac1e61f4d34ae2d4e0d:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_3e9459ef2d935104
@@ -3374,11 +3633,11 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">true</parameter></invoke></minimax:tool_call>
     tools: tools_dc442e5767620506
   d6bbc02b5b671b8ab744f18d1f698f01743e41b7135408c2b602ef48d20343d6:
-    input: <invoke name="<think">x</invoke>[{"name":"f","arguments":{}}]
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: <invoke name="<think">x</invoke>[{"name":"f","arguments":{}}]
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 22
@@ -3388,17 +3647,30 @@ requests:
   d91fd9a4fa7dd7519a7e695c375ccad8fbfbe6c5e44dea228e7c40652a7011ae:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">42</parameter></invoke></minimax:tool_call>
     tools: tools_9c8a74c317d60415
+  da632a1ae3342d8ceb8f07bed5f7198499052ae06dc11e23328809293ef07fad:
+    input: Use re.split(r'(\s)', text). Let's final.</think>The code prints ['a', ' ', 'b'].
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
+    chunk_sizes:
+    - 41
+    - 1
+    - 7
+    - 32
+    finish_step: true
   db13200ff74c12982f6c1b7d9d48becae2e3d2a6b50d6c4226646d99ee99eaeb:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">true</parameter></invoke></minimax:tool_call>
     tools: tools_36488b7f60ef21ad
   dcba4ccd7ba66a53c990d116bddeefecb9a78d05f65d95187435be48b39ba638:
-    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
-
-      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     init:
       starting_state: Reasoning
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '"load_config"''s check is fine, but `open(''/tmp/x'')` is not.
+
+      </think>{"name": "get_weather", "arguments": {"city": "`Paris`"}}'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -3421,28 +3693,28 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_e9d7fa1fb290c04d
   df4a80a58df43b1c99727e134b348cc44650358927cbd4d5f7185c7ff28a990d:
-    input: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   df849a47d715c78566d2c7736897475b5809c0da323688fa70f42e0005b6edd3:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">{"x":1}</parameter></invoke></minimax:tool_call>
     tools: tools_2da5b5660d13bc3f
   dfafa5511a635ee761fd1fb15d433126d0798ba6696531dc84b0f9778c6df311:
-    input: '<minimax:tool_call>{"unexpected": "shape"}</minimax:tool_call>'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<minimax:tool_call>{"unexpected": "shape"}</minimax:tool_call>'
     tools: tools_cbf47ccf5fd2ef00
   dfeaba4d629d606d8b9d9ef88be951633932aac3879e7754f5061937caeac620:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">&lt;</parameter></invoke></minimax:tool_call>
     tools: tools_4ce5fbd93f1be6e2
   dff2be4943f5ac5340d8c35a9b2d5ad694f18a7a70a3775eba217f1eec00e361:
-    input: '<think>Plan: <invoke name="queue_label_print_job">label_count=48</invoke> Done. Proceeds. <invoke name="queue_label_print_job">label_count=48</invoke> matches. <invoke name="queue_label_print_job">label_count=48</invoke>'
     finish_reason: length
+    input: '<think>Plan: <invoke name="queue_label_print_job">label_count=48</invoke> Done. Proceeds. <invoke name="queue_label_print_job">label_count=48</invoke> matches. <invoke name="queue_label_print_job">label_count=48</invoke>'
     tools: tools_3f996afe3e6f9bc5
     chunk_sizes:
     - 7
@@ -3488,11 +3760,11 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">3.5</parameter></invoke></minimax:tool_call>
     tools: tools_d0a5a1d2f9e7df17
   e363d50238f3364953870d4fcf453db22eef2dc047328450d0c7971bc611d49e:
-    input: The literal 'doesn't <minimax:tool_call> marker' stays quoted.
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: The literal 'doesn't <minimax:tool_call> marker' stays quoted.
     tools: tools_cbf47ccf5fd2ef00
   e4899f0a204550ed953a75504fff1e5163e709cc774c5810e70a85a153c38236:
     input: '<think>a</think>Here you go: <minimax:tool_call><invoke name="get_weather"><parameter name="city">Paris</parameter></invoke></minimax:tool_call>'
@@ -3507,11 +3779,11 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">null</parameter></invoke></minimax:tool_call>
     tools: tools_8dffe495831aef95
   eab74f63c1eebd5b4d021bc5d46bee3fb4014b38ab29b4b6ce2f9ea3de05ca23:
-    input: '{}<think>literal</think><invoke name="f"><parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '{}<think>literal</think><invoke name="f"><parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</parameter></invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 2
@@ -3525,11 +3797,11 @@ requests:
     - 9
     - 57
   eba0ca6d5c0f3f161394189b81575c555e459cff91a8e9a581b5f8368084395b:
-    input: 'The literal "<minimax:tool_call> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+    input: 'The literal "<minimax:tool_call> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
     tools: tools_cbf47ccf5fd2ef00
   ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8:
     input: The answer is 42, no tools needed.
@@ -3538,11 +3810,11 @@ requests:
     input: <minimax:tool_call><invoke name="get_weather"><parameter name="value">42.5</parameter></invoke></minimax:tool_call>
     tools: tools_be922244cdee705c
   ef2f0cb3e41c54d3ccb39d9a02bc843922bd561b8b17afb9d1563bb3e6618a82:
-    input: '<think><invoke name="éaaaaaaaaax</function"></think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+    input: '<think><invoke name="éaaaaaaaaax</function"></think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 7
@@ -3562,6 +3834,10 @@ requests:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">auto</parameter></invoke></minimax:tool_call>
     tools: tools_480df45d35724608
   f15561dca662719997d4230db0803c44962cb0079ceff5e61a957511a85a18d7:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think><minimax:tool_call>
@@ -3580,10 +3856,6 @@ requests:
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_cbf47ccf5fd2ef00
     chunk_sizes:
     - 13
@@ -3645,6 +3917,16 @@ requests:
 
       '
     tools: tools_cbf47ccf5fd2ef00
+  fd453812decf50ed7d49af92561485893e355cfa666b8ae05699d4856decf9ec:
+    input: Let me think, the TV size is 40"</think>Yes
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 43
+    finish_step: true
   fd927961c490ca504a72ea1c7f4b72938655baa77d95f99fac97fa5ddfa37e76:
     input: <minimax:tool_call><invoke name="schema_probe"><parameter name="value">42</parameter></invoke></minimax:tool_call>
     tools: tools_746b20394956becb
@@ -6656,12 +6938,12 @@ cases:
     - I3
     - I5
     - I7
-    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    description: A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.
     display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
     request: e24a892b65380a3c87afa4bd7dd511d829b8027f5a54208b6fca4e2dad879b2e
     golden:
     - kind: text
-      text: '"<minimax:tool_call><invoke name=\"lookup\"><parameter name=\"q\">x</parameter></invoke></minimax:tool_call>" trailing'
+      text: '"" trailing'
   guided_json_bare_tool_header_recovers_inside_a_thought:
     policy:
     - P2
@@ -6808,12 +7090,14 @@ cases:
   guided_quoted_reasoning_closer_named:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: 811ecae9f5443ca6d909b5e2f0256ba0f8325f47937e8822e2256c74854e2ad5
     golden:
     - kind: reasoning
-      text: The literal 'doesn't </think> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -6821,12 +7105,14 @@ cases:
   guided_quoted_reasoning_closer_required:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: 31b18954f7555a4319f2bd259fe526a6c41e238ed7b0609575fc743476da0ae9
     golden:
     - kind: reasoning
-      text: The literal 'doesn't </think> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -6834,12 +7120,12 @@ cases:
   guided_response_quoted_control_braces_named:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 64b922c5a4a7927aca23a74baa74cfb44f6ba1aee731986f1ef8819820a57f0e
     golden:
     - kind: text
-      text: 'The literal "<minimax:tool_call> { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -6847,12 +7133,12 @@ cases:
   guided_response_quoted_control_braces_required:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: eba0ca6d5c0f3f161394189b81575c555e459cff91a8e9a581b5f8368084395b
     golden:
     - kind: text
-      text: 'The literal "<minimax:tool_call> { example }" stays visible. '
+      text: 'The literal "{ example }" stays visible. '
     - kind: tool_call
       name: get_weather
       arguments:
@@ -6944,32 +7230,32 @@ cases:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_quoted_control_in_reasoning
     request: 55a91ade697fbd02ca15b66d6c6d518bc2e86c0ab1a837f62346ace10f565709
     golden:
     - kind: reasoning
-      text: The literal "<minimax:tool_call>" marker is part of the explanation.
+      text: The literal "
   native_quoted_control_in_response:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_in_response
     request: 12366ede3c6e47165cfc5e8772302be093f50725d7a5132f2c526adea6cdda6d
     golden:
     - kind: text
-      text: The literal "<minimax:tool_call>" marker is part of the explanation.
+      text: The literal "
   native_quoted_control_then_call:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_control_then_call
     request: 2b72e353edee9f0c21e06bdaeb9fcf15e684f686bffb9372bf8e0cc71d6ce4b4
     golden:
     - kind: text
-      text: The literal "<minimax:tool_call>" marker is part of the explanation.
+      text: The literal "
     - kind: tool_call
       name: get_weather
       arguments:
@@ -6978,42 +7264,42 @@ cases:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_quoted_incomplete_header
     request: 45729309f0d89ac50dccdc2b36758c3391d1c9dde44cb04183d4555cb6fbf715
     golden:
     - kind: text
-      text: The literal `<minimax:tool_call><invoke name="get_weather"><parameter name="city">` header is part of the explanation.
+      text: The literal `
   native_single_quote_contraction_reasoning:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.40-native_single_quote_contraction_reasoning
     request: e363d50238f3364953870d4fcf453db22eef2dc047328450d0c7971bc611d49e
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <minimax:tool_call> marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quote_contraction_response:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quote_contraction_response
     request: 6fca98c42d9b67fcdd54e56eb516187e15dcaba012e019003b01203d1982f81b
     golden:
     - kind: text
-      text: The literal 'doesn't <minimax:tool_call> marker' stays quoted.
+      text: 'The literal ''doesn''t '
   native_single_quoted_word_control:
     policy:
     - I7
     - P2
-    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    description: Native controls remain structural inside prose quotations by default; incomplete call bodies are dropped, and a later complete call is still recognized.
     display_id: UNIFIED.8-native_single_quoted_word_control
     request: 56ff508b3e1a0d0737bdc499b16c1e8adf617e5d50200602759f27c5dda7235e
     golden:
     - kind: text
-      text: The literal 'example <minimax:tool_call> marker' is part of the explanation.
+      text: 'The literal ''example '
   native_unmatched_quote_then_call:
     policy:
     - I7
@@ -7032,14 +7318,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_s_name
     request: 58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a
     golden:
     - kind: reasoning
-      text: '`load_config`''s_name </think> marker'' stays quoted.'
+      text: '`load_config`''s_name '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -7047,14 +7333,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_backtick_nonpossessive_some
     request: cb86dc7cba7363b5623bb8ac99ff9bf9c0a8850dcf664f814fa3b37d890eb1bf
     golden:
     - kind: reasoning
-      text: '`load_config`''some </think> marker'' stays quoted.'
+      text: '`load_config`''some '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -7119,14 +7405,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_s_name
     request: 117e1164cc56906055e607b8ab8629f78208b05c208ade1e1e2b5a720171338a
     golden:
     - kind: reasoning
-      text: '"load_config"''s_name </think> marker'' stays quoted.'
+      text: '"load_config"''s_name '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -7134,14 +7420,14 @@ cases:
     policy:
     - I5
     - I7
-    description: A single-quoted word after a closed quoted name is not a possessive suffix when letters or underscore continue after s; its embedded control remains literal.
+    description: A single-quoted word after a closed quoted name cannot shield its embedded reasoning closer under the default structural policy; later prose is visible text.
     display_id: UNIFIED.40-quoted_name_double_quote_nonpossessive_some
     request: b9d88cc822c32bcd121b2866fe69b1618452d9941589935b61f24f6213c81709
     golden:
     - kind: reasoning
-      text: '"load_config"''some </think> marker'' stays quoted.'
+      text: '"load_config"''some '
     - kind: text
-      text: '
+      text: ' marker'' stays quoted.
 
 
         I''ve found the bug in `app.py`.'
@@ -7301,3 +7587,316 @@ cases:
       name: schema_probe
       arguments:
         value: '{''a'':1}'
+  native_quoted_reasoning_closer_default:
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    policy:
+    - I2
+    - I5
+    request: 8ec0fc62d4f0aed90c0573c4826e5970671355dd3a8be2b49f076ab0b1ece4d4
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+  native_raw_string_before_reasoning_closer:
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    policy:
+    - I2
+    - I5
+    request: da632a1ae3342d8ceb8f07bed5f7198499052ae06dc11e23328809293ef07fad
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+  native_quoted_complete_call_default:
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    policy:
+    - I3
+    - I5
+    - I7
+    request: 3086cadf76396b64b66539cf952ed2087cc1dc1a626793c13a2cda47b7c388f0
+    golden:
+    - kind: text
+      text: 'Example: "'
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '".'
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+  inch_mark_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: fd453812decf50ed7d49af92561485893e355cfa666b8ae05699d4856decf9ec
+    golden:
+    - kind: reasoning
+      text: Let me think, the TV size is 40"
+    - kind: text
+      text: 'Yes'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer
+  decade_apostrophe_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: a9e8f53fa894d198aa56725ba3bc7dba4d004295b613d7ad03c4fe47faadc37e
+    golden:
+    - kind: reasoning
+      text: Let me think, the year is 80s'
+    - kind: text
+      text: 'Yes'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 86932f70a0a02c3a6c5d04ff7076c1ffb9f8926818718ff5137894d25e86a7bc
+    golden:
+    - kind: reasoning
+      text: Let me think, the reference is 80s' music
+    - kind: text
+      text: '''Yes'''
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first the native reasoning closer could be a literal mention in the question; only the second closer would end reasoning, leaving text=Yes.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 5fa11fd6bf79ada6c3a6f2deb0d1017d1275e3d44f005074f86d26698ac41aac
+    golden:
+    - kind: reasoning
+      text: 'Let me think, user is asking if '
+    - kind: text
+      text: ' is specialYes'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+  native_unquoted_reasoning_closer_in_sentence:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: even without quotation marks, the wording mentions the marker as a subject. A reader could expect the whole sentence to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 31231374e4ae37fb4f617d6f24635721105e3b33ef447d464b085a775a610591
+    golden:
+    - kind: reasoning
+      text: 'Let me think, the marker '
+    - kind: text
+      text: ' is a special marker'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+  native_reasoning_closer_in_quoted_sentence:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the whole quotation discusses the marker. A reader could expect the complete quoted sentence to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: bfcf9f083c45a75f02a94dc1e43463076c567c631516c3155bf2e1a8edf076b1
+    golden:
+    - kind: reasoning
+      text: 'Let me think, "The marker '
+    - kind: text
+      text: ' is a special marker"'
+    display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+  closed_command_quote_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the grep command quotes a literal search pattern. A reader could expect the entire command, including the native reasoning closer, to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 4c4d56f0ed35b32a61314759ccc935fa3423b2d0b484117ebb5c35e894dbe4fc
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    - kind: text
+      text: ''' ..."'
+    display_id: UNIFIED.40-closed_command_quote_before_reasoning_closer
+  unclosed_command_quote_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the unfinished grep command may be quoting a literal the native reasoning closer search pattern. A reader could retain the entire unfinished command in reasoning through EOF.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: bdbdb00044984e69ca1938a3947fb32d2a84e2196c1d9793920a7d68edee8de5
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    display_id: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+  unclosed_command_backtick_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this could be an unfinished code snippet containing a literal the native reasoning closer. The unfinished backtick does not by itself establish which boundary was intended.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 4339065b4c0af2a2c2fcd98f9221de4bcd773a1a629a6ada18f427123cbfb266
+    golden:
+    - kind: reasoning
+      text: Let me think, I should try `pytest -x
+    - kind: text
+      text: Run pytest
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+  sql_fragment_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: a reader treating the fragment as quoted SQL data could keep the native reasoning closer inside reasoning. The incomplete SQL and quotation make intent uncertain.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 0a351ec6831a4828665f02897e3df9f67f0251a45d4ab1ffe011882751be3dff
+    golden:
+    - kind: reasoning
+      text: Let me think, this SQL fragment is '1'='1
+    - kind: text
+      text: '''Yes'''
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+  quoted_name_possessive_inline_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 650fc6d18b09ecda0770925216ed69680a3cf262779f10bc874ee754b6e13e86
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+  inch_mark_before_reasoning_closer_quoted_answer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: a25cd2bb559cf7a4d92b15cdb0b7b7073f3ff9e8ec9e16468544b29c88628089
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+  unclosed_backtick_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the backtick that closes after the marker could make the native reasoning closer literal code within reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 0bfd6ddcf8e7fc3fa807e93142a6f620937b55d940310118ece733832d7968ed
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 0a0d9446e430656f4bef4fad97910011bb15caae9599bd82fc2b963d886849db
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the later backtick could close a code span containing the native reasoning closer, keeping that marker in reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 21adf7e2971a3aaebaa2284c20bc3c56e122075a387a7d754d2023af8ca4edef
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+  mixed_quotes_before_reasoning_closer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this code-shaped fragment could be read as quoted reasoning data containing the native reasoning closer, rather than a channel boundary.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 0fb1c9d4b222a6ab6afea7ab400bb1d263cdb021aa732c9447f6ad9787bb54f3
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+  native_quoted_reasoning_closer_then_answer:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first quoted the native reasoning closer could be literal reasoning data; only the second closer would end reasoning, leaving text=Answer.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: a4876338bfda7cc3a1dc239ac7bef87b76ef163a0241cba1334fa070f674b926
+    golden:
+    - kind: reasoning
+      text: ''''
+    - kind: text
+      text: '''Answer'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+  native_quoted_reasoning_closer_in_sentence:
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the sentence explicitly discusses the marker. A reader could expect the entire sentence, including the quoted the native reasoning closer, to remain reasoning.'
+    policy:
+    - I2
+    - I5
+    - P6
+    request: 8af32ebdcd8fcaa9851bcb19b027fe59ac8f4c0f7fc810f60428acc402ff3dde
+    golden:
+    - kind: reasoning
+      text: The special "
+    - kind: text
+      text: '" marker is used to delineate parser paths'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+  reason_markup_in_arg_empty_span_then_text:
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    policy:
+    - I7
+    request: d4602456acb767902454e6fa289a88eac3e3cac789e618605592c540f1c1b04f
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    policy:
+    - I7
+    request: 5ce7bb751a0492fd9035b42717fec7c8b1d19c13c02980733ffa2cba479e178e
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        path: /tmp/literal.txt
+        content: <think></think>answer
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+  native_quoted_control_then_call_progress:
+    description: '#595: start in Response with Native output and offered run(cmd:string). The structural prose opener owns and drops its incomplete body; recover the following complete call. Three content chunks expose pre-EOF progress. A literal reading would instead retain the quoted marker and explanation.'
+    policy:
+    - I3
+    - I7
+    - P2
+    request: 2910a84864b46552d11612075b5d65bfc947f2f71d3503fbc882298cded69cbd
+    golden:
+    - kind: text
+      text: The literal "
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: Paris
+    display_id: UNIFIED.8-native_quoted_control_then_call_progress
