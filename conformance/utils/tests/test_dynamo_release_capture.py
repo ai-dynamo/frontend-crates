@@ -21,11 +21,12 @@ import capture_sources
 from capture_dynamo_versions import coverage_inventory, freeze_adapters, validate_adapter_binding, validate_frozen_adapters, validate_source_identity
 import gen_unified_golden as golden
 import unified_history
-import unified_archives
 from v1_capture_retention import selected_targets
 import generation_workers
 from viewer_catalog import _index_unified_families
-from capture_stimulus import select_peer_observation
+from capture_stimulus import execution_outcome, select_peer_observation
+from replay_latest import latest_records
+from viewer_codec import typed_equal
 from capture_unified_job import build_job
 from import_peer_unified import digest, import_capture, import_captures, import_capture_groups
 from conformance.utils.tests.test_unified_history import _change, _request, _write_capture, _write_family
@@ -171,50 +172,35 @@ def test_v1_history_covers_registered_families_and_refreshes_current_snapshots()
     versions = {target["version"] for target in selected_targets(inventory["targets"]) if target["implementation"] == "dynamo_v1"}
     assert {"llama3_json", "qwen25"} <= legacy_families
     assert len(versions) == 1
-    identities = (unified_history.source_identity(resource["path"]) for resource in unified_archives.inventory(store))
-    modern = {(row["family"], row["implementation"], row["version"]) for row in identities
-              if row["implementation"] in {"dynamo_v1", "dynamo_v1_jail"} and int(row["version"].split(".")[0]) >= 11}
-    assert modern == {(family, implementation, version) for family in families
-                      for implementation in ("dynamo_v1", "dynamo_v1_jail") for version in versions}
-    with capture_sources.history_view(ROOT, ROOT) as historical_root:
-        loaded = unified_history._load_selected_original_store(
-            historical_root / "conformance/fixtures-unified-v2", {
-                (family, implementation): versions for family in families
-                for implementation in ("dynamo_v1", "dynamo_v1_jail")})
-    newest = max(versions, key=unified_history._capture_release_sort_key)
+    implementations = {"dynamo_v1", "dynamo_v1_jail"}
+    for path in (store / "families").glob("*/dynamo_v1*.yaml"):
+        identity = unified_history.source_identity(path.relative_to(store).as_posix())
+        if identity["implementation"] in implementations:
+            assert int(identity["version"].split(".")[0]) < 11, path
+    newest, = versions
+    current = capture_sources.current(ROOT)
+    assert {(row["family"], row["implementation"], row["version"]) for row in current["captures"]
+            if row["implementation"] in implementations} == {
+        (family, implementation, newest) for family in families for implementation in implementations
+    }
     for family in sorted(families):
         authored = unified_history.load_yaml(store / "families" / family / "inputs_and_golden.yaml")
-        expected = {case_id for case_id, case in authored["cases"].items() if case["lifecycle"] == "active"}
+        active = {key: case for key, case in authored["cases"].items() if case["lifecycle"] == "active"}
         if family in legacy_families:
-            assert {authored["cases"][case_id]["scenario"] for case_id in expected} == {
+            assert {case["scenario"] for case in active.values()} == {
                 case_id[len("UNIFIED."):].rsplit(".", 1)[0] for case_id in golden.build_cases(family)
             }
-        for implementation in ("dynamo_v1", "dynamo_v1_jail"):
-            current = unified_history.load_yaml(store / "families" / family / f"{implementation}.yaml")
-            assert current["capture_selection"]["version"] == newest
-            for version in versions:
-                capture = loaded.histories[family, implementation].captures[f"{implementation}-{version}"]
-                assert capture["provenance"]["status"] == "captured"
-                assert capture["provenance"]["origin"]["crate_version"] == version
-                records = loaded.histories[family, implementation].resolve(f"{implementation}-{version}")
-                active = {case_id: record for case_id, record in records.items()
-                          if authored["cases"][case_id]["lifecycle"] == "active"}
-                assert set(active) == expected
-                for case_id, record in active.items():
-                    assert set(record["observation"]) & {"value", "error", "unavailable"}
-                    stimulus = record["stimulus"]
-                    requests = authored["input_document"].get("requests", {})
-                    request = (stimulus["inline"] if "inline" in stimulus
-                               else authored["cases"][case_id]["request"] if stimulus["ref"] == "current"
-                               else requests[stimulus["ref"]])
-                    assert stimulus["semantic_sha256"] == unified_history._request_digest(request)
-                    if "inline" in stimulus:
-                        assert stimulus["inline"] == request
-                    else:
-                        assert stimulus["ref"] == "current"
-    for implementation in ("dynamo_v1", "dynamo_v1_jail"):
-        assert families <= {row["family"] for row in capture_sources.current(ROOT)["captures"]
-                            if row["implementation"] == implementation}
+        for implementation in implementations:
+            version, records = latest_records(ROOT, family, implementation, catalog=current)
+            assert version == newest
+            assert records.keys() == active.keys()
+            for key, record in records.items():
+                assert typed_equal(record["capture_input"], active[key]["request"])
+                origin = record.get("producer_origin") or record[f"{implementation}_capture_provenance"]
+                assert origin["version"] == version
+                assert origin["implementation"] == implementation
+                assert len(origin["results_sha256"]) == 64
+                assert execution_outcome(record, "batch")[0] != "source_build_blocker"
 
 
 def test_wrong_published_artifact_is_rejected_before_unpacking(monkeypatch, tmp_path):

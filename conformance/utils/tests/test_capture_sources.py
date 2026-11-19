@@ -548,7 +548,12 @@ def test_current_source_status_needs_no_history_or_publisher_and_cleans_view(tmp
     assert "conformance status: 1 model/tab pairs" in result.stdout
     status = json.loads(destination.read_bytes())
     assert status["html"] == str(root / "index.html")
-    assert status["reports"][0]["model"] == "qwen3"
+    report, = status["reports"]
+    assert report["model"] == "qwen3"
+    presentation = source_catalog["metadata"]["unified_presentation"]
+    assert report["cells"] == len(presentation["authored_scenarios"])
+    assert report["na"] == sum("qwen3" not in presentation["scenario_families"][scenario]
+                               for scenario in presentation["authored_scenarios"])
     assert not list(temporary.glob("current-source-status-*"))
 
 

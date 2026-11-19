@@ -12,6 +12,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
+from capture_versions import capture_release_sort_key
 from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index, _published_capture, _published_catalog
 
 
@@ -796,13 +797,15 @@ def test_stacked_dynamo_labels_include_generation(historical_published_viewer, v
     versions = {'dynamo_v2': _published_capture(historical_published_viewer, 'dynamo_v2')['version']}
     for implementation in implementations[1:]:
         versions[implementation] = max(
-            candidate['version'] for candidate in catalog['sources']['candidates']
-            if candidate['implementation'] == implementation
-            and 'gpt_oss' in candidate.get('capture_families', [])
+            (candidate['version'] for candidate in catalog['sources']['candidates']
+             if candidate['implementation'] == implementation and candidate['version'].startswith('9.')
+             and 'gpt_oss' in candidate.get('capture_families', [])),
+            key=capture_release_sort_key,
         )
+    keys = [f"dynamo_v2@{versions['dynamo_v2']}", 'dynamo_v1@9.x', 'dynamo_v1_jail@9.x']
     query = urlencode({'tab': 'tab-unified', 'vertical': int(vertical), 'layout_tab-unified': 'stacked',
                        'search_tab-unified': 'model:gpt_oss AND "tool_only"',
-                       'slots_tab-unified': ','.join(impl + '@' + versions[impl] for impl in implementations)})
+                       'slots_tab-unified': ','.join(keys)})
     expected = ['Dynamo v2 ' + versions['dynamo_v2'], 'Dynamo v1 ' + versions['dynamo_v1'],
                 'Dynamo v1 ' + versions['dynamo_v1_jail']]
     server, _ = _server(root=historical_published_viewer)

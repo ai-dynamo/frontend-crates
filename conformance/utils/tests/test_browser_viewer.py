@@ -212,13 +212,14 @@ def _ready(driver, tab):
 def test_batch_popup_shows_final_fields_and_inapplicable_chunks(historical_published_viewer, implementation):
     catalog = _published_catalog(historical_published_viewer)
     version = max((source["version"] for source in catalog["sources"]["candidates"]
-                   if source["implementation"] == implementation and source["version"].startswith("10.")),
+                   if source["implementation"] == implementation and source["version"].startswith("10.")
+                   and "deepseek_v4" in source["capture_families"]),
                   key=capture_release_sort_key)
-    key = f"{implementation}@{version}"
+    key = f"{implementation}@10.x"
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
-        query = urlencode({"tab": "tab-unified", "slots_tab-unified": key,
+        query = urlencode({"tab": "tab-unified", "slots_tab-unified": f"{implementation}@{version}",
                            "search_tab-unified": "deepseek_v4 AND tool_only"})
         driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
         _ready(driver, "tab-unified")
@@ -231,6 +232,7 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(historical_publi
             arguments[0].click();
             return candidate;
         """, cell, key)
+        assert candidate["version"] == version
         assert candidate["parse_mode"] == "batch"
         assert "batch_final" in candidate["block"]
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
@@ -782,8 +784,6 @@ def test_resource_failures_remain_transport_errors_and_retry(kind, transport_pub
 def test_deployment_change_reloads_selected_history_and_hides_old_totals(historical_published_viewer):
     site = historical_published_viewer
     catalog = runtime_catalog(site)
-    current = {item['version'] for item in catalog['capture_generation']['current']
-               if item['implementation'] == 'dynamo_v1_jail'}
     index = next(item['recipe_index']['path'] for item in catalog['sources']['unified']
                  if item['kind'] == 'inputs-and-golden')
     fault = {'path': 'conformance/', 'responses': {}}
@@ -793,9 +793,9 @@ def test_deployment_change_reloads_selected_history_and_hides_old_totals(histori
         driver.get(f'http://127.0.0.1:{server.server_port}/index.html?keep=1#saved')
         _ready(driver, 'tab-unified')
         select = Select(driver.find_element(By.CSS_SELECTOR, '[data-slot-capture="0"]'))
-        identity = next(option.get_attribute('value') for option in select.options
-                        if option.get_attribute('value').startswith('dynamo_v1_jail@')
-                        and option.get_attribute('value').split('@')[1] not in current)
+        identity = 'dynamo_v1_jail@10.x'
+        assert identity != select.first_selected_option.get_attribute('value')
+        assert identity in {option.get_attribute('value') for option in select.options if option.is_enabled()}
         assert '/' + index not in requests, 'latest embedded results must leave the historical index cold'
         updated = {**publication_metadata(site), 'revision': 'b' * 40,
                    'source_commit_sha': 'b' * 40, 'resolved_catalog_revision': 'b' * 64}

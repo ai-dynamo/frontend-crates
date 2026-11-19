@@ -14,7 +14,7 @@ from conformance.utils.tests.schema_oracle import matches_schema
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import gen_unified_golden as unified
-from numeric_cases import NUMERIC_DESCRIPTIONS, NUMERIC_VARIANTS, applicable, canonical_arguments, numeric_expected, numeric_group, unified_numeric_expected
+from numeric_cases import NUMERIC_DESCRIPTIONS, NUMERIC_VARIANTS, applicable, canonical_arguments, json_with_numeric_literals, numeric_expected, numeric_group, unified_numeric_expected
 from unified_taxonomy import numbered_id
 from conformance.utils.tests.fixture_test_support import run_node_contract
 
@@ -31,7 +31,7 @@ def test_kimi_k2_json_spacing_and_nested_exact_numbers_are_preserved():
         "nested": [1, {"amount": unified.NumericLiteral("9007199254740992.5")}],
     }
     exact_json = '{"city":"Paris","nested":[1,{"amount":9007199254740992.5}]}'
-    assert unified._json_with_numeric_literals(exact_arguments) == exact_json
+    assert json_with_numeric_literals(exact_arguments) == exact_json
     assert unified.r_tool_arguments("kimi_k2", "f", exact_arguments, 0).endswith(
         f"{exact_json}<|tool_call_end|><|tool_calls_section_end|>"
     )

@@ -5116,8 +5116,8 @@ def _native_review_variants(scenario):
         # while complete names with malformed argument bodies retain P3's empty
         # arguments. The valid XML forms retain their actual wire value bytes.
         def structural_golden(family):
-            if family in {"qwen3", "glm47"}:
-                arguments = {"q": r"\nx\n" if family == "qwen3" else "x"}
+            if family in {"qwen3", "qwen3_coder", "glm47"}:
+                arguments = {"q": "x" if family == "glm47" else r"\nx\n"}
             elif family in {"gemma4", "kimi_k2"}:
                 arguments = {}
             else:
@@ -5832,6 +5832,7 @@ def build_cases(fam):
             case.setdefault("input_chunks", [case["input"]])
     for case in cases.values():
         case["expect"]["dynamo"] = _dynamo_entry_for_init(case["expect"]["dynamo"], fam, case["init"])
+        case["expect"]["vllm"] = _vllm_entry(case["expect"]["vllm"], fam)
     return {
         key: case
         for key, case in cases.items()

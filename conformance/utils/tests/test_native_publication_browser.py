@@ -51,26 +51,30 @@ from v1_capture_retention import selected_targets
 PAGES_PROPAGATION_SECONDS = 300.0
 
 
-@pytest.mark.parametrize("family", ["hermes", "llama3_json"])
+@pytest.mark.parametrize("family", ["hermes", "llama3_json", "gpt_oss"])
 @pytest.mark.parametrize("implementation", ["dynamo_v1", "dynamo_v1_jail"])
 def test_legacy_family_history_retains_pre_11_releases_and_current_11_snapshot(historical_published_viewer, family, implementation):
-    versions = [version for version in capture_releases(historical_published_viewer, family=family).get(implementation, [])
-                if int(version.split(".")[0]) < 11]
+    catalog = _published_catalog(historical_published_viewer)
     expected = next(target["version"] for target in selected_targets(
         unified_history.load_yaml(ROOT / "conformance/dynamo-capture-inventory.yaml")["targets"])
         if target["implementation"] == "dynamo_v1")
-    assert expected == "11.0.13"
-    candidates = _published_catalog(historical_published_viewer)["sources"]["candidates"]
-    assert all(int(row["version"].split(".")[0]) < 11 for row in candidates
-               if row["implementation"] == implementation and family in row.get("capture_families", []))
+    current = {row["version"] for row in catalog["capture_generation"]["current"]
+               if row["family"] == family and row["implementation"] == implementation}
+    assert current == {expected}
+    releases = capture_releases(historical_published_viewer, family=family)[implementation]
+    assert {version for version in releases if int(version.split(".")[0]) >= 11} == current
     latest = unified_history.load_yaml(
         ROOT / capture_sources.STORE / "families" / family / f"{implementation}.yaml"
     )
     assert latest["capture_selection"]["version"] == expected
     assert latest["records"]
-    if not versions:
-        return
-    keys = [f"{implementation}@{version}" for version in dict.fromkeys((versions[0], versions[-1]))]
+    by_major = {version.split(".")[0]: version for version in releases if version not in current}
+    if family == "gpt_oss":
+        assert by_major, "the historical control needs a retained release"
+    choices = {f"{implementation}@Latest": expected}
+    for major in dict.fromkeys([*list(by_major)[:1], *list(by_major)[-1:]]):
+        choices[f"{implementation}@{major}.x"] = by_major[major]
+    keys = list(choices)
     query = urlencode({"tab": "tab-unified", "slots_tab-unified": ",".join([*keys, *(["none"] * (3 - len(keys)))]),
                        "search_tab-unified": f"model:{family}"})
     server, _ = _server(root=historical_published_viewer)
@@ -82,17 +86,24 @@ def test_legacy_family_history_retains_pre_11_releases_and_current_11_snapshot(h
             observed = driver.execute_script("""
                 const comparison = window.__conformanceComparison;
                 const row = comparison.view.rows.find(row => row.family === arguments[0]);
-                const missingCases = Object.fromEntries(arguments[1].map(key => [key,
-                    Object.entries(row.cells).flatMap(([sub, cell]) => (cell.variants || [cell])
-                        .filter(leaf => leaf.tooltip?.candidates?.find(candidate => candidate.key === key)?.block?.unavailable_code === 'missing_capture')
-                        .map(leaf => leaf.sub || sub)).sort()]));
-                return {families: comparison.view.rows.map(row => row.family), counts: comparison.counts, missingCases};
+                const results = Object.fromEntries(arguments[1].map(key => {
+                    const candidates = Object.values(row.cells).flatMap(cell => cell.variants || [cell])
+                        .map(cell => cell.tooltip?.candidates?.find(candidate => candidate.key === key))
+                        .filter(Boolean);
+                    const missing = candidates.filter(candidate => candidate.block?.unavailable_code === 'missing_capture');
+                    const measured = candidates.filter(candidate => candidate.block?.batch_final);
+                    return [key, {missing: missing.length, versions: [...new Set(measured.map(candidate => candidate.version))]}];
+                }));
+                return {families: comparison.view.rows.map(row => row.family), counts: comparison.counts, results};
             """, family, keys)
             assert observed["families"] == [family]
-            for key in keys:
-                assert observed["counts"][key]["total"] > 0
-                assert observed["counts"][key]["missing"] == 0
-                assert observed["missingCases"][key] == []
+            for key, version in choices.items():
+                result = observed["results"][key]
+                assert observed["counts"][key]["total"] > result["missing"]
+                assert observed["counts"][key]["missing"] == result["missing"]
+                assert result["versions"] == [version]
+                if key.endswith("@Latest"):
+                    assert result["missing"] == 0
             assert [Select(driver.find_element("css selector", f'[data-slot-capture="{slot}"]')).first_selected_option.get_attribute("value")
                     for slot in range(len(keys))] == keys
             driver.refresh()
@@ -457,8 +468,7 @@ def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_
     payload = json.loads(re.search(r'id="conformance-embedded">(.*?)</script>', html, re.S).group(1))
     embedded_catalog = json.loads(gzip.decompress(base64.b64decode(payload['catalog']['bytes'])))
     current = sorted({(capture['implementation'], capture['version'])
-                      for capture in embedded_catalog['capture_generation']['current']
-                      if capture['implementation'] not in {'dynamo_v1', 'dynamo_v1_jail'}})
+                      for capture in embedded_catalog['capture_generation']['current']})
     assert payload['captures'] == [list(identity) for identity in current]
     candidates = _published_catalog(historical_published_viewer)['sources']['candidates']
     selectable = {}
@@ -472,17 +482,19 @@ def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_
     try:
         for implementation, version in latest:
             requests.clear()
+            grouped = implementation in {'dynamo_v1', 'dynamo_v1_jail'}
             identity = f'{implementation}@{version}'
+            choice = f'{implementation}@Latest' if grouped else identity
             driver.get(base + '?' + urlencode({'tab': 'tab-unified', 'slots_tab-unified': identity + ',,'}))
             _ready(driver, 'tab-unified')
             selected = driver.execute_script("""
                 const panel = document.getElementById('tab-unified');
                 const keys = window.__conformanceController.selection(panel).selected;
                 return window.__CONFORMANCE_PAGE.tabs.find(tab => tab.id === panel.id).candidates
-                  .filter(item => keys.includes(item.key)).map(item => item.identity);
+                  .filter(item => keys.includes(item.key)).map(item => [item.identity, item.version]);
             """)
-            assert selected == [identity], (identity, selected)
-            assert_viewer_data_matches_history(historical_published_viewer, requests, [identity])
+            assert selected == [[choice, version]], (identity, selected)
+            assert_viewer_data_matches_history(historical_published_viewer, requests, [choice])
             assert sum(path.endswith('viewer-resolved-catalog.json.gz') for path in requests) == 1
             assert not driver.execute_script('return window.__conformanceError || null')
         requests.clear()

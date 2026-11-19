@@ -9846,7 +9846,13 @@ cases:
     request: f0d07e46ce6835a278daa78ae888da9533ead25bf802669b1eea1d170b30a518
     golden:
     - kind: text
-      text: '"" trailing'
+      text: '"'
+    - kind: tool_call
+      name: lookup
+      arguments:
+        q: \nx\n
+    - kind: text
+      text: '" trailing'
   guided_json_bare_tool_header_recovers_inside_a_thought:
     policy:
     - P2

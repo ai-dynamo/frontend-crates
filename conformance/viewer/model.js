@@ -129,7 +129,7 @@ export function validateCaseCell(cell, column) {
   return [cell];
 }
 
-export function validateCaseColumns(tab, authored, sharedTools = []) {
+export function validateCaseColumns(tab, authored, sharedTools = [], rowFamilies = null) {
   const expected = new Map();
   for (const cases of authored.values()) for (const [scenario, input] of cases) {
     const prior = expected.get(scenario);
@@ -153,7 +153,7 @@ export function validateCaseColumns(tab, authored, sharedTools = []) {
   }
   const families = new Set();
   for (const row of tab.rows) {
-    if (families.has(row.family) || !authored.has(row.family)) throw new Error('duplicate or extra family row');
+    if (families.has(row.family) || !authored.has(row.family) || (rowFamilies && !rowFamilies.has(row.family))) throw new Error('duplicate or extra family row');
     families.add(row.family);
     if (Object.keys(row.cells).length !== columns.size) throw new Error(`${row.family}: incomplete case cells`);
     const cases = authored.get(row.family);
@@ -186,7 +186,7 @@ export function validateCaseColumns(tab, authored, sharedTools = []) {
       }
     }
   }
-  if (families.size !== authored.size) throw new Error('every authored family needs exactly one row');
+  if (families.size !== (rowFamilies?.size ?? authored.size)) throw new Error('every selected family needs exactly one row');
   return tab;
 }
 

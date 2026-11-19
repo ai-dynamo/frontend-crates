@@ -208,7 +208,13 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const known = options.knownDivergences ? await reader.parser.parseYaml(await readFile(options.knownDivergences), { path: options.knownDivergences }) : null;
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
     for (const spec of selected) {
-      const tab = await buildTab(catalog, reader, spec.id);
+      let rowFamilies = null;
+      if (options.models?.length && !options.knownDivergences) {
+        const candidates = tabCandidates(catalog, spec).filter(({ source }) => source.implementation !== 'golden');
+        const rows = [...selectedUnifiedFamilies(catalog, candidates)].sort().map(family => ({ family }));
+        rowFamilies = new Set(selectRows({ id: spec.id, rows }, options.models).map(row => row.family));
+      }
+      const tab = await buildTab(catalog, reader, spec.id, { rowFamilies });
       if (options.knownDivergences && tab.id === 'tab-unified') {
         const displayFamilies = [...selectedUnifiedFamilies(catalog, tabCandidates(catalog, spec))];
         validateUnifiedKnownDivergences({ tabs: [tab] }, known, displayFamilies, catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);

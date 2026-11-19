@@ -62,7 +62,7 @@ function captureParserRoute({ source, control }, family, metadata, recorded) {
 }
 
 
-export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined } = {}) {
+export async function unifiedPanel(catalog, reader, { selected = null, reference = undefined, rowFamilies = null } = {}) {
   const metadata = catalog.metadata;
   const spec = metadata.tabs.find((tab) => tab.id === 'tab-unified');
   const descriptors = tabCandidates(catalog, spec);
@@ -89,6 +89,8 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
       if (!descriptions.has(input.scenario)) descriptions.set(input.scenario, metadata.unified_taxonomy[input.scenario]?.description ?? input.description);
     }
     byFamily.set(family, cases);
+    // Status filters capture reads and rows while preserving authored columns and totals.
+    if (rowFamilies && !rowFamilies.has(family)) continue;
     for (const descriptor of chosen) {
       const familySource = familyCaptureSource(descriptor.source, family);
       const { records } = familySource && capturesFamily(descriptor.source, family)
@@ -133,7 +135,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   const missingScenarios = metadata.unified_presentation.authored_scenarios.filter(scenario =>
     metadata.unified_presentation.scenario_families[scenario]?.some(family => visibleFamilies.has(family)) && !descriptions.has(scenario));
   if (missingScenarios.length) throw new Error(`Unified fixture inputs are missing authored scenario(s): ${missingScenarios.sort(compareText).join(', ')}`);
-  const families = [...byFamily.keys()];
+  const families = [...byFamily.keys()].filter(family => !rowFamilies || rowFamilies.has(family));
   const scenarios = [...descriptions.keys()];
   for (const scenario of scenarios) if (!Object.hasOwn(metadata.unified_taxonomy, scenario)) throw new Error(`unknown Unified scenario: ${scenario}`);
   const ordered = [...scenarios].sort((a, b) => metadata.unified_taxonomy[a].display_order - metadata.unified_taxonomy[b].display_order);
@@ -257,7 +259,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
   const glossary = groups.map((group) => ({ label: group.label, rows: ordered.filter((scenario) => metadata.unified_taxonomy[scenario].section === group.key).map((scenario) => [metadata.unified_taxonomy[scenario].canonical_label, descriptions.get(scenario) || '']) }));
   const tab = { id: 'tab-unified', kind: 'unified', mode: 'unified', no_parser_col: true, columns, column_groups: groups, rows, stats, glossary, candidates: descriptors.map((descriptor) => descriptor.control) };
   rankUnifiedColumns(tab, metadata);
-  return validateCaseColumns(tab, authored, metadata.unified_presentation.shared_tools);
+  return validateCaseColumns(tab, authored, metadata.unified_presentation.shared_tools, rowFamilies);
 }
 
 export async function buildTab(catalog, reader, tabId, options = {}) {
