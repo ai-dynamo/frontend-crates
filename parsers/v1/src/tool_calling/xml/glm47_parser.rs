@@ -2287,20 +2287,6 @@ mod tests {
         );
     }
 
-    /// Parser-level invariant: the glm47 parser is byte-stable — it doesn't
-    /// see `finish_reason` and produces the same output regardless of the
-    /// upstream stream-end reason. Real PIPELINE.finish_reason coverage (stop / tool_calls
-    /// / length mapping) lives in `lib/llm/tests/test_streaming_tool_parsers.rs`
-    /// and belongs in the cross-parser finish_reason mapping work-item
-    /// (tracked separately).
-    #[test]
-    fn test_glm47_parser_output_independent_of_upstream_finish() {
-        let config = get_test_config();
-        let input = "<tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call>";
-        let (calls, _) = try_tool_call_parse_glm47(input, &config, None).unwrap();
-        assert_eq!(calls.len(), 1);
-    }
-
     /// TOOLCALLING.batch.9 — empty / null content variants. Truly-empty (zero bytes)
     /// and whitespace-only inputs must yield no tool calls; normal_text
     /// collapses to the empty string.

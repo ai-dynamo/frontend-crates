@@ -2361,6 +2361,31 @@ mod tests {
         SysFormatter::new(ct, SysMixins::new(&[])).unwrap()
     }
 
+    #[test]
+    fn hugging_face_named_templates_render() {
+        // Hugging Face's form for several templates (Hermes 3, Command R).
+        let ct: SysChatTemplate = serde_json::from_value(json!({
+            "chat_template": [
+                {"name": "default", "template": "default:{{ messages[0].content }}{% if add_generation_prompt %}|gen{% endif %}"},
+                {"name": "tool_use", "template": "tool_use:{{ messages[0].content }}{% if add_generation_prompt %}|gen{% endif %}"},
+            ],
+            "bos_token": "<s>",
+            "eos_token": "</s>",
+            "unk_token": "<unk>",
+        }))
+        .unwrap();
+        let f = SysFormatter::new(ct, SysMixins::new(&[])).unwrap();
+        let messages = json!([{"role": "user", "content": "hi"}]);
+        assert_eq!(
+            render_shape(&f, messages.clone()).unwrap(),
+            "default:hi|gen"
+        );
+        assert_eq!(
+            render_shape_with_tools(&f, messages).unwrap(),
+            "tool_use:hi|gen"
+        );
+    }
+
     fn try_formatter_for(template: &str) -> Option<SysFormatter> {
         let ct: SysChatTemplate = serde_json::from_value(json!({
             "chat_template": template,

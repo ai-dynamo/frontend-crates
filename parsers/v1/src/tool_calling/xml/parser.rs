@@ -2284,7 +2284,7 @@ NYC
         assert_eq!(args["param3"], "hello");
     }
 
-    /// Helper for the new corner-case tests below (TOOLCALLING.batch.6 / PIPELINE.finish_reason / TOOLCALLING.batch.9
+    /// Helper for the new corner-case tests below (TOOLCALLING.batch.6 / TOOLCALLING.batch.9
     /// / TOOLCALLING.batch.10) — matches the production `ToolCallConfig::minimax_m2()`
     /// factory: strict inner blocks plus bare-invoke recovery.
     fn minimax_m2_config() -> XmlParserConfig {
@@ -2331,35 +2331,6 @@ NYC
         assert_eq!(calls[0].function.name, "current_time");
         let args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
         assert_eq!(args, serde_json::json!({}));
-    }
-
-    /// Parser-level invariant: the xml parser is byte-stable — it doesn't
-    /// see `finish_reason` and produces the same output regardless of the
-    /// upstream stream-end reason. Real PIPELINE.finish_reason coverage (stop / tool_calls
-    /// / length mapping) lives in `lib/llm/tests/test_streaming_tool_parsers.rs`
-    /// and belongs in the cross-parser finish_reason mapping work-item
-    /// (tracked separately).
-    #[test]
-    fn test_xml_qwen3_parser_output_independent_of_upstream_finish() {
-        let input = r#"<tool_call>
-<function=get_weather>
-<parameter=city>
-NYC
-</parameter>
-</function>
-</tool_call>"#;
-        let (calls, _) = try_tool_call_parse_xml(input, &XmlParserConfig::default(), None).unwrap();
-        assert_eq!(calls.len(), 1);
-    }
-
-    /// Parser-level invariant — minimax_m2 variant. See qwen3 counterpart
-    /// for the rationale.
-    #[test]
-    fn test_xml_minimax_m2_parser_output_independent_of_upstream_finish() {
-        let config = minimax_m2_config();
-        let input = r#"<minimax:tool_call><invoke name="get_weather"><parameter name="city">NYC</parameter></invoke></minimax:tool_call>"#;
-        let (calls, _) = try_tool_call_parse_xml(input, &config, None).unwrap();
-        assert_eq!(calls.len(), 1);
     }
 
     /// TOOLCALLING.batch.9 — empty / null content variants. Truly-empty (zero bytes)
