@@ -254,6 +254,41 @@ def _change(text: str = "hello") -> dict:
     }
 
 
+def test_inline_and_referenced_requests_share_immutable_capture_identity(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    request = _request()
+    assert not unified_history._stimuli_equal(
+        {"ref": "current", "semantic_sha256": "a" * 64},
+        {"ref": "current", "semantic_sha256": "b" * 64},
+    )
+    change = _change()
+    change["stimulus"] = {"inline": request, "semantic_sha256": unified_history._request_digest(request)}
+    captured = _write_capture(root, "0.26.0", {"text_only": change})
+    original = captured.read_bytes()
+    record = {**change["observation"]["value"], "capture_input": request}
+    loose = tmp_path / "loose"
+    path = loose / "dynamo_v2-0.26.0/gemma4/case.yaml"
+    path.parent.mkdir(parents=True)
+    document = {"family": "gemma4", "mode": "unified", "captured_with": {"dynamo_v2": "0.26.0"},
+                "cases": {"UNIFIED.3-1": record}}
+    path.write_text(unified_history.dump_yaml(document))
+    assert unified_history.update_from_loose(root, loose) == []
+    assert captured.read_bytes() == original
+    for field in ("request", "output"):
+        altered = copy.deepcopy(document)
+        candidate = altered["cases"]["UNIFIED.3-1"]
+        if field == "request":
+            candidate["capture_input"]["input"] = "other"
+            candidate["capture_input"]["chunks"] = [{"delta_text": "other"}]
+        else:
+            candidate["assembled"][0]["text"] = "other"
+        path.write_text(unified_history.dump_yaml(altered))
+        with pytest.raises(ValueError, match="immutable"):
+            unified_history.update_from_loose(root, loose)
+        assert captured.read_bytes() == original
+
+
 def _write_family(root: Path) -> None:
     path = root / "families/gemma4/inputs_and_golden.yaml"
     path.parent.mkdir(parents=True)

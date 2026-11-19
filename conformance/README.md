@@ -33,6 +33,18 @@ Keep GOLDEN independently authored and justified; do not copy an incorrect parse
 
 History generation includes the registered v1 families that have no latest native v2 capture, including Hermes, Llama 3 JSON, Qwen 2.5, Mistral, Phi-4, Jamba, and Pythonic. Their existing spec-derived Unified scenarios use the published `dynamo-parsers` API in separate direct-batch and jail-buffer histories. Release reconciliation captures the newest stable, non-yanked v1 release from 11.0.0 onward. Only that release remains selectable in the modern v1 range; a newer capture replaces the previous selection. The v1 release picker defaults to Latest and offers one choice per captured historical major: 10.x, 9.x, 5.x, and 3.x. Latest reads only the complete versionless YAML. Each historical choice uses each family’s newest measured stable release for the selected direct or jail mode, so 10.x can show GPT-OSS at 10.0.1 alongside Qwen3 at 10.2.2; result details show the exact source version. Every v1 selection retains all applicable authored inputs and GOLDEN, including families without a capture for that major. Missing captures display “No capture for this major”, separately from recorded unsupported requests and cases that do not apply to a family. Latest native v2 selections retain their existing family scope. Unsupported initialization and missing parser registrations remain explicit unavailable observations. These captures do not convert a family to UnifiedParser or change the deprecated TOOLCALLING corpus.
 
+### Latest v1 replay
+
+Latest v1 uses the same authored Unified requests and independent GOLDEN as native v2. Applicability follows the native grammar and request, including families with no v2 parser. The direct-batch and jail-buffer modes retain separate final fields, raw arguments, parser errors, and unsupported outcomes; batch observations have no synthetic chunk deltas. Missing records and producer build failures fail verification. GOLDEN disagreements remain visible.
+
+The fixture check runs `test_latest_v1_replay_matches_committed_yaml` once. To run it directly against the checksum-pinned published release selected by the versionless YAML:
+
+```bash
+python3 conformance/utils/src/replay_latest.py --root . --work /path/to/new-replay-directory
+```
+
+The runner builds one published producer per mode, freezes every family request, and compares the measured results with that mode's sealed Latest YAML. It validates the complete case set, request binding, producer identity, final output, errors, and support status. Raw arguments stay unchanged in captures; replay compares JSON argument values through the shared exact-number comparator, ignoring object key order and JSON formatting while preserving string whitespace, types, call order, and text. Stream deltas remain exact. It reads no historical capture YAML or archives. The workspace v1 crate is a separate source and does not stand in for the selected published package. Native v2 continues using the strict replay command above.
+
 ### Normalized current YAML
 
 Current authored cases and latest captures use `schema_version: 3`. This number identifies the storage format. Parser release versions belong to captured observations. Authored files have one `family` header and no GOLDEN producer/version label.

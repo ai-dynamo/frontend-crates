@@ -33,41 +33,6 @@ tools:
       - value
       additionalProperties: false
     strict: true
-  tools_d84ac5f342102778:
-  - name: get_weather
-    parameters:
-      type: object
-      properties:
-        city:
-          anyOf:
-          - const: 'null'
-          - type: integer
-  tools_c98829c1934a2d66:
-  - name: schema_probe
-    parameters:
-      type: object
-      properties:
-        value:
-          anyOf:
-          - const: auto
-          - type: number
-      required:
-      - value
-      additionalProperties: false
-    strict: true
-  tools_480df45d35724608:
-  - name: schema_probe
-    parameters:
-      type: object
-      properties:
-        value:
-          oneOf:
-          - type: object
-          - const: auto
-      required:
-      - value
-      additionalProperties: false
-    strict: true
   tools_cbf47ccf5fd2ef00:
   - name: get_weather
     parameters:
@@ -111,6 +76,53 @@ tools:
     parameters:
       type: object
       properties: {}
+  tools_d84ac5f342102778:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        city:
+          anyOf:
+          - const: 'null'
+          - type: integer
+  tools_81ef407beab6fe3e:
+  - name: echo
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        value:
+          type: number
+      required:
+      - city
+      - value
+  tools_c98829c1934a2d66:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: auto
+          - type: number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_480df45d35724608:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type: object
+          - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_dc2ae18fede7bc39:
   - name: schema_probe
     parameters:
@@ -157,6 +169,17 @@ tools:
             minimum: 0
           else:
             type: number
+  tools_0227aaa772b4b3da:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type: string
+      required:
+      - value
+      additionalProperties: false
+    strict: false
   tools_48fa3ded1d3c517d:
   - name: schema_probe
     parameters:
@@ -178,6 +201,13 @@ tools:
       properties:
         city:
           type: string
+  tools_be922244cdee705c:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        value:
+          type: number
   tools_141694f76bec2b1b:
   - name: schema_probe
     parameters:
@@ -204,6 +234,16 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_d1fedfe44119e682:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - 'null'
+          const: 42
   tools_2931a9ad742a4419:
   - name: capture_payload
     parameters:
@@ -270,6 +310,17 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_387de911bb2ab3d2:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - 'null'
+          enum:
+          - 42
   tools_0af1c035b667e8b0:
   - name: schema_probe
     parameters:
@@ -350,6 +401,16 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_1c73afa0b8f86878:
+  - name: server.tools.weather
+    parameters:
+      type: object
+      properties:
+        location:
+          type: string
+      required:
+      - location
+      additionalProperties: false
   tools_3632e66e77144cef:
   - name: schema_probe
     parameters:
@@ -407,6 +468,7 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_9db8284c68087826: []
   tools_eb27882cf50cbcb6:
   - name: schema_probe
     parameters:
@@ -536,6 +598,22 @@ tools:
         Literal:
           const: '42'
     strict: true
+  tools_d37e0a92eadeb518:
+  - name: inspect
+    parameters:
+      type: object
+      properties:
+        nested:
+          type: object
+          properties:
+            fraction:
+              type: number
+            tiny:
+              type: number
+        values:
+          type: array
+          items:
+            type: integer
   tools_746b20394956becb:
   - name: schema_probe
     parameters:
@@ -576,6 +654,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_3b9cefdb4fbe7e81:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - integer
+          - string
   tools_d6a4b826765f05e9:
   - name: schema_probe
     parameters:
@@ -641,6 +728,25 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_cd234037a001916f:
+  - name: server.weather
+    parameters:
+      type: object
+      properties:
+        location:
+          type: string
+      required:
+      - location
+      additionalProperties: false
+  - name: server.time
+    parameters:
+      type: object
+      properties:
+        timezone:
+          type: string
+      required:
+      - timezone
+      additionalProperties: false
   tools_97ab5757d6f3f219:
   - name: schema_probe
     parameters:
@@ -799,6 +905,31 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_66a922ef94c2db73:
+  - name: f
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
+  - name: g
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
+  - name: h
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
   tools_0e6c259d2e90182a:
   - name: schema_probe
     parameters:
@@ -848,6 +979,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_5bae9e9b644a5834:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        value:
+          type: object
+      required:
+      - value
   tools_61f8e5714fc9d54c:
   - name: capture_payload
     parameters:
@@ -996,6 +1136,16 @@ tools:
           allOf:
           - type: boolean
           - description: flag
+  tools_f3cbb76569c2b8fd:
+  - name: get_weather
+    parameters:
+      type: object
+      $defs:
+        City:
+          type: string
+      properties:
+        city:
+          $ref: '#/$defs/City'
   tools_70f2b5e9ad67ba1e:
   - name: schema_probe
     parameters:
@@ -1185,6 +1335,13 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_f8e968b4be37d9da:
+  - name: a.b
+    parameters:
+      type: object
+      properties: {}
+      required: []
+      additionalProperties: false
   tools_1c0b6cc6a42cfbde:
   - name: schema_probe
     parameters:
@@ -1274,6 +1431,21 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_357b7150e2dd7639:
+  - name: set_labels
+    parameters:
+      type: object
+      properties:
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+        note:
+          type:
+          - string
+          - 'null'
+        literal:
+          type: string
   tools_c887a73c6fbd0e1d:
   - name: get_weather
     parameters:
@@ -1284,6 +1456,13 @@ tools:
           anyOf:
           - minLength: 1
           - type: 'null'
+  tools_81b3b17af2bd185e:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        q:
+          type: string
   tools_b61bcb374d1c66b2:
   - name: get_weather
     parameters:
@@ -1304,6 +1483,15 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_8a00d152710c5e39:
+  - name: get_weather
+    parameters:
+      type: object
+      properties:
+        value:
+          type: array
+      required:
+      - value
   tools_711e03afbe37c425:
   - name: get_weather
     parameters:
@@ -1480,6 +1668,23 @@ tools:
         Café:
           const: '42'
     strict: true
+  tools_51d6dcfd07ccb5f2:
+  - name: f
+    parameters:
+      type: object
+      properties:
+        a:
+          type: string
+      required:
+      - a
+  - name: g
+    parameters:
+      type: object
+      properties:
+        b:
+          type: string
+      required:
+      - b
   tools_8284eae54735c3ce:
   - name: schema_probe
     parameters:
@@ -1558,6 +1763,16 @@ tools:
         Literal:
           const: auto
     strict: true
+  tools_89d6d7dc387a8930:
+  - name: my-tool.v2
+    parameters:
+      type: object
+      properties:
+        location:
+          type: string
+      required:
+      - location
+      additionalProperties: false
   tools_e4f3ce0956c11ca0:
   - name: get_weather
     parameters:
@@ -1568,6 +1783,18 @@ tools:
           anyOf:
           - type: string
           - type: 'null'
+  tools_ff570fb64b58ec7e:
+  - name: get_weather
+    parameters:
+      type: object
+      $defs:
+        City:
+          type:
+          - string
+          - 'null'
+      properties:
+        city:
+          $ref: '#/$defs/City'
 requests:
   0049e577bb230ac9c3210e8d3b2cb5f3bd54bb7bda0c56d97c75057b730c14dd:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
@@ -1587,6 +1814,20 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_8dffe495831aef95
+  0353df07e5a0de23272a35dc66df3d911e85db3414d7cbfd385f89f842664afc:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁call▁begin｜>function<｜tool▁sep｜><think>secret</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  037673a07c9c62d17275930a61d1dc9871443174775ff0ea535de862144a3beb:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: 'The literal "<｜tool▁calls▁begin｜> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+    tools: tools_cbf47ccf5fd2ef00
   037adbe5cd2521ee6c365db50f1dbebcc94958fad8a318750d16fe39709d987f:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -1596,6 +1837,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_d84ac5f342102778
+  03dda91ff6c701f8f11476fd1cc6177db43afae6b9f13ed8f9301fd7349b318b:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>echo
+
+      ```json
+
+      {"city":"Paris","value":-1E+400}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_81ef407beab6fe3e
   04883abf17900fbbec0501155b36a6c6898bcf37bcccecf9a96c4aa5f98d8f21:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1623,6 +1873,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
+  0513a64533b0ef393eeef93be78054b27c4204c6ec8c1a6c99726632533dd72d:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>echo
+
+      ```json
+
+      {"city":"Paris","value":1.5}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_81ef407beab6fe3e
   0546b3826667b770be6ce4c2b2d319b86f8c0891b4f329e51c1c429e8af54d9b:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1650,6 +1909,22 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_7b239a503c923593
+  084b8c41e806fd158c5580e939a964aa2da3d2233933615eca32618b86a4b98b:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
+
+      ```json
+
+      {"value":"{''a'':1}"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_0227aaa772b4b3da
+  0865cc34234a88ac9e82ae7cc7fb554d6e40a74cd98acd69c395dac037baa882:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜>[{"name": "get_weather", "arguments": {"city": "a > b"}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   0a05c3da908d1742c577f36f50413d64dac980cd87595b31e4edb0c036525d19:
     input: <think>first thought</think>interlude <think>second thought</think>done
     tools: tools_cbf47ccf5fd2ef00
@@ -1671,6 +1946,33 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_bc4305bb8be412b3
+  0c02a04b7991a6ac7b6178b3ff2a3632861e19cab963ac78780a5e1fdea97fcb:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "log", "arguments": {"note": "</think>"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  0c08297bfcb572d497793e23cadebbaf71be558de7f84de450e80174e1f9c5c3:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":9007199254740993.1}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
+  0c329609697070e7aa996ea4b47c004214f483d46e6292bcfd6df4c4cf7e81be:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'The literal `<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"` header is part of the explanation.'
+    tools: tools_cbf47ccf5fd2ef00
   0c48e15c06edd74c289169c10058714ee2345b87c6c1b15f55c3a9c5831e1490:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1689,6 +1991,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_354f5c938f5eb5c2
+  0d85b3c409e7dbe0c20185ef8f39514300c81c2fa5a5256b1b6f2110efeee66d:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜>{"unexpected": "shape"}<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   0e8789a4e768e04f204ab3d399aae182e0b6ec621ded18d231a2d4ae4270cdf1:
     input: '<think>A</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
 
@@ -1713,6 +2022,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜></think>'
     tools: tools_cbf47ccf5fd2ef00
+  0fc65e4d66bc65a59f3b5c63865a31d7b9db31d632742ce41bb01188198cc800:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":4.2e1}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_d1fedfe44119e682
   0fd0722ceabc2942c2439d2e0c25952d473e917324a406e0ddfa7ba1457ac313:
     init:
       starting_state: Reasoning
@@ -1787,6 +2105,15 @@ requests:
       named_tool: run
     input: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
     tools: tools_cbf47ccf5fd2ef00
+  182f0e69f09425e2dbc38a37f256b88b6d0978fba96fcbb48322d6a1fce8b4a5:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":42.0}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_387de911bb2ab3d2
   191f95f4067e7a08a9d3ae26049cecc7eddfae25010f4b223760672a117670e5:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1859,6 +2186,18 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_4b74086a372173ba
+  21459c0f259a9036332a77bb3e430a7af9c400bf70dcd9c9611b9d6131b5a2eb:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>server.tools.weather
+
+      ```json
+
+      {"location":"Beijing"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_1c73afa0b8f86878
+    chunk_sizes:
+    - 149
+    finish_step: true
   21c098758c6758f6053876ab1540756e6ada14ea514894b01bfc889670e967dc:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1913,6 +2252,21 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_7097557402b15d50
+  296942778f1c84a0ee09183c4485dc7d3f6e313be49460091cc0fded01cdf14e:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>unknown_tool
+
+      ```json
+
+      {"value":"123"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>empty_tool
+
+      ```json
+
+      {}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_9db8284c68087826
   2ae8da5af850a047d19446c2f1b5275f3e0312b289885a32e151fdf85f2fd90a:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1934,6 +2288,22 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_5c985640d00d3a91
+  2e49c69e36cd790d78845920933e6cc9a90c5acaf66dcc9dec5427298efdb412:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":9007199254740992.5}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
+  2ef3728c2ec20f85c6fb7df92416ebfc0e47d7d9fcde1adb8c230c800115c13a:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: The literal "<｜tool▁calls▁begin｜>" marker is part of the explanation.
+    tools: tools_cbf47ccf5fd2ef00
   308b0ff4950d5e651c5d8471b91b276e58bb1e8b2c64bb7b17bab2ce2f193fbc:
     input: 'before<think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -1952,6 +2322,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
+  3545daa3b22d55106fc51052a195d343787e2647d48bb4ce1efdd4c2c9ffb7a9:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":4.2e1}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_387de911bb2ab3d2
   35e91491149083785ba609a71f33a079f8ab768092ada859b5c4d5bb6cedcffa:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1961,6 +2340,19 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_87f9a4e69313cc76
+  3668eecc6b6978df5d0e2371b05adaee32c6b4b90339b5d4c3dae750b78a42e6:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'The literal "<｜tool▁calls▁begin｜>" marker is part of the explanation.<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   3703b6fb4170dae326bf852b6eb46f63b7e9434200d8d2390898bcb64da233ba:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -1970,6 +2362,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_2da5b5660d13bc3f
+  386d74ebcee79e75023a488da8cc1522d0454720f787b54515e89ec181b1a9b3:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁call▁begin｜>function<｜tool▁sep｜>[{"name": "get_weather", "arguments": {"city": '
+    tools: tools_cbf47ccf5fd2ef00
   39ccbf311bad1562eb5935f5ee26b400a10424fc1a37298458bdeb16f2e239b5:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -2028,6 +2427,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>after'
     tools: tools_cbf47ccf5fd2ef00
+  410597d4fe8d59ed858f5f919d0d846a2a8e3cdaef7fb510469c268a44712962:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<think>I''ll use <｜tool▁calls▁begin｜> next</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
   4191b71b786a8858e70fc91d5d2b7616514149af28621eb70df2f2fc9165b8a9:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2037,6 +2443,27 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_d634a43e2a693178
+  427e328f10be28a8691825312b66e25519e046941d9f1df4dfb55c9b642264c7:
+    input: 'Pressing it now.
+
+
+      <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+
+      '
+    tools: tools_cbf47ccf5fd2ef00
+  435528ade697162a59a1cbfcd8ff0ae1b06cfc5a2e8a979a867cb2d4f3656546:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   437bb59b50027f51b5fb0758a72a848f8eb07db43b7d460f605fdab1b2001dea:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2055,6 +2482,28 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_f9599a86b7b8e1d2
+  46473eecef9fffd66d6cec5430049c5cf7aa5c9e2055f5dc09dd4a059c7384bc:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>inspect
+
+      ```json
+
+      {"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_d37e0a92eadeb518
+  476f4965c5d93113d6a407b68776297c6b58170c524351a31e66a82454dbacb9:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'He said "maybe<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   488ae4c60ec19564e6b3bc5780f694fba981acf650a0e4625866ae311864e4c9:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2082,6 +2531,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_7097557402b15d50
+  4b3b67258757a21a4324203c0e713f7a4a3f9c41c06a4f0d9bbd0f42a4b380b4:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: get_weather
+    input: 'The literal "<｜tool▁calls▁begin｜> { example }" stays visible. {"city": "Paris"}'
+    tools: tools_cbf47ccf5fd2ef00
   4bd1e0dce9dc87b766d67658d44e1d19781bb746af2c72a5ba2bf1fb8c914862:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2100,6 +2556,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
+  4d21eef051ec2462a82e601d4fbb823e1762a6e99edd947b95aa2997acb4b68d:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":9.007199254740993e15}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_3b9cefdb4fbe7e81
   4e519665d48132b1abdc006dd23420cfb374c78b9d720c29b6841829fbd88331:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2145,6 +2610,24 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_7351122c3d50bd6e
+  52ba6615489fe626e8be457d15940cc690864f13f80fdd42d9b4ba79ebf3ff94:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>server.weather
+
+      ```json
+
+      {"location":"Beijing"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>server.time
+
+      ```json
+
+      {"timezone":"Asia/Shanghai"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_cd234037a001916f
+    chunk_sizes:
+    - 289
+    finish_step: true
   55fe27e49992a9ac42a935d6594ffde8297cbc34cce0042c297105ed603530a0:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2154,6 +2637,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_8de7a56dafcceaa4
+  567d0d02acbee8407ec5e1297d64b8b3008ec63bd216d1bcf309cbbdcac93b8d:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>run
+
+      ```json
+
+      {"cmd":"git log <｜tool▁calls▁end｜> --oneline"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   578983c72bdee090256dbd2eb383a6dcc796ae2145b68a9af46075ff12d14c28:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2163,6 +2655,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_97ab5757d6f3f219
+  5802214e595f2d4a8491242f8a0195f8b012f1576f7e18f847834326190a9550:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":4200e-2}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_3b9cefdb4fbe7e81
   588185511e08f8faa74d19bfde3be133db58e6f6cee47c49bfaeedef5a62bb16:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2187,6 +2688,13 @@ requests:
       tool_output_mode: GuidedJson
       named_tool: null
     input: '{"name": "get_weather", "arguments": {"city": "Par'
+    tools: tools_cbf47ccf5fd2ef00
+  5938fceb190c174a48c0488078604e8dbe2c35d3a53c88aaf29a3b88cc00bcb7:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_cbf47ccf5fd2ef00
   59de50828f9a2c7a339c9b9293507b77e0a14f6940970ff2eb9efdaeb49ae90f:
     input: 'Before. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
@@ -2224,6 +2732,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_1ffd69270532e13e
+  5cf0e569c1971e8f7b2f1eea0d97df2e579a900a3d9cf876e24095eb22672fa6:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":0.10000000000000000001}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
   5e7321e2486ec22de91aa12a50735e9ad4fa01a0c401ecefcabd416f1e944493:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2242,6 +2759,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_0ea0b97c8c1f95c9
+  5f1b38afd9d31ecf73a92526d5277169ffd742cc1521d0472e6c916ed51b82ea:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: The literal 'doesn't <｜tool▁calls▁begin｜> marker' stays quoted.
+    tools: tools_cbf47ccf5fd2ef00
   60f20bdda8c4f2c4520a888a0fc9dd08f5f68530ab98d5ebc1366cafa953ba62:
     input: <think>let me think</think>The answer is 42.
     tools: tools_cbf47ccf5fd2ef00
@@ -2263,6 +2787,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_f2b0f8beaa119e52
+  63547bace093f2c58add562bc82393f5ff472dc257bf42b95c8597bc32a002f8:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<think>I''ll call <｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
   64ffc113df9157eaa8a2e63d3a3e690230b3fb50551e6747f84b965d97faf7dc:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2290,8 +2821,51 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_84d891e8e63c96d4
+  666e63437d7f7f517894bc8dacee0ae8cca255da767f499ab865537b7098793a:
+    finish_reason: tool_calls
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
+
+      ```json
+
+      {"x":"1"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>g
+
+      ```json
+
+      {"x":"2"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>h
+
+      ```json
+
+      {"x":"3"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_66a922ef94c2db73
+    chunk_sizes:
+    - 0
+    - 294
+    - 57
+    - 0
   6724cf0ef35e8e04572ad568a85bdfc710abf1af7f5096838d80368759df451e:
     input: <think>checking
+    tools: tools_cbf47ccf5fd2ef00
+  6875bd05cc3fdb3e309bea1ff10abb14bd756de23e16e31ad6ecc26e24ff1759:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: The literal 'doesn't <｜tool▁calls▁begin｜> marker' stays quoted.
+    tools: tools_cbf47ccf5fd2ef00
+  6b818baa15f9d6246989d9ee9aabd9b3f87a229c90fd4a32504b6cb659406609:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
+
+      ```json
+
+      {"x":"雪 <｜tool▁calls▁end｜> <think>literal</think>"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
   6c994234b88da90516c863db347e291eb87ae7182a71d0ba7181fc6a4f5e2341:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
@@ -2345,6 +2919,22 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
+  6fe8a6f91fbdc65a21cee10afc5454cf972297f81d86d6ff2f458db541fcd2b1:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
+
+      ```json
+
+      {"value":"{\"a\":1}"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_0227aaa772b4b3da
+  71a633defdd0862d329503dbde0061cd5fb9143b31f896e3a20fd8b418d2ca4a:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   730aa56b99495f5203081371ffcd8e2a04b7db5077a88e8a1d9f300a0471f4d6:
     init:
       starting_state: Reasoning
@@ -2352,6 +2942,15 @@ requests:
       named_tool: null
     input: checking</think>done
     tools: tools_cbf47ccf5fd2ef00
+  731a7dd8fa8d2affe7a89d0ca88611b7211e7292b408233deb54ed337387be0d:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":0.0e-400}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_3b9cefdb4fbe7e81
   73b399c9d4831cb238c71586acb28b4e1bd1d121fc2defd719a69ebe453b1ee4:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2397,6 +2996,35 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><think>Now answer.</think>It''s 18C.'
     tools: tools_cbf47ccf5fd2ef00
+  75cecd498989dd650352ba5e70b5b1bd2fce7708362ecc0bed1654dc23d0cecc:
+    input: '
+
+      <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+
+      Done.'
+    tools: tools_cbf47ccf5fd2ef00
+  771931d11643b1d3cced33e33d7ecd1d7c73f4c411855261f4e0c944a4cb2e1e:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":{"note":"<｜tool▁calls▁end｜>"}}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_5bae9e9b644a5834
+  78ae980eb5269e460378b6cacbf62e8d38ecf3ceadad00c9c922c5e4209ddbba:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: The literal "<｜tool▁calls▁begin｜>" marker is part of the explanation.
+    tools: tools_cbf47ccf5fd2ef00
   78b33a6a58576a8a397efc649dfe6dca15f3901fc5259576ebc0aa849f830c47:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>capture_payload
 
@@ -2415,6 +3043,9 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_a6445198800af10f
+  7a2a8ba3c4b8d3d98062805419630b274399413665e4e6eb8c752027b87872cc:
+    input: <｜tool▁calls▁end｜>
+    tools: tools_cbf47ccf5fd2ef00
   7b979e39ca3cb341eb1682e59ac6d1a3db4f0c3e16f12f211d45b79ae0941eaa:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2457,6 +3088,27 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
+  7e82b56f37aa1562226397afd69ad84de4331cb24595dd89fb4a6d4c06626e01:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
+  7ece353901c5a320b890c59edf807b9b74101e5bff3e92d481526ac4d4a50a7b:
+    input: '<think>Check weather.</think>
+
+
+      <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+
+      '
+    tools: tools_cbf47ccf5fd2ef00
   7f5f37813ce594e2f69ddb343735648db32542894e26d71629bc6576144429e2:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2475,6 +3127,24 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_f7439c846ab88b86
+  7ff3f2c7730fcbe749cbb915e5089ac5be943fc72415c1d9f17bdb1a3ca514d5:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":9007199254740993.0}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_3b9cefdb4fbe7e81
+  81ac63e3f4f7d2ce8ca2af140eb55274d462ed04298f5e3478f80c545c45a175:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":42.5}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
   82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62:
     init:
       starting_state: None
@@ -2516,6 +3186,31 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_5d30b2f70e9f541a
+  871fe3dbbb47490341e03fc44dd5cab79d2d101cf526247d280330976fc6529e:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '{"unexpected": "shape"}<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
+  87b041c60e14dd274fa1e7e50ba37838f595282d4ac47eac39d766cfaee3d287:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"null"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_f3cbb76569c2b8fd
+  8912ad2a61727135cc81741362e3530cdfdcfcd05e6f6373cc4595dd2b8458c3:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   8ce8da52e78b9306466d63857b87f445c45f8cc219b37771d546edcc0f84e103:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2552,6 +3247,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_2251c40b9058421b
+  9053a239849f0a0e28db622910fbd2f322c2dc9049424174f59bd6c31c5bb28d:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   915aaaf4b700007d6fd58f6c98782fbbb369429a247ebeb27762c95a29bf866e:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>capture_payload
 
@@ -2600,6 +3302,23 @@ requests:
       {"y":"2"}
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><think>C</think>'
+    tools: tools_cbf47ccf5fd2ef00
+  97909d38e6eece5edfe3ed48fc3619720e0f93b075526c1dbea831c9ef6939e2:
+    input: "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather\n```json\n \n\t{\"city\":\"Paris\"}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+    tools: tools_bc4305bb8be412b3
+  987de34b56147cf5de7d837d58385b72241d8ed99043ab0ad2e20839004d1bec:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜>[{"name": "get_weather", "arguments": {"city": <｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
+  9a9132c504920b520db101ce2e500a6ef723ca2db9bc65db5dc17e44f6e7b184:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f\n```json\n{\"x\":{\"city\":\"Rome\"}}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜> \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
     tools: tools_cbf47ccf5fd2ef00
   9abeaebbbd21ed63a51df1a525aab127a0a895626b4a186222a941d8d9562730:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
@@ -2734,6 +3453,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_36488b7f60ef21ad
+  a348247028e9d09e9206b68ce37c320262ec2d844bfdccc9b10b137a79ca07a7:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":42.0}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_d1fedfe44119e682
   a5013866b2601d358309a6a099bb815620e9e5557970430067aec83db244d2b1:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2752,6 +3480,18 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_b216df93b649987b
+  a5eaa632810b621296e298adc5af2d80cf9553b0295763c5cbd87b47a02f93ee:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>a.b
+
+      ```json
+
+      {}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_f8e968b4be37d9da
+    chunk_sizes:
+    - 112
+    finish_step: true
   a5f8a3674b30a32eaa71c276ed22539b75bbe550eb360d82a90a2a72ffc7b485:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2788,6 +3528,26 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_f1fafc66c48cb347
+  aa4e9f35bc2afb8e32d5122270732db813930420fc2b037b7f606da1c2467d60:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
+  aa6ecd3c575a66e61491c8429efcacea2866b743c3a79b01baeebacc2fc816d8:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁calls▁end｜>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
   aa89396f861a30a46a73aabca15e306880c3de068cf21e46fd2b1ab65d551ff5:
     init:
       starting_state: Response
@@ -2804,6 +3564,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_eb14ad8c4a7a4413
+  abc407eee1dfa5927695685bcd650d127d031863a19fa2bc100db706e3139bcb:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": <｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   adb9e62edadbd31421bbd9674da0933ed510b40c5bdfd7625ff3dd82ec523504:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2813,6 +3580,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cf41a9070d48bbd7
+  ae83cb5f64f3ca05ded79969f54749affb4145256c002265fee16b41cd420687:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
   b01f39ef6616c87b544271adab66f679e141f505072ab861e7b111d316e6ce98:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>capture_payload
 
@@ -2822,6 +3596,22 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_05f2125f365df522
+  b069d88ba276b5a64bd1854fb68202c05cdc89c69fffc6750eccfdbf26e2b060:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":9007199254740993.25}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
+  b1438c1b5e20e5c586d1b398e51e8039e4810d8d0480d543565e8210cedc1e38:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: 'Sure. <think>checking</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_cbf47ccf5fd2ef00
   b48ba94f6d4e5b703d85a178a5b05a0031208c27e13110b4115b03776dae624d:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2831,6 +3621,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_0e1126661e4ae595
+  b52c384cdebb9e489a0209919c15bf02c0a90fc703ade54f4302a864e67fd620:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>set_labels
+
+      ```json
+
+      {"label":null,"note":null,"literal":"null"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_357b7150e2dd7639
   b68e3f7bee3de1a564ab37c45a0bd04c5a9be130182eed363011acc3afbd22f1:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2856,6 +3655,40 @@ requests:
       named_tool: null
     input: '{"unexpected": "shape"}'
     tools: tools_cbf47ccf5fd2ef00
+  b900ceda62059aafed2c48840caf71fb48def0082110955a53e8566d2553844c:
+    finish_reason: tool_calls
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
+
+      ```json
+
+      {"x":"1"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>g
+
+      ```json
+
+      {"x":"2"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>h
+
+      ```json
+
+      {"x":"3"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_66a922ef94c2db73
+    chunk_sizes:
+    - 0
+    - 177
+    - 174
+    - 0
+  bb7e4cc06103106be53b40908b27173a166c04a796d69818fc6c730d2e23cc12:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   bcbd6f30ef6ffe13fb56cda4eb19624506e761b2d00b548322bd1f89adaed5f3:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -2874,6 +3707,14 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_2da5b5660d13bc3f
+  bd9eaae9cd10164fd6a9244e62a458f01d6c72d38c0201aa624f64fe8d29aa8f:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    finish_reason: tool_calls
+    input: '<think>thinking<｜tool▁calls▁begin｜>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
   becab8154da18abfe0891b157c318f91b1c9a034ea116ca2a4b8fb19f4d5e629:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -2881,6 +3722,9 @@ requests:
 
       {"city":"'
     tools: tools_cbf47ccf5fd2ef00
+  bfd0739fb4d6deb3a59d2cd274b15fed4455c1e312d34a355af8ab08767c2546:
+    input: '"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>lookup\n```json\n{\"q\":\"x\"}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>" trailing'
+    tools: tools_81b3b17af2bd185e
   bfd7574c28bab09fd08d3e905919541586f9db509a22157757c3a903b1aa929c:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -2890,6 +3734,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_b61bcb374d1c66b2
+  c06b7ad594af6cfba6c8441af74b6c06f03aaeddc4afe937408d2930d0546c9b:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: The literal 'example <｜tool▁calls▁begin｜> marker' is part of the explanation.
+    tools: tools_cbf47ccf5fd2ef00
   c080bb378772c9950f33d389edbe8c1c60003d91f40fefaa12d27bdaee14bae5:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -2908,6 +3759,22 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_def252fc833e1bdc
+  c3c51f2f9623a2e59c9d66607b03f87dc3a7cae87a404d89b149520b021176ac:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]<｜tool▁calls▁end｜>'
+    tools: tools_cbf47ccf5fd2ef00
+  c3d6173f4dc341114462c2fe1a8b2097d7a1ada1a68b06450a2f16474f9a0e03:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":["<｜tool▁calls▁end｜>"]}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_8a00d152710c5e39
   c47ec8fc5f95b7a074a34b8af978ef0a94cacb81c46bbafd713d550d07e3658a:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
 
@@ -2917,6 +3784,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_711e03afbe37c425
+  c5765ea2652a2f526b37b10b49ae2cc1202069813d2bb3bb185aa65a7f51716c:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁call▁begin｜>function<｜tool▁sep｜>[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
+    tools: tools_cbf47ccf5fd2ef00
   c72970edf111dfc3066fb493a5ff4c57e14976c42a48d08f58ebda6567ae3dab:
     input: '<think>A</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
 
@@ -2967,6 +3841,9 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
     tools: tools_cbf47ccf5fd2ef00
+  d002e25a57f7dbfcfaf3c13b4e43a52ffb81a26a9ee6bdb59429e33de3723282:
+    input: I will check that. <｜tool▁calls▁end｜>
+    tools: tools_cbf47ccf5fd2ef00
   d0ca6457c1f66e303d6e63f567c1b5661e540c66c6b7e691f8c94fcd454fb6d3:
     input: 'Sure. <think>check A</think><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
 
@@ -2991,6 +3868,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cecec550b41e2979
+  d249cb5cb8cb4a351dbc6a8e94f13351ddc9232f4056ffd7bf2a9dfa54125414:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":-4.2E+1}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_3b9cefdb4fbe7e81
   d4326488351a058f85fc33d9fe358771e4dbb65bf2d94823925aefb57b9229bd:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3036,6 +3922,13 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_cbf47ccf5fd2ef00
+  d67dc07f7f0512dc8e231c350b1e04b283d71a6686264473ed0e1362417835fa:
+    init:
+      starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+    input: '<｜tool▁call▁begin｜>function<｜tool▁sep｜>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+    tools: tools_cbf47ccf5fd2ef00
   d74da4571b28dc6aebd69a266f2969f370e98a7c281aa65582ac9d788b066045:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>capture_payload
 
@@ -3045,6 +3938,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_9f0d61d69494be95
+  d7b911d05bd1a02f8c72de42334cf50b70f8dc9223044a71e7ee3f763d2ce20d:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>echo
+
+      ```json
+
+      {"city":"Paris","value":1e400}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_81ef407beab6fe3e
   dbaf030dc747c87554d3ef25bccc995eae4fc8f4b95fcfd11d72d8afb7dfe73b:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3054,6 +3956,35 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_799032ba2fa9936f
+  dc2d73c38e4618f258553d31b6d160104c462f9d0fb5aaf7cd44410770033080:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"still thinking about it'
+    tools: tools_cbf47ccf5fd2ef00
+  dce1d17dcd56218680af69f1b71daf40792f6db0c6381a4f7343804f513d89bb:
+    input: '
+
+      <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+
+
+      <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Tokyo"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+
+      '
+    tools: tools_cbf47ccf5fd2ef00
   ddefe162a27fa20aa80f67907c97b84a14b3a7cd6e56bdd15cc0b66ad7212c24:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3106,6 +4037,19 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_1348faa3b84df9fd
+  e28ebf03dcb97213aa416e640f7739432310a80bfaabcf679264d0f60d4da647:
+    input: '
+
+      <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":"Paris"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+
+      '
+    tools: tools_cbf47ccf5fd2ef00
   e2cabcc1eacab4018eb83fae05153978d6e36432089564f8e3991b47f3b58d0e:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3175,6 +4119,26 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_5215bd16730305ea
+  e94cebddf1737fd05294374087d3d2915d1d0c72986c93ec40c9dc8a9a640e46:
+    finish_reason: tool_calls
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f
+
+      ```json
+
+      {"a":"1"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>g
+
+      ```json
+
+      {"b":"2"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_51d6dcfd07ccb5f2
+    chunk_sizes:
+    - 177
+    - 57
+    - 0
   e9ae8197a554031cc30bd719ce3c5059a95e50767fb8ddd7e850ba7176561dd9:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3184,6 +4148,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_8284eae54735c3ce
+  e9be47867443a959d1e1fdcdc3ba5773194aa02e7c09eb837877d1a810d872ec:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":9.0071992547409925e15}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
   ea13f56e46764006d39967b82df8ca3010adf5600abe2f387c6951833a081e24:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3193,6 +4166,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_dc442e5767620506
+  ea4f506d475cea2ddfcac9727243122b58611fb1bd6c62287ee97a7937a748c4:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"value":-9007199254740992.5}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_be922244cdee705c
   ea97f28d77e850ddbcc9b4dd807f8bd878cb65aa7f48005dea206f686fdb4c73:
     input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe
 
@@ -3238,6 +4220,12 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_686a0bb91b79903e
+  f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b:
+    input: '
+
+
+      '
+    tools: tools_cbf47ccf5fd2ef00
   f5b33d886dd243e5f8d4fc10d84047b1787187c711264e6258809a4cf044bd44:
     input: <think>just thinking, no answer</think>
     tools: tools_cbf47ccf5fd2ef00
@@ -3277,6 +4265,18 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_68095193d4321478
+  fb023e2bb81d8d32eefc20b239ab9d748c4d034fb57d0a640a833cdccefe5598:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>my-tool.v2
+
+      ```json
+
+      {"location":"Beijing"}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_89d6d7dc387a8930
+    chunk_sizes:
+    - 139
+    finish_step: true
   fc4ebb8e36e8ad5772cdfc28740e7f55ec3e914d2254965b566046bb37b16ce8:
     init:
       starting_state: Reasoning
@@ -3297,6 +4297,15 @@ requests:
 
       ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
     tools: tools_e4f3ce0956c11ca0
+  feb9e7594ac544a0a5628bc8a42ecf582fffa18fb26b0875737afb4c054c9249:
+    input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+      ```json
+
+      {"city":null}
+
+      ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    tools: tools_ff570fb64b58ec7e
 cases:
   tool_only:
     description: Single tool call, no reasoning. Must stay green everywhere (the existing tool suite's world).
@@ -5481,3 +6490,968 @@ cases:
       name: get_weather
       arguments:
         city: Paris
+  arg_marker_in_string:
+    description: A close-marker-looking sequence INSIDE a string arg value. Invariant I7 — the value is data, preserved exactly, not truncated at the marker-looking substring.
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
+    request: 567d0d02acbee8407ec5e1297d64b8b3008ec63bd216d1bcf309cbbdcac93b8d
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: git log <｜tool▁calls▁end｜> --oneline
+  arg_null_mixed_labels:
+    policy:
+    - I7
+    description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.'
+    display_id: UNIFIED.7-tool-argument-nullability-arg_null_mixed_labels
+    request: b52c384cdebb9e489a0209919c15bf02c0a90fc703ade54f4302a864e67fd620
+    golden:
+    - kind: tool_call
+      name: set_labels
+      arguments:
+        label: null
+        note: null
+        literal: 'null'
+  arg_numeric_14_const_decimal:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_decimal
+    request: a348247028e9d09e9206b68ce37c320262ec2d844bfdccc9b10b137a79ca07a7
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":42.0}'
+  arg_numeric_14_const_exponent:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_const_exponent
+    request: 0fc65e4d66bc65a59f3b5c63865a31d7b9db31d632742ce41bb01188198cc800
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":4.2e1}'
+  arg_numeric_14_enum_decimal:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_decimal
+    request: 182f0e69f09425e2dbc38a37f256b88b6d0978fba96fcbb48322d6a1fce8b4a5
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":42.0}'
+  arg_numeric_14_enum_exponent:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_enum_exponent
+    request: 3545daa3b22d55106fc51052a195d343787e2647d48bb4ce1efdd4c2c9ffb7a9
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":4.2e1}'
+  arg_numeric_14_large_decimal:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_decimal
+    request: 7ff3f2c7730fcbe749cbb915e5089ac5be943fc72415c1d9f17bdb1a3ca514d5
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":9007199254740993.0}'
+  arg_numeric_14_large_exponent:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_large_exponent
+    request: 4d21eef051ec2462a82e601d4fbb823e1762a6e99edd947b95aa2997acb4b68d
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":9.007199254740993e15}'
+  arg_numeric_14_negative:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative
+    request: d249cb5cb8cb4a351dbc6a8e94f13351ddc9232f4056ffd7bf2a9dfa54125414
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":-4.2E+1}'
+  arg_numeric_14_negative_exponent:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_negative_exponent
+    request: 5802214e595f2d4a8491242f8a0195f8b012f1576f7e18f847834326190a9550
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":4200e-2}'
+  arg_numeric_14_zero_underflow:
+    policy:
+    - I7
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_14_zero_underflow
+    request: 731a7dd8fa8d2affe7a89d0ca88611b7211e7292b408233deb54ed337387be0d
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":0.0e-400}'
+  arg_numeric_15_exponent:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_exponent
+    request: e9be47867443a959d1e1fdcdc3ba5773194aa02e7c09eb837877d1a810d872ec
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":9.0071992547409925e15}'
+  arg_numeric_15_negative:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_negative
+    request: ea4f506d475cea2ddfcac9727243122b58611fb1bd6c62287ee97a7937a748c4
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":-9007199254740992.5}'
+  arg_numeric_15_ordinary:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_ordinary
+    request: 81ac63e3f4f7d2ce8ca2af140eb55274d462ed04298f5e3478f80c545c45a175
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":42.5}'
+  arg_numeric_15_quarter:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_quarter
+    request: b069d88ba276b5a64bd1854fb68202c05cdc89c69fffc6750eccfdbf26e2b060
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":9007199254740993.25}'
+  arg_numeric_15_round_down:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_down
+    request: 2e49c69e36cd790d78845920933e6cc9a90c5acaf66dcc9dec5427298efdb412
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":9007199254740992.5}'
+  arg_numeric_15_round_up:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_round_up
+    request: 0c08297bfcb572d497793e23cadebbaf71be558de7f84de450e80174e1f9c5c3
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":9007199254740993.1}'
+  arg_numeric_15_small:
+    policy:
+    - I7
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_15_small
+    request: 5cf0e569c1971e8f7b2f1eea0d97df2e579a900a3d9cf876e24095eb22672fa6
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments: '{"value":0.10000000000000000001}'
+  arg_numeric_nested_exact:
+    policy:
+    - I7
+    description: Nested objects and arrays preserve exact large integers, long decimals, and underflow-sized numbers.
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_nested_exact
+    request: 46473eecef9fffd66d6cec5430049c5cf7aa5c9e2055f5dc09dd4a059c7384bc
+    golden:
+    - kind: tool_call
+      name: inspect
+      arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+  arg_numeric_overflow_siblings_finite:
+    policy:
+    - I7
+    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_finite
+    request: 0513a64533b0ef393eeef93be78054b27c4204c6ec8c1a6c99726632533dd72d
+    golden:
+    - kind: tool_call
+      name: echo
+      arguments: '{"city":"Paris","value":1.5}'
+  arg_numeric_overflow_siblings_negative:
+    policy:
+    - I7
+    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_negative
+    request: 03dda91ff6c701f8f11476fd1cc6177db43afae6b9f13ed8f9301fd7349b318b
+    golden:
+    - kind: tool_call
+      name: echo
+      arguments: '{"city":"Paris","value":-1E+400}'
+  arg_numeric_overflow_siblings_positive:
+    policy:
+    - I7
+    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    display_id: UNIFIED.7-tool-argument-numeric-precision-arg_numeric_overflow_siblings_positive
+    request: d7b911d05bd1a02f8c72de42334cf50b70f8dc9223044a71e7ee3f763d2ce20d
+    golden:
+    - kind: tool_call
+      name: echo
+      arguments: '{"city":"Paris","value":1e400}'
+  deepseek_v41_mixed_control_text_in_string:
+    policy:
+    - I7
+    description: A native string argument contains its family's reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. Preserve the decoded string exactly; this combines marker classes and string preservation beyond 7-2's single closer.
+    display_id: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
+    request: 6b818baa15f9d6246989d9ee9aabd9b3f87a229c90fd4a32504b6cb659406609
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: 雪 <｜tool▁calls▁end｜> <think>literal</think>
+  dotted_name_minimal:
+    description: A native call to a.b preserves the complete name and empty arguments.
+    display_id: UNIFIED.1-dotted_name_minimal
+    request: a5eaa632810b621296e298adc5af2d80cf9553b0295763c5cbd87b47a02f93ee
+    golden:
+    - kind: tool_call
+      name: a.b
+      arguments: {}
+  dotted_name_mixed_punctuation:
+    description: 'A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).'
+    display_id: UNIFIED.1-dotted_name_mixed_punctuation
+    request: fb023e2bb81d8d32eefc20b239ab9d748c4d034fb57d0a640a833cdccefe5598
+    golden:
+    - kind: tool_call
+      name: my-tool.v2
+      arguments:
+        location: Beijing
+  dotted_name_multiple_segments:
+    description: A native call preserves every segment of server.tools.weather.
+    display_id: UNIFIED.1-dotted_name_multiple_segments
+    request: 21459c0f259a9036332a77bb3e430a7af9c400bf70dcd9c9611b9d6131b5a2eb
+    golden:
+    - kind: tool_call
+      name: server.tools.weather
+      arguments:
+        location: Beijing
+  dotted_name_shared_prefix:
+    description: Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.
+    display_id: UNIFIED.2-dotted_name_shared_prefix
+    request: 52ba6615489fe626e8be457d15940cc690864f13f80fdd42d9b4ba79ebf3ff94
+    golden:
+    - kind: tool_call
+      name: server.weather
+      arguments:
+        location: Beijing
+    - kind: tool_call
+      name: server.time
+      arguments:
+        timezone: Asia/Shanghai
+  guided_json_after_reasoning:
+    description: A normal thought precedes the guided payload. The reasoning closes before the constrained call begins; both must survive in their original order.
+    display_id: UNIFIED.30-guided_json_after_reasoning
+    request: ae83cb5f64f3ca05ded79969f54749affb4145256c002265fee16b41cd420687
+    golden:
+    - kind: reasoning
+      text: checking
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_gt_in_argument_bare_opener:
+    policy:
+    - I3
+    description: Guided JSON, payload is gt_in_argument, surrounded by a bare invoke HEADER before the payload, never terminated. Markers around a recoverable payload must not cost the call (`I3`).
+    display_id: UNIFIED.30-guided_json_gt_in_argument_bare_opener
+    request: c5765ea2652a2f526b37b10b49ae2cc1202069813d2bb3bb185aa65a7f51716c
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: a > b
+  guided_json_gt_in_argument_trailing_close:
+    policy:
+    - I3
+    description: Guided JSON, payload is gt_in_argument, surrounded by a stray tool CLOSE after the payload. Markers around a recoverable payload must not cost the call (`I3`).
+    display_id: UNIFIED.30-guided_json_gt_in_argument_trailing_close
+    request: c3c51f2f9623a2e59c9d66607b03f87dc3a7cae87a404d89b149520b021176ac
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: a > b
+  guided_json_gt_in_argument_wrapped:
+    policy:
+    - I3
+    description: Guided JSON, payload is gt_in_argument, surrounded by the payload wrapped in native tool markup. Markers around a recoverable payload must not cost the call (`I3`).
+    display_id: UNIFIED.30-guided_json_gt_in_argument_wrapped
+    request: 0865cc34234a88ac9e82ae7cc7fb554d6e40a74cd98acd69c395dac037baa882
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: a > b
+  guided_json_marker_inside_argument:
+    policy:
+    - I7
+    description: A control marker of the family's OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`) — re-reading it as a channel token corrupts the call the tool receives while looking like a successful dispatch.
+    display_id: UNIFIED.30-guided_json_marker_inside_argument
+    request: 0c02a04b7991a6ac7b6178b3ff2a3632861e19cab963ac78780a5e1fdea97fcb
+    golden:
+    - kind: tool_call
+      name: log
+      arguments:
+        note: </think>
+  guided_json_narrated_invoke_in_reasoning:
+    policy:
+    - P2
+    description: The model NARRATES a tool opener while thinking, then the real call arrives as JSON. Guided decoding leaves the reasoning channel unconstrained, so that markup is prose the model wrote — treating it as structure ends the turn and discards the payload.
+    display_id: UNIFIED.34-guided_json_narrated_invoke_in_reasoning
+    request: 410597d4fe8d59ed858f5f919d0d846a2a8e3cdaef7fb510469c268a44712962
+    golden:
+    - kind: reasoning
+      text: I'll use  next
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_narrated_prefix_inside_reasoning:
+    policy:
+    - I3
+    description: The model NARRATES an invoke header inside its thought and never terminates it, so the only `>` in reach belongs to the thought's own closer. The header is literal text the model wrote, so it is stripped and the surrounding thought survives intact — it must not swallow the closer and it must not survive into the reasoning the user sees.
+    display_id: UNIFIED.34-guided_json_narrated_prefix_inside_reasoning
+    request: 63547bace093f2c58add562bc82393f5ff472dc257bf42b95c8597bc32a002f8
+    golden:
+    - kind: reasoning
+      text: I'll call get_weather
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_native_markup_only:
+    policy:
+    - I3
+    - I6
+    description: Guided decoding receives one complete native tool call instead of bare JSON. The whole turn is control markup, so it emits no events. Every stream split must match the whole-input result; consuming the invoke header before its terminator leaks the parameter body as user-visible text (`I6`).
+    display_id: UNIFIED.32-guided_json_native_markup_only
+    request: aa4e9f35bc2afb8e32d5122270732db813930420fc2b037b7f606da1c2467d60
+    golden: []
+  guided_json_orphan_reason_close_before_payload:
+    policy:
+    - P2
+    description: An orphan reasoning CLOSER with nothing open, ahead of the payload. The native scanner strips a stray closer wherever it appears before an opener; the guided path must agree or the same bytes read differently by request mode (`I3`).
+    display_id: UNIFIED.34-guided_json_orphan_reason_close_before_payload
+    request: 5938fceb190c174a48c0488078604e8dbe2c35d3a53c88aaf29a3b88cc00bcb7
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_orphan_tool_close_before_payload:
+    policy:
+    - P2
+    description: 'An orphan tool CLOSER before the payload. Paired with the opener case above: for a while the closer was stripped and the opener beside it was not, so which marker leaked depended on which one the model happened to emit.'
+    display_id: UNIFIED.32-guided_json_orphan_tool_close_before_payload
+    request: aa6ecd3c575a66e61491c8429efcacea2866b743c3a79b01baeebacc2fc816d8
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_prose_before_reasoning:
+    policy:
+    - P2
+    description: Visible prose precedes a thought and the guided payload. The leading prose must not latch the payload buffer and cause later private reasoning to appear in the visible answer.
+    display_id: UNIFIED.34-guided_json_prose_before_reasoning
+    request: b1438c1b5e20e5c586d1b398e51e8039e4810d8d0480d543565e8210cedc1e38
+    golden:
+    - kind: text
+      text: 'Sure. '
+    - kind: reasoning
+      text: checking
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_schema_error_nameless_element_bare_opener:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_schema_error_nameless_element_bare_opener
+    request: d67dc07f7f0512dc8e231c350b1e04b283d71a6686264473ed0e1362417835fa
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_nameless_element_trailing_close:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_schema_error_nameless_element_trailing_close
+    request: bb7e4cc06103106be53b40908b27173a166c04a796d69818fc6c730d2e23cc12
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_nameless_element_wrapped:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_schema_error_nameless_element_wrapped
+    request: 71a633defdd0862d329503dbde0061cd5fb9143b31f896e3a20fd8b418d2ca4a
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+  guided_json_schema_error_not_a_call_trailing_close:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is schema_error_not_a_call, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_schema_error_not_a_call_trailing_close
+    request: 871fe3dbbb47490341e03fc44dd5cab79d2d101cf526247d280330976fc6529e
+    golden:
+    - kind: text
+      text: '{"unexpected": "shape"}'
+  guided_json_schema_error_not_a_call_wrapped:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is schema_error_not_a_call, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_schema_error_not_a_call_wrapped
+    request: 0d85b3c409e7dbe0c20185ef8f39514300c81c2fa5a5256b1b6f2110efeee66d
+    golden:
+    - kind: text
+      text: '{"unexpected": "shape"}'
+  guided_json_stray_prefix_before_reasoning:
+    policy:
+    - I3
+    description: 'A bare invoke HEADER with no terminator of its own sits before a reasoning span, so the only `>` in reach belongs to the thought opener. The header must NOT claim it: doing so consumed the opener, and the model''s private reasoning was emitted as user-visible text (`I3`, and a privacy failure, not just a cosmetic leak). The header is incomplete markup and is stripped; the thought stays a thought.'
+    display_id: UNIFIED.34-guided_json_stray_prefix_before_reasoning
+    request: 0353df07e5a0de23272a35dc66df3d911e85db3414d7cbfd385f89f842664afc
+    golden:
+    - kind: reasoning
+      text: secret
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_syntax_error_bare_opener:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is syntax_error, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_syntax_error_bare_opener
+    request: 386d74ebcee79e75023a488da8cc1522d0454720f787b54515e89ec181b1a9b3
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city": '
+  guided_json_syntax_error_trailing_close:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is syntax_error, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_syntax_error_trailing_close
+    request: abc407eee1dfa5927695685bcd650d127d031863a19fa2bc100db706e3139bcb
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_syntax_error_wrapped:
+    policy:
+    - P2
+    description: 'Guided JSON, payload is syntax_error, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.'
+    display_id: UNIFIED.33-guided_json_syntax_error_wrapped
+    request: 987de34b56147cf5de7d837d58385b72241d8ed99043ab0ad2e20839004d1bec
+    golden:
+    - kind: text
+      text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_tool_close_after_payload:
+    policy:
+    - P2
+    description: 'A native tool CLOSER follows the payload. The leading side was handled long before this one: once the payload''s opening brace latches visible-only, every later byte is appended verbatim, so a trailing marker rides into the buffer and the call is lost. Markers can BRACKET a payload, not only precede it.'
+    display_id: UNIFIED.32-guided_json_tool_close_after_payload
+    request: 435528ade697162a59a1cbfcd8ff0ae1b06cfc5a2e8a979a867cb2d4f3656546
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_tool_open_before_payload:
+    policy:
+    - P2
+    description: 'A native tool OPENER precedes the constrained payload. Guided decoding delivers the call as JSON, so leading markup is stray: it must be stripped, not carried into the payload buffer where it breaks the parse and costs the call.'
+    display_id: UNIFIED.32-guided_json_tool_open_before_payload
+    request: 7e82b56f37aa1562226397afd69ad84de4331cb24595dd89fb4a6d4c06626e01
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    policy:
+    - P2
+    - I6
+    description: A thought whose closer never arrives, running straight into native tool markup wrapping the guided payload. The model routed away from the reasoning channel and simply omitted the terminator, so the thought ends at that markup and the payload is a call. Contrast with `31-8`, where the same markup has PROSE behind it and is narration the model wrote while thinking — there the span stays open and the markup is stripped. What separates the two is whether the guided payload follows, not which marker appeared.
+    display_id: UNIFIED.34-guided_json_unterminated_reasoning_then_wrapped_payload
+    request: bd9eaae9cd10164fd6a9244e62a458f01d6c72d38c0201aa624f64fe8d29aa8f
+    golden:
+    - kind: reasoning
+      text: thinking
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_json_wrapped_in_tool_markup:
+    policy:
+    - P2
+    description: The payload wrapped in a full native envelope, opener AND closer. This is the shape a template emits when guided decoding is applied INSIDE a tool block; handling only one end still loses the call.
+    display_id: UNIFIED.32-guided_json_wrapped_in_tool_markup
+    request: 9053a239849f0a0e28db622910fbd2f322c2dc9049424174f59bd6c31c5bb28d
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_response_native_wrapper_whitespace_before_prose:
+    policy:
+    - I3
+    - I7
+    description: Response-prefilled guided output contains a native invocation wrapper, then whitespace and visible prose before the real guided call. Muse uses its inner ATEM invocation, without a new recipient-routed message envelope. Whitespace after the suppressed native wrapper is structural across every chunk boundary; the following prose remains visible. The native Rome argument tests lexical ownership rather than validation against the offered schema; only the guided Paris call dispatches.
+    display_id: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    request: 9a9132c504920b520db101ce2e500a6ef723ca2db9bc65db5dc17e44f6e7b184
+    golden:
+    - kind: text
+      text: 'ok then '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  orphan_close_after_prose:
+    description: Prose followed by an orphan close marker with no matching open. Best-effort recovery — the prose stays as content, the orphan marker is stripped, nothing leaks.
+    display_id: UNIFIED.5-orphan_close_after_prose
+    request: d002e25a57f7dbfcfaf3c13b4e43a52ffb81a26a9ee6bdb59429e33de3723282
+    golden:
+    - kind: text
+      text: 'I will check that. '
+  tool_block_never_closed_then_text:
+    policy:
+    - P2
+    description: 'A tool block opens and the model never closes it, then keeps writing prose. Nothing is emitted: the prose is BLOCK CONTENT, not the user''s answer, so it drops with the unrecoverable call — the same contract `truncated_tool_eof` (5.a) pins, here with the block opening at position 0 so no reasoning survives to mask it. Worth pinning precisely because the bytes look like an answer; the envelope is what decides.'
+    display_id: UNIFIED.4-tool_block_never_closed_then_text
+    request: dc2d73c38e4618f258553d31b6d160104c462f9d0fb5aaf7cd44410770033080
+    golden: []
+  tool_body_whitespace:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    display_id: UNIFIED.1-tool_only_leading_json_body_whitespace
+    request: 97909d38e6eece5edfe3ed48fc3619720e0f93b075526c1dbea831c9ef6939e2
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  tool_markup_only_emits_nothing:
+    policy:
+    - P2
+    description: 'The whole generated output is control markup and nothing else — an empty DSML calls envelope for DeepSeek V4.1, or a stray close for the other families. Everything is stripped, so the parser emits NO events at all. Until this case there was no row with an empty golden: every case asserted something was produced, so ''markup alone leaks nothing'' (`I3`) was never actually pinned.'
+    display_id: UNIFIED.4-tool_markup_only_emits_nothing
+    request: 7a2a8ba3c4b8d3d98062805419630b274399413665e4e6eb8c752027b87872cc
+    golden: []
+  tool_no_close:
+    description: 'A single tool call whose body is complete but the close marker never arrives before EOF. Most grammars recover the complete call at finish; DSML requires the invoke close, so its malformed turn emits nothing. This is also covered in: TOOLCALLING.streamv1.5.a.'
+    display_id: UNIFIED.5-tool_no_close
+    request: 8912ad2a61727135cc81741362e3530cdfdcfcd05e6f6373cc4595dd2b8458c3
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  adjacent_calls_partial_header:
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
+    display_id: UNIFIED.2-adjacent_calls_partial_header
+    request: e94cebddf1737fd05294374087d3d2915d1d0c72986c93ec40c9dc8a9a640e46
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        a: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        b: '2'
+  arg_array_quoted_parameter_close:
+    policy:
+    - I7
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
+    request: c3d6173f4dc341114462c2fe1a8b2097d7a1ada1a68b06450a2f16474f9a0e03
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        value:
+        - <｜tool▁calls▁end｜>
+  arg_object_quoted_parameter_close:
+    policy:
+    - I7
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    display_id: UNIFIED.7-tool-argument-text-preservation-arg_object_quoted_parameter_close
+    request: 771931d11643b1d3cced33e33d7ecd1d7c73f4c411855261f4e0c944a4cb2e1e
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        value:
+          note: <｜tool▁calls▁end｜>
+  blank_framing_after_reasoning:
+    policy:
+    - P8
+    - I2
+    description: 'Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.'
+    display_id: UNIFIED.11-blank_framing_after_reasoning
+    request: 7ece353901c5a320b890c59edf807b9b74101e5bff3e92d481526ac4d4a50a7b
+    golden:
+    - kind: reasoning
+      text: Check weather.
+    - kind: text
+      text: '
+
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+        '
+  blank_framing_between_calls_single_chunk:
+    policy:
+    - P8
+    - I6
+    description: Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.
+    display_id: UNIFIED.8-blank_framing_between_calls_single_chunk
+    request: dce1d17dcd56218680af69f1b71daf40792f6db0c6381a4f7343804f513d89bb
+    golden:
+    - kind: text
+      text: '
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Tokyo
+    - kind: text
+      text: '
+
+        '
+  blank_framing_prose_after_call:
+    policy:
+    - P8
+    - I1
+    description: 'Framing newline, a call, then visible prose: the turn has visible text, so every whitespace byte is kept. Nemotron V3 holds the leading newline and releases it in front of the prose, so its text follows the call; every other family keeps it before the call.'
+    display_id: UNIFIED.8-blank_framing_prose_after_call
+    request: 75cecd498989dd650352ba5e70b5b1bd2fce7708362ecc0bed1654dc23d0cecc
+    golden:
+    - kind: text
+      text: '
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+        Done.'
+  blank_framing_tool_only:
+    policy:
+    - P8
+    - I5
+    description: A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.
+    display_id: UNIFIED.8-blank_framing_tool_only
+    request: e28ebf03dcb97213aa416e640f7739432310a80bfaabcf679264d0f60d4da647
+    golden:
+    - kind: text
+      text: '
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+        '
+  blank_framing_with_prose:
+    policy:
+    - P8
+    - I1
+    description: 'Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.'
+    display_id: UNIFIED.8-blank_framing_with_prose
+    request: 427e328f10be28a8691825312b66e25519e046941d9f1df4dfb55c9b642264c7
+    golden:
+    - kind: text
+      text: 'Pressing it now.
+
+
+        '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '
+
+        '
+  blank_output_without_call:
+    policy:
+    - P8
+    - I1
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
+    display_id: UNIFIED.3-blank_output_without_call
+    request: f3486d4ccfccad0ffb1ccfa6328455a3d2334666959a0fa8fa9df1dedaae347b
+    golden:
+    - kind: text
+      text: '
+
+
+        '
+  gpt_oss_multiple_unknown_and_empty_tools:
+    policy:
+    - I6
+    - I7
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    display_id: UNIFIED.2-two_calls_empty_body_and_unoffered_names
+    request: 296942778f1c84a0ee09183c4485dc7d3f6e313be49460091cc0fded01cdf14e
+    golden:
+    - kind: tool_call
+      name: unknown_tool
+      arguments:
+        value: '123'
+    - kind: tool_call
+      name: empty_tool
+      arguments: {}
+  native_quoted_control_in_reasoning:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.40-native_quoted_control_in_reasoning
+    request: 78ae980eb5269e460378b6cacbf62e8d38ecf3ceadad00c9c922c5e4209ddbba
+    golden:
+    - kind: reasoning
+      text: The literal "<｜tool▁calls▁begin｜>" marker is part of the explanation.
+  native_quoted_control_in_response:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.8-native_quoted_control_in_response
+    request: 2ef3728c2ec20f85c6fb7df92416ebfc0e47d7d9fcde1adb8c230c800115c13a
+    golden:
+    - kind: text
+      text: The literal "<｜tool▁calls▁begin｜>" marker is part of the explanation.
+  native_quoted_control_then_call:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.8-native_quoted_control_then_call
+    request: 3668eecc6b6978df5d0e2371b05adaee32c6b4b90339b5d4c3dae750b78a42e6
+    golden:
+    - kind: text
+      text: The literal "<｜tool▁calls▁begin｜>" marker is part of the explanation.
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  native_quoted_incomplete_header:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.8-native_quoted_incomplete_header
+    request: 0c329609697070e7aa996ea4b47c004214f483d46e6292bcfd6df4c4cf7e81be
+    golden:
+    - kind: text
+      text: 'The literal `<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+        ```json
+
+        {"city":"` header is part of the explanation.'
+  native_single_quote_contraction_reasoning:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.40-native_single_quote_contraction_reasoning
+    request: 6875bd05cc3fdb3e309bea1ff10abb14bd756de23e16e31ad6ecc26e24ff1759
+    golden:
+    - kind: reasoning
+      text: The literal 'doesn't <｜tool▁calls▁begin｜> marker' stays quoted.
+  native_single_quote_contraction_response:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.8-native_single_quote_contraction_response
+    request: 5f1b38afd9d31ecf73a92526d5277169ffd742cc1521d0472e6c916ed51b82ea
+    golden:
+    - kind: text
+      text: The literal 'doesn't <｜tool▁calls▁begin｜> marker' stays quoted.
+  native_single_quoted_word_control:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.8-native_single_quoted_word_control
+    request: c06b7ad594af6cfba6c8441af74b6c06f03aaeddc4afe937408d2930d0546c9b
+    golden:
+    - kind: text
+      text: The literal 'example <｜tool▁calls▁begin｜> marker' is part of the explanation.
+  native_unmatched_quote_then_call:
+    policy:
+    - I7
+    - P2
+    description: Balanced quoted native controls remain prose; an unmatched quotation must not hide an actual call.
+    display_id: UNIFIED.8-native_unmatched_quote_then_call
+    request: 476f4965c5d93113d6a407b68776297c6b58170c524351a31e66a82454dbacb9
+    golden:
+    - kind: text
+      text: He said "maybe
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  three_calls_partial_header:
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
+    display_id: UNIFIED.2-three_calls_partial_header
+    request: 666e63437d7f7f517894bc8dacee0ae8cca255da767f499ab865537b7098793a
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        x: '2'
+    - kind: tool_call
+      name: h
+      arguments:
+        x: '3'
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A balanced visible JSON string quotes a complete native tool call before ordinary prose. Preserve the literal body and suffix; quoted call syntax must not fabricate an invocation.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: bfd0739fb4d6deb3a59d2cd274b15fed4455c1e312d34a355af8ab08767c2546
+    golden:
+    - kind: text
+      text: '"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>lookup\n```json\n{\"q\":\"x\"}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>" trailing'
+  guided_response_quoted_control_braces_named:
+    policy:
+    - I7
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    display_id: UNIFIED.35-guided_response_quoted_control_braces_named
+    request: 4b3b67258757a21a4324203c0e713f7a4a3f9c41c06a4f0d9bbd0f42a4b380b4
+    golden:
+    - kind: text
+      text: 'The literal "<｜tool▁calls▁begin｜> { example }" stays visible. '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  guided_response_quoted_control_braces_required:
+    policy:
+    - I7
+    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    display_id: UNIFIED.35-guided_response_quoted_control_braces_required
+    request: 037673a07c9c62d17275930a61d1dc9871443174775ff0ea535de862144a3beb
+    golden:
+    - kind: text
+      text: 'The literal "<｜tool▁calls▁begin｜> { example }" stays visible. '
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  xml_string_type_double_quoted_object:
+    policy:
+    - I7
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    display_id: UNIFIED.7-tool-argument-declared-types-xml_string_type_double_quoted_object
+    request: 6fe8a6f91fbdc65a21cee10afc5454cf972297f81d86d6ff2f458db541fcd2b1
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{"a":1}'
+  xml_string_type_single_quoted_object:
+    policy:
+    - I7
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    display_id: UNIFIED.7-tool-argument-declared-types-xml_string_type_single_quoted_object
+    request: 084b8c41e806fd158c5580e939a964aa2da3d2233933615eca32618b86a4b98b
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '{''a'':1}'
+  arg_json_null_ref:
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_json_null_ref
+    request: feb9e7594ac544a0a5628bc8a42ecf582fffa18fb26b0875737afb4c054c9249
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: null
+  arg_string_null_ref:
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-arg_string_null_ref
+    request: 87b041c60e14dd274fa1e7e50ba37838f595282d4ac47eac39d766cfaee3d287
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: 'null'

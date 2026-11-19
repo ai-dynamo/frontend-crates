@@ -103,6 +103,23 @@ tools:
           - const: auto
           - type: integer
     strict: true
+  tools_51d6dcfd07ccb5f2:
+  - name: f
+    parameters:
+      type: object
+      properties:
+        a:
+          type: string
+      required:
+      - a
+  - name: g
+    parameters:
+      type: object
+      properties:
+        b:
+          type: string
+      required:
+      - b
   tools_b216df93b649987b:
   - name: schema_probe
     parameters:
@@ -1722,6 +1739,31 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_66a922ef94c2db73:
+  - name: f
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
+  - name: g
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
+  - name: h
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
   tools_e4f3ce0956c11ca0:
   - name: get_weather
     parameters:
@@ -2066,6 +2108,14 @@ requests:
   0d81a9326fcd548039b8c0a917471c209128221b07960b3e5c0836a337f1f2f1:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_a6aee3f30418a3a4
+  0d9f4d2361fcc52af65b0abdd222b8372a465db1f76b6e9ec48e31b43ebeed62:
+    input: '<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"a": "1"}<|call|><|start|>assistant<|channel|>commentary to=functions.g <|constrain|>json<|message|>{"b": "2"}<|call|>'
+    finish_reason: tool_calls
+    tools: tools_51d6dcfd07ccb5f2
+    chunk_sizes:
+    - 155
+    - 47
+    - 0
   0da9e8f8c97739f9dc03ca27f4ea01342aca72f0d0bb3e21dc999c4865ae4224:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 42}<|call|>'
     tools: tools_b216df93b649987b
@@ -4469,6 +4519,15 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|call|>'
     tools: tools_9db8284c68087826
+  d86ab3ecf62c4f0cf1ba0b3288a732ba4104f5e148007b50eebf4bfa0f635210:
+    input: '<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "1"}<|call|><|start|>assistant<|channel|>commentary to=functions.g <|constrain|>json<|message|>{"x": "2"}<|call|><|start|>assistant<|channel|>commentary to=functions.h <|constrain|>json<|message|>{"x": "3"}<|call|>'
+    finish_reason: tool_calls
+    tools: tools_66a922ef94c2db73
+    chunk_sizes:
+    - 0
+    - 155
+    - 148
+    - 0
   d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b:
     input: <|start|>assistant<|message|>Answer<|return|>
     tools: tools_9db8284c68087826
@@ -10218,3 +10277,43 @@ cases:
     golden:
     - kind: text
       text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'
+  adjacent_calls_partial_header:
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-adjacent_calls_partial_header
+    request: 0d9f4d2361fcc52af65b0abdd222b8372a465db1f76b6e9ec48e31b43ebeed62
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        a: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        b: '2'
+  three_calls_partial_header:
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-three_calls_partial_header
+    request: d86ab3ecf62c4f0cf1ba0b3288a732ba4104f5e148007b50eebf4bfa0f635210
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        x: '2'
+    - kind: tool_call
+      name: h
+      arguments:
+        x: '3'

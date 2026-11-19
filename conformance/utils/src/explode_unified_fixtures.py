@@ -270,14 +270,13 @@ def append_authored_inputs():
     registry = yaml.safe_load((CONF / "utils/src/parser_families.yaml").read_text())["unified"]
     def append(store):
         for family, entry in registry.items():
-            if entry.get("scenario_profile") != "native":
-                continue
             document = yaml.safe_load((BUILD / "golden_spec" / entry["golden_spec"]).read_text())
             rows = _split_only_cases(family, document)
             fam = store.families[family]
+            scenarios = {case["scenario"] for case in fam.cases.values()}
             for display_id, row in rows.items():
                 scenario = row["scenario"]
-                if scenario in fam.cases:
+                if scenario in scenarios:
                     continue
                 fam.cases[scenario] = {
                     "lifecycle": "active", "scenario": scenario,

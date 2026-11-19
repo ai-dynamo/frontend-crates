@@ -2898,19 +2898,21 @@ def _semantic_stimulus(value: dict) -> dict:
     return {key: item for key, item in value.items() if key != "semantic_sha256"}
 
 
-def _capture_semantic(value: dict, case_id: str) -> dict:
-    """Return immutable capture content keyed by the canonical case identity.
+def _stimuli_equal(before: dict, after: dict) -> bool:
+    if ("ref" in before and "ref" in after
+            and "semantic_sha256" in before and "semantic_sha256" in after):
+        return before["semantic_sha256"] == after["semantic_sha256"]
+    if typed_equal(_semantic_stimulus(before), _semantic_stimulus(after)):
+        return True
+    for inline, reference in ((before, after), (after, before)):
+        if "inline" in inline and "ref" in reference and "semantic_sha256" in reference:
+            return _request_digest(inline["inline"]) == reference["semantic_sha256"]
+    return False
 
-    A current loose corpus can use a newer display ID for a case whose historical
-    capture still stores an older alias. The canonical case ID is stable across
-    that rename; the display key is retained in new deltas but must not make an
-    identical re-ingestion look like a mutation of a released capture.
-    """
-    return {
-        "case_id": case_id,
-        "stimulus": _semantic_stimulus(value["stimulus"]),
-        "observation": value["observation"],
-    }
+
+def _capture_semantics_equal(before: dict, after: dict, case_id: str) -> bool:
+    return (_stimuli_equal(before["stimulus"], after["stimulus"])
+            and typed_equal(before["observation"], after["observation"]))
 
 
 def _is_correctable_capture_placeholder(
@@ -2934,8 +2936,7 @@ def _is_correctable_capture_placeholder(
 
     return (
         before["case_key"] == after["case_key"]
-        and _canonical_json(_semantic_stimulus(before["stimulus"]))
-        == _canonical_json(_semantic_stimulus(after["stimulus"]))
+        and _stimuli_equal(before["stimulus"], after["stimulus"])
         and has_verified_request_binding(before)
         and has_verified_request_binding(after)
         and isinstance(unavailable, dict)
@@ -2967,7 +2968,7 @@ def _capture_changes(
         delta = {}
         stimulus_changed = not typed_equal(old["stimulus"], new["stimulus"])
         if not preserve_binding_details:
-            stimulus_changed = not typed_equal(_semantic_stimulus(old["stimulus"]), _semantic_stimulus(new["stimulus"]))
+            stimulus_changed = not _stimuli_equal(old["stimulus"], new["stimulus"])
         if stimulus_changed:
             delta["stimulus"] = copy.deepcopy(new["stimulus"])
         if not typed_equal(old["observation"], new["observation"]):
@@ -2989,7 +2990,7 @@ def _install_complete_snapshot(history: History, capture_id: str, records: dict,
         if "inherited_from" in record["document"]:
             continue
         old = current.get(case_id)
-        same_origin = old is not None and typed_equal(_capture_semantic(old, case_id), _capture_semantic(record, case_id))
+        same_origin = old is not None and _capture_semantics_equal(old, record, case_id)
         same_provenance = old is not None and typed_equal(
             {key: old["document"][key] for key in ("captured_with", "capture_origin") if key in old["document"]},
             {key: record["document"][key] for key in ("captured_with", "capture_origin") if key in record["document"]},
@@ -3097,9 +3098,9 @@ def _replace_capture_snapshot(history: History, capture_id: str, target: dict) -
     for key, record in target.items():
         before = original.get(key)
         prior = previous.get(key)
-        if before is not None and typed_equal(_capture_semantic(before, key), _capture_semantic(record, key)):
+        if before is not None and _capture_semantics_equal(before, record, key):
             target_members[key] = members[capture_id][key]
-        elif prior is not None and typed_equal(_capture_semantic(prior, key), _capture_semantic(record, key)):
+        elif prior is not None and _capture_semantics_equal(prior, record, key):
             target_members[key] = members[previous_id][key]
         else:
             target_members[key] = history._member(capture_id)
@@ -3549,9 +3550,7 @@ def _update_from_loose(
                 for case_id in sorted(set(resolved) & set(records)):
                     before = resolved[case_id]
                     after = records[case_id]
-                    if _canonical_json(_capture_semantic(before, case_id)) == _canonical_json(
-                        _capture_semantic(after, case_id)
-                    ):
+                    if _capture_semantics_equal(before, after, case_id):
                         origin = after["document"].get("capture_origin")
                         captured_with = before["document"].get("captured_with", {})
                         if (
@@ -3676,8 +3675,7 @@ def _update_from_loose(
                     before = prior.get(case_id)
                     member_map[case_id] = (
                         prior_members.get(case_id, member_path)
-                        if before is not None and _canonical_json(_capture_semantic(before, case_id))
-                        == _canonical_json(_capture_semantic(record, case_id))
+                        if before is not None and _capture_semantics_equal(before, record, case_id)
                         else member_path
                     )
                 _install_complete_snapshot(history, capture_dir.name, target, member_map)

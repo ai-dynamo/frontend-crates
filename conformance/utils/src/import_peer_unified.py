@@ -234,7 +234,7 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
                 document["capture_origin"] = origin
             after = {"case_key": case_id, "stimulus": stimulus, "observation": observation, "document": document}
             if before is not None and (
-                not typed_equal(unified_history._capture_semantic(before, case_id), unified_history._capture_semantic(after, case_id))
+                not unified_history._capture_semantics_equal(before, after, case_id)
             ):
                 raise ValueError(f"bound {"SGLang" if implementation == "sglang_python" else implementation} observation is immutable: {family}/{case_id}")
             prior = previous.get(case_id)
@@ -328,8 +328,8 @@ def import_capture_groups(store_root: Path, groups: dict[str, list[tuple[Path, P
             for identity in history.ordered_capture_ids() if pending["targets"] else ():
                 target = pending["targets"].get(identity, pending["original"].get(identity, {}))
                 original = pending["original"].get(identity, {})
-                retained = {case for case, record in target.items() if case in original and typed_equal(
-                    unified_history._capture_semantic(record, case), unified_history._capture_semantic(original[case], case))}
+                retained = {case for case, record in target.items() if case in original
+                            and unified_history._capture_semantics_equal(record, original[case], case)}
                 members = {case: member for case, member in pending["members"].get(identity, {}).items() if case in retained}
                 suppressed = pending["suppressed"].get(identity, set()) & retained
                 unified_history._set_capture_snapshot(history, identity, target, previous, cursor=cursor,

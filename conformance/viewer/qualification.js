@@ -696,7 +696,7 @@ async function checkRebaseContracts(tab, reader) {
       warnGoldenDifference(cell, defaultKey, `${row.family}/${scenario}`);
     }
   }
-  assert.equal(groups.get('unified_gqwen3').label, 'Family-specific tests: Qwen3 and Nemotron v3 XML');
+  assert.equal(groups.get('unified_gqwen3').label, 'Family-specific tests: Qwen3-compatible XML');
   for (const quotes of ['single', 'double']) {
     const custom = columns.get(`xml_custom_type_${quotes}_quoted_object`);
     const string = columns.get(`xml_string_type_${quotes}_quoted_object`);
@@ -706,8 +706,8 @@ async function checkRebaseContracts(tab, reader) {
     for (const row of tab.rows.filter(row => !row.section)) {
       const cell = leafCells(row).get(custom.sub);
       assert.equal(cell.case_id, `UNIFIED.7-tool-argument-declared-types-${custom.sub}`);
-      assert.equal(cell.status === 'na', !['qwen3', 'nemotron_v3'].includes(row.family));
-      if (['qwen3', 'nemotron_v3'].includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
+      assert.equal(cell.status === 'na', !modelContracts.nativeReviewFamilies.customXml.includes(row.family));
+      if (modelContracts.nativeReviewFamilies.customXml.includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
     }
   }
   assert.equal(columns.get('arg_marker_in_string').group_key, 'unified_g7_text');
@@ -757,7 +757,7 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
       const golden = cell.tooltip.candidates.find(item => item.key === 'golden');
       assert.deepEqual(canonicalUnifiedEvents(golden.block.events), canonicalUnifiedEvents(expected), `${family}/${scenario}: authored dotted tool names and argument values`);
       const candidate = warnGoldenDifference(cell, defaultKey, `${family}/${scenario}`);
-      assert.equal(cell.cmp[defaultKey].na, 0);
+      assert.equal(cell.cmp[defaultKey].na, candidate.block.unavailable ? 1 : 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
         const source = familyCaptureSource(descriptor.source, family);

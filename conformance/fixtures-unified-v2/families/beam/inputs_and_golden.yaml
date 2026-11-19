@@ -948,6 +948,23 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_51d6dcfd07ccb5f2:
+  - name: f
+    parameters:
+      type: object
+      properties:
+        a:
+          type: string
+      required:
+      - a
+  - name: g
+    parameters:
+      type: object
+      properties:
+        b:
+          type: string
+      required:
+      - b
   tools_dc2ae18fede7bc39:
   - name: schema_probe
     parameters:
@@ -1171,6 +1188,31 @@ tools:
           - const: auto
           - type: integer
     strict: true
+  tools_66a922ef94c2db73:
+  - name: f
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
+  - name: g
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
+  - name: h
+    parameters:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+      - x
   tools_e68f627c6e88c186:
   - name: record
     parameters:
@@ -4441,6 +4483,22 @@ requests:
     - 16
     - 8
     finish_step: true
+  7716da088c7e14a9f902dbd207e816fa1c2acba4be21f67252045d46bb21ac1f:
+    input: '<|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="a">
+
+      1
+
+      </rfl:parameter><|call|><|start|>assistant to=g<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="b">
+
+      2
+
+      </rfl:parameter><|call|>'
+    finish_reason: tool_calls
+    tools: tools_51d6dcfd07ccb5f2
+    chunk_sizes:
+    - 144
+    - 98
+    - 0
   78ba59836d4f00e31123992a15b040169c7338741dfb2355f8b3df8dd247d014:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -5208,6 +5266,27 @@ requests:
     - 21
     - 10
     finish_step: true
+  953da65eb25ca296139bcccf868a94e1f67987359efabae333fd736ea0a09a3e:
+    input: '<|start|>assistant to=f<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
+
+      1
+
+      </rfl:parameter><|call|><|start|>assistant to=g<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
+
+      2
+
+      </rfl:parameter><|call|><|start|>assistant to=h<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="x">
+
+      3
+
+      </rfl:parameter><|call|>'
+    finish_reason: tool_calls
+    tools: tools_66a922ef94c2db73
+    chunk_sizes:
+    - 0
+    - 144
+    - 219
+    - 0
   9543b456bd0a6e86a4203d78d5837d9cd2af6d9cd5b6d330ca9067ad9f4d5d78:
     init:
       starting_state: Reasoning
@@ -11780,3 +11859,43 @@ cases:
       text: Check London météo🙂 before answering; this is prose, not JSON.
     - kind: text
       text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+  adjacent_calls_partial_header:
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-adjacent_calls_partial_header
+    request: 7716da088c7e14a9f902dbd207e816fa1c2acba4be21f67252045d46bb21ac1f
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        a: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        b: '2'
+  three_calls_partial_header:
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-three_calls_partial_header
+    request: 953da65eb25ca296139bcccf868a94e1f67987359efabae333fd736ea0a09a3e
+    golden:
+    - kind: tool_call
+      name: f
+      arguments:
+        x: '1'
+    - kind: tool_call
+      name: g
+      arguments:
+        x: '2'
+    - kind: tool_call
+      name: h
+      arguments:
+        x: '3'
