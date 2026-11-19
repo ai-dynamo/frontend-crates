@@ -514,6 +514,10 @@ fn cases() -> Vec<Case> {
         if let Some(UnifiedEvent::ToolCall { arguments, .. }) = empty_events.last_mut() {
             *arguments = json!({"city":"Paris"});
         }
+        if family == "glm47" {
+            // The grammar admits duplicates; GLM extraction rejects them consistently.
+            empty_events.retain(|event| !matches!(event, UnifiedEvent::ToolCall { .. }));
+        }
         add(
             "any-order-duplicate-missing-required",
             base,
