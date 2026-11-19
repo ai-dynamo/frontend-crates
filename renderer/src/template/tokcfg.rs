@@ -9,8 +9,9 @@ use chrono::{DateTime, Local};
 use either::Either;
 use std::borrow::Cow;
 
-use minijinja::value::{Kwargs, StringInput, from_args};
+use minijinja::value::{Kwargs, ObjectRepr, StringInput, ValueKind, from_args};
 use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
+use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
 
 use crate::python::{
@@ -312,9 +313,6 @@ pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value
 /// models trained on their output) expect Python separators and **no** HTML
 /// escaping (`'`, `<`, `>`, `&` stay literal).
 pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
-    let mut value = crate::python::template_json(value).map_err(|err| {
-        Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
-    })?;
     // Python takes a space count or the indent string itself.
     let indent = kwargs
         .get::<Option<Value>>("indent")?
@@ -330,16 +328,27 @@ pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
                 }),
         })
         .transpose()?;
-    let separators = kwargs.get::<Option<Vec<String>>>("separators")?;
+    // Python unpacks any two-item iterable of strings, so `',:'` works too.
+    let separators = kwargs
+        .get::<Option<Value>>("separators")?
+        .map(|pair| {
+            let pair: Vec<Value> = pair.try_iter().map(Iterator::collect).unwrap_or_default();
+            match pair.as_slice() {
+                [item, key] => item.as_str().zip(key.as_str()),
+                _ => None,
+            }
+            .map(|(item, key)| (item.to_owned(), key.to_owned()))
+            .ok_or_else(|| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    "tojson separators must be an (item, key) pair of strings",
+                )
+            })
+        })
+        .transpose()?;
     // Python defaults to `(", ", ": ")`, or `(",", ": ")` when `indent` is set.
-    let (item_sep, key_sep) = match separators.as_deref() {
-        Some([item, key]) => (item.as_str(), key.as_str()),
-        Some(_) => {
-            return Err(Error::new(
-                ErrorKind::InvalidOperation,
-                "tojson separators must be an (item, key) pair",
-            ));
-        }
+    let (item_sep, key_sep) = match &separators {
+        Some((item, key)) => (item.as_str(), key.as_str()),
         None if indent.is_some() => (",", ": "),
         None => (", ", ": "),
     };
@@ -348,9 +357,14 @@ pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
             .get::<Option<Value>>(key)?
             .is_some_and(|v| v.is_true()))
     };
-    if flag("sort_keys")? {
-        value.sort_all_objects();
+    let value = if flag("sort_keys")? {
+        crate::python::template_json(PySortedKeys(value))
+    } else {
+        crate::python::template_json(value)
     }
+    .map_err(|err| {
+        Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
+    })?;
     let formatter =
         PyJsonFormatter::new(item_sep, key_sep, indent.as_deref(), flag("ensure_ascii")?);
     let mut buf = Vec::new();
@@ -363,6 +377,57 @@ pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
             Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
         })
         .map(Value::from_safe_string)
+}
+
+/// A template value whose maps serialize with their keys in Python's `sorted()` order.
+/// `json.dumps(sort_keys=True)` sorts the original keys and only then writes them as
+/// strings, so `{10: 'a', 2: 'b'}` puts 2 first, where sorting the strings would put
+/// `"10"` first.
+struct PySortedKeys(Value);
+
+impl Serialize for PySortedKeys {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let Some(object) = self.0.as_object() else {
+            return self.0.serialize(serializer);
+        };
+        match object.repr() {
+            ObjectRepr::Map => {
+                let mut pairs: Vec<_> = object.try_iter_pairs().into_iter().flatten().collect();
+                python_sort_keys(&mut pairs).map_err(S::Error::custom)?;
+                serializer.collect_map(
+                    pairs
+                        .into_iter()
+                        .map(|(key, value)| (key, PySortedKeys(value))),
+                )
+            }
+            ObjectRepr::Seq | ObjectRepr::Iterable => {
+                serializer.collect_seq(object.try_iter().into_iter().flatten().map(PySortedKeys))
+            }
+            _ => self.0.serialize(serializer),
+        }
+    }
+}
+
+/// Python's `sorted()` over dict keys: strings order among strings, and numbers, bools
+/// included, among numbers. Python raises `TypeError` for any other mix, so it fails
+/// the render.
+fn python_sort_keys(pairs: &mut [(Value, Value)]) -> Result<(), Error> {
+    let number = |key: &Value| match key.kind() {
+        ValueKind::Bool => Some(Value::from(i64::from(key.is_true()))),
+        ValueKind::Number => Some(key.clone()),
+        _ => None,
+    };
+    if pairs.iter().all(|(key, _)| key.kind() == ValueKind::String) {
+        pairs.sort_by(|(a, _), (b, _)| a.as_str().cmp(&b.as_str()));
+    } else if pairs.iter().all(|(key, _)| number(key).is_some()) {
+        pairs.sort_by_cached_key(|(key, _)| number(key));
+    } else if pairs.len() > 1 {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "tojson sort_keys cannot order keys of different types",
+        ));
+    }
+    Ok(())
 }
 
 /// Parse a JSON string into a structured value.
@@ -504,11 +569,21 @@ mod tojson_tests {
         );
     }
 
+    /// Python unpacks `separators` from any two-item iterable, a string included.
+    #[test]
+    fn separators_accept_a_two_character_string() {
+        assert_eq!(
+            render("{{ x | tojson(separators=',:') }}", shape()),
+            r#"{"a":[1,2],"b":{"c":"é"},"d":[],"e":{}}"#
+        );
+    }
+
     /// Python's `json.dumps` raises on these too.
     #[test]
     fn rejects_malformed_kwargs() {
         for tmpl in [
             "{{ x | tojson(separators=(',',)) }}",
+            "{{ x | tojson(separators=(1, 2)) }}",
             "{{ x | tojson(indent=[2]) }}",
         ] {
             let err = try_render(tmpl, shape()).unwrap_err();
@@ -522,6 +597,26 @@ mod tojson_tests {
         assert_eq!(
             render("{{ x | tojson(sort_keys=true) }}", x),
             r#"{"a": {"c": 3, "d": [{"y": 2, "z": 1}]}, "b": 1}"#
+        );
+    }
+
+    /// Python sorts the original keys and only then writes them as strings, so 2
+    /// precedes 10, and comparing a string key with a number key raises.
+    #[test]
+    fn sort_keys_compares_original_keys() {
+        assert_eq!(
+            render(
+                "{{ {10: 'ten', 2: 'two'} | tojson(sort_keys=true) }}",
+                json!(null)
+            ),
+            r#"{"2": "two", "10": "ten"}"#
+        );
+        assert!(
+            try_render(
+                "{{ {'2': 'str', 2: 'int'} | tojson(sort_keys=true) }}",
+                json!(null)
+            )
+            .is_err()
         );
     }
 
