@@ -406,6 +406,21 @@ tools:
       required:
       - location
       additionalProperties: false
+  tools_75c228684e14e834:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - enum:
+            - 'True'
+            - 'False'
+          - type: boolean
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_0227aaa772b4b3da:
   - name: schema_probe
     parameters:
@@ -516,6 +531,34 @@ tools:
           anyOf:
           - type: boolean
           - const: auto
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_db4a86f747eb0066:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_12b86fd0f8545d62:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - enum:
+            - 1
+            - 2
+          - type: string
       required:
       - value
       additionalProperties: false
@@ -791,6 +834,20 @@ tools:
         Literal:
           const: café
     strict: true
+  tools_fc76b9687957190a:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - integer
+          minimum: 100
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_56ea48eeba7ec14b:
   - name: schema_probe
     parameters:
@@ -1034,6 +1091,21 @@ tools:
           type: string
       required:
       - content
+  tools_f9e3493f1e9b0ddf:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: string
+            enum:
+            - auto
+          - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_7ae123f7897654fb:
   - name: get_weather
     parameters:
@@ -1191,6 +1263,26 @@ tools:
           anyOf:
           - const: auto
           - type: integer
+    strict: true
+  tools_d230d7587b8694b6:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Scoped'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Scoped:
+          $id: https://example.test/scoped
+          $defs:
+            T:
+              type: string
+          $ref: '#/$defs/T'
+        T:
+          type: integer
     strict: true
   tools_e68f627c6e88c186:
   - name: record
@@ -1397,6 +1489,21 @@ tools:
           - integer
           - 'null'
           const: 42
+  tools_2b23015d5b439f25:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type:
+            - string
+            - integer
+          - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_2931a9ad742a4419:
   - name: capture_payload
     parameters:
@@ -1496,6 +1603,21 @@ tools:
           allOf:
           - const: '[1,2]'
           - minLength: 0
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_198257bbe3d54bef:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - integer
+          not:
+            const: 42
       required:
       - value
       additionalProperties: false
@@ -1697,6 +1819,19 @@ tools:
       $defs:
         Literal:
           const: '42'
+    strict: true
+  tools_afb443bdf3323900:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: 9007199254740992.0
+          - type: string
+      required:
+      - value
+      additionalProperties: false
     strict: true
   tools_e4f3ce0956c11ca0:
   - name: get_weather
@@ -2101,11 +2236,11 @@ requests:
       </rfl:parameter><|call|>'
     tools: tools_15d8cf86faa75ec3
   0c4f66249b1e33cf4b40121b46055ac749dfa84be82efd21eb08fa0d83d0b9e8:
-    input: Let me think, this SQL fragment is '1'='1<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, this SQL fragment is '1'='1<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 108
@@ -2125,11 +2260,11 @@ requests:
     - 22
     finish_step: true
   0d125123b3255119dae876ccc92e735db0fe987d98ac012e9cc61eba251fb287:
-    input: '`name`''s path.<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`name`''s path.<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 84
@@ -2160,11 +2295,11 @@ requests:
     - 8
     finish_step: true
   0e8ea222492942984e8915142b762370f12f2cd3ee2ee98ebd20a09f02841f7c:
-    input: Let me think, the reference is 80s' music<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the reference is 80s' music<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 108
@@ -2453,6 +2588,10 @@ requests:
     - 8
     finish_step: true
   1388351c40896ea32ce3911f74af907b010a7e868c2dd686a17ab5a92fe83403:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
     input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="path">
 
       /tmp/literal.txt
@@ -2462,10 +2601,6 @@ requests:
       <think></think>answer
 
       </rfl:parameter><|call|>'
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_a7861137bdb03589
     chunk_sizes:
     - 217
@@ -2489,11 +2624,11 @@ requests:
     - 8
     finish_step: true
   1555e38d937cd90f659d8491e9bfdd534918c9592c1eb8bc4942619f64e54242:
-    input: Let me think, the year is 80s'<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the year is 80s'<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 95
@@ -2692,6 +2827,13 @@ requests:
     chunk_sizes:
     - 8
     finish_step: true
+  1e80489ebe0013f00d654cf9f1faf3b05f6634dc33fa599a7b78ba6b1c8f3260:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      True
+
+      </rfl:parameter><|call|>'
+    tools: tools_75c228684e14e834
   1e94534f941f5b72c84be40e0329b6d7f3083ff25aa24335245d65c847d724d7:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -2956,21 +3098,21 @@ requests:
     - 11
     finish_step: true
   2e498278a70bd5cbd1fda2c0782f4b0e488b066969cc0e8ad6c826a0099fd760:
-    input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|return|><|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|return|><|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 170
     finish_step: true
   2f55f7108d54877204bd2549f82074309b77e5ed5b278c3e50d9d84e5dfedfdb:
-    input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|return|><|end|><|start|>assistant<|channel|>final<|message|>Answer<|return|>'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|return|><|end|><|start|>assistant<|channel|>final<|message|>Answer<|return|>'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 132
@@ -2995,12 +3137,26 @@ requests:
     - 16
     - 8
     finish_step: true
+  319d18b1558857c5133b89fc0b7fb8253b6ac0898ad08a6522f06943ccda6943:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      1.5
+
+      </rfl:parameter><|call|>'
+    tools: tools_db4a86f747eb0066
+  31a8611ae336a114274ef8d2d0963774ebc140597e5d359fea926cb0ffbdbd5d:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      3
+
+      </rfl:parameter><|call|>'
+    tools: tools_12b86fd0f8545d62
   31b05a2234f46b3dca89556abf4436506617593086530131486cd5a4970e1c4d:
-    input: '''90s<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '''90s<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 74
@@ -3300,11 +3456,11 @@ requests:
     - 57
     finish_step: true
   3ca79e581ef21dc2ed734727ac7c9b331ac0603c706bb9aa769bf15dfb5c1856:
-    input: Let me think, the marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 107
@@ -3969,6 +4125,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  58cfe4ea87bf1b8ce53d047977fc8a634c42615c57aa06cd5d35c03236870a0f:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      42
+
+      </rfl:parameter><|call|>'
+    tools: tools_fc76b9687957190a
   5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf:
     init:
       starting_state: Response
@@ -4081,11 +4244,11 @@ requests:
     - 8
     finish_step: true
   5f9f921ac4c573bd7a5938cab8817697775f941cb5a553a64be892c634576d08:
-    input: '`pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run `pytest`<|return|>'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run `pytest`<|return|>'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 84
@@ -4186,11 +4349,11 @@ requests:
     - 8
     finish_step: true
   649b193c7b27aeb47358fbc1fe986b894cd2d6a4f7f243c2432ea688bcec27f6:
-    input: 27"<|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: 27"<|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 73
@@ -4456,11 +4619,11 @@ requests:
     - 8
     finish_step: true
   70fa6141bab2993f774552f030e804c62fd794c5a76f2956240eebab83f51527:
-    input: Let me think, I should try `pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run pytest<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should try `pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run pytest<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 109
@@ -4787,15 +4950,15 @@ requests:
     - 8
     finish_step: true
   7b2528d1820d4415e183b9afc7937fa4be9e0ce4f7dbc48feb6edb4b4e9c3c71:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
     input: '<|start|>assistant to=write_file<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="content">
 
       <think></think>answer
 
       </rfl:parameter><|call|>'
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_14bcb316cd445c47
     chunk_sizes:
     - 156
@@ -4839,6 +5002,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  7dc15f746cb870904ea9e4cdb1ad30d2bbe3bcc8e7c987e75ddc8824791898e8:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      42
+
+      </rfl:parameter><|call|>'
+    tools: tools_f9e3493f1e9b0ddf
   7f5e95bd02d971bc2996fd3def1aa74ccec46322a22e6910e4ba3282d3b6fc48:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
 
@@ -5098,13 +5268,13 @@ requests:
     - 7
     finish_step: true
   88cbbcbded88c3cb413f3e6f263e6bcfb45afa1b161871cc024de39c418410ca:
-    input: 'f''" OR x -- ''
-
-      <|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: 'f''" OR x -- ''
+
+      <|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 84
@@ -5378,6 +5548,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  912075b539789215488c277967f85a9a8deb63026a69b185f35cdae57dc469a6:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      42
+
+      </rfl:parameter><|call|>'
+    tools: tools_d230d7587b8694b6
   923bf02ebe91386b7f0601ff7d9191dc202b8a756f102ce6c59d5fee488c958a:
     init:
       starting_state: None
@@ -5528,11 +5705,11 @@ requests:
     - 8
     finish_step: true
   987baebdf838f32082c86ef89fac7b6a838291a9bff82da64f24038386c7fcfa:
-    input: Let me think, "The marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker"<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, "The marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker"<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 109
@@ -5630,11 +5807,11 @@ requests:
     - 8
     finish_step: true
   9a783a11157dd4e26d68a786f811da88d20e1b61793bfa849debbc5ccec17c3e:
-    input: Let me think, I should run this command "grep -v '<|end|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should run this command "grep -v '<|end|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 57
@@ -5762,11 +5939,11 @@ requests:
     - 8
     finish_step: true
   9d50545196129788019dcf8b8126b571be1af71caebbfff71075713d5f70443a:
-    input: '`name<|end|><|start|>assistant<|channel|>final<|message|>`Answer`<|return|>'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`name<|end|><|start|>assistant<|channel|>final<|message|>`Answer`<|return|>'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 75
@@ -6193,11 +6370,11 @@ requests:
     - 57
     finish_step: true
   a989f8f104cba6071fb14284436dea1981c22975daa106e6553077696948844c:
-    input: The special "<|end|><|start|>assistant<|channel|>final<|message|>" marker is used to delineate parser paths<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: The special "<|end|><|start|>assistant<|channel|>final<|message|>" marker is used to delineate parser paths<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 117
@@ -6398,6 +6575,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  ba0e6ac580c6d951758bb65244740928f9dd434f3a2acbeb241eea5a0c49adbd:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      42
+
+      </rfl:parameter><|call|>'
+    tools: tools_2b23015d5b439f25
   bd56a6ac01f9373ebece7ffa4efc72388028dbe295966da5e22c02eefbe05dec:
     input: '<|start|>assistant to=capture_payload<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="space">
 
@@ -6596,6 +6780,13 @@ requests:
     - 16
     - 8
     finish_step: true
+  c5bdb17a09d0045c32ff1e2814a1ccb2c0cb5c754b80caf1e2e017f5177ed44a:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      007
+
+      </rfl:parameter><|call|>'
+    tools: tools_9df3142224567b2c
   c5e07ca05626e47f75d5dee56bd8add8c42a12132f7e6e34aef4df840fb6f0dd:
     input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
 
@@ -6787,12 +6978,19 @@ requests:
     - 16
     - 8
     finish_step: true
+  cc6bbb78bb87588344fde238cbd7eca7c12757b8e942f0f857b320b8f1f15cf7:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      42
+
+      </rfl:parameter><|call|>'
+    tools: tools_198257bbe3d54bef
   cc894a32bbc1d9430900b78317fcb49c2adb1bfb9f8d7d445e50c973cfbc4e7b:
-    input: Let me think, the TV size is 40"<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the TV size is 40"<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 97
@@ -7593,6 +7791,13 @@ requests:
 
       </rfl:parameter><|call|>'
     tools: tools_3b9cefdb4fbe7e81
+  ecafb9e6eb2421b0189adc0f522e15e6fb450116c099c8e6731b4767a190fdd4:
+    input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+      9007199254740993
+
+      </rfl:parameter><|call|>'
+    tools: tools_afb443bdf3323900
   ef1d88a6a93d76741943cc096849a87ad7b4f1151973df0dfdcff30c1e8c330b:
     input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
 
@@ -7975,11 +8180,11 @@ requests:
     - 10
     finish_step: true
   fd0dfa139b742314566478a61c4be2f88d2a893afee2452531ea99e18f153d8a:
-    input: Let me think, I should run this command "grep -v '<|end|><|start|>assistant<|channel|>final<|message|>' ..."<|return|>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should run this command "grep -v '<|end|><|start|>assistant<|channel|>final<|message|>' ..."<|return|>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 118
@@ -12374,3 +12579,113 @@ cases:
       arguments:
         path: /tmp/literal.txt
         content: <think></think>answer
+  schema_enum_integer_union_string_nonmember:
+    description: 'Schema probe enum_integer_union_string_nonmember: independently authored value "3" under {"anyOf": [{"enum": [1, 2]}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_integer_union_string_nonmember
+    request: 31a8611ae336a114274ef8d2d0963774ebc140597e5d359fea926cb0ffbdbd5d
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '3'
+  schema_enum_string_literal_boolean_union:
+    description: 'Schema probe enum_string_literal_boolean_union: independently authored value "True" under {"anyOf": [{"enum": ["True", "False"]}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_string_literal_boolean_union
+    request: 1e80489ebe0013f00d654cf9f1faf3b05f6634dc33fa599a7b78ba6b1c8f3260
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'True'
+  schema_float_const_integer_precision:
+    description: 'Schema probe float_const_integer_precision: independently authored value "9007199254740993" under {"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-float_const_integer_precision
+    request: ecafb9e6eb2421b0189adc0f522e15e6fb450116c099c8e6731b4767a190fdd4
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '9007199254740993'
+  schema_overlapping_oneOf_union:
+    description: 'Schema probe overlapping_oneOf_union: independently authored value "42" under {"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-overlapping_oneOf_union
+    request: ba0e6ac580c6d951758bb65244740928f9dd434f3a2acbeb241eea5a0c49adbd
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_ref_nested_id_scope:
+    description: 'Schema probe ref_nested_id_scope: independently authored value "42" under {"$ref": "#/$defs/Scoped"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_nested_id_scope
+    request: 912075b539789215488c277967f85a9a8deb63026a69b185f35cdae57dc469a6
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_string_integer_leading_zero:
+    description: 'Schema probe type_array_string_integer_leading_zero: independently authored value "007" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_leading_zero
+    request: c5bdb17a09d0045c32ff1e2814a1ccb2c0cb5c754b80caf1e2e017f5177ed44a
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '007'
+  schema_type_array_string_integer_minimum:
+    description: 'Schema probe type_array_string_integer_minimum: independently authored value "42" under {"type": ["string", "integer"], "minimum": 100}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_minimum
+    request: 58cfe4ea87bf1b8ce53d047977fc8a634c42615c57aa06cd5d35c03236870a0f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_string_integer_not_const:
+    description: 'Schema probe type_array_string_integer_not_const: independently authored value "42" under {"type": ["string", "integer"], "not": {"const": 42}}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_not_const
+    request: cc6bbb78bb87588344fde238cbd7eca7c12757b8e942f0f857b320b8f1f15cf7
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_string_number_decimal:
+    description: 'Schema probe type_array_string_number_decimal: independently authored value "1.5" under {"type": ["string", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_number_decimal
+    request: 319d18b1558857c5133b89fc0b7fb8253b6ac0898ad08a6522f06943ccda6943
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 1.5
+  schema_typed_enum_union:
+    description: 'Schema probe typed_enum_union: independently authored value 42 under {"anyOf": [{"type": "string", "enum": ["auto"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-typed_enum_union
+    request: 7dc15f746cb870904ea9e4cdb1ad30d2bbe3bcc8e7c987e75ddc8824791898e8
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42

@@ -6,7 +6,27 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-beam: {}
+beam:
+  UNIFIED.schema_enum_integer_union_string_nonmember.beam:
+    golden:
+      note: 'TODO (later): Beam typing does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value": 3}'
+  UNIFIED.schema_float_const_integer_precision.beam:
+    golden:
+      note: 'TODO (later): Beam typing does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value": 9007199254740993}'
+  UNIFIED.schema_overlapping_oneOf_union.beam:
+    golden:
+      note: 'TODO (later): Beam typing does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value": 42}'
+  UNIFIED.schema_type_array_string_integer_minimum.beam:
+    golden:
+      note: 'TODO (later): Beam typing does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value": 42}'
+  UNIFIED.schema_type_array_string_integer_not_const.beam:
+    golden:
+      note: 'TODO (later): Beam typing does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value": 42}'
 gpt_oss:
   UNIFIED.gpt_oss-native_builtin_python_raw:
     golden:
@@ -24,11 +44,67 @@ nemotron_v3:
     golden:
       note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
       actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
+  UNIFIED.schema_enum_integer_union_string_nonmember.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":3}'
+  UNIFIED.schema_enum_string_literal_boolean_union.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":true}'
+  UNIFIED.schema_float_const_integer_precision.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":9007199254740993}'
+  UNIFIED.schema_overlapping_oneOf_union.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":42}'
+  UNIFIED.schema_type_array_string_integer_leading_zero.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":7}'
+  UNIFIED.schema_type_array_string_integer_minimum.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":42}'
+  UNIFIED.schema_type_array_string_integer_not_const.nemotron_v3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":42}'
 qwen3:
   UNIFIED.enum_contradicting_declared_type.qwen3:
     golden:
       note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
       actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
+  UNIFIED.schema_enum_integer_union_string_nonmember.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":3}'
+  UNIFIED.schema_enum_string_literal_boolean_union.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":true}'
+  UNIFIED.schema_float_const_integer_precision.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":9007199254740993}'
+  UNIFIED.schema_overlapping_oneOf_union.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":42}'
+  UNIFIED.schema_type_array_string_integer_leading_zero.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":7}'
+  UNIFIED.schema_type_array_string_integer_minimum.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":42}'
+  UNIFIED.schema_type_array_string_integer_not_const.qwen3:
+    golden:
+      note: 'TODO (later): the Qwen-family XML typer does not follow the shared JSON-first policy yet; it types text that the policy keeps as the admitted string.'
+      actual: 'tool_call schema_probe {"value":42}'
 minimax_m3:
   UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call:
     golden:
