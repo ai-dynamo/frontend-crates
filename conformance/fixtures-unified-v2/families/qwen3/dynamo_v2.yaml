@@ -1,15 +1,15 @@
-capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[{"family":"qwen3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"qwen3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"qwen3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"a9d09d34c0b7e8136978a7043776045bda593f10e17bc34bd098508d20e966cd","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"qwen3","implementation":"dynamo_v2","lineage":[{"family":"qwen3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"qwen3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"qwen3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"056b54e4b642740ffa4314768e33734236e7756275f960424c715f1b3c9149ad","source":"conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_542b0edaaefaa655
+  origin: origin_fc43aa332e6ea624
 origins:
-  origin_542b0edaaefaa655:
+  origin_fc43aa332e6ea624:
     crate_version: 0.10.9
     source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-    git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+    git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_c5dc429a10451bb1:
+  context_7c1333cb7fa2a994:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -106,7 +106,7 @@ contexts:
         provenance:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -279,7 +279,90 @@ contexts:
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
           job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
         resolution: fresh_execution
-  context_7586f8c494fac7a9:
+      - result:
+          assembled:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"metrics":["temperature","humidity"],"count":5}'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: capture_payload
+              arguments: '{"metrics":["temperature","humidity"],"count":5}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: '<tool_call>
+
+              <function=capture_payload>
+
+              <parameter=metrics>
+
+              ["temperature","humidity"]
+
+              </parameter>
+
+              <parameter=count>
+
+              5
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+            tools:
+            - name: capture_payload
+              parameters:
+                type: object
+                properties:
+                  metrics:
+                    type: array
+                    items:
+                      type: string
+                    enum:
+                    - temperature
+                    - humidity
+                    - co2
+                  count:
+                    type: integer
+                    enum:
+                    - auto
+            chunks:
+            - delta_text: '<tool_call>
+
+                <function=capture_payload>
+
+                <parameter=metrics>
+
+                ["temperature","humidity"]
+
+                </parameter>
+
+                <parameter=count>
+
+                5
+
+                </parameter>
+
+                </function>
+
+                </tool_call>'
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
+        resolution: fresh_execution
+  context_be6bc229d22e8d30:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -348,7 +431,7 @@ contexts:
         provenance:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -475,6 +558,76 @@ contexts:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
           git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: fa8649de6a69e0da4875ce8a4fdfe8d565004fdb2a875f539238e1be39d098fb
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: reasoning
+            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - kind: text
+            text: '
+
+
+              {"location":"London","temperature":12,"conditions":"cloudy"}'
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - expected: []
+          - expected:
+            - kind: text
+              text: '
+
+
+                {"location":"London","temperature":12,"conditions":"cloudy"}'
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Reasoning
+              tool_output_mode: Native
+              named_tool: null
+              structural_tag:
+                schema:
+                  type: object
+                  properties:
+                    location:
+                      type: string
+                      enum:
+                      - London
+                      - New York
+                    temperature:
+                      type: number
+                    conditions:
+                      type: string
+                  required:
+                  - location
+                  - temperature
+                  - conditions
+                  additionalProperties: false
+                rejected:
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n[]"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"London\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
+            finish_reason: stop
+            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+            tools: []
+            chunks:
+            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: </think>
+            - delta_text: '
+
+
+                {"location":"London","temperature":12,"conditions":"cloudy"}'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -2277,7 +2430,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    context: context_c5dc429a10451bb1
+    context: context_7c1333cb7fa2a994
     request: 35182c26d396b2a362752963a084e6f9a3e22ccdb79a7b6f16f21e980acb815a
     output:
       assembled:
@@ -8515,7 +8668,7 @@ records:
           text: ''''
   structured_response_after_reasoning:
     case_key: UNIFIED.36-structured_response_after_reasoning
-    context: context_7586f8c494fac7a9
+    context: context_be6bc229d22e8d30
     request: 65f5e439abcc167ae681b021e66d50544270ac90d311aab4b0971b1f86f10b00
     output:
       assembled:

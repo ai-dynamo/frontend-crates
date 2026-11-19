@@ -1,15 +1,15 @@
-capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"66e2d884b5a57697d24b0a7aa8bfb47bd4b314fda3672faad66c85e81fc609f2","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"0ebb61e5ed283f1735cbb7cafac2d5ebf925c8938503212ae26c811c1ddc7b20","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_542b0edaaefaa655
+  origin: origin_fc43aa332e6ea624
 origins:
-  origin_542b0edaaefaa655:
+  origin_fc43aa332e6ea624:
     crate_version: 0.10.9
     source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-    git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+    git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_352a8e8d97604600:
+  context_944e9e33b9d5b3de:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -106,7 +106,7 @@ contexts:
         provenance:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -274,6 +274,89 @@ contexts:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
           git_commit: caad9e27ff318ac8b906574cf1a91a8a057306e0
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: 61e83fe5cb43eeeb0d2427da64940549328597ba7c8bedc4bc6bdc4294edbb15
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"metrics":["temperature","humidity"],"count":5}'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: capture_payload
+              arguments: '{"metrics":["temperature","humidity"],"count":5}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: '</think><tool_call>
+
+              <function=capture_payload>
+
+              <parameter=metrics>
+
+              ["temperature","humidity"]
+
+              </parameter>
+
+              <parameter=count>
+
+              5
+
+              </parameter>
+
+              </function>
+
+              </tool_call>'
+            tools:
+            - name: capture_payload
+              parameters:
+                type: object
+                properties:
+                  metrics:
+                    type: array
+                    items:
+                      type: string
+                    enum:
+                    - temperature
+                    - humidity
+                    - co2
+                  count:
+                    type: integer
+                    enum:
+                    - auto
+            chunks:
+            - delta_text: '</think><tool_call>
+
+                <function=capture_payload>
+
+                <parameter=metrics>
+
+                ["temperature","humidity"]
+
+                </parameter>
+
+                <parameter=count>
+
+                5
+
+                </parameter>
+
+                </function>
+
+                </tool_call>'
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -1972,7 +2055,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    context: context_352a8e8d97604600
+    context: context_944e9e33b9d5b3de
     request: 8b5319fa3a29cf21fa7159d65d9842746c512441301a736a99a63f9d1e47efba
     output:
       assembled:

@@ -1,15 +1,15 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"7de3ca2f0f4327817af80bb4e6b12c62545a097d37af34fb162a0d60ea6bae90","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"ff2ab805eabf826211f34c6baaca5128fd0efd26e7a9867c07a35e02526f8d5f","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_542b0edaaefaa655
+  origin: origin_fc43aa332e6ea624
 origins:
-  origin_542b0edaaefaa655:
+  origin_fc43aa332e6ea624:
     crate_version: 0.10.9
     source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-    git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+    git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_c667fdeeacd25ef5:
+  context_0a7ad5496e3684e6:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -79,7 +79,7 @@ contexts:
         provenance:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -186,6 +186,62 @@ contexts:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
           git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: a295ae52695a56d74b4fe41cf5f3f3be70eafe39fc9200ee230056a6e7f7b442
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: reasoning
+            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - kind: text
+            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - kind: text
+              text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Reasoning
+              tool_output_mode: Native
+              named_tool: null
+              structural_tag:
+                schema:
+                  type: object
+                  properties:
+                    location:
+                      type: string
+                      enum:
+                      - London
+                      - New York
+                    temperature:
+                      type: number
+                    conditions:
+                      type: string
+                  required:
+                  - location
+                  - temperature
+                  - conditions
+                  additionalProperties: false
+                rejected:
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
+            finish_reason: stop
+            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+            tools: []
+            chunks:
+            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -11515,7 +11571,7 @@ records:
           text: ''''
   structured_response_after_reasoning:
     case_key: UNIFIED.36-structured_response_after_reasoning
-    context: context_c667fdeeacd25ef5
+    context: context_0a7ad5496e3684e6
     request: df0a2dfee99580bb4bcd533ae637771fbd1c00dedb3a1807c364443058005765
     output:
       assembled:

@@ -1,15 +1,15 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"2005fc68a1efc7bd9951723ae3ee9aecdeef26c6eea32f4f9f65af28c9b65c2f","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"52134cf5de97c4f938516daf2009d3b9088e1b71e865220e6e2abc877cf30725","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_542b0edaaefaa655
+  origin: origin_fc43aa332e6ea624
 origins:
-  origin_542b0edaaefaa655:
+  origin_fc43aa332e6ea624:
     crate_version: 0.10.9
     source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-    git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+    git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_f1a7e2ce93b16bd5:
+  context_812d8ea60558194c:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -57,7 +57,7 @@ contexts:
         provenance:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -132,7 +132,41 @@ contexts:
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
           job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
         resolution: fresh_execution
-  context_02ddfbd4bc449300:
+      - result:
+          assembled:
+          - kind: tool_call
+            name: python
+            arguments: '"print(1)"'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: python
+              arguments: '"print(1)"'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+            tools:
+            - name: python
+              parameters:
+                type: string
+            chunks:
+            - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
+        resolution: fresh_execution
+  context_34506ffa5c172665:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -211,7 +245,7 @@ contexts:
         provenance:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
+          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -355,6 +389,86 @@ contexts:
           crate_version: 0.10.9
           source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
           git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: 4f0673520bea9c18e39564c0984c730f914855bd563ff9edc388732cfc3cb9ce
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: reasoning
+            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - kind: text
+            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: reasoning
+              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+          - expected: []
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+              structural_tag:
+                schema:
+                  type: object
+                  properties:
+                    location:
+                      type: string
+                      enum:
+                      - London
+                      - New York
+                    temperature:
+                      type: number
+                    conditions:
+                      type: string
+                  required:
+                  - location
+                  - temperature
+                  - conditions
+                  additionalProperties: false
+                rejected:
+                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
+                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
+                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
+                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
+                - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
+            finish_reason: stop
+            input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+            tools: []
+            chunks:
+            - delta_text: <|channel|>
+            - delta_text: analysis
+            - delta_text: <|message|>
+            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: <|end|>
+            - delta_text: <|start|>
+            - delta_text: assistant
+            - delta_text: <|channel|>
+            - delta_text: final
+            - delta_text: <|message|>
+            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+            - delta_text: <|return|>
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
@@ -5738,7 +5852,7 @@ records:
       - expected: []
   gpt_oss_native_builtin_python_raw:
     case_key: UNIFIED.gpt_oss-native_builtin_python_raw
-    context: context_f1a7e2ce93b16bd5
+    context: context_812d8ea60558194c
     request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     output:
       assembled: []
@@ -11114,7 +11228,7 @@ records:
       - expected: []
   structured_response_after_reasoning:
     case_key: UNIFIED.36-structured_response_after_reasoning
-    context: context_02ddfbd4bc449300
+    context: context_34506ffa5c172665
     request: 3d352e75afc03e25aba4d13708959faab9b2e432cc9b16bcfbe28da74a5edc94
     output:
       assembled:
