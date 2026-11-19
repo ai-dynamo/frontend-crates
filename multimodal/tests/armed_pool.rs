@@ -44,6 +44,31 @@ fn init_pool_arms_fanout_and_pins_the_thread_count() {
     ));
 }
 
+#[test]
+fn ordered_fanout_consumes_in_input_order_and_stops_at_the_first_error() {
+    execution::init_pool(2).unwrap();
+    let mut seen = Vec::new();
+    let r = execution::try_for_each_ordered(
+        0..64usize,
+        3,
+        |i| {
+            if i % 3 == 0 {
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            if i == 40 { Err(i) } else { Ok(i * 2) }
+        },
+        |v| {
+            seen.push(v);
+            Ok(())
+        },
+    );
+    assert_eq!(r, Err(40));
+    assert_eq!(seen, (0..40).map(|i| i * 2).collect::<Vec<_>>());
+    let r =
+        execution::try_for_each_ordered(0..8usize, 2, Ok, |v| if v == 5 { Err(v) } else { Ok(()) });
+    assert_eq!(r, Err(5));
+}
+
 #[cfg(feature = "video-decode")]
 #[test]
 fn armed_decode_matches_the_inline_decode() {
