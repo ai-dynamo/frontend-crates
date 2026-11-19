@@ -6,12 +6,11 @@
 //! formats/rates are never passed to a Python fallback implicitly.
 
 use crate::{MmError, Result, processor::DecodedMedia};
-use std::io::Cursor;
 use symphonia::core::{
     codecs::audio::AudioDecoderOptions,
     errors::Error,
     formats::{FormatOptions, TrackType, probe::Hint},
-    io::MediaSourceStream,
+    io::{MediaSourceStream, ReadOnlySource},
     meta::MetadataOptions,
 };
 
@@ -48,7 +47,10 @@ pub fn decode(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
     if data.is_empty() {
         return Err(MmError::invalid_input("audio: empty encoded input"));
     }
-    let stream = MediaSourceStream::new(Box::new(Cursor::new(data.to_vec())), Default::default());
+    // Decode sequentially. For a seekable MP3 without Xing/VBRI, Symphonia
+    // estimates the frame count from the bitrate and uses it to trim output.
+    // A read-only source skips that estimate but still honors gapless tags.
+    let stream = MediaSourceStream::new(Box::new(ReadOnlySource::new(data)), Default::default());
     let mut format = symphonia::default::get_probe()
         .probe(
             &Hint::new(),

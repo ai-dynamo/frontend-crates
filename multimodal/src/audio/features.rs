@@ -68,6 +68,25 @@ pub struct LogMelConfig {
     pub output_scale: f32,
 }
 
+/// Validated numerical policy and filterbank. Planning with it needs neither
+/// PCM nor an FFT plan.
+pub struct ValidatedLogMelConfig {
+    config: LogMelConfig,
+    filters: Vec<Vec<(usize, f64)>>,
+}
+
+impl ValidatedLogMelConfig {
+    /// Plan frame geometry using the same validated policy as extraction.
+    pub fn plan(
+        &self,
+        samples: usize,
+        valid_samples: usize,
+        limits: &FeatureLimits,
+    ) -> Result<FeaturePlan> {
+        self.config.plan_validated(samples, valid_samples, limits)
+    }
+}
+
 /// Bounds checked before constructing a plan, allocating or running the FFT.
 #[derive(Clone, Copy, Debug)]
 pub struct FeatureLimits {
@@ -112,14 +131,24 @@ pub struct LogMelFeatures {
 /// Immutable FFT plan/window/filterbank, shareable between requests. Scratch
 /// is local to an invocation; the extractor reads no environment or files.
 pub struct LogMelExtractor {
-    config: LogMelConfig,
+    validated: ValidatedLogMelConfig,
     fft: Arc<dyn Fft<f64>>,
     window: Vec<f64>,
-    filters: Vec<Vec<(usize, f64)>>,
 }
 
 impl LogMelConfig {
-    fn validate(&self) -> Result<()> {
+    /// Validate settings and construct the mel filterbank without planning an
+    /// FFT. A router and engine can both validate when resolving their policy.
+    pub fn validate(self) -> Result<ValidatedLogMelConfig> {
+        self.validate_parameters()?;
+        let filters = build_mel_filters(&self)?;
+        Ok(ValidatedLogMelConfig {
+            config: self,
+            filters,
+        })
+    }
+
+    fn validate_parameters(&self) -> Result<()> {
         if self.sample_rate == 0
             || self.n_fft < 2
             || self.n_fft > 8192
@@ -153,13 +182,24 @@ impl LogMelConfig {
 
     /// The same frame geometry used by extraction, available without samples.
     /// `valid_samples` excludes right-padding and must not exceed `samples`.
+    /// For repeated planning, validate once and reuse [`ValidatedLogMelConfig`].
     pub fn plan(
         &self,
         samples: usize,
         valid_samples: usize,
         limits: &FeatureLimits,
     ) -> Result<FeaturePlan> {
-        self.validate()?;
+        self.clone()
+            .validate()?
+            .plan(samples, valid_samples, limits)
+    }
+
+    fn plan_validated(
+        &self,
+        samples: usize,
+        valid_samples: usize,
+        limits: &FeatureLimits,
+    ) -> Result<FeaturePlan> {
         if samples == 0 || valid_samples == 0 || valid_samples > samples {
             return Err(MmError::invalid_input(
                 "audio: invalid waveform/valid sample counts",
@@ -224,9 +264,50 @@ fn mel_to_hz(mel: f64, scale: MelScale) -> f64 {
     }
 }
 
+fn build_mel_filters(config: &LogMelConfig) -> Result<Vec<Vec<(usize, f64)>>> {
+    let mel_min = hz_to_mel(config.min_frequency, config.mel_scale);
+    let mel_max = hz_to_mel(config.max_frequency, config.mel_scale);
+    let edges = (0..config.n_mels + 2)
+        .map(|i| {
+            mel_to_hz(
+                mel_min + i as f64 * ((mel_max - mel_min) / (config.n_mels + 1) as f64),
+                config.mel_scale,
+            )
+        })
+        .collect::<Vec<_>>();
+    let filters = (0..config.n_mels)
+        .map(|m| {
+            let (left, center, right) = (edges[m], edges[m + 1], edges[m + 2]);
+            (0..config.n_fft / 2 + 1)
+                .filter_map(|bin| {
+                    let hz = bin as f64 * f64::from(config.sample_rate) / config.n_fft as f64;
+                    let mut weight = ((hz - left) / (center - left))
+                        .min((right - hz) / (right - center))
+                        .max(0.0);
+                    if config.slaney_normalize {
+                        weight *= 2.0 / (right - left);
+                    }
+                    (weight > 0.0).then_some((bin, weight))
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    if filters.iter().any(Vec::is_empty) {
+        return Err(MmError::invalid_input(
+            "audio: mel filter has no FFT bins; reduce mel count or increase FFT size",
+        ));
+    }
+    Ok(filters)
+}
+
 impl LogMelExtractor {
     pub fn new(config: LogMelConfig) -> Result<Self> {
-        config.validate()?;
+        Ok(Self::from_validated(config.validate()?))
+    }
+
+    /// Build the FFT and window once from a previously validated policy.
+    pub fn from_validated(validated: ValidatedLogMelConfig) -> Self {
+        let config = &validated.config;
         let fft = FftPlanner::<f64>::new().plan_fft_forward(config.n_fft);
         let denominator = match config.window {
             WindowFunction::HannSymmetric => config.n_fft - 1,
@@ -238,48 +319,15 @@ impl LogMelExtractor {
                 _ => 0.5 - 0.5 * (std::f64::consts::TAU * n as f64 / denominator as f64).cos(),
             })
             .collect();
-        let mel_min = hz_to_mel(config.min_frequency, config.mel_scale);
-        let mel_max = hz_to_mel(config.max_frequency, config.mel_scale);
-        let edges = (0..config.n_mels + 2)
-            .map(|i| {
-                mel_to_hz(
-                    mel_min + i as f64 * ((mel_max - mel_min) / (config.n_mels + 1) as f64),
-                    config.mel_scale,
-                )
-            })
-            .collect::<Vec<_>>();
-        let filters = (0..config.n_mels)
-            .map(|m| {
-                let (left, center, right) = (edges[m], edges[m + 1], edges[m + 2]);
-                (0..config.n_fft / 2 + 1)
-                    .filter_map(|bin| {
-                        let hz = bin as f64 * f64::from(config.sample_rate) / config.n_fft as f64;
-                        let mut weight = ((hz - left) / (center - left))
-                            .min((right - hz) / (right - center))
-                            .max(0.0);
-                        if config.slaney_normalize {
-                            weight *= 2.0 / (right - left);
-                        }
-                        (weight > 0.0).then_some((bin, weight))
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-        if filters.iter().any(Vec::is_empty) {
-            return Err(MmError::invalid_input(
-                "audio: mel filter has no FFT bins; reduce mel count or increase FFT size",
-            ));
-        }
-        Ok(Self {
-            config,
+        Self {
+            validated,
             fft,
             window,
-            filters,
-        })
+        }
     }
 
     pub fn config(&self) -> &LogMelConfig {
-        &self.config
+        &self.validated.config
     }
 
     pub fn extract(
@@ -289,14 +337,14 @@ impl LogMelExtractor {
         valid_samples: usize,
         limits: &FeatureLimits,
     ) -> Result<LogMelFeatures> {
-        let plan = self.config.plan(mono.len(), valid_samples, limits)?;
-        if sample_rate != self.config.sample_rate {
+        let plan = self.validated.plan(mono.len(), valid_samples, limits)?;
+        let cfg = self.config();
+        if sample_rate != cfg.sample_rate {
             return Err(MmError::invalid_input(
                 "audio: feature input sample rate does not match config",
             ));
         }
         super::validate_pcm(mono, sample_rate, 1)?;
-        let cfg = &self.config;
         let mut buffer = vec![Complex::default(); cfg.n_fft];
         let mut scratch = vec![Complex::default(); self.fft.get_inplace_scratch_len()];
         let mut power = vec![0.0; cfg.n_fft / 2 + 1];
@@ -333,7 +381,7 @@ impl LogMelExtractor {
                 };
                 *dst = re.hypot(im).powi(2);
             }
-            for (mel, weights) in self.filters.iter().enumerate() {
+            for (mel, weights) in self.validated.filters.iter().enumerate() {
                 let energy: f64 = weights
                     .iter()
                     .map(|&(bin, weight)| power[bin] * weight)
@@ -447,6 +495,23 @@ mod tests {
             cfg.log_floor = value;
             assert!(LogMelExtractor::new(cfg).is_err());
         }
+    }
+
+    #[test]
+    fn planning_and_extraction_reject_empty_mel_filters() {
+        let config = LogMelConfig {
+            n_fft: 32,
+            hop_length: 16,
+            ..config()
+        };
+        assert!(matches!(
+            config.plan(16000, 16000, &FeatureLimits::default()),
+            Err(MmError::InvalidInput { .. })
+        ));
+        assert!(matches!(
+            LogMelExtractor::new(config),
+            Err(MmError::InvalidInput { .. })
+        ));
     }
 
     #[test]

@@ -26,12 +26,14 @@ fn generic_log_mel_against_versioned_numpy_reference() {
                 }
             })
             .collect::<Vec<_>>();
-        let extractor = LogMelExtractor::new(config.clone()).unwrap();
         let limits = FeatureLimits::default();
+        let validated = config.clone().validate().unwrap();
+        let plan = validated.plan(n, valid, &limits).unwrap();
+        let extractor = LogMelExtractor::from_validated(validated);
         let actual = extractor
             .extract(&samples, config.sample_rate, valid, &limits)
             .unwrap();
-        assert_eq!(actual.plan, config.plan(n, valid, &limits).unwrap());
+        assert_eq!(actual.plan, plan);
         assert_eq!(
             serde_json::json!([actual.plan.num_mels, actual.plan.num_frames]),
             case["shape"]

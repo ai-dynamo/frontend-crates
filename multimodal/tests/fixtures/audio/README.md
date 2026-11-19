@@ -19,6 +19,10 @@ needed to replay the Rust tests.
   the source waveform (encoding itself is lossy). Tests compare every decoded
   scalar with an explicit numerical budget of 2e-6, and check the exact gapless
   length/rate/channel order. This does not assert bit-exact lossy decoding.
+- `vbr-no-duration.mp3`: four seconds of synthetic mono audio at 22.05 kHz
+  encoded with variable bitrates, with the leading Xing metadata frame removed.
+  Its 156 audio frames decode to 89,856 samples (cross-checked with CoreAudio).
+  The test verifies all frames are returned and the decoded frame cap is enforced.
 - `codecs.json`: encoder/decoder package versions and source formula, generated
   by `generate_codecs.py` using NumPy 1.26.4, soundfile 0.13.1, bundled libsndfile
   1.2.2. Package versions are asserted by the scripts; Ogg stream identifiers

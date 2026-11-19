@@ -3,6 +3,7 @@
 #![cfg(feature = "audio-decode")]
 
 use dynamo_multimodal::{
+    MmError,
     audio::{self, decode, features, waveform},
     processor::DecodedMedia,
 };
@@ -111,4 +112,31 @@ fn lossy_codecs_preserve_gapless_length_and_channels() {
         }
         eprintln!("lossy decode max_abs_error={max_error:e}");
     }
+}
+
+#[test]
+fn vbr_mp3_without_duration_metadata_preserves_all_frames_and_checks_limit() {
+    let bytes = include_bytes!("fixtures/audio/vbr-no-duration.mp3");
+    // MPEG-2 Layer III has 576 samples per frame. The fixture has 156
+    // audio frames and no tag describing encoder delay or padding.
+    let frames = 156 * 576;
+    let mut limits = decode::DecodeLimits {
+        max_frames: frames,
+        ..decode::DecodeLimits::default()
+    };
+    let DecodedMedia::Audio {
+        samples,
+        sample_rate,
+        channels,
+    } = decode::decode(bytes, &limits).unwrap()
+    else {
+        panic!()
+    };
+    assert_eq!((sample_rate, channels, samples.len()), (22050, 1, frames));
+
+    limits.max_frames -= 1;
+    assert!(matches!(
+        decode::decode(bytes, &limits),
+        Err(MmError::LimitExceeded { .. })
+    ));
 }

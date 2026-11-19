@@ -298,6 +298,8 @@ is registered, and existing image/video processors still reject audio.
 1. **Ingress:** `audio::decode::decode(bytes, limits)` (feature `audio-decode`)
    yields owned `DecodedMedia::Audio { samples, sample_rate, channels }`.
    Samples are interleaved f32, frame/channel order, at the source rate.
+   MP3 decoding honors gapless metadata when present. Without it, the frame
+   count comes from decoded packets and can include encoder delay and padding.
    `audio::from_f32le(bytes, rate, channels, frames, max_frames)` instead
    copies and validates decoded PCM from any transport, without a decoder.
    Both accept mono/stereo only; surround downmix requires an explicit future
@@ -312,8 +314,11 @@ is registered, and existing image/video processors still reject audio.
    intermediate lengths as well as the final waveform. Rates above 384 kHz
    are currently unsupported.
 3. **Feature geometry:** `LogMelConfig::plan(samples, valid_samples, limits)`
-   returns exactly the dimensions used by `LogMelExtractor::extract`. The
-   caller selects rate, FFT/hop/mel counts, Slaney/HTK scale, area normalization,
+   returns exactly the dimensions used by `LogMelExtractor::extract` and rejects
+   the same invalid configurations. For repeated planning, resolve and call
+   `LogMelConfig::validate` once. The resulting `ValidatedLogMelConfig` can plan
+   without PCM or an FFT, and the engine can build an extractor from it.
+   The caller selects rate, FFT/hop/mel counts, Slaney/HTK scale, area normalization,
    periodic/symmetric Hann or rectangular window, centered reflect/zero or
    uncentered framing, FFT output precision, final-frame dropping, log10 floor,
    dynamic range and affine output transform. Input length is never implicitly
