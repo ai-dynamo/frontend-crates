@@ -1,4 +1,4 @@
-capture_selection: {"family":"nemotron_v3","implementation":"dynamo_sglang_python","lineage":[{"family":"nemotron_v3","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"b6c704ebb339d9d39b49e09d5c804491ad973bfd7fc9d7af17083c24f8f74141","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
+capture_selection: {"family":"nemotron_v3","implementation":"dynamo_sglang_python","lineage":[{"family":"nemotron_v3","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"db7721d3630902dc10c50284a24a2801b2f02ff3736093ce1110129bcf3860a0","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
 document:
   mode: unified
 schema_version: 3
@@ -12,25 +12,28 @@ producers:
     captured_with:
       dynamo_sglang_python: 1.6.2
 contexts:
-  context_dda4e089aa773593:
+  context_a4c78ca6811fe754:
     mode: unified
     record_metadata:
       dynamo_sglang_capture_provenance:
-        adapter_sha256: 12e7df9189eb312f630df5f1de93e2ad2465c7205b0a4a2dfc50b239447c458b
+        adapter_sha256: e15f6f0bf5a7ca0d99afbf942a3791b7799e0af4a97e5817f90d5dbee74fa9cd
         artifact_sha256: 91c6c35ef02bee0fcbbbf6c3b42e97010aa6cc5d9180557852057b25df5cd84c
         extracted_package_sha256: dbbe725df77617d0056f054e5615969f0e02c60491cc6ef9230ec5c17b0958da
         implementation: dynamo_sglang_python
         job_sha256: 2b99103a3e1c9d8531aea7bc2d1af950ffb38a9f08ce9698a777b264c08f43e5
         parser_apis:
           processor: frontend.sglang_prepost
-        results_sha256: 32d21b38016a801ec06ae1337aa11e459077039b2bc1594544c2b7785803d6bf
+        results_sha256: d1f16bdc2bd13b81039ea13ec0c108bf9da36b2e0841cbbabe3cf1be3d62c3e5
+        runtime:
+          image_id: sha256:0512a344b1b69288c630dfe4ade46434da807d10b733dfcb8128b2c9493e070f
+          sglang_version: 0.5.21
         source_sha256: 5bfa1a8ab404742e7de68812ddbab9effbaeacc89f85553076391d0848d1aafd
         status: executed
         version: 1.6.2
 record_defaults:
   member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_sglang_python-1.6.2.yaml
   producer: producer_b497b7361f635f89
-  context: context_dda4e089aa773593
+  context: context_a4c78ca6811fe754
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_default
@@ -61,17 +64,13 @@ records:
     request: 9fc3e476134a39b0e588fc0494c0cfe5078bc108194fe5f5ab299262f5bc9394
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
           - é \" </atem:parameter>
         kind: tool_call
         name: record
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -94,16 +93,12 @@ records:
     request: 276edfba3d185b118475ea775a7665e2d53c1163cca9136501f8040a960bc808
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -120,16 +115,12 @@ records:
     request: 46e3ab05932ff0505f4da5f4daaa677ecd296c0a131c9c91486632f7d4a886a4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -146,16 +137,12 @@ records:
     request: 4b00c13771ffb4ff6c110aa012e6f2165578cf83ce661a08b7e8f54ab799ebd5
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -172,16 +159,12 @@ records:
     request: 5f70adf1abef49bcf86c5c1035cc8d04290ef6c113a04ed3c121b80389fbc456
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -198,16 +181,12 @@ records:
     request: 90e5764923e335fffb444c7ab28c77a44ae668283627eea666356f0ae90e68e2
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -224,16 +203,12 @@ records:
     request: bb6a9709cd2058707df2d4c60bbe077b5667b6d7af93ac7e58e4494342cbf9df
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -249,16 +224,12 @@ records:
     request: 09e0b1ec674f1ff440bad9fe5be3d77adfadf06a684946740dcaacc09a64325b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           cmd: git log </tool_call> --oneline
         kind: tool_call
         name: run
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -281,8 +252,6 @@ records:
     request: 59b1792f5fa7c753bb2e59718771cf77efebf19efe666cf1e0f6cd37e48afc35
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           label: null
           literal: null
@@ -290,9 +259,7 @@ records:
         kind: tool_call
         name: set_labels
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -320,16 +287,12 @@ records:
     request: 57dc9ceb1df1fdaca894aeb4b7e6db7078542b8c24dd0ffd63803ab2850d20e8
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42.0"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "42.0"}'
           kind: tool_call
@@ -339,16 +302,12 @@ records:
     request: 34aa8189353c132b476b7feb99546bab1249d06c8ec606d62fa865396c2fcd47
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "4.2e1"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "4.2e1"}'
           kind: tool_call
@@ -358,16 +317,12 @@ records:
     request: 50ae9beed4883be9cfac34adc31a2eefc35ef3e8731c4389e8ae530a495ecdad
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42.0"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "42.0"}'
           kind: tool_call
@@ -377,16 +332,12 @@ records:
     request: e723b25b4f0eecf3d57a55896f9b114bf184b251d8d29dc66d2d5f2e280fd542
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "4.2e1"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "4.2e1"}'
           kind: tool_call
@@ -396,16 +347,12 @@ records:
     request: 8535e55feb96bd1650963784def3a0c1ae57a3e68d96d7be8fe171206ec8704b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42.5"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "42.5"}'
           kind: tool_call
@@ -415,16 +362,12 @@ records:
     request: 0fa2996a97ecdf87ca5c943be2c4b021bfa5903691e0a30f769a2066f1e01db1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42.0000000000000001"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "42.0000000000000001"}'
           kind: tool_call
@@ -434,16 +377,12 @@ records:
     request: 2307a7e801574f394667ae1ecf7d131741fd191a1a5ec287629d8086ae6a3f11
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "1e-400"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "1e-400"}'
           kind: tool_call
@@ -453,16 +392,12 @@ records:
     request: f58b4ed5c7563ca6bc4d11b2f4253a8db614044dadd300a28a4575b437a563dc
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "9007199254740993.0"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "9007199254740993.0"}'
           kind: tool_call
@@ -472,16 +407,12 @@ records:
     request: a42f811f106b0dcdbdb68593a40cd1e0966360f2315828c8edc87e7abbfbdfbd
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "9.007199254740993e15"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "9.007199254740993e15"}'
           kind: tool_call
@@ -491,16 +422,12 @@ records:
     request: a6082284c316341cb58fa3e4747e098897c2d30f8ee93fd1b538dfa5ca4ac320
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "-4.2E+1"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "-4.2E+1"}'
           kind: tool_call
@@ -510,16 +437,12 @@ records:
     request: 65e74d90ddb859592518b04bcecb078caece5f1b22f989308d9817225fe79355
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "4200e-2"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "4200e-2"}'
           kind: tool_call
@@ -529,16 +452,12 @@ records:
     request: 5b1998868a00a9d288d660d84a77f3a88d3ee15c294366c8b6eaea5e3e50ad9b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "0.0e-400"
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "0.0e-400"}'
           kind: tool_call
@@ -548,16 +467,12 @@ records:
     request: 1bfd44fa2112f41ece9a137cb39f57e0a15023205efc8afc0127a90f7836a369
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 9007199254740992.0
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": 9007199254740992.0}'
           kind: tool_call
@@ -567,16 +482,12 @@ records:
     request: 2b77b0dcd3e74b258899958da29d3cbf6115863acc5661a399b3f972bb03ac4a
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: -9007199254740992.0
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": -9007199254740992.0}'
           kind: tool_call
@@ -586,16 +497,12 @@ records:
     request: c60d6badadf6dbc9b91886320fc9b313b95954abc41eb915455edcad360e9bd2
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42.5
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": 42.5}'
           kind: tool_call
@@ -605,16 +512,12 @@ records:
     request: 7ae0417e7848564330fd0c3cf99cc7527cd57952edb51b7241136c2a34708957
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 9007199254740994.0
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": 9007199254740994.0}'
           kind: tool_call
@@ -624,16 +527,12 @@ records:
     request: c32dc07b604a53331521b0ac4d21ed466d39b65adf4ab98b8a3df009fa3f2afb
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 9007199254740992.0
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": 9007199254740992.0}'
           kind: tool_call
@@ -643,16 +542,12 @@ records:
     request: 6f391264dcfb83af6faf996fe27a306b976969f23cfc8ad3129c9facf57da072
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 9007199254740994.0
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": 9007199254740994.0}'
           kind: tool_call
@@ -662,16 +557,12 @@ records:
     request: 35c791f9fe1d21f39c4a8d67721c152946e2b14e4655067c66dfa86ba4e83504
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 0.1
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": 0.1}'
           kind: tool_call
@@ -681,8 +572,6 @@ records:
     request: 1cc7bed26918598186e3e37ccfc19ed8dd09b8408ce03e7048417dd722dadbca
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           nested:
             fraction: 9007199254740992.0
@@ -693,9 +582,7 @@ records:
         kind: tool_call
         name: inspect
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -720,8 +607,6 @@ records:
     request: 5147f68556d593e69e3da9ec4da9d34b737df9955f13772ad63044eea1b856e1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
           value: 1.5
@@ -729,8 +614,6 @@ records:
         name: echo
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"city": "Paris", "value": 1.5}'
           kind: tool_call
           name: echo
@@ -739,8 +622,6 @@ records:
     request: 89ba826e4aca8643a3dec1534e827c402a7d2a6d256d4afb219a04ab3ce0b700
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
           value: -.inf
@@ -748,8 +629,6 @@ records:
         name: echo
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"city": "Paris", "value": -Infinity}'
           kind: tool_call
           name: echo
@@ -758,8 +637,6 @@ records:
     request: b1bad7f8b0f976042eec86f6f8a647813e4fe6fc72039cbf7fb45a4d8da97bf0
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
           value: .inf
@@ -767,8 +644,6 @@ records:
         name: echo
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"city": "Paris", "value": Infinity}'
           kind: tool_call
           name: echo
@@ -777,17 +652,13 @@ records:
     request: 3c71e32833b9b4da249d7215ab2589cb827bad04ad49d4f039584419bde496a0
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             s: </atem:parameter>
         kind: tool_call
         name: record
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -810,16 +681,12 @@ records:
     request: 8bf2584af253e82edd29cf72323ef7ca0476bd6ff413dcf1a8f6ac706b72eddb
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -836,16 +703,12 @@ records:
     request: fc8017f9ee9146c2cf9e4b2afcca2ddd80aac42ac3b6f10b204451577d756ad6
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -862,16 +725,12 @@ records:
     request: 9e02c29dd1b667717170f94f3eb91c41ffea496a410d61b6ed3c437636fcde1d
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -888,16 +747,12 @@ records:
     request: fb6f2100cea33b5db48eddbe95f3545ba605365242b5277d9f63b2912afa21cf
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -914,16 +769,12 @@ records:
     request: f3ae276d153c11cb98290a5fc2eb5acd703c57db7aacb4fc03bb9c7d487b9be2
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -940,16 +791,12 @@ records:
     request: 2d78b7e4a9be0a14a7c3d6c4d6c9cb49bac646cd4d8d518afa11b50677e6f9da
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -966,16 +813,12 @@ records:
     request: 0a652419e6c28eb88a2fc820ef00957543dfafa48fc05f492a417ad2358551db
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -992,16 +835,12 @@ records:
     request: e89a66fb3e7c14b04777f3e9a8633d346eae415312a10874dbd9125e35931dee
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: null
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1018,16 +857,12 @@ records:
     request: 825874eab4f2d87bb29807ab547e1fa29bfe15ea0406aa36d43f75c5ee66cb7f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: São Paulo 東京
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1048,8 +883,6 @@ records:
     request: d190f8bebe0dc4bc2ca3087c97c0353be469b0a7e11d911bc074a141462f6083
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: Check weather.
       - kind: text
@@ -1063,9 +896,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -1103,7 +934,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>
+        text: '
 
 
 
@@ -1120,7 +951,7 @@ records:
       chunks:
       - expected:
         - kind: text
-          text: '</think>
+          text: '
 
 
 
@@ -1139,7 +970,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>
+        text: '
 
           '
       - arguments:
@@ -1147,9 +978,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: '
@@ -1171,7 +1000,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>
+        text: '
 
 
           Done.'
@@ -1180,9 +1009,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: '
@@ -1214,7 +1041,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>
+        text: '
 
 
           '
@@ -1223,9 +1050,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: '
@@ -1257,7 +1082,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>Pressing it now.
+        text: 'Pressing it now.
 
 
 
@@ -1267,9 +1092,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Pressing it now.
@@ -1302,14 +1125,12 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>
+        text: '
 
 
           '
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: '
@@ -1328,17 +1149,13 @@ records:
     request: 17ff40559a5970cf371b98489d68070ffe20e74e44f3541231189f9b04ad9fee
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           amount: "21.5"
           retries: "37"
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1364,15 +1181,13 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>Hello there. '
+        text: 'Hello there. '
       - kind: reasoning
         text: let me recall
       - kind: text
         text: The capital is Paris.
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Hello there. '
@@ -1391,7 +1206,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>Sure, one sec. '
+        text: 'Sure, one sec. '
       - kind: reasoning
         text: checking the forecast
       - arguments:
@@ -1399,9 +1214,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Sure, one sec. '
@@ -1448,8 +1261,6 @@ records:
     request: 93b039583d1bf6a8567890f5b3b2bdd2c2913ba3002e8aadbe4644a59312dfc9
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: quoted
       - arguments:
@@ -1457,9 +1268,7 @@ records:
         kind: tool_call
         name: f
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1492,10 +1301,8 @@ records:
     request: ad37cc079a6822fa7d423589f3117cf36c47888bb22ac235283c6d300eed67c8
     output:
       assembled:
-      - kind: text
-        text: Check.
       - kind: reasoning
-        text: 雪
+        text: Check.雪
       - kind: text
         text: Then.
       - arguments:
@@ -1504,7 +1311,7 @@ records:
         name: log
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: Check.
       - expected: []
       - expected: []
@@ -1535,15 +1342,15 @@ records:
     request: 4ac2180e98e8f7dd681d498f0a48c909a929c1730b95a3db36904d73015d06a1
     output:
       assembled:
+      - kind: reasoning
+        text: Check Montréal.
       - kind: text
-        text: Check Montréal.</think>雪
+        text: 雪
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: Check Montréal.
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 雪
@@ -1553,15 +1360,11 @@ records:
     request: aaeaba7df6ff49d304d0142877771c87d8cb8d72cdf3a0026329e51c2c1221b2
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments: {}
         kind: tool_call
         name: a.b
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1577,16 +1380,12 @@ records:
     request: 1dec8ac8efd783544b850f568da7d9cb31c96b7c54cbb19a9a5e5a068159b986
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           location: Beijing
         kind: tool_call
         name: my-tool.v2
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1606,16 +1405,12 @@ records:
     request: 2d84bb27b057d398db91a6f9b8d3f9429c5a228470e2e1549daefb01c1b585d4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           location: Beijing
         kind: tool_call
         name: server.tools.weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1635,8 +1430,6 @@ records:
     request: 4dd4a3976012f2af9eb5183f99adb4262d5677f4e2eafbde1f07c6064d5ee9c9
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           location: Beijing
         kind: tool_call
@@ -1646,9 +1439,7 @@ records:
         kind: tool_call
         name: server.time
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1682,15 +1473,11 @@ records:
     request: bde7e42c179e526f54377c3ce5860d1479e270f0e37abf3132e09ef3204b0bfd
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments: {}
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1707,8 +1494,6 @@ records:
     request: 8b5319fa3a29cf21fa7159d65d9842746c512441301a736a99a63f9d1e47efba
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           count: 5
           metrics:
@@ -1718,8 +1503,6 @@ records:
         name: capture_payload
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
           kind: tool_call
           name: capture_payload
@@ -1728,8 +1511,6 @@ records:
     request: 527decea3692ea6d1864273747763a3f70324ea795237d8ce56a8ded550548cc
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           pointer: "42"
           space: "42"
@@ -1737,9 +1518,7 @@ records:
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1768,8 +1547,6 @@ records:
     request: c4e502792717998007ee9bd9514259032bd1a197238574512bab252143a775b3
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           array_text: '[1,2]'
           inline_text: '{"x":1}'
@@ -1778,9 +1555,7 @@ records:
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1813,16 +1588,12 @@ records:
     request: a0b036c636d8732f2c0678dac3f18cad1e7f6a89511b69f7de225561c0dcfe2a
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           payload: '{"x":1}'
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1843,8 +1614,6 @@ records:
     request: 0d809afd659e8b26324e090d62da612b685512eda6360a04ba8370c308a752e1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           count: "42"
           flag: 'true'
@@ -1853,9 +1622,7 @@ records:
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -1889,7 +1656,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think><tool_call>
+        text: '<tool_call>
 
           <function=run>
 
@@ -1910,9 +1677,7 @@ records:
 
           </tool_call>'
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: <tool_call>
@@ -1993,7 +1758,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: </think>"" trailing
+        text: '"" trailing'
       - arguments:
           q: \nx\n
         kind: tool_call
@@ -2001,7 +1766,7 @@ records:
       chunks:
       - expected:
         - kind: text
-          text: </think>"" trailing
+          text: '"" trailing'
         - arguments: '{"q": "\\nx\\n"}'
           kind: tool_call
           name: lookup
@@ -2316,8 +2081,6 @@ records:
     request: a592fca2d42fe679ca4131434f997bc18a4b198ee3a39ea68a39fd6b434342dc
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: a
       - kind: text
@@ -2327,9 +2090,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -2358,8 +2119,6 @@ records:
     request: ec3df302fc23816190a2c57fc0ef1cd929064f31410f7a339218b4b126450a5f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: bad
         kind: tool_call
@@ -2370,8 +2129,6 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"city": "bad"}'
           kind: tool_call
           name: get_weather
@@ -2383,8 +2140,6 @@ records:
     request: efec1ffeaedbab6518343c1c03b8db157b018db748b01200143122f6e3fab37a
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: bad
         kind: tool_call
@@ -2394,8 +2149,6 @@ records:
         name: f
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"city": "bad"}'
           kind: tool_call
           name: get_weather
@@ -2407,16 +2160,12 @@ records:
     request: 04cfa4fd0004106fe4b8955bd4c0f11897861cd4f997462f9e6817912a52ec2c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           count: 42
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -2437,8 +2186,6 @@ records:
     request: 1a2d89caf68a6cc2b45bf029cd4e7f838567ba1c18c484fc262436302a436216
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{"x":"unfinished'
         kind: tool_call
@@ -2452,9 +2199,7 @@ records:
         kind: tool_call
         name: echo
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - arguments: '{"value": "{\"x\":\"unfinished"}'
           kind: tool_call
@@ -2470,16 +2215,12 @@ records:
     request: 01adec742d39d3726aaf9028c588e236147f06dd90a72bf7f0a417fb90b4ccbf
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           location: Paris
         kind: tool_call
         name: get_weather
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"location": "unfinished</tool_call><tool_call><function=get_weather>", "location": "Paris"}'
           kind: tool_call
           name: get_weather
@@ -2494,14 +2235,10 @@ records:
     request: 027127fd13e0f1881114a373f0a65cb19d96fe8adc5efe5f65ae05691d32c5f5
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: 'Plan: <function=queue_label_print_job>label_count=48</function> Done. Proceeds. <function=queue_label_print_job>label_count=48</function> matches. <function=queue_label_print_job>label_count=48</function>'
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -2545,8 +2282,6 @@ records:
     request: a8fc94da4f54648eeb1003f32f60a46f83c9262277eafbc9d54f59b2c7dd4bc9
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: plan <function=queue_label_print_job>label_count=48</function> more
       - arguments:
@@ -2554,9 +2289,7 @@ records:
         kind: tool_call
         name: queue_label_print_job
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -2595,7 +2328,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think> then I''ll run  and '
+        text: ' then I''ll run  and '
       - arguments:
           city: Paris
         kind: tool_call
@@ -2609,9 +2342,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -2750,17 +2481,13 @@ records:
     request: de546257231f974d697d6d45ee0e10c4d4ff63789b9c70633f850d965501de60
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           count: "-2500"
           text: "42"
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -2785,17 +2512,13 @@ records:
     request: e146e45d06e4185aeeb8c09b2cc7e4e34ea34f2340e138f21be654d50d8c7d7c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           const_text: null
           enum_text: null
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -2821,11 +2544,9 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>I will check that. '
+        text: 'I will check that. '
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'I will check that. '
@@ -2962,8 +2683,6 @@ records:
     request: a012b0a76b36ba59df1dff352d8e20d1e3dc2fe3e9b45ef833dfa56e20ad4e00
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: Look it up.
       - kind: text
@@ -2973,9 +2692,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3013,8 +2730,6 @@ records:
     request: 40b765412069b07c7b3eb18d8be6bbbc6f076afac40462652edec95a6714bd9a
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: mid
       - arguments:
@@ -3026,9 +2741,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3068,8 +2781,6 @@ records:
     request: 70caa3ad8b809f22183903a2d2fbb8096c96b2a64ea4dd80efec82a5892b8c48
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: A
       - kind: text
@@ -3083,9 +2794,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3134,8 +2843,6 @@ records:
     request: b44b2130d31ecbdef62992710acc962f34e76723ac165936f672dd2b335989ec
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: reconsider
       - arguments:
@@ -3143,9 +2850,7 @@ records:
         kind: tool_call
         name: log
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3185,7 +2890,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>Logging now: '
+        text: 'Logging now: '
       - kind: reasoning
         text: reconsider
       - kind: text
@@ -3195,9 +2900,7 @@ records:
         kind: tool_call
         name: log
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Logging now: '
@@ -3230,14 +2933,10 @@ records:
     request: 50d38ef907931f575a139079046dfbe0190964aa3e29b4cad9367463fc763877
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: just thinking, no answer
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3249,16 +2948,12 @@ records:
     request: 1488f2d092a3a17079b2704b20649eee2e5266f38ac1d7609b3e92e920f23273
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: let me think
       - kind: text
         text: The answer is 42.
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3273,8 +2968,6 @@ records:
     request: 277fd0c99ae019814d9207e1a17a3a1a03f7c4c5fb6d76ec7b3f07feca319bba
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: Check weather.
       - arguments:
@@ -3282,9 +2975,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3310,8 +3001,6 @@ records:
     request: 48eb91c38b2614ea56cc99ce076b83caab9ab47a023ce43d7c82bb972041a17b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: A
       - kind: text
@@ -3325,9 +3014,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3385,8 +3072,6 @@ records:
     request: 5501524fb78a986ba09531202dd551cb58750447d324cb51fb20f95632f8f37a
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: A
       - kind: text
@@ -3400,9 +3085,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3454,14 +3137,10 @@ records:
     request: eba79edb6d109929f4fb05c7ae733150a0f9461f200ad9821e40fc16d4588280
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: thinking but stream ends
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -3472,8 +3151,6 @@ records:
     request: 426c08c2a315e435eda63ff28f709f5ad220064b619e9d6b3d38855e2570f1f2
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           category: '{"label":"Garden Tools","children":[]}'
           dry_run: false
@@ -3482,9 +3159,7 @@ records:
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3517,16 +3192,12 @@ records:
     request: 2d5de7cf691378f3c9af7e9b33a7e0c1bf65bd7e211ee257e760cd5b7737fbb5
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3547,16 +3218,12 @@ records:
     request: 8a7a0c4b2eef24f4d6f3b050a8c264937033b07fe0bf0b2dc7e9d82ba4f747d4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3577,16 +3244,12 @@ records:
     request: 8f6bebed5ca01082c3f8805bcbff1feb716c34cc6be6ccb5f26b471064164484
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3607,16 +3270,12 @@ records:
     request: 37c986b74992a4a8c34db6cb82175c3cb4497fa2fd34fc0081aa12032bec3500
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '[1,2]'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3637,16 +3296,12 @@ records:
     request: 9f962b19911b4d992dcb62a24936bd4070ee14bbfc5e59e3cc9bf0d0c1837cd1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 'true'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3667,16 +3322,12 @@ records:
     request: 7ae43d3d39668e455ed832ba11f2b8f329aea628e977d0be19201661ea2e1097
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 'true'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3697,16 +3348,12 @@ records:
     request: 5247ff7680f60e784e59e62fa3fe8cec291583e063a97e353b942fb42f0f262f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 'true'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3727,16 +3374,12 @@ records:
     request: 17c8681af9ef0a9d6df7c41c9931ad63f58ff46a040c6f0b72ef95eb7f4ce1b7
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 'true'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3757,16 +3400,12 @@ records:
     request: da7174fff2b333c3cda2ba1006224a8b04e730da8a35bf7d08a32e56b6bfdfc0
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3787,16 +3426,12 @@ records:
     request: d52834473b69655c15869c05a9bf45b35a3b32d96446bd2d8c97918d46511202
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3817,16 +3452,12 @@ records:
     request: 3751c28ffaaf19a7d904bae056b15449e2057f30a105927b1968e5600dcf8b7e
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3847,16 +3478,12 @@ records:
     request: 380f54cabf8b84e3e890c42ead9c7477a1f571b7ae0d7ae5957e0ab5901013bd
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '&lt;'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3877,16 +3504,12 @@ records:
     request: f436deead9aeaa0aced2dc335ba238d8fcf13035aed126a78629e5060ac2b2a4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3907,16 +3530,12 @@ records:
     request: 5903353f6a09b51457a940cd22f2646427c7c5141deeda0c6672c0d6691b29de
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3937,16 +3556,12 @@ records:
     request: f9a39213ddddb65c3f751b10b4b554f708ae9d93d7991fd808e7e59bd1d0df3d
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3967,16 +3582,12 @@ records:
     request: 93bb78ff4b7dfd130716c2f433d84a4f7ba2972eda6bc24c53d74dd0ca95e9b1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -3997,16 +3608,12 @@ records:
     request: ac8b6c8237c954c887230e8061c77bd3bc7c8010ac9a9aef21a0937720596c9c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4027,16 +3634,12 @@ records:
     request: dfea71769eb7f24049ff1bb950377c3586450990d50d69f41dea2e0f7bc93a7e
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4057,16 +3660,12 @@ records:
     request: 1e84f2769e5e506459600919ae3f503fccb13e4006983d04ec9f9ab38c060234
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4087,16 +3686,12 @@ records:
     request: 7e0fcb7f866680206ceb52a113269f5503d1a3aa80cfebc7636560be11eaf48b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4117,16 +3712,12 @@ records:
     request: 5745a41e3f89eddebccbbcdee9ded2c9bd1c6b6896df17f4ccd6bfd2dd1ec94d
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "3"
         kind: tool_call
         name: schema_probe
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"value": "3"}'
           kind: tool_call
           name: schema_probe
@@ -4135,16 +3726,12 @@ records:
     request: 140c20a8a40f445b5f84944e1a6d334f008b217043a0fa0efb44afc04915cc58
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4165,16 +3752,12 @@ records:
     request: d661e2bc8243b9c352876439545bf66ed9fa86ea143f6de9584dcd8fe2ba1f05
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4195,16 +3778,12 @@ records:
     request: 9aaef0efce05268cfed9cefc184efebb77bbd5148a0f3a155fad9cac30665dd8
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4225,16 +3804,12 @@ records:
     request: 9a280b7fac1fcc810089b52df2c29ca44e7ca665096d81517843e70261e7db79
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{"x":1}'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4255,16 +3830,12 @@ records:
     request: e3b96132c2c6c66b719156d308baf9fdecafc3753cb7d370a60b1c71cf90dd25
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4285,16 +3856,12 @@ records:
     request: 5d2d44d129c198c3bfe0bd5c377605d3985f54976405221572407f5de0faafe6
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4315,16 +3882,12 @@ records:
     request: bf341599d3e48c63f17347b5ed63dd6d2cbdcd95023712cb9f8ae7868684a2a7
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4345,16 +3908,12 @@ records:
     request: 9d7deec07cafa648f3cca24844929548efdfc948fcfc91d865420373b5869143
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4375,16 +3934,12 @@ records:
     request: 701679acd9b95309e111cd57bf20b0775f039c0db5465176bef9edaf23d492bf
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4405,16 +3960,12 @@ records:
     request: 578f310311a08a13fcecd5692a4d5e88cc1ede8f26dddae48f654c9b6b5aa1e1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4435,16 +3986,12 @@ records:
     request: 2e579c101bcf1fac13c454d8b4baf1dabfb574d0d42ceef58810e12499fd08c5
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4465,16 +4012,12 @@ records:
     request: d12823092989141dfcd70ba46566c85e018a31c30462091c60faa956cb403e9d
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4495,16 +4038,12 @@ records:
     request: 4db928e9c685557868f01876eec6988f49438e72028b5b7bc123a90bf8145a69
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4525,16 +4064,12 @@ records:
     request: b29a88db9730c1d05f5c4b58d88da9f79695d6a7d703da77a2d240e421af52d7
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4555,16 +4090,12 @@ records:
     request: eb1d82dff26a71c94cb1c5f3ca5f238f15f7e616bfd51d6770b1dcaf4961a9c3
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4585,16 +4116,12 @@ records:
     request: 0f0b79b20f79d804bab188ee7936a7c12d20010d99c9c613b67733461f3ced01
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '  spaced  '
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4615,16 +4142,12 @@ records:
     request: ed4de3bf5d92051993bc007cd8ce54be5755923ff3a7c810f9e2adb5b3d4b4e7
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: café
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4645,16 +4168,12 @@ records:
     request: 27dfaf900a2757a5a606054488e3c9d3a6bbc9d68ddac234f78f26fa9060303b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: café
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4675,16 +4194,12 @@ records:
     request: 66021cde70d4ccf9fee7bfa85601e90e73d0a682d3b871828f561992e7762ffa
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: café
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4705,16 +4220,12 @@ records:
     request: b8fe8d50f464018a938a1ac66fb1f2e87cbf2832e68f96ef53744a9364d7f166
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: café
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4735,8 +4246,6 @@ records:
     request: e4372d464d9da279354de07f961bf2a67621931d47a8bbb5221fc3150f4326c9
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
           - 1
@@ -4744,9 +4253,7 @@ records:
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4767,16 +4274,12 @@ records:
     request: 6bb64c2187027a1f6db02d9f8fedfb3dec40109a1e6dc7dc27235bd94422ce59
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: true
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4797,16 +4300,12 @@ records:
     request: 30b222a55be04eb922ebadc876523a821be26c3a86f7e472c557e78d8a17d068
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4827,16 +4326,12 @@ records:
     request: fe552b5a83f6bacb5d7c5ab47b9d088ffc19a6ebc69ef36379c7301ba33bfa05
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 1
         kind: tool_call
         name: schema_probe
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"value": 1}'
           kind: tool_call
           name: schema_probe
@@ -4845,16 +4340,12 @@ records:
     request: 1424fd5cbbd6c34ba9654ff553c7d4a8a2aada0a8e30618d4fc90f383f5f645c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4875,16 +4366,12 @@ records:
     request: 6c46b287f115ebe1b999a22c053e47ccd6655a82805f75cc09d15c08746bf9d4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 3.5
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4905,17 +4392,13 @@ records:
     request: 3d5781f417337073b814b0e84e2146d5d24bf3e87bc56095c7592a8dfb756dba
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             x: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4936,16 +4419,12 @@ records:
     request: 7943b1a471b6202451450aff8fc469e762da5a4ceca47c4c54862d234cd6374c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: plain
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -4966,16 +4445,12 @@ records:
     request: c875cd332a7abd42900cffd94f27660314455601749daa179031311bb07324f6
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "1"
         kind: tool_call
         name: schema_probe
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"value": "1"}'
           kind: tool_call
           name: schema_probe
@@ -4984,16 +4459,12 @@ records:
     request: c546eb11e5c0b743fee6a6b9205bfcf5143a3afca6a6a630492432b0e91f6dfb
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 2
         kind: tool_call
         name: schema_probe
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"value": 2}'
           kind: tool_call
           name: schema_probe
@@ -5002,16 +4473,12 @@ records:
     request: 154cc686cc82af3a71dc9e175a6cf543263947f64338f3bfa4728720bb33e5a3
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5032,16 +4499,12 @@ records:
     request: c2f225195ae79b9ed906337ad956359a3ad9ba24593e458c491281064114453e
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5062,16 +4525,12 @@ records:
     request: 1c7fa295d45cf68714b5a4b74aa3213861cf7b52f9f216daed7350b24e6ab548
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '"hello"'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5092,16 +4551,12 @@ records:
     request: d7412b635be25fbfb3dd0bb6a9a2936d9e530737203b476bfe18d63dbcafb6ba
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5122,16 +4577,12 @@ records:
     request: 373236ff8ce9170699e0a78e2689b9405010457a62d82c198021abe6eef62bb8
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5152,16 +4603,12 @@ records:
     request: d3bb2d71042f8e9a73551d320cbafcdaf60109cca378210b2337afc387445380
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5182,16 +4629,12 @@ records:
     request: e1e960082d0772d6f5ac40c860c419dc4f9571ada1e6d1893a31b7093052ab54
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5212,16 +4655,12 @@ records:
     request: 86407cafd897b4a1f0af014b06612d41cf85143f8daae075067e7b71dc939558
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5242,16 +4681,12 @@ records:
     request: 6d03270bf7e3708864402311225d9278a514ee729e4284e8562f1b69ab6ae24f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5272,17 +4707,13 @@ records:
     request: d1b9cdcce8f6d28213d850121943d62090dcca71e004f508e13e4d4603863141
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             x: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5303,16 +4734,12 @@ records:
     request: dfc4aec169fccd8aeb9d2e84166079fb28d3d1b0d03489e917988e16d6dcdc35
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5333,16 +4760,12 @@ records:
     request: 31d926621c6f7814d6ee556827cdb2b8ea5f4d4625d078c50a527bea71abc6dd
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5363,16 +4786,12 @@ records:
     request: 02b5ed805d337b3b4754fe3e049752f999bb33d1d7fd0954ea0fa27f03322f68
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "-7"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5393,16 +4812,12 @@ records:
     request: 7d1168a780828fa06ae7d75d388ed675eba4847454170c54315974b54463ea2c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5423,16 +4838,12 @@ records:
     request: 8f1ef0af96d5ead2c10b127736a23ed48f911974bd2ad8a312abe43ad27a8931
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "-7"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5453,16 +4864,12 @@ records:
     request: b1d58b57920202d015ca02d22e244bcb6814d97d4db5d1b4f2728ad70b2e5c39
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5483,16 +4890,12 @@ records:
     request: 45ca395dab1bfbfca0b8705d6c950b10438dab4dd0852def9a975d40dbac4b80
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5513,16 +4916,12 @@ records:
     request: 6cb9b93b19bfc7f177f7d8b05415cf3bcd2ddd9a184874f435193b33029dc6e8
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5543,16 +4942,12 @@ records:
     request: a1e9a788f816a8ddad193fcf13a3a8e8f0777159bfd7fbd609b23ecdc393ed23
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: "42"
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5573,16 +4968,12 @@ records:
     request: c07f55b9a7ce8057061ba63008a35b5d8c9a498868cc96a757d791b18adb5839
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5603,8 +4994,6 @@ records:
     request: 129b3d9a4b5ca865fd685add68c079950e1f4a71652185503008e525fa25a2c7
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
           - 1
@@ -5612,9 +5001,7 @@ records:
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5635,16 +5022,12 @@ records:
     request: 9152c3b380fa2e11aeb6f7a3ef8eec95db03829c2455126a05d3505c8317811c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5665,8 +5048,6 @@ records:
     request: ad9359ce6ff071d2d139e5b6502e051dc020454e14a6fafede4874cdaa1149d3
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
           - 1
@@ -5674,9 +5055,7 @@ records:
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5697,16 +5076,12 @@ records:
     request: b11e2a94dd1bf5093521d57fd732e6c5d152425e8d1d3a5dd75ae907de46f02c
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: false
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5727,16 +5102,12 @@ records:
     request: 3080f317dfcdfee83bfb692641b60fb665fa6140b80bd4dc2f11729d6b76524b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: true
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5757,16 +5128,12 @@ records:
     request: a0cb281cff3b05db1021b3acd1929b4c3e9886cb7268fb268b4ee2c5f9119d9b
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: false
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5787,16 +5154,12 @@ records:
     request: ff73d5890c8234b164d31c8db085b7b2cff5d0bbf5cba3dda151f82178be425f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: true
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5817,16 +5180,12 @@ records:
     request: de80eb7cb074fb615941892670f351d24252103faf40e51b64c1394259623212
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5847,16 +5206,12 @@ records:
     request: d156578c8fdd0d76066881a61468e7690b68b747a77c704d55e61fe8b9c4b9bf
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5877,16 +5232,12 @@ records:
     request: b3715b3b0927979aac92cb81a394aa0d70f6ee36340a7a174cd101a5f9ee4526
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5907,16 +5258,12 @@ records:
     request: 36589fd4960c9b91ca78ba3fce6cdb880eb353cbec5f2020d25a6c45eef15928
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5937,16 +5284,12 @@ records:
     request: be59a3c800b2d1dc98997ddfd078ff75e17651e796ab6c9daf0d5e6d318ab9a5
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5967,16 +5310,12 @@ records:
     request: a4b7fbffe46688d6f463e745a8015435418cd3c45563b26fe902cacb74a2e526
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -5997,16 +5336,12 @@ records:
     request: 8033b8637f5ab784ac50d9c0c8a4a15072e8826feca5d7f8218e7a6d60fc5020
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6027,16 +5362,12 @@ records:
     request: 416eece591d45c0f9a7b30f1667aefaa4eb592bf887439b0c977eb0c78624edf
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6057,16 +5388,12 @@ records:
     request: bf61f24133d28275869315f00675a4a9119aa9fd23398b0955235b68c1bd2e7d
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6087,16 +5414,12 @@ records:
     request: afa2a4a2061cc1a903f90df8aaac06698374799f997a2d4f783d56037806afa1
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 3.5
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6117,16 +5440,12 @@ records:
     request: 780525737809e64549998681a6f5a55a44ade652b1ef469ecd263d0b6c0aaa42
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6147,16 +5466,12 @@ records:
     request: 8ab92f305fd2b8414b34d53de9165d9e12aefe9fd61ca0051cf1b9c82268e42e
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 3.5
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6177,16 +5492,12 @@ records:
     request: 4c7bc19694ebe3df4d6b13608e4664343f6baf15f5d9178f1253479cf6c5c514
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6207,17 +5518,13 @@ records:
     request: f41eebd789dfaac4a855fe7855e66a2c3ef9d8eceec3b2f40e691f926f5e83ca
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             x: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6238,16 +5545,12 @@ records:
     request: fa3523a6da7d39bd7d5623d6386ee7d2b8e8631357af3313980fd922ee3606b4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6268,17 +5571,13 @@ records:
     request: 31ad26d2c04575c7f8e315b9405843a7f4bd18ac31e6c802ea939210721fa886
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             x: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6299,16 +5598,12 @@ records:
     request: 33d5268d6068c9aa4851490bd9c238b29fcda217bf10a0d0c8523875e673dcc2
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6329,8 +5624,6 @@ records:
     request: 3a4ad434e1eb78b4cfab26f25306ea408894a78779ddfacedcd72b463a301ae3
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
           - 1
@@ -6338,9 +5631,7 @@ records:
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6361,16 +5652,12 @@ records:
     request: ad04343bf1b4946c6f29dcac0b33f114e24212abe02b46b87b972c30c76419b6
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6391,8 +5678,6 @@ records:
     request: e2bdef23621c3195231cf2c4bf572cb9d18ffd2c3843a9c0a09e8ea8a050264f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
           - 1
@@ -6400,9 +5685,7 @@ records:
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6423,16 +5706,12 @@ records:
     request: d815cb12db98969dd19db0121a01e731d733fec866ae28dc245380c1c17c2a9d
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: false
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6453,16 +5732,12 @@ records:
     request: 2319649f1a1f2302dd1c70808108d67d45b1e847fbb449a7f4a443f6cca213c8
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: true
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6483,16 +5758,12 @@ records:
     request: ade9a54fda33402be584f2324c88981f10e7e969b1f99c323a68d7f97bb37d0a
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: false
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6513,16 +5784,12 @@ records:
     request: 0e086aa863fd3e6e2bd5ecbe81a96e7eee3bc334bd8d50f44d56767099f03e45
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: true
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6543,16 +5810,12 @@ records:
     request: e10d9e9064b912f8b0a1cb568489e0a9c6ef47e54be96114ac7c79a89b8fc256
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6573,16 +5836,12 @@ records:
     request: cfefee7032940b2ae1ef628aea243a608f6e9ec9d1a609a4cc078a145cbcbd54
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6603,16 +5862,12 @@ records:
     request: 456cadb550d824b6507fd6b0dece9fa0d3a5b10ec8ee7a67729b3edc159e977f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6633,16 +5888,12 @@ records:
     request: 8592781e3c286f71c80e020cd6b5fc7ffb46bd44afef38a5816fcd783f855787
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 42
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6663,16 +5914,12 @@ records:
     request: 0e3db52c3190aa5f1829de1218fc80a372cf525d5fb2abcab12311eb5b825ddc
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6693,16 +5940,12 @@ records:
     request: 98c62427963d64d82381e529e1f73cf00a47013cd0d1dd6cef56129481c89094
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6723,16 +5966,12 @@ records:
     request: dcfc50483d79d3a273e4ff97898a8e7d4aa15ff1fe844e03f02ddf040796b207
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6753,16 +5992,12 @@ records:
     request: fed144ad19a7376da12e4f883c90ccd8ed24b2fe0c01b105a2019e63c9d3e104
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: null
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6783,16 +6018,12 @@ records:
     request: d74dd61a58f758746ca4f6e3f5fa11ca98d619012f65d43c3461c46409972216
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6813,16 +6044,12 @@ records:
     request: 88f1723a9343156d6aefdf85ce6394aea28c70069a3c9a558d82cd2b25c21f82
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 3.5
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6843,16 +6070,12 @@ records:
     request: 5970a4e06bcdaac7817bb1793faa0ab63112246cc9880736be029125d65e19cd
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6873,16 +6096,12 @@ records:
     request: 7de7364fdea8b868435be5237adb460d432265c81fc8d448ff4980387beb8786
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: 3.5
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6903,16 +6122,12 @@ records:
     request: 2ef5486ab6b7a6bb846f692d61e03a87b94c8575588595818cdb04da5ddd89e8
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6933,17 +6148,13 @@ records:
     request: e4020666a6f44c8206b5f10bd702dfbec0c76033ac8c66dd47d39a9469621e5f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             x: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6964,16 +6175,12 @@ records:
     request: 2b06c25b118f3fa2414e485bbef1e812b872b0479ef30e69531431aadeb06838
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: auto
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -6994,17 +6201,13 @@ records:
     request: 13d582db18fb7c5a2e1cbf77c3da5f890c1ecadbb83442dea6a2327dce676f9e
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             x: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7032,15 +6235,13 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>On it: '
+        text: 'On it: '
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'On it: '
@@ -7065,7 +6266,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think> then '
+        text: ' then '
       - arguments:
           x: "1"
         kind: tool_call
@@ -7075,9 +6276,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7116,11 +6315,9 @@ records:
     output:
       assembled:
       - kind: text
-        text: </think>The answer is 42, no tools needed.
+        text: The answer is 42, no tools needed.
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: The answer is 42, no tools needed.
@@ -7131,7 +6328,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>Sure. '
+        text: 'Sure. '
       - kind: reasoning
         text: check A
       - kind: text
@@ -7145,9 +6342,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Sure. '
@@ -7203,15 +6398,13 @@ records:
     output:
       assembled:
       - kind: text
-        text: </think>Before.  After.
+        text: Before.  After.
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Before. '
@@ -7243,13 +6436,9 @@ records:
     case_key: tool_block_never_closed_then_text
     request: 40acc5cfd707e67d774965e1e8f90eddcb83232facde6d3b24b3478ebef59dd7
     output:
-      assembled:
-      - kind: text
-        text: </think>
+      assembled: []
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7258,8 +6447,6 @@ records:
     request: 057f5829ab059411efe0f9af8ec75c238fca09e1b2f59cecb4ea2b271cbd5cef
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
         kind: tool_call
@@ -7270,8 +6457,6 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
-          text: </think>
         - arguments: '{"city": "Paris"}'
           kind: tool_call
           name: get_weather
@@ -7283,8 +6468,6 @@ records:
     request: b382c9d07a859bcf4573fc4ff1db252aaf6d3e15ae4da48a24c55b43d8c87d2f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: 'I should check. '
       - kind: text
@@ -7294,9 +6477,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -7328,7 +6509,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: '</think>Sure. '
+        text: 'Sure. '
       - kind: reasoning
         text: 'I should check. '
       - kind: text
@@ -7338,9 +6519,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected:
         - kind: text
           text: 'Sure. '
@@ -7376,13 +6555,9 @@ records:
     case_key: tool_markup_only_emits_nothing
     request: 3cf2af5fc7ac354d1e65dddaa5a2494ec8aea30d2f142817dedd9808b047072e
     output:
-      assembled:
-      - kind: text
-        text: </think>
+      assembled: []
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
   tool_no_close:
@@ -7390,16 +6565,12 @@ records:
     request: 780b98dd60aa282da2bad8ca1d3207a9caf1aa2da9bd11337dc1eac833189dbb
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7418,16 +6589,12 @@ records:
     request: f817b46790b7d9ba83ea149e035020f48685e662d14d24575a0d16db54e65219
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7449,15 +6616,13 @@ records:
     output:
       assembled:
       - kind: text
-        text: </think>The forecast shows clear skies for the rest of the week.
+        text: The forecast shows clear skies for the rest of the week.
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7481,8 +6646,6 @@ records:
     request: 959a28597b73834586726ca35283a126258327302fc3abb0e50d8c222dde8f22
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: ok
       - arguments:
@@ -7490,9 +6653,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -7513,8 +6674,6 @@ records:
     request: c3407c42cb9d3b7c22b050a44c689af1e8720996f88e2788b053fc6d7bde8525
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: first
       - kind: text
@@ -7522,9 +6681,7 @@ records:
 
           second</think>done'
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -7550,8 +6707,6 @@ records:
     request: 6748cb13e90fdedf36c85223e7722cea022a10b13a4342e1aa0c661dc3a05c82
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           x: "1"
         kind: tool_call
@@ -7561,9 +6716,7 @@ records:
         kind: tool_call
         name: g
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7598,8 +6751,6 @@ records:
     request: e5f17cf62e035e73202e9f7b46d6ca6c4f7868874d1b03aff6860d095bd078f9
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           city: Paris
         kind: tool_call
@@ -7609,9 +6760,7 @@ records:
         kind: tool_call
         name: get_weather
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7646,16 +6795,12 @@ records:
     request: 68414843a485ee755e6595ccc1965af5daf56abe368f4932d2df65c5d645de74
     output:
       assembled:
-      - kind: text
-        text: </think>
       - kind: reasoning
         text: first thought
       - kind: text
         text: interlude <think>second thought</think>done
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected:
         - kind: reasoning
@@ -7706,8 +6851,6 @@ records:
     request: 8fc5b0d9a4b49a1e9e9d7be82d0b628050891a65159297328dcb8cc44c61d813
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           count: 42
           flag: false
@@ -7715,9 +6858,7 @@ records:
         kind: tool_call
         name: capture_payload
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7746,17 +6887,13 @@ records:
     request: 02107f4ea44e35d3c25803da68d1269dc4a3414ad0c041e170591ea9ae981668
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             a: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7777,17 +6914,13 @@ records:
     request: fe4c0bacb7f466b780c91a28b1d1427849fef6f126cc9d98a8088b6fbd8e6e6f
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value:
             a: 1
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7808,16 +6941,12 @@ records:
     request: 2f6c93cfceddd7f4c24fcba0d5be19cc15e99ea551356e0ae6d257f03d3114a4
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{"a":1}'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []
@@ -7838,16 +6967,12 @@ records:
     request: 5a41329adb0e04fb532b78b83d744e7f3147654d1f0a3cf2e6a21aa9b6082348
     output:
       assembled:
-      - kind: text
-        text: </think>
       - arguments:
           value: '{''a'':1}'
         kind: tool_call
         name: schema_probe
       chunks:
-      - expected:
-        - kind: text
-          text: </think>
+      - expected: []
       - expected: []
       - expected: []
       - expected: []

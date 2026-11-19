@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_sglang_python","lineage":[{"family":"kimi_k3","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"a174a8addc764ecdb07a470198ea9426102837e2dc8edcb31bd83782cfd3d6ac","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_sglang_python","lineage":[{"family":"kimi_k3","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"4cbeca5bb698dd04c70db02c477d80997edfdc8171a48935732be7ba14e3cf03","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
 document:
   mode: unified
 schema_version: 3
@@ -12,25 +12,28 @@ producers:
     captured_with:
       dynamo_sglang_python: 1.6.2
 contexts:
-  context_1db463a382085193:
+  context_daa1d9b23e1de1b2:
     mode: unified
     record_metadata:
       dynamo_sglang_capture_provenance:
-        adapter_sha256: 12e7df9189eb312f630df5f1de93e2ad2465c7205b0a4a2dfc50b239447c458b
+        adapter_sha256: e15f6f0bf5a7ca0d99afbf942a3791b7799e0af4a97e5817f90d5dbee74fa9cd
         artifact_sha256: 91c6c35ef02bee0fcbbbf6c3b42e97010aa6cc5d9180557852057b25df5cd84c
         extracted_package_sha256: dbbe725df77617d0056f054e5615969f0e02c60491cc6ef9230ec5c17b0958da
         implementation: dynamo_sglang_python
         job_sha256: f8d2b180fccea6f7833a4aa3bf1ff08aed2430c149a2059443a14f506546edf8
         parser_apis:
           processor: frontend.sglang_prepost
-        results_sha256: 1b66fd758e5cc8a8d7b7a0aa3f978bff903364e28cce1669f01371905a61b712
+        results_sha256: 35e4f7a4c92c3e081881cb6ec6f0462d23bc0487fca8bdd5ef1793f846d09841
+        runtime:
+          image_id: sha256:0512a344b1b69288c630dfe4ade46434da807d10b733dfcb8128b2c9493e070f
+          sglang_version: 0.5.21
         source_sha256: 5bfa1a8ab404742e7de68812ddbab9effbaeacc89f85553076391d0848d1aafd
         status: executed
         version: 1.6.2
 record_defaults:
   member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_sglang_python-1.6.2.yaml
   producer: producer_b497b7361f635f89
-  context: context_1db463a382085193
+  context: context_daa1d9b23e1de1b2
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_default
@@ -3373,80 +3376,80 @@ records:
     request: f2c39885c6b65cc4b23b96f9fc704fbd299afce2dacecad057c8af38284b1cf0
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: <|open|> response <|sep|>Checking. <|close|> response <|sep|><|open|> tools <|sep|><|open|> call tool="get_weather" index="1" <|sep|><|open|> argument key="city" type="string" <|sep|>Paris<|close|> argument <|sep|><|close|> call <|sep|><|close|> tools <|sep|><|close|> message <|sep|><|end_of_msg|>
       chunks:
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|open|> response '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Checking. '
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|close|> response '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|open|> tools '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|open|> call tool="get_weather" index="1" '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|open|> argument key="city" type="string" '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected:
-        - kind: text
+        - kind: reasoning
           text: Paris
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|close|> argument '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|close|> call '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|close|> tools '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '<|close|> message '
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|end_of_msg|>
       - expected: []
   kimi_k3_typed_argument_values:
@@ -6703,18 +6706,18 @@ records:
     request: 2cab4a402b7095052828ef581890cfbf0e7800794300165bda3e092c2421ec6a
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: I will check that. <|close|>call<|sep|>
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'I will check that. '
       - expected: []
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|close|>call
       - expected:
-        - kind: text
+        - kind: reasoning
           text: <|sep|>
       - expected: []
   prefilled_reasoning_redundant_opener:
@@ -11832,16 +11835,14 @@ records:
     request: d3b273f642b9f97498b0d3cfb9d1c5a77416d3f0b9e5ffda6f63edc222170533
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: <|close|>tools<|sep|>
       chunks:
       - expected: []
+      - expected: []
       - expected:
-        - kind: text
-          text: <|close|>tools
-      - expected:
-        - kind: text
-          text: <|sep|>
+        - kind: reasoning
+          text: <|close|>tools<|sep|>
       - expected: []
   tool_no_close:
     case_key: tool_no_close

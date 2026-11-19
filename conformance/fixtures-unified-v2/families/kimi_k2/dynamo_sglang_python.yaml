@@ -1,4 +1,4 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_sglang_python","lineage":[{"family":"kimi_k2","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"1dcd85fd84a74c7d8929570b9536e69aef07588ebe5209a0c20afff445063dd3","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_sglang_python","lineage":[{"family":"kimi_k2","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"e8586b6950c0e3dfb73cb5f7485627b07ad90a2b78bc7e12f6c989896d8bd2de","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
 document:
   mode: unified
 schema_version: 3
@@ -12,25 +12,28 @@ producers:
     captured_with:
       dynamo_sglang_python: 1.6.2
 contexts:
-  context_588feab11bd39ca1:
+  context_0277f40a5722f1ab:
     mode: unified
     record_metadata:
       dynamo_sglang_capture_provenance:
-        adapter_sha256: 12e7df9189eb312f630df5f1de93e2ad2465c7205b0a4a2dfc50b239447c458b
+        adapter_sha256: e15f6f0bf5a7ca0d99afbf942a3791b7799e0af4a97e5817f90d5dbee74fa9cd
         artifact_sha256: 91c6c35ef02bee0fcbbbf6c3b42e97010aa6cc5d9180557852057b25df5cd84c
         extracted_package_sha256: dbbe725df77617d0056f054e5615969f0e02c60491cc6ef9230ec5c17b0958da
         implementation: dynamo_sglang_python
         job_sha256: ec2ca4910abebb7f95f10523a0f1044e4d62d833d5ce01ec206eaf8698ab37c4
         parser_apis:
           processor: frontend.sglang_prepost
-        results_sha256: 19d5431689ca4646d9a2aab1ca08b590e0c05bfe682a55e0e82ac972ef6b3f7c
+        results_sha256: 814c9efeb42ea3c064feeb7486938214295c3ae691434f69986ee10f59526d4b
+        runtime:
+          image_id: sha256:0512a344b1b69288c630dfe4ade46434da807d10b733dfcb8128b2c9493e070f
+          sglang_version: 0.5.21
         source_sha256: 5bfa1a8ab404742e7de68812ddbab9effbaeacc89f85553076391d0848d1aafd
         status: executed
         version: 1.6.2
 record_defaults:
   member: conformance/fixtures-unified-v2/families/kimi_k2/dynamo_sglang_python-1.6.2.yaml
   producer: producer_b497b7361f635f89
-  context: context_588feab11bd39ca1
+  context: context_0277f40a5722f1ab
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_default
@@ -905,9 +908,12 @@ records:
     request: 43c838b5169b200b4eee7fadd8e1fc19ece327204c6f346a12d6a0a8cf99e663
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: '
 
+          '
+      - kind: text
+        text: '
 
 
 
@@ -922,9 +928,12 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '
 
+            '
+        - kind: text
+          text: '
 
 
 
@@ -941,9 +950,12 @@ records:
     request: 11cde50da21d459babee00017da87532c472a87cf6916c75ec74e5b8abfb40b8
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: '
 
+          '
+      - kind: text
+        text: '
 
           Done.'
       - arguments:
@@ -952,7 +964,7 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '
 
             '
@@ -977,9 +989,12 @@ records:
     request: 05bbd45200112bcfb2f622f40a844b91ddaa3fba3f5455433ffa5f77be2c0987
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: '
 
+          '
+      - kind: text
+        text: '
 
           '
       - arguments:
@@ -988,7 +1003,7 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '
 
             '
@@ -1013,10 +1028,13 @@ records:
     request: 95ef435d0897d5c06d939a118d373749d3d176196520664498c85f967b0d2748
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: 'Pressing it now.
 
 
+          '
+      - kind: text
+        text: '
 
           '
       - arguments:
@@ -1025,7 +1043,7 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Pressing it now.
 
 
@@ -1051,14 +1069,14 @@ records:
     request: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: '
 
 
           '
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: '
 
 
@@ -1097,15 +1115,13 @@ records:
     request: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
     output:
       assembled:
-      - kind: text
-        text: 'Hello there. '
       - kind: reasoning
-        text: let me recall
+        text: Hello there. let me recall
       - kind: text
         text: The capital is Paris.
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Hello there. '
       - expected: []
       - expected:
@@ -1121,17 +1137,15 @@ records:
     request: 0e77d189eb5ad4a70d82ae8336390044042ffafed2adcf70e6e318cf0e6c59da
     output:
       assembled:
-      - kind: text
-        text: 'Sure, one sec. '
       - kind: reasoning
-        text: checking the forecast
+        text: Sure, one sec. checking the forecast
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Sure, one sec. '
       - expected: []
       - expected:
@@ -1641,15 +1655,19 @@ records:
     request: f708af0826cf78ee0ee63ff14df99049868543275f78dc6de21b23ee43a2a288
     output:
       assembled:
+      - kind: reasoning
+        text: '"'
       - kind: text
-        text: '"" trailing'
+        text: '" trailing'
       - arguments: '{\"q\": \"x\"}'
         kind: tool_call
         name: lookup
       chunks:
       - expected:
+        - kind: reasoning
+          text: '"'
         - kind: text
-          text: '"" trailing'
+          text: '" trailing'
         - arguments: '{\"q\": \"x\"}'
           kind: tool_call
           name: lookup
@@ -3406,13 +3424,15 @@ records:
     request: ae48231edad7d7b785c97b98eed4fc1c15c20121968458ec49bb8d9be357421c
     output:
       assembled:
-      - kind: text
-        text: 'I will check that. '
+      - kind: reasoning
+        text: I will check that. <|tool_call_end|>
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'I will check that. '
-      - expected: []
+      - expected:
+        - kind: reasoning
+          text: <|tool_call_end|>
       - expected: []
   prefilled_reasoning_redundant_opener:
     case_key: prefilled_reasoning_redundant_opener
@@ -3726,10 +3746,8 @@ records:
     request: 546a5e26a91ce2a4678638dfb29053d6894c0fe7645948ca40be6656e84212a6
     output:
       assembled:
-      - kind: text
-        text: 'Logging now: '
       - kind: reasoning
-        text: reconsider
+        text: 'Logging now: reconsider'
       - kind: text
         text: ' done.'
       - arguments:
@@ -3738,7 +3756,7 @@ records:
         name: log
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Logging now: '
       - expected: []
       - expected: []
@@ -6502,7 +6520,7 @@ records:
     request: c4512cac1954019e598de1821fd0069d25bbbd5f8c6424f673462e40d4d405e8
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: 'On it: '
       - arguments:
           city: Paris
@@ -6510,7 +6528,7 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'On it: '
       - expected: []
       - expected: []
@@ -6568,11 +6586,11 @@ records:
     request: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
     output:
       assembled:
-      - kind: text
+      - kind: reasoning
         text: The answer is 42, no tools needed.
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: The answer is 42, no tools needed.
       - expected: []
   text_reason_tool_text_reason_tool:
@@ -6580,10 +6598,8 @@ records:
     request: 7de8d8cba1570c9e50dd062fa7bdc658d8653d7ed335e2a46320b1df2f487dc7
     output:
       assembled:
-      - kind: text
-        text: 'Sure. '
       - kind: reasoning
-        text: check A
+        text: Sure. check A
       - kind: text
         text: ' and <think>check B</think>'
       - arguments:
@@ -6596,7 +6612,7 @@ records:
         name: g
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Sure. '
       - expected: []
       - expected:
@@ -6641,15 +6657,17 @@ records:
     request: 44fff81211c2b2951a37082a6bfdc0d9204a4cbf66427c99111c6d0ebfbe30ee
     output:
       assembled:
+      - kind: reasoning
+        text: 'Before. '
       - kind: text
-        text: Before.  After.
+        text: ' After.'
       - arguments:
           city: Paris
         kind: tool_call
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Before. '
       - expected: []
       - expected: []
@@ -6766,10 +6784,8 @@ records:
     request: ce739746bf940b3ed7a2d20e11c8ee3736facea7029f09d1a31227fa9d5f784c
     output:
       assembled:
-      - kind: text
-        text: 'Sure. '
       - kind: reasoning
-        text: 'I should check. '
+        text: 'Sure. I should check. '
       - kind: text
         text: ' now answer</think> Here you go.'
       - arguments:
@@ -6778,7 +6794,7 @@ records:
         name: get_weather
       chunks:
       - expected:
-        - kind: text
+        - kind: reasoning
           text: 'Sure. '
       - expected: []
       - expected:
@@ -6808,9 +6824,13 @@ records:
     case_key: tool_markup_only_emits_nothing
     request: c208f212d4e9af751d43b668461c16f7a01c53b6de6671e3ae013a7af4f54afd
     output:
-      assembled: []
+      assembled:
+      - kind: reasoning
+        text: <|tool_calls_section_end|>
       chunks:
-      - expected: []
+      - expected:
+        - kind: reasoning
+          text: <|tool_calls_section_end|>
       - expected: []
   tool_no_close:
     case_key: tool_no_close

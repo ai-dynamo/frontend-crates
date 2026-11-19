@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_sglang_python","lineage":[{"family":"deepseek_v41","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"76d0d2732afe0496dad5df27a0a2d7aa453fc7cc66236fdc5a19b17928ca7cc2","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_sglang_python","lineage":[{"family":"deepseek_v41","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"2f8c2d0abd06c8bdbe5048a3f08e783112a32a0d9c605cfc6e3fd49e3343f2f0","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
 document:
   mode: unified
 schema_version: 3
@@ -12,11 +12,11 @@ producers:
     captured_with:
       dynamo_sglang_python: 1.6.2
 contexts:
-  context_60809c33b5fd215b:
+  context_f0ddd92fc35f2622:
     mode: unified
     record_metadata:
       dynamo_sglang_capture_provenance:
-        adapter_sha256: 12e7df9189eb312f630df5f1de93e2ad2465c7205b0a4a2dfc50b239447c458b
+        adapter_sha256: e15f6f0bf5a7ca0d99afbf942a3791b7799e0af4a97e5817f90d5dbee74fa9cd
         artifact_sha256: 91c6c35ef02bee0fcbbbf6c3b42e97010aa6cc5d9180557852057b25df5cd84c
         extracted_package_sha256: dbbe725df77617d0056f054e5615969f0e02c60491cc6ef9230ec5c17b0958da
         implementation: dynamo_sglang_python
@@ -24,13 +24,16 @@ contexts:
         parser_apis:
           processor: frontend.sglang_prepost
         results_sha256: b9f2862fd6cb0b08c0bc986d4f2d43c2d88dfca686e26e3a166979220b1b1552
+        runtime:
+          image_id: sha256:0512a344b1b69288c630dfe4ade46434da807d10b733dfcb8128b2c9493e070f
+          sglang_version: 0.5.21
         source_sha256: 5bfa1a8ab404742e7de68812ddbab9effbaeacc89f85553076391d0848d1aafd
         status: executed
         version: 1.6.2
 record_defaults:
   member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_sglang_python-1.6.2.yaml
   producer: producer_b497b7361f635f89
-  context: context_60809c33b5fd215b
+  context: context_f0ddd92fc35f2622
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_default

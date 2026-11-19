@@ -1,4 +1,4 @@
-capture_selection: {"family":"hermes","implementation":"dynamo_sglang_python","lineage":[{"family":"hermes","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"9bf8c8d5a14be4568bf76095f161dd7e2711a0981d13c7a18471c157acff4603","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
+capture_selection: {"family":"hermes","implementation":"dynamo_sglang_python","lineage":[{"family":"hermes","implementation":"dynamo_sglang_python","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_sglang_python-1.6.2.yaml","version":"1.6.2"}],"mode":"unified","payload_sha256":"1a3eb23cd76fc3401987646746263a87add39c87ae445557a0b9b3c5fe452dba","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_sglang_python-1.6.2.yaml","surface":"unified","version":"1.6.2"}
 document:
   mode: unified
 schema_version: 3
@@ -12,11 +12,11 @@ producers:
     captured_with:
       dynamo_sglang_python: 1.6.2
 contexts:
-  context_093be1b6289a4e21:
+  context_f0092502dc16a3e5:
     mode: unified
     record_metadata:
       dynamo_sglang_capture_provenance:
-        adapter_sha256: 12e7df9189eb312f630df5f1de93e2ad2465c7205b0a4a2dfc50b239447c458b
+        adapter_sha256: e15f6f0bf5a7ca0d99afbf942a3791b7799e0af4a97e5817f90d5dbee74fa9cd
         artifact_sha256: 91c6c35ef02bee0fcbbbf6c3b42e97010aa6cc5d9180557852057b25df5cd84c
         extracted_package_sha256: dbbe725df77617d0056f054e5615969f0e02c60491cc6ef9230ec5c17b0958da
         implementation: dynamo_sglang_python
@@ -24,13 +24,16 @@ contexts:
         parser_apis:
           processor: frontend.sglang_prepost
         results_sha256: 1235157a3940ab63fef8a95de0bd28ea3f5c85e406552bfa0309bc58867cb144
+        runtime:
+          image_id: sha256:0512a344b1b69288c630dfe4ade46434da807d10b733dfcb8128b2c9493e070f
+          sglang_version: 0.5.21
         source_sha256: 5bfa1a8ab404742e7de68812ddbab9effbaeacc89f85553076391d0848d1aafd
         status: executed
         version: 1.6.2
 record_defaults:
   member: conformance/fixtures-unified-v2/families/hermes/dynamo_sglang_python-1.6.2.yaml
   producer: producer_b497b7361f635f89
-  context: context_093be1b6289a4e21
+  context: context_f0092502dc16a3e5
 records:
   UNIFIED.40-native_quoted_reasoning_closer_default:
     case_key: UNIFIED.40-native_quoted_reasoning_closer_default
