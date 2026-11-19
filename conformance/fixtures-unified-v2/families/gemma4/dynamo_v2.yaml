@@ -1,15 +1,15 @@
-capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.8.yaml","version":"0.10.8"}],"mode":"unified","payload_sha256":"3962cbdcd99eef1d59d4b5900c982b3b87fd5fe5b20b0bd2740c7a8da9edff43","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.8.yaml","surface":"unified","version":"0.10.8"}
+capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"7628a1c1b45f1e56e65ea111a3222944498279345aec2255fd22167767dfb5e7","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_f31d2f39468298bb
+  origin: origin_14d723576d60e4ac
 origins:
-  origin_f31d2f39468298bb:
-    crate_version: 0.10.8
-    source_sha256: 6c6f8b0e6fa46aa02ad83680ae546a5fa530c1034e12c000c435dc72a1ebb5fe
-    git_commit: e02305b0639e5c66ef25a839045a782e99a2ab36
+  origin_14d723576d60e4ac:
+    crate_version: 0.10.9
+    source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+    git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -25,7 +25,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.8.yaml
+  member: conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.9.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:

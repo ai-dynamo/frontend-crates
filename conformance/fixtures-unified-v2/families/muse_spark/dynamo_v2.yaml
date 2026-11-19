@@ -1,15 +1,15 @@
-capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.8.yaml","version":"0.10.8"}],"mode":"unified","payload_sha256":"a1f1fb1a3d604d94a8b26bff34c4fa609a88c4bfc5eb8441f42d4a60c4e645ba","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.8.yaml","surface":"unified","version":"0.10.8"}
+capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"f9fc2cd8e2ced520bc8f35e0e6cf015988ed6cb693ef50a0d22620005c99a04f","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_f31d2f39468298bb
+  origin: origin_14d723576d60e4ac
 origins:
-  origin_f31d2f39468298bb:
-    crate_version: 0.10.8
-    source_sha256: 6c6f8b0e6fa46aa02ad83680ae546a5fa530c1034e12c000c435dc72a1ebb5fe
-    git_commit: e02305b0639e5c66ef25a839045a782e99a2ab36
+  origin_14d723576d60e4ac:
+    crate_version: 0.10.9
+    source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+    git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,8 +24,136 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
+  context_6cf9492b756bf02b:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: reasoning
+            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - kind: text
+            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+          chunks:
+          - expected:
+            - kind: reasoning
+              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Reasoning
+              tool_output_mode: Native
+              named_tool: null
+              structural_tag:
+                schema:
+                  type: object
+                  properties:
+                    location:
+                      type: string
+                      enum:
+                      - London
+                      - New York
+                    temperature:
+                      type: number
+                    conditions:
+                      type: string
+                  required:
+                  - location
+                  - temperature
+                  - conditions
+                  additionalProperties: false
+                rejected:
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>[]"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"London\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
+            finish_reason: stop
+            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+            tools: []
+            chunks:
+            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: <|eom|>
+            - delta_text: <|start|>
+            - delta_text: assistant to=user
+            - delta_text: <|message|>
+            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: 0192dd37f7012c70b71f02f2cb2bc0d5939831921aca8c06395a76ff036007db
+        resolution: fresh_execution
+      verified_recaptures:
+      - result:
+          error: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__argument-recovery__DIS-3410/conformance/utils/src/check_structural_tag.py\", line 12, in <module>\n    from tvm_ffi.libinfo import load_lib_module\nModuleNotFoundError: No module named 'tvm_ffi'\n"
+          capture_input:
+            init:
+              starting_state: Reasoning
+              tool_output_mode: Native
+              named_tool: null
+              structural_tag:
+                schema:
+                  type: object
+                  properties:
+                    location:
+                      type: string
+                      enum:
+                      - London
+                      - New York
+                    temperature:
+                      type: number
+                    conditions:
+                      type: string
+                  required:
+                  - location
+                  - temperature
+                  - conditions
+                  additionalProperties: false
+                rejected:
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>[]"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"London\"}"
+                - "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
+            finish_reason: stop
+            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.<|eom|><|start|>assistant to=user<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+            tools: []
+            chunks:
+            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+            - delta_text: <|eom|>
+            - delta_text: <|start|>
+            - delta_text: assistant to=user
+            - delta_text: <|message|>
+            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+            - delta_text: ‹finish›
+          capture_observation:
+            error:
+              code: legacy_unclassified
+              detail: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__argument-recovery__DIS-3410/conformance/utils/src/check_structural_tag.py\", line 12, in <module>\n    from tvm_ffi.libinfo import load_lib_module\nModuleNotFoundError: No module named 'tvm_ffi'\n"
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
+          git_commit: caad9e27ff318ac8b906574cf1a91a8a057306e0
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
+          job_sha256: 0192dd37f7012c70b71f02f2cb2bc0d5939831921aca8c06395a76ff036007db
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.8.yaml
+  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -8982,6 +9110,7 @@ records:
       - expected: []
   structured_response_after_reasoning:
     case_key: UNIFIED.36-structured_response_after_reasoning
+    context: context_6cf9492b756bf02b
     request: 7c5c4490e052bdf039c4ad72169df6fbea5db54264a9905549770d2e12fc16f2
     output:
       assembled:
