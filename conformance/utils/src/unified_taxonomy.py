@@ -297,6 +297,9 @@ UNIFIED_TAX = {
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
     "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
+    "glm47_duplicate_argument_key_progress": ("glm5", "3"),
+    "glm47_missing_middle_argument_value_progress": ("glm5", "4"),
+    "glm47_ambiguous_outer_close_holdback": ("glm5", "5"),
 
     'guided_json_noncall_before_native_array_before_payload': (35, "8"),
     'guided_json_native_parameter_string_before_payload': (35, "9"),
