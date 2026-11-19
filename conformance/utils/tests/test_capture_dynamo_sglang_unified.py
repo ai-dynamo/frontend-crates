@@ -50,7 +50,7 @@ def _stub(name, **attrs):
     return module
 
 
-def _load(processor_detectors=None):
+def _load(processor_detectors=None, *, force_reasoning=False):
     def make(**kwargs):
         PROCESSORS.append(_Processor(**kwargs))
         return PROCESSORS[-1]
@@ -58,8 +58,19 @@ def _load(processor_detectors=None):
     detectors = {"ToolCallParserEnum": {}, "DetectorMap": {}}
     function_call_parser, reasoning_parser = type("F", (), detectors), type("R", (), detectors)
     processor_function_call_parser, processor_reasoning_parser = processor_detectors or (function_call_parser, reasoning_parser)
+    def create_parsers(request, **kwargs):
+        assert kwargs["force_reasoning"] is force_reasoning
+        return None, None
+
+    def resolve_request(request, parser_name, *, template_default):
+        assert request["tool_choice"] == "auto"
+        assert parser_name == "qwen3"
+        assert template_default is False
+        return force_reasoning
+
     prepost = _stub("dynamo.frontend.sglang_prepost", convert_tools=lambda tools: tools,
-                    create_parsers=lambda request, **kwargs: (None, None), SglangStreamingPostProcessor=make,
+                    create_parsers=create_parsers, SglangStreamingPostProcessor=make,
+                    resolve_request_force_reasoning=resolve_request,
                     FunctionCallParser=processor_function_call_parser, ReasoningParser=processor_reasoning_parser)
     modules = {
         "dynamo": _stub("dynamo"), "dynamo.frontend": _stub("dynamo.frontend"),
@@ -83,9 +94,10 @@ def _texts(rows):
     return [[delta["text"] for delta in row] for row in rows]
 
 
-def test_each_chunk_is_decoded_in_its_own_row_with_finish_on_the_last():
+@pytest.mark.parametrize("force_reasoning", [True, False])
+def test_each_chunk_is_decoded_in_its_own_row_with_finish_on_the_last(force_reasoning):
     PROCESSORS.clear()
-    rows = _load()._stream_chunks("qwen3", ["<think>a", "", "</think>b"], tools=[])
+    rows = _load(force_reasoning=force_reasoning)._stream_chunks("qwen3", ["<think>a", "", "</think>b"], tools=[])
     assert _texts(rows) == [["<think>a"], [], ["</think>b"]]
     assert PROCESSORS[-1].finishes == [None, None, "stop"]
 

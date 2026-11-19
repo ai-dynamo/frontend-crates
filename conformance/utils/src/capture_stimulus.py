@@ -11,7 +11,7 @@ from fixture_disposition import (
     canonical_unified_record_key,
     canonicalize_unified_inputs,
 )
-from impls import UNIFIED_BATCH_IMPLS
+from impls import PEER_IMPL_KEYS, UNIFIED_BATCH_IMPLS
 from capture_versions import UNIFIED_VERSION_RE, capture_release_sort_key, provenance_release_version
 from viewer_codec import typed_equal
 from unified_taxonomy import V1_SPLIT_SCENARIOS
@@ -333,7 +333,7 @@ def select_peer_observation(record: dict, current: dict, *, implementation: str,
     if recapture is None:
         return record
     batch = implementation in UNIFIED_BATCH_IMPLS
-    if implementation not in {"sglang_python", "vllm_python", "vllm_rust", "dynamo_v2"} and not batch:
+    if implementation not in (*PEER_IMPL_KEYS, "dynamo_v2") and not batch:
         raise ValueError("verified recapture requires a supported peer implementation")
     _validate_verified_recapture(recapture, batch=batch)
     provenance = recapture["provenance"]
@@ -567,6 +567,17 @@ def validate_adapter_bundle(root, manifest):
     return hashlib.sha256(b"".join(hashed)).hexdigest()
 
 
+def validate_dynamo_sglang_runtime(document: dict, receipt: dict) -> None:
+    runtime = receipt.get("runtime")
+    if (not isinstance(runtime, dict) or set(runtime) != {"image_id", "sglang_version"}
+            or not isinstance(runtime["image_id"], str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", runtime["image_id"]) is None
+            or not isinstance(runtime["sglang_version"], str)
+            or re.fullmatch(r"[0-9]+(?:\.[0-9]+){2}", runtime["sglang_version"]) is None
+            or document.get("sglang_version") != runtime["sglang_version"]):
+        raise ValueError("Dynamo SGLang capture differs from the runtime receipt")
+
+
 def validate_execution(document, job, job_bytes, implementation, version, *, expected_adapter_sha256=None):
     version_field = {"sglang_python": "sglang_version", "vllm_python": "vllm_version",
                      "vllm_rust": "vllm_rust_version",
@@ -579,6 +590,8 @@ def validate_execution(document, job, job_bytes, implementation, version, *, exp
         raise ValueError("coverage adapter differs from frozen producer bundle")
     if document.get(version_field) != version or receipt["implementation"] != implementation or receipt["version"] != version:
         raise ValueError("coverage producer identity mismatch")
+    if implementation == "dynamo_sglang_python":
+        validate_dynamo_sglang_runtime(document, receipt)
     if receipt["job_sha256"] != hashlib.sha256(job_bytes).hexdigest():
         raise ValueError("coverage request receipt mismatch")
     digest = hashlib.sha256(json.dumps(document["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest()

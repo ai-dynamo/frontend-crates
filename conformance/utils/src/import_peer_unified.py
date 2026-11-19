@@ -13,7 +13,7 @@ import yaml
 import yaml_fast  # noqa: F401
 
 from capture_unified_job import build_job
-from capture_stimulus import execution_outcome
+from capture_stimulus import execution_outcome, validate_dynamo_sglang_runtime
 from capture_stimulus import capture_input, select_peer_observation
 from explode_unified_fixtures import _peer_cell
 from impls import BATCH_SOURCE_BLOCKERS, UNIFIED_BATCH_IMPLS
@@ -83,6 +83,10 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
     stream_receipt = not execution and "results_sha256" in provenance
     if stream_receipt and not typed_equal(capture.get("provenance"), provenance):
         raise ValueError("producer receipt differs from supplied provenance")
+    if implementation == "dynamo_sglang_python":
+        if not stream_receipt:
+            raise ValueError("Dynamo SGLang import requires a sealed runtime receipt")
+        validate_dynamo_sglang_runtime(capture, provenance)
     verified_execution = execution or stream_receipt
     if verified_execution and provenance.get("implementation") != implementation:
         raise ValueError("execution receipt implementation differs from history")

@@ -85,10 +85,11 @@ def _stream_chunks(family, chunks, *, terminal_step=False, finish_reason="stop",
     rname, tname = FAMILY_PARSERS[family]
     request = {"tools": [{"type": "function", "function": tool} for tool in tools], "tool_choice": "auto"}
     sglang_tools = peer_call(processor.convert_tools, request["tools"])
-    # A native/default request has no template forcing reasoning.
+    # Frozen inputs have no chat template; still apply the serving request/model defaults.
+    force_reasoning = peer_call(processor.resolve_request_force_reasoning, request, rname, template_default=False)
     tool_parser, reasoning_parser = peer_call(
         processor.create_parsers, request, tool_call_parser_name=tname,
-        reasoning_parser_name=rname, sglang_tools=sglang_tools, force_reasoning=False)
+        reasoning_parser_name=rname, sglang_tools=sglang_tools, force_reasoning=force_reasoning)
     post = peer_call(
         processor.SglangStreamingPostProcessor, tokenizer=ChunkTokenizer(chunks),
         tool_call_parser=tool_parser, reasoning_parser=reasoning_parser,

@@ -105,6 +105,67 @@ def test_dependency_image_overrides_retain_resolved_immutable_ids(monkeypatch):
     assert images == {"vllm": "sha256:1", "sglang": "sha256:2"}
 
 
+def test_dynamo_sglang_batch_only_fails_before_launch(tmp_path):
+    inventory = tmp_path / "inventory.yaml"
+    inventory.write_text("targets: [{implementation: dynamo_sglang, version: 1.6.2}]")
+    work = tmp_path / "work"
+    with pytest.raises(ValueError, match="dynamo_sglang capture supports only stream"):
+        peers.run_inventory(inventory, work, 1, modes=["batch"])
+    assert not work.exists()
+
+    target = tmp_path / "target.json"
+    target.write_text(json.dumps({"implementation": "dynamo_sglang", "version": "1.6.2"}))
+    for entry, selection in ((peers.worker, "batch"), (peers.worker_modes, ["batch"])):
+        with pytest.raises(ValueError, match="dynamo_sglang capture supports only stream"):
+            entry(target, work, work, selection)
+    assert not work.exists()
+
+
+def test_dynamo_sglang_rejects_an_override_with_a_different_image(tmp_path, monkeypatch):
+    inventory = tmp_path / "inventory.yaml"
+    inventory.write_text(yaml.safe_dump({"targets": [{
+        "implementation": "dynamo_sglang", "version": "1.6.2",
+        "runtime": {"image": "release", "identity": {"image_id": "sha256:" + "1" * 64}},
+    }]}))
+    inspected = []
+
+    def image_id(command, *, text):
+        inspected.append(command[3])
+        return "sha256:" + "2" * 64
+
+    monkeypatch.setattr(peers.subprocess, "check_output", image_id)
+    work = tmp_path / "work"
+    with pytest.raises(ValueError, match="image differs from the pinned release pairing"):
+        peers.run_inventory(inventory, work, 1, image_overrides={"dynamo_sglang": "override"})
+    assert inspected == ["override"]
+    assert not work.exists()
+
+
+@pytest.mark.parametrize("mutation", ["version", "missing_version", "image", "missing_runtime"])
+def test_dynamo_sglang_runtime_receipt_rejects_unbound_metadata(mutation):
+    job = {"cases": []}
+    job_bytes = peers.json_bytes(job)
+    receipt = {
+        "implementation": "dynamo_sglang_python", "version": "1.6.2",
+        "runtime": {"image_id": "sha256:" + "1" * 64, "sglang_version": "0.5.21"},
+        "source_sha256": "0" * 64, "adapter_sha256": "1" * 64,
+        "job_sha256": peers.sha256(job_bytes), "results_sha256": peers.sha256(b"{}"),
+    }
+    capture = {"dynamo_sglang_version": "1.6.2", "sglang_version": "0.5.21",
+               "results": {}, "provenance": receipt}
+    peers.validate_execution(capture, job, job_bytes, "dynamo_sglang_python", "1.6.2")
+    if mutation == "version":
+        capture["sglang_version"] = "0.5.23"
+    elif mutation == "missing_version":
+        del capture["sglang_version"]
+    elif mutation == "image":
+        receipt["runtime"]["image_id"] = "latest"
+    else:
+        del receipt["runtime"]
+    with pytest.raises(ValueError, match="differs from the runtime receipt"):
+        peers.validate_execution(capture, job, job_bytes, "dynamo_sglang_python", "1.6.2")
+
+
 @pytest.mark.parametrize("present_apis", [False, True])
 def test_foreign_abi_is_explicit_import_free_inspection_and_never_executes_present_apis(tmp_path, monkeypatch, present_apis):
     filename = "vllm-0.3.2-cp311-cp311-manylinux1_x86_64.whl"
