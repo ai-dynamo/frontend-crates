@@ -82,7 +82,10 @@ def test_legacy_family_history_retains_pre_11_releases_and_current_11_snapshot(h
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/index.html?{query}")
         _ready(driver, "tab-unified")
-        for _ in range(2):
+        for reload in (False, True):
+            if reload:
+                driver.refresh()
+                _ready(driver, "tab-unified")
             observed = driver.execute_script("""
                 const comparison = window.__conformanceComparison;
                 const row = comparison.view.rows.find(row => row.family === arguments[0]);
@@ -92,7 +95,9 @@ def test_legacy_family_history_retains_pre_11_releases_and_current_11_snapshot(h
                         .filter(Boolean);
                     const missing = candidates.filter(candidate => candidate.block?.unavailable_code === 'missing_capture');
                     const measured = candidates.filter(candidate => candidate.block?.batch_final);
-                    return [key, {missing: missing.length, versions: [...new Set(measured.map(candidate => candidate.version))]}];
+                    const blocked = candidates.filter(candidate => candidate.block?.unavailable_code === 'source_unavailable');
+                    const versions = results => [...new Set(results.map(candidate => candidate.version))];
+                    return [key, {missing: missing.length, measured: versions(measured), blocked: versions(blocked)}];
                 }));
                 return {families: comparison.view.rows.map(row => row.family), counts: comparison.counts, results};
             """, family, keys)
@@ -101,13 +106,17 @@ def test_legacy_family_history_retains_pre_11_releases_and_current_11_snapshot(h
                 result = observed["results"][key]
                 assert observed["counts"][key]["total"] > result["missing"]
                 assert observed["counts"][key]["missing"] == result["missing"]
-                assert result["versions"] == [version]
+                # The first jailed GPT-OSS archive carries producer-blocked observations.
+                if family == "gpt_oss" and key == "dynamo_v1_jail@3.x":
+                    assert result["measured"] == []
+                    assert result["blocked"] == [version]
+                    assert observed["counts"][key]["blocked"] > 0
+                else:
+                    assert result["measured"] == [version]
                 if key.endswith("@Latest"):
                     assert result["missing"] == 0
             assert [Select(driver.find_element("css selector", f'[data-slot-capture="{slot}"]')).first_selected_option.get_attribute("value")
                     for slot in range(len(keys))] == keys
-            driver.refresh()
-            _ready(driver, "tab-unified")
     finally:
         driver.quit()
         server.shutdown()
