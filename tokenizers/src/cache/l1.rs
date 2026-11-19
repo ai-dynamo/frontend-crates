@@ -11,7 +11,8 @@
 
 //! L1 Cache: Special-token boundary prefix cache
 //!
-//! Caches tokenization results at ALL special token boundaries.
+//! A miss caches tokenization results at every special-token boundary. An extending hit
+//! caches the deepest boundary, plus at most one view (see [`L1Cache::extend_after_match`]).
 //! Special tokens (like `<|im_start|>`, `<|im_end|>`) are atomic in BPE tokenizers
 //! (`special: true, normalized: false`), making them the ONLY safe split points that
 //! guarantee correctness: `tokenize(prefix) + tokenize(suffix) == tokenize(prefix + suffix)`.
@@ -25,7 +26,7 @@
 
 use std::{
     hash::BuildHasherDefault,
-    mem::{size_of, size_of_val},
+    mem::size_of_val,
     ops::Deref,
     sync::{
         Arc,
@@ -129,8 +130,11 @@ pub struct SharedTokenizerCacheStats {
 
 impl SharedTokenizerCache {
     pub fn new(max_memory_bytes: usize) -> Self {
-        // Every view needs a live owner, and every owner charges at least one token id.
-        let max_views = (max_memory_bytes / size_of::<TokenIdType>()) as u64;
+        // The listener keeps at most one view per live owner, so this bound only catches
+        // orphans (an owner replaced by an entry with no view), which lookups also drop.
+        // Records are ~100 bytes: at most ~2.5% of the budget, binding only when owners
+        // average under 4 KiB of token ids.
+        let max_views = (max_memory_bytes / 4096) as u64;
         let views: ViewIndex = Cache::builder()
             .max_capacity(max_views)
             .build_with_hasher(PrefixHasher::default());
@@ -158,8 +162,16 @@ impl SharedTokenizerCache {
             return Some(entry.tokens.into());
         }
         let (owner, len) = self.views.get(key)?;
-        let buf = self.cache.get(&owner)?.tokens;
-        (len <= buf.len()).then_some(PrefixTokens { buf, len })
+        if let Some(entry) = self.cache.get(&owner)
+            && len <= entry.tokens.len()
+        {
+            return Some(PrefixTokens {
+                buf: entry.tokens,
+                len,
+            });
+        }
+        self.views.invalidate(key);
+        None
     }
 
     /// After maintenance, the number of views whose owner is not cached.
@@ -333,7 +345,8 @@ pub struct L1Cache {
     misses: AtomicU64,
     on_hit: Option<CacheEventFn>,
     on_miss: Option<CacheEventFn>,
-    /// Keep a trailing-message view on extending hits; off only to compare in tests.
+    /// Keep a trailing-message view on extending hits; off only to compare.
+    #[cfg(test)]
     pub(super) trailing_views: bool,
 }
 
@@ -371,12 +384,23 @@ impl L1Cache {
             misses: AtomicU64::new(0),
             on_hit: None,
             on_miss: None,
+            #[cfg(test)]
             trailing_views: true,
         }
     }
 
     fn hasher(&self) -> blake3::Hasher {
         namespace_hasher(&self.namespace)
+    }
+
+    #[cfg(test)]
+    fn trailing_views(&self) -> bool {
+        self.trailing_views
+    }
+
+    #[cfg(not(test))]
+    fn trailing_views(&self) -> bool {
+        true
     }
 
     #[cfg(test)]
@@ -496,7 +520,7 @@ impl L1Cache {
                 let trailing_cut = prefix_hashes
                     .windows(2)
                     .rev()
-                    .take_while(|w| self.trailing_views && w[0].0 > boundary_pos)
+                    .take_while(|w| self.trailing_views() && w[0].0 > boundary_pos)
                     .find(|w| w[1].0 - w[0].0 >= super::MIN_CACHED_SEGMENT_BYTES)
                     .map(|w| w[0]);
                 return PrefixLookup::Hit(PrefixMatch {
@@ -683,19 +707,25 @@ impl L1Cache {
 
         // Encode all segments first to reserve capacity without recopying the prefix.
         // A trailing cut splits off the segment before the trailing message (see `PrefixMatch`).
-        let split = trailing_cut.map_or(prefix_len, |(cut, _)| cut);
-        let seg_t = trailing_cut
-            .map(|_| tokenizer.encode(&input[prefix_len..split]))
-            .transpose()?;
-        let seg_t = seg_t.as_ref().map_or(&[][..], |e| e.token_ids());
+        let mut split = prefix_len;
+        let seg_view;
+        let mut view_ids: &[TokenIdType] = &[];
+        if let Some((cut, _)) = trailing_cut {
+            seg_view = tokenizer.encode(&input[prefix_len..cut])?;
+            view_ids = seg_view.token_ids();
+            split = cut;
+        }
         let seg_a = tokenizer.encode(&input[split..deepest])?;
         let seg_b = tokenizer.encode(&input[deepest..])?;
         let mut cumulative = Vec::with_capacity(
-            prefix_tokens.len() + seg_t.len() + seg_a.token_ids().len() + seg_b.token_ids().len(),
+            prefix_tokens.len()
+                + view_ids.len()
+                + seg_a.token_ids().len()
+                + seg_b.token_ids().len(),
         );
         cumulative.extend_from_slice(&prefix_tokens);
-        cumulative.extend_from_slice(seg_t);
-        let trailing_len = cumulative.len();
+        cumulative.extend_from_slice(view_ids);
+        let view_len = cumulative.len();
         cumulative.extend_from_slice(seg_a.token_ids());
 
         let hash_bytes =
@@ -708,7 +738,7 @@ impl L1Cache {
         // Index the view first: if admission rejects the owner, its removal notice
         // must find the view to drop it.
         if let Some(view) = view {
-            self.cache.views.insert(view, (hash_bytes, trailing_len));
+            self.cache.views.insert(view, (hash_bytes, view_len));
         }
         self.cache.cache.insert(
             hash_bytes,
@@ -1130,6 +1160,41 @@ mod tests {
             h.join().unwrap();
         }
         assert!(cache.stats().memory_bytes > 0);
+    }
+
+    #[test]
+    fn view_of_a_replaced_owner_is_dropped_on_lookup() {
+        let tok = load_tokenizer();
+        let cache = test_cache(8 * 1024 * 1024);
+        let head = format!("<s>system\n{}</s>", "system words ".repeat(20));
+        cache
+            .insert_at_boundaries(&format!("{head}<s>user\nhi"), tok.as_ref())
+            .unwrap();
+        let user = "user words ".repeat(20);
+        let input = format!("{head}<s>assistant\nok</s><s>user\n{user}</s>x");
+        let PrefixLookup::Hit(matched) = cache.lookup_prefix(&input) else {
+            panic!("partial hit");
+        };
+        let (view, owner) = (
+            matched.trailing_cut.unwrap().1,
+            matched.deepest_hash.unwrap(),
+        );
+        cache
+            .extend_after_match_with_hash(&input, matched, tok.as_ref())
+            .unwrap();
+        let view_end = input.rfind("user\n").unwrap();
+        let expected = tok.encode(&input[..view_end]).unwrap();
+        assert_eq!(&*cache.cache.get(&view).unwrap(), expected.token_ids());
+
+        // A miss-path insert replaces the owner without view metadata, so its later
+        // removal leaves the view behind; the next lookup through it drops it.
+        let owner_tokens = cache.get(&owner).unwrap();
+        cache.insert(owner, owner_tokens);
+        cache.cache.cache.invalidate(&owner);
+        cache.cache.cache.run_pending_tasks();
+        assert!(cache.cache.views.contains_key(&view));
+        assert!(cache.cache.get(&view).is_none());
+        assert!(!cache.cache.views.contains_key(&view));
     }
 
     #[test]
