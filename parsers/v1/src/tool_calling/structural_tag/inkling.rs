@@ -128,6 +128,19 @@ mod tests {
         assert_eq!(alternatives.len(), 1);
         assert_eq!(alternatives[0]["elements"][1]["type"], "const_string");
         assert_eq!(alternatives[0]["elements"][1]["value"], r#""get_weather""#);
+        for (index, samples) in [
+            (0, [r#"{"name":"#, r#"{ "name" : "#, "\n{\t\"name\"\r:\n"]),
+            (2, [r#","args":"#, r#" , "args" : "#, "\t,\n\"args\"\r:\t"]),
+            (4, ["}", " } ", "\t}\r\n"]),
+        ] {
+            let pattern = alternatives[0]["elements"][index]["pattern"]
+                .as_str()
+                .unwrap();
+            let matcher = regex::Regex::new(&format!(r"\A(?:{pattern})\z")).unwrap();
+            for sample in samples {
+                assert!(matcher.is_match(sample), "{pattern:?} rejects {sample:?}");
+            }
+        }
         assert_eq!(
             alternatives[0]["elements"][3]["json_schema"],
             tools[1].parameters.clone().unwrap()
