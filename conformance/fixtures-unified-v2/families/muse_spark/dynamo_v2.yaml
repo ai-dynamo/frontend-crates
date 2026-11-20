@@ -1,11 +1,15 @@
-capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"9118356bfa237a9dd267cfb977b34424a542174681645dbdd4fc0c34e07ba033","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"eff73e9a17827e7ff01976c5340874b5c3f12a8370e3b2a05b1d0a7b667a5453","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_883f78c28b7d2088
+  origin: origin_b8732c711a8808fa
 origins:
+  origin_b8732c711a8808fa:
+    crate_version: 0.10.9
+    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
+    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -21,7 +25,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml
+  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:

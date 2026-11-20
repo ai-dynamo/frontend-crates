@@ -108,8 +108,15 @@ fn guided_native_fallback_streams_parallel_calls_and_resets() {
     );
     let mut p = parser(schema);
     p.initialize_request(init).unwrap();
-    let cut = input.find("one").unwrap() + 3;
-    let mut output = p.push(&input[..cut]).unwrap();
+    let value_end = input.find("one").unwrap() + 3;
+    let mut output = p.push(&input[..value_end]).unwrap();
+    assert!(
+        !output
+            .iter()
+            .any(|event| matches!(event, UnifiedParserEvent::ToolCall(_)))
+    );
+    let cut = value_end + "]<]minimax[>[</text>".len();
+    output.extend(p.push(&input[value_end..cut]).unwrap());
     assert!(output.iter().any(
         |e| matches!(e, UnifiedParserEvent::ToolCall(c) if c.name.as_deref() == Some("record"))
     ));
@@ -384,7 +391,7 @@ fn native_control_markers_inside_strings_do_not_dispatch() {
 }
 
 #[test]
-fn consecutive_string_arguments_stream_independently() {
+fn consecutive_string_arguments_release_after_each_closer() {
     let schema = json!({"type":"object","properties":{
         "first":{"type":"string"}, "second":{"type":"string"}
     }});
@@ -394,10 +401,11 @@ fn consecutive_string_arguments_stream_independently() {
             "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"record\">]<]minimax[>[<first>one",
         )
         .unwrap();
+    assert!(output.is_empty());
     let next = p
         .push("]<]minimax[>[</first>]<]minimax[>[<second>two")
         .unwrap();
-    assert!(next.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.arguments.contains("two") && !call.complete)));
+    assert!(next.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.arguments.contains("one") && !call.arguments.contains("two") && !call.complete)));
     output.extend(next);
     output.extend(
         p.push("]<]minimax[>[</second>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>")
@@ -438,22 +446,13 @@ fn native_arguments_make_progress_before_invoke_close() {
             "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"record\">]<]minimax[>[<text>Hello",
         )
         .unwrap();
-    let first: String = output
-        .iter()
-        .filter_map(|event| match event {
-            UnifiedParserEvent::ToolCall(call) => Some(call.arguments.as_str()),
-            _ => None,
-        })
-        .collect();
-    assert!(
-        first.contains("Hello"),
-        "string argument was buffered: {output:?}"
-    );
-    let next = p.push(" world").unwrap();
-    assert!(next.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.arguments.contains("world") && !call.complete)));
+    assert!(output.is_empty());
+    assert!(p.push(" world").unwrap().is_empty());
+    let next = p.push("]<]minimax[>[</text>").unwrap();
+    assert!(next.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.arguments.contains("Hello world") && !call.complete)));
     output.extend(next);
     output.extend(
-        p.push("]<]minimax[>[</text>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>")
+        p.push("]<]minimax[>[</invoke>]<]minimax[>[</tool_call>")
             .unwrap(),
     );
     output.extend(p.finish().unwrap().events);
@@ -533,17 +532,18 @@ fn guided_fallback_recovers_live_native_call_after_reasoning() {
 }
 
 #[test]
-fn closed_typed_argument_does_not_delay_a_later_string() {
+fn closed_typed_argument_precedes_buffered_string_progress() {
     let mut p = parser(json!({"type":"object","properties":{
         "count":{"type":"integer"}, "text":{"type":"string"}
     }}));
     let mut output = p.push("]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"record\">]<]minimax[>[<count>2]<]minimax[>[</count>").unwrap();
     assert!(output.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.arguments.contains("2") && !call.complete)));
-    let next = p.push("]<]minimax[>[<text>Hello").unwrap();
+    assert!(p.push("]<]minimax[>[<text>Hello").unwrap().is_empty());
+    let next = p.push("]<]minimax[>[</text>").unwrap();
     assert!(next.iter().any(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.arguments.contains("Hello") && !call.complete)));
     output.extend(next);
     output.extend(
-        p.push("]<]minimax[>[</text>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>")
+        p.push("]<]minimax[>[</invoke>]<]minimax[>[</tool_call>")
             .unwrap(),
     );
     output.extend(p.finish().unwrap().events);
@@ -1207,4 +1207,21 @@ fn required_nullable_omitted_argument_is_null() {
     assert_splits(&city, s, init(), &[expected(json!({"city":"Paris"}))]);
     let s = note(json!({"type":["string","null"]}), json!(["note"]));
     assert_splits(&call(""), s, init(), &[expected(json!({"note":null}))]);
+}
+
+#[test]
+fn completed_parameters_survive_a_later_unclosed_string() {
+    let schema =
+        json!({"type":"object","properties":{"first":{"type":"string"},"text":{"type":"string"}}});
+    for suffix in ["", "]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"] {
+        let input = format!(
+            "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"record\">]<]minimax[>[<first>kept]<]minimax[>[</first>]<]minimax[>[<text>unfinished{suffix}"
+        );
+        let want = if suffix.is_empty() {
+            Vec::new()
+        } else {
+            vec![expected(json!({"first":"kept"}))]
+        };
+        assert_splits(&input, schema.clone(), UnifiedParserInit::default(), &want);
+    }
 }

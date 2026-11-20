@@ -481,7 +481,7 @@ impl SchemaCoercion {
             .and_then(Value::as_str)
             .map(str::to_lowercase);
         let (allowed_types, has_type_constraints) =
-            collect_allowed_types(root, schema, LiteralTypes::All, remaining);
+            collect_allowed_types(root, schema, LiteralTypes::DeclaredFirst, remaining);
         Self {
             direct_type,
             allowed_types,
@@ -1321,6 +1321,44 @@ mod schema_composition_tests {
             parameters: Some(parameters),
         };
         get_arguments_config("f", Some(&[tool]))
+    }
+
+    #[test]
+    fn declared_types_override_only_contradicting_enum_types() {
+        for schema in [
+            json!({"type":"integer","enum":["auto"]}),
+            json!({"$ref":"#/$defs/count"}),
+            json!({"allOf":[{"$ref":"#/$defs/count"}]}),
+            json!({"anyOf":[{"$ref":"#/$defs/count"},{"type":"null"}]}),
+        ] {
+            let config = document_config(
+                json!({"type":"object", "$defs":{"count":{"type":"integer","enum":["auto"]}}, "properties":{"x":schema}}),
+            );
+            assert_eq!(
+                serde_json::to_string(&convert_param_value("5", "x", &config, "f")).unwrap(),
+                "5"
+            );
+        }
+        for (schema, raw, expected) in [
+            (
+                json!({"type":"array","enum":["temperature"],"items":{"type":"string"}}),
+                "[\"temperature\",\"humidity\"]",
+                "[\"temperature\",\"humidity\"]",
+            ),
+            (json!({"type":"string","enum":["5"]}), "5", "\"5\""),
+            (
+                json!({"type":["string","null"],"enum":["5",null]}),
+                "5",
+                "\"5\"",
+            ),
+            (json!({"type":"integer","enum":[5]}), "5", "5"),
+        ] {
+            assert_eq!(
+                serde_json::to_string(&convert_param_value(raw, "x", &one_param("x", schema), "f"))
+                    .unwrap(),
+                expected
+            );
+        }
     }
 
     fn ser(pv: &ParsedValue) -> String {
