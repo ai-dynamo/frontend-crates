@@ -65,9 +65,11 @@
 // Decoding is Linux-only; elsewhere the decode path is compiled out.
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
 
+use crate::execution;
 use crate::frames::{VideoFrames, VideoTiming};
 use crate::image::resize::{Resample, resize_rgb};
 use crate::{MmError, Result};
+use std::sync::mpsc;
 
 mod matroska;
 mod mp4;
@@ -634,6 +636,11 @@ fn decode_demuxed(
         .filter(|n| *n <= limits.max_output_bytes)
         .ok_or_else(too_big)?;
 
+    let room =
+        limits.max_output_bytes - out_width as usize * out_height as usize * 3 * targets.len();
+    // A queued picture and its source-size RGB count against the room.
+    let queued = (info.width as usize * info.height as usize).saturating_mul(9) / 2;
+
     let mut sampler = Sampler {
         targets,
         next: 0,
@@ -646,8 +653,14 @@ fn decode_demuxed(
         rgb: Vec::new(),
         full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
+        batch: execution::threads().min(room / queued).max(1),
+        sent: Vec::new(),
+        appended: 0,
+        in_flight: 0,
+        results: std::sync::mpsc::channel(),
     };
     backend(track, &mut sampler)?;
+    sampler.flush();
     if let Some(missing) = sampler.targets.get(sampler.next) {
         return Err(MmError::invalid_input(format!(
             "frame {missing} of the {} the video declares did not decode",
@@ -721,7 +734,20 @@ struct Sampler<'t> {
     /// One frame at the source size, when frames are resized.
     full: Vec<u8>,
     timestamps: Vec<f64>,
+    /// Kept frames converted on the CPU pool at a time, while decoding goes
+    /// on; 1 converts each frame on the caller as it arrives. It is 1 on a
+    /// pool thread, so a caller never waits on the pool from inside it.
+    batch: usize,
+    /// Each kept frame sent to the pool: its repeat count, and its RGB once back.
+    sent: Vec<(usize, Option<Vec<u8>>)>,
+    /// The frames of `sent` already in `rgb`.
+    appended: usize,
+    in_flight: usize,
+    results: (mpsc::Sender<Converted>, mpsc::Receiver<Converted>),
 }
+
+/// A frame converted on the pool: its index in `Sampler::sent` and its RGB.
+type Converted = (usize, std::thread::Result<Vec<u8>>);
 
 impl Sampler<'_> {
     fn done(&self) -> bool {
@@ -730,9 +756,12 @@ impl Sampler<'_> {
 
     /// Forget every frame, for a decode that starts over.
     fn restart(&mut self) {
+        self.flush();
         self.next = 0;
         self.rgb.clear();
         self.timestamps.clear();
+        self.sent.clear();
+        self.appended = 0;
     }
 
     /// Whether shown frame `index` is the next sampled one.
@@ -752,32 +781,140 @@ impl Sampler<'_> {
         if !self.wants(index) {
             return Ok(());
         }
-        let start = self.rgb.len();
-        match self.resize {
-            None => picture.to_rgb(&mut self.rgb, self.conversion),
-            Some(r) => {
-                self.full.clear();
-                picture.to_rgb(&mut self.full, self.conversion);
-                let resized = resize_rgb(
-                    &self.full,
-                    self.height as usize,
-                    self.width as usize,
-                    r.height as usize,
-                    r.width as usize,
-                    r.filter,
-                );
-                self.rgb.extend_from_slice(&resized);
-            }
-        }
-        let end = self.rgb.len();
-        self.timestamps.push(pts);
-        self.next += 1;
+        let mut copies = 0;
         while self.targets.get(self.next) == Some(&index) {
-            self.rgb.extend_from_within(start..end);
             self.timestamps.push(pts);
             self.next += 1;
+            copies += 1;
+        }
+        if self.batch == 1 {
+            let start = self.rgb.len();
+            convert_frame(
+                picture,
+                self.resize,
+                self.conversion,
+                &mut self.full,
+                &mut self.rgb,
+            );
+            let end = self.rgb.len();
+            for _ in 1..copies {
+                self.rgb.extend_from_within(start..end);
+            }
+        } else {
+            let slot = self.sent.len();
+            self.sent.push((copies, None));
+            let (picture, resize, conversion) =
+                (QueuedPicture::new(picture), self.resize, self.conversion);
+            let done = self.results.0.clone();
+            execution::spawn(move || {
+                let rgb = std::panic::catch_unwind(move || {
+                    let mut rgb = Vec::new();
+                    convert_frame(
+                        &picture.view(),
+                        resize,
+                        conversion,
+                        &mut Vec::new(),
+                        &mut rgb,
+                    );
+                    rgb
+                });
+                let _ = done.send((slot, rgb));
+            });
+            self.in_flight += 1;
+            if self.in_flight == self.batch {
+                self.receive();
+            }
         }
         Ok(())
+    }
+
+    /// Wait for every frame sent to the pool.
+    fn flush(&mut self) {
+        while self.in_flight > 0 {
+            self.receive();
+        }
+    }
+
+    /// Wait for one converted frame, then append the frames now back in order.
+    fn receive(&mut self) {
+        let Ok((slot, rgb)) = self.results.1.recv() else {
+            unreachable!("the sampler holds a sender");
+        };
+        self.in_flight -= 1;
+        self.sent[slot].1 = Some(rgb.unwrap_or_else(|panic| std::panic::resume_unwind(panic)));
+        while let Some((copies, Some(rgb))) = self.sent.get_mut(self.appended) {
+            for _ in 0..*copies {
+                self.rgb.extend_from_slice(rgb);
+            }
+            *rgb = Vec::new();
+            self.appended += 1;
+        }
+    }
+}
+
+/// Append `picture` as RGB, resized if asked; `full` holds the source-size
+/// frame meanwhile.
+fn convert_frame(
+    picture: &Nv12<'_>,
+    resize: Option<FrameResize>,
+    conversion: RgbConversion,
+    full: &mut Vec<u8>,
+    out: &mut Vec<u8>,
+) {
+    match resize {
+        None => picture.to_rgb(out, conversion),
+        Some(r) => {
+            full.clear();
+            picture.to_rgb(full, conversion);
+            out.extend_from_slice(&resize_rgb(
+                full,
+                picture.height as usize,
+                picture.width as usize,
+                r.height as usize,
+                r.width as usize,
+                r.filter,
+            ));
+        }
+    }
+}
+
+/// A kept [`Nv12`] picture copied out of the decoder, for a later conversion.
+struct QueuedPicture {
+    width: u32,
+    height: u32,
+    y: Vec<u8>,
+    uv: Vec<u8>,
+    y_stride: usize,
+    uv_stride: usize,
+    matrix: Matrix,
+    full_range: bool,
+}
+
+impl QueuedPicture {
+    fn new(picture: &Nv12<'_>) -> Self {
+        Self {
+            width: picture.width,
+            height: picture.height,
+            y: picture.y.to_vec(),
+            uv: picture.uv.to_vec(),
+            y_stride: picture.y_stride,
+            uv_stride: picture.uv_stride,
+            matrix: picture.matrix,
+            full_range: picture.full_range,
+        }
+    }
+
+    fn view(&self) -> Nv12<'_> {
+        Nv12 {
+            width: self.width,
+            height: self.height,
+            y: &self.y,
+            uv: &self.uv,
+            y_stride: self.y_stride,
+            uv_stride: self.uv_stride,
+            matrix: self.matrix,
+            full_range: self.full_range,
+        }
     }
 }
 
@@ -1119,20 +1256,22 @@ impl Nv12<'_> {
         }
     }
 
-    fn convert(&self, out: &mut Vec<u8>, pixel: impl Fn(u8, u8, u8) -> [u8; 3]) {
-        out.reserve(self.width as usize * self.height as usize * 3);
-        for row in 0..self.height as usize {
-            let y_row = &self.y[row * self.y_stride..];
+    fn convert(&self, out: &mut Vec<u8>, pixel: impl Fn(u8, u8, u8) -> [u8; 3] + Sync) {
+        let width = self.width as usize;
+        let start = out.len();
+        out.resize(start + width * self.height as usize * 3, 0);
+        execution::for_chunks_mut(&mut out[start..], width * 3, |row, rgb| {
+            let y_row = &self.y[row * self.y_stride..][..width];
             let uv_row = &self.uv[(row / 2) * self.uv_stride..];
-            for (col, &luma) in y_row[..self.width as usize].iter().enumerate() {
+            for (col, (&luma, px)) in y_row.iter().zip(rgb.chunks_exact_mut(3)).enumerate() {
                 let c = (col / 2) * 2;
-                out.extend_from_slice(&pixel(luma, uv_row[c], uv_row[c + 1]));
+                px.copy_from_slice(&pixel(luma, uv_row[c], uv_row[c + 1]));
             }
-        }
+        });
     }
 }
 
-fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] {
+fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] + Sync {
     // (Kr, Kb) per ITU-R BT.601 / BT.709.
     let (kr, kb) = match matrix {
         Matrix::Bt601 => (0.299_f32, 0.114_f32),
@@ -1158,7 +1297,7 @@ fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 
 
 /// `yuv420_rgb24_ssse3` (FFmpeg 6.1 `libswscale/x86/yuv_2_rgb.asm`): each
 /// product keeps its high 16 bits (`pmulhw`) before the sums.
-fn swscale_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] {
+fn swscale_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] + Sync {
     // FFmpeg 6.1 `ff_yuv2rgb_c_init_tables` at default brightness, contrast
     // and saturation, read from its tables.
     let [yc, yo, vr, ub, vg, ug] = match (matrix, full_range) {
@@ -3093,6 +3232,11 @@ mod tests {
                         rgb: Vec::new(),
                         full: Vec::new(),
                         timestamps: Vec::new(),
+                        batch: 1,
+                        sent: Vec::new(),
+                        appended: 0,
+                        in_flight: 0,
+                        results: std::sync::mpsc::channel(),
                     };
                     let _ = vpx::decode(&track, &mut sampler);
                 }
