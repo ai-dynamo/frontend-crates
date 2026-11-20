@@ -273,6 +273,13 @@ the decode. NVDEC needs the driver's `libnvcuvid.so.1`: in a container,
 Toolkit's default, for an image that does not set it, is `compute,utility`),
 e.g. `-e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`.
 
+A successful decode keeps its NVDEC decoder on that GPU for the next video
+with the same codec, size and number of decode surfaces, because destroying a
+decoder can take 200 ms. At most 8 decoders stay idle, with at most 1 GiB of
+decode surfaces between them; the oldest goes first. When the driver cannot
+create a new decoder, the idle decoders are destroyed and the creation is
+tried once more.
+
 ```rust
 use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};
 use dynamo_multimodal::video::resolve_num_frames;
