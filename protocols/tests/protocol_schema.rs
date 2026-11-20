@@ -342,6 +342,12 @@ fn token_logprobs_require_nullable_bytes_but_not_token_id() {
         &[("", "bytes")],
         &["/token_id"],
     );
+    canonical::<ChatCompletionTokenLogprob>(json!({
+        "token": "a",
+        "logprob": null,
+        "bytes": null,
+        "top_logprobs": []
+    }));
     for bytes in [json!(null), json!([]), json!([97])] {
         let token = json!({"token":"a","logprob":-0.5,"bytes":bytes,"top_logprobs":[
             {"token":"a","token_id":115,"logprob":-0.5,"bytes":bytes}
