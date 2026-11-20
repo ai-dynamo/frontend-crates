@@ -37,7 +37,7 @@
 //! decoder (`CUVIDPICPARAMS`) are passed through as opaque pointers.
 
 use std::ffi::{CStr, c_char, c_int, c_uint, c_void};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock, PoisonError};
 
 use super::seek::{self, Leading, Order, Run};
 use super::{Matrix, Nv12, Sampler, Track, VideoCodec, check_size};
@@ -77,6 +77,7 @@ const PKT_TIMESTAMP: TcuUlong = 0x02;
 
 /// `CUVIDDECODECAPS`.
 #[repr(C)]
+#[derive(Clone, Copy)]
 struct DecodeCaps {
     codec_type: c_uint,
     chroma_format: c_uint,
@@ -108,7 +109,7 @@ struct Rect32 {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 struct Rect16 {
     left: i16,
     top: i16,
@@ -435,8 +436,14 @@ fn codec_type(codec: VideoCodec) -> Result<c_uint> {
     }
 }
 
-/// What this GPU's NVDEC can decode for `codec` in 8-bit 4:2:0.
+/// What this GPU's NVDEC can decode for `codec` in 8-bit 4:2:0. Cached per
+/// codec: a query takes milliseconds.
 fn caps(api: &Api, codec: c_uint) -> Result<DecodeCaps> {
+    static KNOWN: Mutex<Vec<DecodeCaps>> = Mutex::new(Vec::new());
+    let mut known = KNOWN.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(caps) = known.iter().find(|caps| caps.codec_type == codec) {
+        return Ok(*caps);
+    }
     // SAFETY: an all-zero `DecodeCaps` is valid (integers only).
     let mut caps: DecodeCaps = unsafe { std::mem::zeroed() };
     caps.codec_type = codec;
@@ -447,6 +454,7 @@ fn caps(api: &Api, codec: c_uint) -> Result<DecodeCaps> {
         unsafe { (api.get_decoder_caps)(&mut caps) },
         "cuvidGetDecoderCaps",
     )?;
+    known.push(caps);
     Ok(caps)
 }
 
@@ -490,8 +498,66 @@ fn h273_matrix(codec: VideoCodec, code: u8) -> Result<Matrix> {
     }
 }
 
+/// What a decoder is created with, besides constants: codec, decoder size,
+/// decode surfaces and display area. A decoder decodes any stream of its key.
+type DecoderKey = (c_uint, (u32, u32), c_uint, Rect16);
+
+/// Decoders of finished decodes, kept for the next video of the same key:
+/// destroying a decoder can take 200 ms. Addresses, so the list is `Send`.
+static IDLE: Mutex<Vec<(DecoderKey, usize)>> = Mutex::new(Vec::new());
+/// Most idle decoders, and most bytes of decode surfaces they hold on the GPU.
+const IDLE_DECODERS: usize = 8;
+const IDLE_BYTES: u64 = 1 << 30;
+
+/// The NV12 decode surfaces of a decoder of `key`: most of its GPU memory,
+/// which also holds the driver's alignment and other buffers.
+fn surface_bytes(&(_, (width, height), surfaces, _): &DecoderKey) -> u64 {
+    u64::from(width) * u64::from(height) * 3 / 2 * u64::from(surfaces)
+}
+
+fn take_idle(key: &DecoderKey) -> Option<CuVideoDecoder> {
+    let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+    let at = idle.iter().rposition(|(k, _)| k == key)?;
+    Some(idle.remove(at).1 as CuVideoDecoder)
+}
+
+/// Add `decoder` to `idle` and return the decoders to destroy: the oldest
+/// past either limit, or `decoder` alone when it is over `IDLE_BYTES`.
+fn admit(idle: &mut Vec<(DecoderKey, usize)>, key: DecoderKey, decoder: usize) -> Vec<usize> {
+    if surface_bytes(&key) > IDLE_BYTES {
+        return vec![decoder];
+    }
+    idle.push((key, decoder));
+    let mut evicted = Vec::new();
+    while idle.len() > IDLE_DECODERS
+        || idle.iter().map(|(key, _)| surface_bytes(key)).sum::<u64>() > IDLE_BYTES
+    {
+        evicted.push(idle.remove(0).1);
+    }
+    evicted
+}
+
+/// False when there was none to destroy. A context must be current.
+fn drop_idle(api: &Api) -> bool {
+    let idle = std::mem::take(&mut *IDLE.lock().unwrap_or_else(PoisonError::into_inner));
+    let any = !idle.is_empty();
+    destroy(api, idle.into_iter().map(|(_, decoder)| decoder));
+    any
+}
+
+fn destroy(api: &Api, decoders: impl IntoIterator<Item = usize>) {
+    for decoder in decoders {
+        // SAFETY: created by cuvidCreateDecoder, idle (in no decode), and
+        // destroyed once, as it left the list.
+        unsafe {
+            (api.destroy_decoder)(decoder as CuVideoDecoder);
+        }
+    }
+}
+
 /// What the sequence header said, once the decoder exists.
 struct Surface {
+    key: DecoderKey,
     coded: (u32, u32),
     /// The display area: left, top, right, bottom.
     crop: (c_int, c_int, c_int, c_int),
@@ -741,6 +807,7 @@ impl State<'_, '_, '_, '_> {
             right: edge(i64::from(area.left) + i64::from(target_width))?,
             bottom: edge(i64::from(area.top) + i64::from(target_height))?,
         };
+        let key = (self.codec_type, decoder_size, surfaces, display_area);
         let mut info = DecodeCreateInfo {
             width: TcuUlong::from(decoder_size.0),
             height: TcuUlong::from(decoder_size.1),
@@ -765,12 +832,22 @@ impl State<'_, '_, '_, '_> {
             enable_decode_features: 0,
             reserved2: [0; 3],
         };
-        // SAFETY: valid out-pointer and create info; a context is current.
-        check(
-            unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) },
-            "cuvidCreateDecoder",
-        )?;
+        match take_idle(&key) {
+            Some(decoder) => self.decoder = decoder,
+            None => {
+                // SAFETY: valid out-pointer and create info; a context is current.
+                let mut create =
+                    || unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) };
+                let mut code = create();
+                // Idle decoders can hold the GPU memory a new one needs.
+                if code != CUDA_SUCCESS && drop_idle(self.api) {
+                    code = create();
+                }
+                check(code, "cuvidCreateDecoder")?;
+            }
+        }
         self.surface = Some(Surface {
+            key,
             coded,
             crop,
             width,
@@ -956,6 +1033,18 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
             &mut buffer,
         )?;
     }
+    // SAFETY: as above. The parsers are gone, so the decoder is idle; the
+    // context is current for the idle decoders it pushes out.
+    unsafe {
+        let state = &mut *state.0;
+        if let Some(surface) = &state.surface {
+            let decoder = std::mem::replace(&mut state.decoder, std::ptr::null_mut());
+            let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+            let evicted = admit(&mut idle, surface.key, decoder as usize);
+            drop(idle);
+            destroy(api, evicted);
+        }
+    }
     Ok(())
 }
 
@@ -1097,6 +1186,23 @@ mod tests {
         assert_eq!(h273_matrix(VideoCodec::Av1, 6).unwrap(), Matrix::Bt601);
         assert!(h273_matrix(VideoCodec::H264, 0).is_err(), "identity (RGB)");
         assert!(h273_matrix(VideoCodec::Av1, 9).is_err(), "BT.2020");
+    }
+
+    #[test]
+    fn idle_decoders_stay_within_both_limits_oldest_out_first() {
+        let key = |side, surfaces| (CODEC_H264, (side, side), surfaces, Rect16::default());
+        let mut idle = Vec::new();
+        for decoder in 1..=IDLE_DECODERS {
+            assert!(admit(&mut idle, key(64, 4), decoder).is_empty());
+        }
+        assert_eq!(admit(&mut idle, key(64, 4), 9), [1]);
+        // 8192x8192 with 4 surfaces is 384 MiB: the third is over 1 GiB.
+        assert_eq!(admit(&mut idle, key(8192, 4), 10), [2]);
+        assert_eq!(admit(&mut idle, key(8192, 4), 11), [3]);
+        assert_eq!(admit(&mut idle, key(8192, 4), 12), [4, 5, 6, 7, 8, 9, 10]);
+        // A decoder over the limit by itself is not kept; the others stay.
+        assert_eq!(admit(&mut idle, key(8192, 12), 13), [13]);
+        assert_eq!(idle.iter().map(|&(_, d)| d).collect::<Vec<_>>(), [11, 12]);
     }
 
     #[test]
