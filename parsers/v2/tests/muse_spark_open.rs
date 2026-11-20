@@ -473,3 +473,92 @@ fn muse_json_parameters_use_exact_tool_before_doubled_alias() {
         );
     }
 }
+
+fn string_tool(name: &str) -> Vec<Tool> {
+    vec![Tool {
+        name: name.into(),
+        description: None,
+        strict: Some(true),
+        parameters: serde_json::json!({
+            "type": "object",
+            "properties": {
+                "value": {"type": "string", "pattern": ".*"},
+                "n": {"type": "integer"}
+            }
+        }),
+    }]
+}
+
+fn string_call(value: &str, after: &str) -> String {
+    format!(
+        "<|start|>assistant to=record<|message|><atem:function_calls>\n<atem:invoke name=\"record\">\n<atem:parameter name=\"value\">{value}</atem:parameter>{after}\n</atem:invoke>\n</atem:function_calls><|eot|>"
+    )
+}
+
+#[test]
+fn declared_strings_keep_a_parameter_close_followed_by_value_text() {
+    // A pattern-constrained string can contain the parameter close as data.
+    let definitions = string_tool("record");
+    for value in [
+        "a</atem:parameter>b",
+        "a</atem:parameter> b</atem:parameter>c",
+        "</atem:parameter>",
+    ] {
+        assert_spark_splits(
+            &string_call(value, ""),
+            &[UnifiedEvent::ToolCall {
+                name: "record".into(),
+                arguments: serde_json::json!({"value": value}),
+            }],
+            &definitions,
+        );
+    }
+    assert_spark_splits(
+        &string_call(
+            "a</atem:parameter>b",
+            "\n<atem:parameter name=\"n\">2</atem:parameter>",
+        ),
+        &[UnifiedEvent::ToolCall {
+            name: "record".into(),
+            arguments: serde_json::json!({"value": "a</atem:parameter>b", "n": 2}),
+        }],
+        &definitions,
+    );
+}
+
+#[test]
+fn declared_string_close_followed_by_markup_ends_the_value() {
+    let definitions = string_tool("record");
+    for after in ["", "\n<atem:parameter name=\"n\">2</atem:parameter>"] {
+        let expected = if after.is_empty() {
+            serde_json::json!({"value": "Paris"})
+        } else {
+            serde_json::json!({"value": "Paris", "n": 2})
+        };
+        assert_spark_splits(
+            &string_call("Paris", after),
+            &[UnifiedEvent::ToolCall {
+                name: "record".into(),
+                arguments: expected,
+            }],
+            &definitions,
+        );
+    }
+}
+
+#[test]
+fn declared_string_without_a_later_real_close_keeps_the_first_close() {
+    let definitions = string_tool("record");
+    let input = concat!(
+        "<|start|>assistant to=record<|message|><atem:invoke name=\"record\">",
+        "<atem:parameter name=\"value\">a</atem:parameter>junk</atem:invoke><|eot|>"
+    );
+    assert_spark_splits(
+        input,
+        &[UnifiedEvent::ToolCall {
+            name: "record".into(),
+            arguments: serde_json::json!({"value": "a"}),
+        }],
+        &definitions,
+    );
+}

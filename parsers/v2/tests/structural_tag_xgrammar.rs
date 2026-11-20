@@ -1166,3 +1166,113 @@ fn grammar_negative_schema_is_still_extractable() {
         assert_parser(&case);
     }
 }
+
+fn muse_city_tools(city: Value) -> Vec<Tool> {
+    vec![Tool {
+        name: "weather".into(),
+        description: None,
+        strict: Some(true),
+        parameters: json!({
+            "type": "object",
+            "properties": {"city": city},
+            "required": ["city"],
+            "additionalProperties": false
+        }),
+    }]
+}
+
+fn muse_city_call(city: &str) -> String {
+    format!(
+        " to=weather<|message|><atem:function_calls>\n<atem:invoke name=\"weather\">\n<atem:parameter name=\"city\">{city}</atem:parameter>\n</atem:invoke>\n</atem:function_calls>"
+    )
+}
+
+/// Bounded and pattern-constrained raw ATEM strings used to be rejected for
+/// forced Muse Spark calls. Length bounds use a character budget; patterns are
+/// used as written, and a pattern-admitted parameter close stays value data.
+fn muse_raw_string_cases() -> Vec<Case> {
+    let bounded = json!({"type":"string", "minLength":3, "maxLength":8});
+    let min_only = json!({"type":"string", "minLength":3});
+    let id_pattern = json!({"type":"string", "pattern":"^[A-Z]{3}-[0-9]{4}$", "maxLength":2});
+    let any_pattern = json!({"type":"string", "pattern":".*"});
+    let samples: [(&str, &Value, &str, bool); 14] = [
+        ("bounded-word", &bounded, "Rome", true),
+        ("bounded-lt-space", &bounded, "a < b", true),
+        ("bounded-open-tag", &bounded, "<b>Rome", true),
+        ("bounded-at-max", &bounded, "Brussels", true),
+        ("bounded-under-min", &bounded, "Ro", false),
+        ("bounded-over-max", &bounded, "Rome, Italy", false),
+        ("bounded-close-tag", &bounded, "a</b>", false),
+        ("bounded-channel-token", &bounded, "a<|eot|>", false),
+        ("min-only-long", &min_only, &"x".repeat(5000), true),
+        ("min-only-under", &min_only, "ab", false),
+        ("pattern-match", &id_pattern, "ABC-1234", true),
+        ("pattern-mismatch", &id_pattern, "abc-1234", false),
+        ("pattern-any", &any_pattern, "a < b", true),
+        (
+            "pattern-admits-close",
+            &any_pattern,
+            "a</atem:parameter>b",
+            true,
+        ),
+    ];
+    let mut cases = Vec::new();
+    for family in ["muse_spark", "muse_spark_open"] {
+        let builder = structural_tag_builder_for_family(family).unwrap();
+        for (label, city, value, positive) in &samples {
+            let tools = muse_city_tools((*city).clone());
+            for (choice_label, choice) in [
+                ("required", StructuralTagToolChoice::Required),
+                ("named", StructuralTagToolChoice::Named("weather")),
+            ] {
+                let grammar = builder
+                    .build(&StructuralTagContext {
+                        tool_choice: choice,
+                        tools: &tools,
+                        parallel_tool_calls: Some(false),
+                        schema_mode: StructuralTagSchemaMode::Auto,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    })
+                    .unwrap()
+                    .expect("constrained request");
+                cases.push(Case {
+                    id: format!("{family}/raw-string-{choice_label}-{label}"),
+                    family,
+                    grammar,
+                    input: muse_city_call(value),
+                    expected: positive.then(|| {
+                        vec![UnifiedEvent::ToolCall {
+                            name: "weather".into(),
+                            arguments: json!({"city": value}),
+                        }]
+                    }),
+                    tools: tools.clone(),
+                    reasoning: false,
+                });
+            }
+        }
+    }
+    cases
+}
+
+#[test]
+#[ignore = "requires lean Python verifier; see tests/check_structural_tag_xgrammar.py"]
+fn muse_raw_string_bounds_xgrammar() {
+    let cases = muse_raw_string_cases();
+    let requests: Vec<_> = cases
+        .iter()
+        .map(|c| json!({"id":c.id,"grammar":c.grammar,"input":c.input}))
+        .collect();
+    let results = run_xgrammar(requests);
+    let failures: Vec<_> = cases
+        .iter()
+        .zip(results)
+        .filter(|(case, result)| result["complete"] != case.expected.is_some())
+        .map(|(case, result)| format!("grammar {}: {result}", case.id))
+        .collect();
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    for case in cases.iter().filter(|c| c.expected.is_some()) {
+        assert_parser(case);
+    }
+}

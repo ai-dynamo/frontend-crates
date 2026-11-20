@@ -40,6 +40,14 @@ pub(crate) enum Format {
     Or(OrFormat),
     // Native ATEM needs repeated call messages with bounded cardinality.
     Repeat(RepeatFormat),
+    // Bounded raw strings use an XGrammar rule character budget.
+    Grammar(GrammarFormat),
+}
+
+/// `grammar` format: an EBNF grammar (XGrammar `GrammarFormat`, default `ebnf` syntax).
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct GrammarFormat {
+    pub grammar: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
