@@ -520,7 +520,20 @@ fn keep_idle(api: &Api, key: DecoderKey, decoder: CuVideoDecoder) {
         idle.push((key, decoder as usize));
         (idle.len() > IDLE_DECODERS).then(|| idle.remove(0).1)
     };
-    if let Some(decoder) = evicted {
+    destroy(api, evicted);
+}
+
+/// Destroy every idle decoder; false when there was none. A context must be
+/// current.
+fn drop_idle(api: &Api) -> bool {
+    let idle = std::mem::take(&mut *IDLE.lock().unwrap_or_else(PoisonError::into_inner));
+    let any = !idle.is_empty();
+    destroy(api, idle.into_iter().map(|(_, decoder)| decoder));
+    any
+}
+
+fn destroy(api: &Api, decoders: impl IntoIterator<Item = usize>) {
+    for decoder in decoders {
         // SAFETY: created by cuvidCreateDecoder, idle (in no decode), and
         // destroyed once, as it left the list.
         unsafe {
@@ -809,11 +822,17 @@ impl State<'_, '_, '_, '_> {
         };
         match take_idle(&key) {
             Some(decoder) => self.decoder = decoder,
-            // SAFETY: valid out-pointer and create info; a context is current.
-            None => check(
-                unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) },
-                "cuvidCreateDecoder",
-            )?,
+            None => {
+                // SAFETY: valid out-pointer and create info; a context is current.
+                let mut create =
+                    || unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) };
+                let mut code = create();
+                // Idle decoders can hold the GPU memory a new one needs.
+                if code != CUDA_SUCCESS && drop_idle(self.api) {
+                    code = create();
+                }
+                check(code, "cuvidCreateDecoder")?;
+            }
         }
         self.surface = Some(Surface {
             key,
