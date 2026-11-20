@@ -1,15 +1,15 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.8.yaml","version":"0.10.8"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"ccf7898b1493a3a6157df686e9c51d91aeb949341a2adcea5d991931f2b9bc95","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"e69d61f61ee21af642e148a48d9e17aecdc42f68a3000cf46ec21b6372e0f211","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_fc43aa332e6ea624
+  origin: origin_b8732c711a8808fa
 origins:
-  origin_fc43aa332e6ea624:
+  origin_b8732c711a8808fa:
     crate_version: 0.10.9
-    source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-    git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
+    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
+    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,247 +24,6 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_592406df9b042384:
-    mode: unified
-    record_metadata:
-      parser_path: unified
-      verified_recapture:
-        result:
-          assembled:
-          - kind: reasoning
-            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-          - kind: text
-            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-          chunks:
-          - expected:
-            - kind: reasoning
-              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-          - expected: []
-          - expected:
-            - kind: text
-              text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-          - expected: []
-          capture_input:
-            init:
-              starting_state: Reasoning
-              tool_output_mode: Native
-              named_tool: null
-              structural_tag:
-                schema:
-                  type: object
-                  properties:
-                    location:
-                      type: string
-                      enum:
-                      - London
-                      - New York
-                    temperature:
-                      type: number
-                    conditions:
-                      type: string
-                  required:
-                  - location
-                  - temperature
-                  - conditions
-                  additionalProperties: false
-                rejected:
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
-            finish_reason: stop
-            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-            tools: []
-            chunks:
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-            - delta_text: </think>
-            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-            - delta_text: ‹finish›
-        provenance:
-          crate_version: 0.10.9
-          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 320bf051453a0a8e7adcf6ad0da6026ef50f95c0
-          implementation: dynamo_v2
-          version: 0.10.9
-          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
-          job_sha256: 306978914820cf6cfc1e9feab8410c7994bbfd51a70c96676225006296d1ee19
-        resolution: fresh_execution
-      verified_recaptures:
-      - result:
-          error: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__argument-recovery__DIS-3410/conformance/utils/src/check_structural_tag.py\", line 12, in <module>\n    from tvm_ffi.libinfo import load_lib_module\nModuleNotFoundError: No module named 'tvm_ffi'\n"
-          capture_input:
-            init:
-              starting_state: Reasoning
-              tool_output_mode: Native
-              named_tool: null
-              structural_tag:
-                schema:
-                  type: object
-                  properties:
-                    location:
-                      type: string
-                      enum:
-                      - London
-                      - New York
-                    temperature:
-                      type: number
-                    conditions:
-                      type: string
-                  required:
-                  - location
-                  - temperature
-                  - conditions
-                  additionalProperties: false
-                rejected:
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
-            finish_reason: stop
-            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-            tools: []
-            chunks:
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-            - delta_text: </think>
-            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-            - delta_text: ‹finish›
-          capture_observation:
-            error:
-              code: legacy_unclassified
-              detail: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__argument-recovery__DIS-3410/conformance/utils/src/check_structural_tag.py\", line 12, in <module>\n    from tvm_ffi.libinfo import load_lib_module\nModuleNotFoundError: No module named 'tvm_ffi'\n"
-        provenance:
-          crate_version: 0.10.9
-          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: caad9e27ff318ac8b906574cf1a91a8a057306e0
-          implementation: dynamo_v2
-          version: 0.10.9
-          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
-          job_sha256: 306978914820cf6cfc1e9feab8410c7994bbfd51a70c96676225006296d1ee19
-        resolution: fresh_execution
-      - result:
-          assembled:
-          - kind: reasoning
-            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-          - kind: text
-            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-          chunks:
-          - expected:
-            - kind: reasoning
-              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-          - expected: []
-          - expected:
-            - kind: text
-              text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-          - expected: []
-          capture_input:
-            init:
-              starting_state: Reasoning
-              tool_output_mode: Native
-              named_tool: null
-              structural_tag:
-                schema:
-                  type: object
-                  properties:
-                    location:
-                      type: string
-                      enum:
-                      - London
-                      - New York
-                    temperature:
-                      type: number
-                    conditions:
-                      type: string
-                  required:
-                  - location
-                  - temperature
-                  - conditions
-                  additionalProperties: false
-                rejected:
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
-            finish_reason: stop
-            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-            tools: []
-            chunks:
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-            - delta_text: </think>
-            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-            - delta_text: ‹finish›
-        provenance:
-          crate_version: 0.10.9
-          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 5b6bd43b8cdcb40ef1b1253fe4cfc49da5bfdb09
-          implementation: dynamo_v2
-          version: 0.10.9
-          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
-          job_sha256: 306978914820cf6cfc1e9feab8410c7994bbfd51a70c96676225006296d1ee19
-        resolution: fresh_execution
-      - result:
-          assembled:
-          - kind: reasoning
-            text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-          - kind: text
-            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-          chunks:
-          - expected:
-            - kind: reasoning
-              text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-          - expected: []
-          - expected:
-            - kind: text
-              text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-          - expected: []
-          capture_input:
-            init:
-              starting_state: Reasoning
-              tool_output_mode: Native
-              named_tool: null
-              structural_tag:
-                schema:
-                  type: object
-                  properties:
-                    location:
-                      type: string
-                      enum:
-                      - London
-                      - New York
-                    temperature:
-                      type: number
-                    conditions:
-                      type: string
-                  required:
-                  - location
-                  - temperature
-                  - conditions
-                  additionalProperties: false
-                rejected:
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>[]"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\"}"
-                - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
-            finish_reason: stop
-            input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-            tools: []
-            chunks:
-            - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
-            - delta_text: </think>
-            - delta_text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
-            - delta_text: ‹finish›
-        provenance:
-          crate_version: 0.10.9
-          source_sha256: 95d8b23c9c11c8575d1085b2559bbeb3ad9fbe782973235d9ceeae0c4460c592
-          git_commit: 624f5b8cd8c50bd968e2d45afd8799585810a2ae
-          implementation: dynamo_v2
-          version: 0.10.9
-          adapter_sha256: 27fd52a5493b068a5a4c8482d47105cbcd8de9f4ca0eff8a006685353695499d
-          job_sha256: 306978914820cf6cfc1e9feab8410c7994bbfd51a70c96676225006296d1ee19
-        resolution: fresh_execution
 record_defaults:
   member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml
   producer: producer_446828e67b23fad3
@@ -7918,7 +7677,6 @@ records:
           text: ''''
   structured_response_after_reasoning:
     case_key: UNIFIED.36-structured_response_after_reasoning
-    context: context_592406df9b042384
     request: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
     output:
       assembled:
