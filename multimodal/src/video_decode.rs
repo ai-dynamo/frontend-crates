@@ -636,11 +636,10 @@ fn decode_demuxed(
         .filter(|n| *n <= limits.max_output_bytes)
         .ok_or_else(too_big)?;
 
-    // A queued picture and its source-size RGB count against the output limit.
-    let queued = info.width as usize * info.height as usize * 9 / 2;
-    let room = (limits.max_output_bytes
-        - out_width as usize * out_height as usize * 3 * targets.len())
-        / queued;
+    let room =
+        limits.max_output_bytes - out_width as usize * out_height as usize * 3 * targets.len();
+    // A queued picture and its source-size RGB count against the room.
+    let queued = (info.width as usize * info.height as usize).saturating_mul(9) / 2;
 
     let mut sampler = Sampler {
         targets,
@@ -654,7 +653,7 @@ fn decode_demuxed(
         rgb: Vec::new(),
         full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
-        batch: execution::threads().min(room).max(1),
+        batch: execution::threads().min(room / queued).max(1),
         sent: Vec::new(),
         appended: 0,
         in_flight: 0,
@@ -736,7 +735,8 @@ struct Sampler<'t> {
     full: Vec<u8>,
     timestamps: Vec<f64>,
     /// Kept frames converted on the CPU pool at a time, while decoding goes
-    /// on; 1 converts each frame on the caller as it arrives.
+    /// on; 1 converts each frame on the caller as it arrives. It is 1 on a
+    /// pool thread, so a caller never waits on the pool from inside it.
     batch: usize,
     /// Each kept frame sent to the pool: its repeat count, and its RGB once back.
     sent: Vec<(usize, Option<Vec<u8>>)>,
