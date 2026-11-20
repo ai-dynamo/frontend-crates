@@ -537,18 +537,7 @@ fn admit(idle: &mut Vec<(DecoderKey, usize)>, key: DecoderKey, decoder: usize) -
     evicted
 }
 
-/// A context must be current: idle decoders may be destroyed.
-fn keep_idle(api: &Api, key: DecoderKey, decoder: CuVideoDecoder) {
-    let evicted = admit(
-        &mut IDLE.lock().unwrap_or_else(PoisonError::into_inner),
-        key,
-        decoder as usize,
-    );
-    destroy(api, evicted);
-}
-
-/// Destroy every idle decoder; false when there was none. A context must be
-/// current.
+/// False when there was none to destroy. A context must be current.
 fn drop_idle(api: &Api) -> bool {
     let idle = std::mem::take(&mut *IDLE.lock().unwrap_or_else(PoisonError::into_inner));
     let any = !idle.is_empty();
@@ -568,7 +557,6 @@ fn destroy(api: &Api, decoders: impl IntoIterator<Item = usize>) {
 
 /// What the sequence header said, once the decoder exists.
 struct Surface {
-    /// The decoder's key, under which a successful decode keeps it.
     key: DecoderKey,
     coded: (u32, u32),
     /// The display area: left, top, right, bottom.
@@ -1045,12 +1033,16 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
             &mut buffer,
         )?;
     }
-    // SAFETY: as above. The parsers are gone, so the decoder is idle.
+    // SAFETY: as above. The parsers are gone, so the decoder is idle; the
+    // context is current for the idle decoders it pushes out.
     unsafe {
         let state = &mut *state.0;
         if let Some(surface) = &state.surface {
             let decoder = std::mem::replace(&mut state.decoder, std::ptr::null_mut());
-            keep_idle(api, surface.key, decoder);
+            let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+            let evicted = admit(&mut idle, surface.key, decoder as usize);
+            drop(idle);
+            destroy(api, evicted);
         }
     }
     Ok(())
