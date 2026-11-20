@@ -505,7 +505,14 @@ type DecoderKey = (c_uint, (u32, u32), c_uint, Rect16);
 /// Decoders of finished decodes, kept for the next video of the same key:
 /// destroying a decoder takes about 200 ms. Addresses, so the list is `Send`.
 static IDLE: Mutex<Vec<(DecoderKey, usize)>> = Mutex::new(Vec::new());
+/// Most idle decoders, and most bytes of decode surfaces they hold on the GPU.
 const IDLE_DECODERS: usize = 8;
+const IDLE_BYTES: u64 = 1 << 30;
+
+/// The NV12 decode surfaces of a decoder of `key`, most of its GPU memory.
+fn surface_bytes(&(_, (width, height), surfaces, _): &DecoderKey) -> u64 {
+    u64::from(width) * u64::from(height) * 3 / 2 * u64::from(surfaces)
+}
 
 fn take_idle(key: &DecoderKey) -> Option<CuVideoDecoder> {
     let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
@@ -513,13 +520,29 @@ fn take_idle(key: &DecoderKey) -> Option<CuVideoDecoder> {
     Some(idle.remove(at).1 as CuVideoDecoder)
 }
 
-/// A context must be current: the oldest idle decoder may be destroyed.
+/// Add `decoder` to `idle` and return the decoders to destroy: the oldest
+/// past either limit, or `decoder` alone when it is over `IDLE_BYTES`.
+fn admit(idle: &mut Vec<(DecoderKey, usize)>, key: DecoderKey, decoder: usize) -> Vec<usize> {
+    if surface_bytes(&key) > IDLE_BYTES {
+        return vec![decoder];
+    }
+    idle.push((key, decoder));
+    let mut evicted = Vec::new();
+    while idle.len() > IDLE_DECODERS
+        || idle.iter().map(|(key, _)| surface_bytes(key)).sum::<u64>() > IDLE_BYTES
+    {
+        evicted.push(idle.remove(0).1);
+    }
+    evicted
+}
+
+/// A context must be current: idle decoders may be destroyed.
 fn keep_idle(api: &Api, key: DecoderKey, decoder: CuVideoDecoder) {
-    let evicted = {
-        let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
-        idle.push((key, decoder as usize));
-        (idle.len() > IDLE_DECODERS).then(|| idle.remove(0).1)
-    };
+    let evicted = admit(
+        &mut IDLE.lock().unwrap_or_else(PoisonError::into_inner),
+        key,
+        decoder as usize,
+    );
     destroy(api, evicted);
 }
 
@@ -1170,6 +1193,23 @@ mod tests {
         assert_eq!(h273_matrix(VideoCodec::Av1, 6).unwrap(), Matrix::Bt601);
         assert!(h273_matrix(VideoCodec::H264, 0).is_err(), "identity (RGB)");
         assert!(h273_matrix(VideoCodec::Av1, 9).is_err(), "BT.2020");
+    }
+
+    #[test]
+    fn idle_decoders_stay_within_both_limits_oldest_out_first() {
+        let key = |side, surfaces| (CODEC_H264, (side, side), surfaces, Rect16::default());
+        let mut idle = Vec::new();
+        for decoder in 1..=IDLE_DECODERS {
+            assert!(admit(&mut idle, key(64, 4), decoder).is_empty());
+        }
+        assert_eq!(admit(&mut idle, key(64, 4), 9), [1]);
+        // 8192x8192 with 4 surfaces is 384 MiB: the third is over 1 GiB.
+        assert_eq!(admit(&mut idle, key(8192, 4), 10), [2]);
+        assert_eq!(admit(&mut idle, key(8192, 4), 11), [3]);
+        assert_eq!(admit(&mut idle, key(8192, 4), 12), [4, 5, 6, 7, 8, 9, 10]);
+        // A decoder over the limit by itself is not kept; the others stay.
+        assert_eq!(admit(&mut idle, key(8192, 12), 13), [13]);
+        assert_eq!(idle.iter().map(|&(_, d)| d).collect::<Vec<_>>(), [11, 12]);
     }
 
     #[test]
