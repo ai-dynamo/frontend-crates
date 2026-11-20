@@ -245,7 +245,7 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
                     document["records"][case_id] = preserved
                     continue
                 metadata = preserved["value"]["document"].setdefault("record_metadata", {})
-                if active is not None and not unified_history.typed_equal(active, supplement):
+                if active is not None and not unified_history.typed_equal(active["result"], measured):
                     archive = metadata.setdefault("verified_recaptures", [])
                     if not any(unified_history.typed_equal(active, item) for item in archive):
                         archive.append(active)
