@@ -7,9 +7,9 @@
 
 use crate::{MmError, Result, processor::DecodedMedia};
 use symphonia::core::{
-    codecs::audio::AudioDecoderOptions,
+    codecs::audio::{AudioCodecParameters, AudioDecoderOptions, well_known as codecs},
     errors::Error,
-    formats::{FormatOptions, TrackType, probe::Hint},
+    formats::{FormatOptions, TrackType, probe::Hint, well_known::FORMAT_ID_WAVE},
     io::{MediaSourceStream, ReadOnlySource},
     meta::MetadataOptions,
 };
@@ -38,6 +38,33 @@ fn failure(context: &str, error: Error) -> MmError {
     }
 }
 
+fn wav_pcm_frame_bytes(params: &AudioCodecParameters) -> Result<usize> {
+    // Use the stored sample width, which can differ from the valid bit count
+    // in an extensible WAV (for example, 24 valid bits stored in 32 bits).
+    let sample_bytes = match params.codec {
+        codecs::CODEC_ID_PCM_U8 | codecs::CODEC_ID_PCM_ALAW | codecs::CODEC_ID_PCM_MULAW => 1,
+        codecs::CODEC_ID_PCM_S16LE => 2,
+        codecs::CODEC_ID_PCM_S24LE => 3,
+        codecs::CODEC_ID_PCM_S32LE | codecs::CODEC_ID_PCM_F32LE => 4,
+        codecs::CODEC_ID_PCM_F64LE => 8,
+        _ => {
+            return Err(MmError::unsupported(
+                "audio: unsupported streamed WAV codec",
+            ));
+        }
+    };
+    let channels = params
+        .channels
+        .as_ref()
+        .map_or(0, |channels| channels.count());
+    if channels == 0 {
+        return Err(MmError::invalid_input(
+            "audio: streamed WAV has no channels",
+        ));
+    }
+    Ok(sample_bytes * channels)
+}
+
 pub fn decode(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
     if data.len() > limits.max_bytes {
         return Err(MmError::limit_exceeded(
@@ -59,6 +86,7 @@ pub fn decode(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
             MetadataOptions::default(),
         )
         .map_err(|e| failure("cannot probe container", e))?;
+    let is_wav = format.format_info().format == FORMAT_ID_WAVE;
     let track = format
         .default_track(TrackType::Audio)
         .ok_or_else(|| MmError::unsupported("audio: container has no default audio track"))?;
@@ -74,17 +102,37 @@ pub fn decode(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
         .as_ref()
         .and_then(|p| p.audio())
         .ok_or_else(|| MmError::unsupported("audio: missing codec parameters"))?;
+    let streamed_wav_frame_bytes = if is_wav && declared_frames.is_none() {
+        Some(wav_pcm_frame_bytes(params)?)
+    } else {
+        None
+    };
     let mut decoder = symphonia::default::get_codecs()
         .make_audio_decoder(params, &AudioDecoderOptions::default())
         .map_err(|e| failure("unsupported audio codec", e))?;
     let mut samples = Vec::<f32>::new();
     let mut spec = None;
-    while let Some(packet) = format
-        .next_packet()
-        .map_err(|e| failure("invalid packet", e))?
-    {
+    loop {
+        let packet = match format.next_packet() {
+            Ok(Some(packet)) => packet,
+            Ok(None) => break,
+            // A WAV written to a pipe has no data length. The WAV reader
+            // returns its last short packet before reporting EOF.
+            Err(Error::IoError(e))
+                if streamed_wav_frame_bytes.is_some()
+                    && e.kind() == std::io::ErrorKind::UnexpectedEof =>
+            {
+                break;
+            }
+            Err(e) => return Err(failure("invalid packet", e)),
+        };
         if packet.track_id != track_id {
             continue;
+        }
+        if streamed_wav_frame_bytes.is_some_and(|size| !packet.data.len().is_multiple_of(size)) {
+            return Err(MmError::invalid_input(
+                "audio: streamed WAV contains an incomplete PCM frame",
+            ));
         }
         let decoded = decoder
             .decode(&packet)
@@ -157,6 +205,62 @@ mod tests {
         out.extend_from_slice(&(data.len() as u32).to_le_bytes());
         out.extend_from_slice(data);
         out
+    }
+
+    fn streamed_wav(data: &[u8], channels: u16, format: u16, bits: u16) -> Vec<u8> {
+        let mut out = wav(data, channels, format, bits);
+        out[4..8].fill(0xff);
+        out[40..44].fill(0xff);
+        out
+    }
+
+    #[test]
+    fn streamed_wav_preserves_every_frame_and_applies_the_limit() {
+        let frames = 93_680;
+        let pcm = (0..frames * 2).map(|i| (i % 30063) as i16);
+        let data = pcm.clone().flat_map(i16::to_le_bytes).collect::<Vec<_>>();
+        let wav = streamed_wav(&data, 2, 1, 16);
+        let limits = DecodeLimits {
+            max_frames: frames,
+            ..DecodeLimits::default()
+        };
+        let DecodedMedia::Audio {
+            samples,
+            sample_rate,
+            channels,
+        } = decode(&wav, &limits).unwrap()
+        else {
+            panic!()
+        };
+        assert_eq!(
+            (samples.len(), sample_rate, channels),
+            (frames * 2, 16000, 2)
+        );
+        assert!(samples.into_iter().eq(pcm.map(|v| f32::from(v) / 32768.)));
+        assert!(matches!(
+            decode(
+                &wav,
+                &DecodeLimits {
+                    max_frames: frames - 1,
+                    ..limits
+                }
+            ),
+            Err(MmError::LimitExceeded { .. })
+        ));
+    }
+
+    #[test]
+    fn streamed_wav_rejects_incomplete_frames() {
+        let limits = DecodeLimits::default();
+        let pcm = streamed_wav(&[0; 12], 2, 1, 16);
+        let float = streamed_wav(&[0; 12], 1, 3, 32);
+        assert!(decode(&float, &limits).is_ok());
+        for wav in [pcm, float] {
+            assert!(matches!(
+                decode(&wav[..wav.len() - 1], &limits),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
     }
 
     #[test]

@@ -115,6 +115,43 @@ fn lossy_codecs_preserve_gapless_length_and_channels() {
 }
 
 #[test]
+fn vorbis_still_requires_an_end_of_stream_page() {
+    let mut ogg = include_bytes!("fixtures/audio/stereo.ogg").to_vec();
+    let mut offset = 0;
+    let last_page = loop {
+        assert_eq!(&ogg[offset..offset + 4], b"OggS");
+        let segments = offset + 27;
+        let data = segments + usize::from(ogg[offset + 26]);
+        let next = data
+            + ogg[segments..data]
+                .iter()
+                .map(|&n| usize::from(n))
+                .sum::<usize>();
+        if next == ogg.len() {
+            break &mut ogg[offset..];
+        }
+        offset = next;
+    };
+    // Preserve the final page's packets and checksum validity, but remove its
+    // end-of-stream flag so that an otherwise decodable prefix ends early.
+    assert_ne!(last_page[5] & 4, 0);
+    last_page[5] &= !4;
+    last_page[22..26].fill(0);
+    let mut crc = 0_u32;
+    for &byte in last_page.iter() {
+        crc ^= u32::from(byte) << 24;
+        for _ in 0..8 {
+            crc = (crc << 1) ^ if crc >> 31 == 1 { 0x04c1_1db7 } else { 0 };
+        }
+    }
+    last_page[22..26].copy_from_slice(&crc.to_le_bytes());
+    assert!(matches!(
+        decode::decode(&ogg, &decode::DecodeLimits::default()),
+        Err(MmError::InvalidInput { message, .. }) if message == "audio: invalid packet"
+    ));
+}
+
+#[test]
 fn vbr_mp3_without_duration_metadata_preserves_all_frames_and_checks_limit() {
     let bytes = include_bytes!("fixtures/audio/vbr-no-duration.mp3");
     // MPEG-2 Layer III has 576 samples per frame. The fixture has 156

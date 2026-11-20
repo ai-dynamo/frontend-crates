@@ -302,6 +302,8 @@ is registered, and existing image/video processors still reject audio.
 1. **Ingress:** `audio::decode::decode(bytes, limits)` (feature `audio-decode`)
    yields owned `DecodedMedia::Audio { samples, sample_rate, channels }`.
    Samples are interleaved f32, frame/channel order, at the source rate.
+   WAV written to a pipe with unknown lengths is decoded through EOF, with
+   complete PCM frames required. WAV with a declared frame count must match it.
    MP3 decoding honors gapless metadata when present. Without it, the frame
    count comes from decoded packets and can include encoder delay and padding.
    `audio::from_f32le(bytes, rate, channels, frames, max_frames)` instead
