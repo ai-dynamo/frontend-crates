@@ -88,7 +88,7 @@ tokio-test = "0.4.4"
 # Hugging Face tokenizers 1.x release candidate, pinned exactly: a newer candidate can change
 # what a tokenizer.json encodes or decodes to. `regex` reads fancy-regex `Split` and `Replace`
 # patterns; every model and normalizer is behind the default features.
-tokenizers = { version = "=1.0.0-rc.4", features = ["regex"] }
+tokenizers = { version = "=1.0.0-rc.5", features = ["regex"] }
 tracing = "0.1"
 # Built from source; SIMD is used when nasm is present and never changes output.
 turbojpeg = { version = "1.5", default-features = false, features = ["cmake"] }

@@ -3,7 +3,7 @@
 
 //! Hugging Face `tokenizer.json` backend, on the `tokenizers` 1.x pipeline.
 //!
-//! The 1.x [`PipelineTokenizer`] is read-only: it encodes and decodes what a `tokenizer.json`
+//! The 1.x [`tk::Tokenizer`] is read-only: it encodes and decodes what a `tokenizer.json`
 //! describes and cannot be changed after it is built. Everything this backend adjusts is
 //! therefore done to the JSON before the pipeline is read from it.
 
@@ -12,12 +12,8 @@ use std::{collections::HashSet, path::Path};
 use anyhow::{Context as _, ensure};
 use serde_json::Value;
 use tokenizers::{
-    DecoderRuntime,
-    normalizers::metaspace::PrependBehavior,
-    pipeline::{
-        EncodeOptions, Encoding as PipelineEncoding, Inputs, Override, PipelineModel,
-        PipelineNormalizer, PipelineToken, PipelineTokenizer,
-    },
+    normalizers::metaspace::PrependScheme,
+    pipeline::{self as tk, EncodeOptions, Inputs, Override},
 };
 
 use super::{
@@ -29,10 +25,10 @@ use super::{
 const RUNTIME: &str = "Hugging Face tokenizers 1.x";
 
 pub struct HuggingFaceTokenizer {
-    pipeline: PipelineTokenizer,
+    pipeline: tk::Tokenizer,
     /// The same configuration with no added vocabulary, which encodes the ordinary segments of
     /// [`Encoder::encode_segments`]. `None` on a tokenizer loaded only to decode.
-    ordinary: Option<PipelineTokenizer>,
+    ordinary: Option<tk::Tokenizer>,
     /// `<0xNN>` ids under a ByteFallback decoder. A trailing run of them can still decode
     /// differently once the next byte arrives.
     byte_fallback_ids: HashSet<u32>,
@@ -114,12 +110,12 @@ impl HuggingFaceTokenizer {
         // by its normalized form: the original spelling has no id, and a special one is skipped
         // on decode where its text used to be kept. Reject that rather than change the ids sent
         // to the model or the text returned.
-        let added_vocabulary = pipeline.get_added_vocabulary();
+        let added_tokens = pipeline.get_added_vocabulary().get_added_tokens_decoder();
         for content in &added_contents {
             let round_trips = pipeline.token_to_id(content).is_some_and(|id| {
-                added_vocabulary
-                    .id_to_token_bytes(id)
-                    .is_some_and(|(bytes, _)| bytes == content.as_bytes())
+                added_tokens
+                    .get(&id)
+                    .is_some_and(|token| token.content == *content)
             });
             ensure!(
                 round_trips,
@@ -129,11 +125,11 @@ impl HuggingFaceTokenizer {
 
         // The pipeline decodes byte-level BPE straight from bytes, bypassing the decoder.
         // Only accept configurations for which that shortcut preserves the decoded text.
-        if matches!(pipeline.get_model(), PipelineModel::BPE(bpe) if bpe.is_byte_level()) {
+        if matches!(pipeline.get_model(), tk::Model::BPE(bpe) if bpe.is_byte_level()) {
             let supported = match pipeline.get_decoder() {
-                Some(DecoderRuntime::ByteLevel(_)) => true,
-                Some(DecoderRuntime::Sequence(decoders)) => {
-                    matches!(decoders.as_slice(), [DecoderRuntime::ByteLevel(_)])
+                Some(tokenizers::Decoder::ByteLevel(_)) => true,
+                Some(tokenizers::Decoder::Sequence(decoders)) => {
+                    matches!(decoders.as_slice(), [tokenizers::Decoder::ByteLevel(_)])
                 }
                 _ => false,
             };
@@ -161,10 +157,10 @@ impl HuggingFaceTokenizer {
         // ByteFallback decodes a contiguous run atomically: one invalid byte
         // replaces the entire run, including previously valid ASCII/UTF-8.
         // Discover the at-most-256 byte IDs once, not on the request hot path.
-        fn has_byte_fallback(decoder: &DecoderRuntime) -> bool {
+        fn has_byte_fallback(decoder: &tokenizers::Decoder) -> bool {
             match decoder {
-                DecoderRuntime::ByteFallback(_) => true,
-                DecoderRuntime::Sequence(decoders) => decoders.iter().any(has_byte_fallback),
+                tokenizers::Decoder::ByteFallback(_) => true,
+                tokenizers::Decoder::Sequence(decoders) => decoders.iter().any(has_byte_fallback),
                 _ => false,
             }
         }
@@ -183,7 +179,6 @@ impl HuggingFaceTokenizer {
             }
         }
 
-        let added_tokens = added_vocabulary.get_added_tokens_decoder();
         let special_ids = added_tokens
             .iter()
             .filter_map(|(id, token)| token.special.then_some(*id))
@@ -234,21 +229,22 @@ impl HuggingFaceTokenizer {
     /// Truncation and padding stay off: they belong to a batching layer, and the prefix cache
     /// would otherwise apply them to each separately encoded piece.
     fn encode_options(&self, add_special_tokens: bool) -> EncodeOptions {
-        EncodeOptions {
-            add_special_tokens,
-            encode_special_tokens: false,
-            padding: Override::Off,
-            truncation: Override::Off,
-        }
+        // `EncodeOptions` is non-exhaustive, so it is built from its default.
+        let mut options = EncodeOptions::default();
+        options.add_special_tokens = add_special_tokens;
+        options.encode_special_tokens = false;
+        options.padding = Override::Off;
+        options.truncation = Override::Off;
+        options
     }
 
     fn encode_with(
         &self,
-        pipeline: &PipelineTokenizer,
+        pipeline: &tk::Tokenizer,
         inputs: impl Into<Inputs>,
         expected: usize,
         options: &EncodeOptions,
-    ) -> Result<Vec<PipelineEncoding>> {
+    ) -> Result<Vec<tk::Encoding>> {
         let batch = pipeline
             .encode(inputs, options)
             .wait()
@@ -265,7 +261,7 @@ impl HuggingFaceTokenizer {
 
     /// Encode one input on the calling thread, appending its ids to `out`.
     ///
-    /// [`PipelineTokenizer::encode`] is not used for a single input: it sends any input of
+    /// [`tk::Tokenizer::encode`] is not used for a single input: it sends any input of
     /// 16 KiB or more to a process-wide rayon pool sized to the machine. A frontend already
     /// runs one request per thread, and waking pool threads costs several times the CPU of
     /// the encode it splits, because a rayon worker sweeps every other worker's queue before
@@ -273,10 +269,10 @@ impl HuggingFaceTokenizer {
     /// same ids.
     fn encode_into(
         &self,
-        pipeline: &PipelineTokenizer,
+        pipeline: &tk::Tokenizer,
         input: &str,
         options: &EncodeOptions,
-        out: &mut Vec<PipelineToken>,
+        out: &mut Vec<tk::Token>,
     ) -> Result<()> {
         pipeline
             .encode_into(input, options, out)
@@ -285,7 +281,7 @@ impl HuggingFaceTokenizer {
     }
 }
 
-fn read_pipeline(config: &Value, source: &str) -> Result<PipelineTokenizer> {
+fn read_pipeline(config: &Value, source: &str) -> Result<tk::Tokenizer> {
     let json =
         serde_json::to_string(config).with_context(|| format!("failed to serialize {source}"))?;
     tokenizers::from_json(&json)
@@ -406,9 +402,7 @@ impl Encoder for HuggingFaceTokenizer {
         let options = self.encode_options(self.options.add_special_tokens);
         let mut ids = Vec::with_capacity(input.len() / 4);
         self.encode_into(&self.pipeline, input, &options, &mut ids)?;
-        Ok(Encoding::Sp(
-            ids.into_iter().map(PipelineToken::id).collect(),
-        ))
+        Ok(Encoding::Sp(ids.into_iter().map(tk::Token::id).collect()))
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
@@ -434,20 +428,21 @@ impl Encoder for HuggingFaceTokenizer {
             self.encode_into(pipeline, segment.text, &options, &mut ids)?;
             if !segment.allow_special {
                 crate::reject_control_ids_in_ordinary_segment(
-                    PipelineToken::cast_slice(&ids[segment_start..]),
+                    tk::Token::cast_slice(&ids[segment_start..]),
                     &self.added_ids,
                 )?;
             }
         }
         if self.options.add_special_tokens {
-            let processed = self
-                .pipeline
-                .get_post_processor()
-                .single
-                .post_process::<true>(ids, None);
-            ids = processed.ids().to_vec();
+            // A single template is `prefix $A suffix`, as the pipeline applies it.
+            let template = self.pipeline.get_post_processor().single();
+            let mut wrapped = Vec::with_capacity(template.n_special() + ids.len());
+            wrapped.extend(template.prefix.iter().map(|&(id, _)| id));
+            wrapped.append(&mut ids);
+            wrapped.extend(template.suffix.iter().map(|&(id, _)| id));
+            ids = wrapped;
         }
-        Ok(Encoding::Sp(PipelineToken::cast_slice(&ids).to_vec()))
+        Ok(Encoding::Sp(tk::Token::cast_slice(&ids).to_vec()))
     }
 
     fn encode_batch(&self, inputs: &[&str]) -> Result<Vec<Encoding>> {
@@ -455,7 +450,7 @@ impl Encoder for HuggingFaceTokenizer {
         Ok(self
             .encode_with(&self.pipeline, inputs, inputs.len(), &options)?
             .iter()
-            .map(|encoding| Encoding::Sp(PipelineToken::cast_slice(encoding.ids()).to_vec()))
+            .map(|encoding| Encoding::Sp(tk::Token::cast_slice(encoding.ids()).to_vec()))
             .collect())
     }
 }
@@ -480,11 +475,9 @@ impl Decoder for HuggingFaceTokenizer {
 
 /// The Metaspace marker when it is prepended only to text at offset 0 of the input. The 1.x
 /// pipeline runs Metaspace as a normalizer, and a sequence arrives already flattened.
-fn first_word_marker(normalizer: &PipelineNormalizer) -> Option<char> {
+fn first_word_marker(normalizer: &tk::Normalizer) -> Option<char> {
     match normalizer {
-        PipelineNormalizer::Metaspace(metaspace)
-            if metaspace.prepend() == PrependBehavior::First =>
-        {
+        tk::Normalizer::Metaspace(metaspace) if metaspace.prepend() == PrependScheme::First => {
             Some(metaspace.delimiter())
         }
         _ => None,
@@ -555,7 +548,7 @@ impl Tokenizer for HuggingFaceTokenizer {
     }
 
     fn num_special_tokens_added(&self) -> Result<usize> {
-        Ok(self.pipeline.get_post_processor().single.n_special())
+        Ok(self.pipeline.get_post_processor().single().n_special())
     }
 }
 

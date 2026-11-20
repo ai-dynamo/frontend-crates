@@ -27,7 +27,7 @@ const DATA: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data");
 const REJECTED: &[(&str, &str)] = &[
     (
         "byte-fallback-bpe-partial-alphabet",
-        "Byte fallback `<0x00>` not found in the vocabulary",
+        "The vocabulary has no byte fallback token for bytes",
     ),
     (
         "byte-level-bpe-replace-decoder",

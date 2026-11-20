@@ -30,7 +30,7 @@ A configuration the 1.x pipeline cannot serve with the same ids and text is refu
 |---------------|-----|
 | An added token with `normalized: true` whose normalized form differs from its content | The pipeline keys it by the normalized form, so the original spelling has no id |
 | A byte-level BPE model whose decoder is not `ByteLevel` alone | The pipeline decodes byte-level BPE straight from bytes and skips the other decoders |
-| A byte-fallback BPE vocabulary without all 256 `<0xNN>` tokens | The reader requires the complete byte alphabet |
+| A byte-fallback BPE vocabulary missing a `<0xNN>` token, other than for an ASCII byte whose character is itself in the vocabulary | The reader requires a token for every byte |
 | Anything the 1.x converter refuses, such as a `ByteLevel` pre-tokenizer with `add_prefix_space: true` | The converter does not guess |
 
 ## Segmented prompts

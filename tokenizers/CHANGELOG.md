@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking changes
 
-- *(tokenizers)* The Hugging Face backend runs on `tokenizers` 1.0.0-rc.4. The `tokenizers` 0.23
+- *(tokenizers)* The Hugging Face backend runs on `tokenizers` 1.0.0-rc.5. The `tokenizers` 0.23
   dependency is removed, and `FastTokenizer` decodes through the same backend.
 - `HuggingFaceTokenizer::from_tokenizer`, `from_tokenizer_with_model_dir` and
   `From<tokenizers::Tokenizer>` are removed. Use `from_file`, or `from_json` with a parsed
@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `validate_prefix_cache` fail.
 - Configurations the 1.x pipeline cannot serve unchanged are refused at load: an added token
   with `normalized: true` whose normalized form differs from its content, a byte-level BPE
-  decoder other than `ByteLevel`, a byte-fallback BPE vocabulary without all 256 byte tokens,
+  decoder other than `ByteLevel`, a byte-fallback BPE vocabulary missing a `<0xNN>` token
+  (except for an ASCII byte whose character is in the vocabulary),
   and anything the 1.x converter refuses (for example a `ByteLevel` pre-tokenizer with
   `add_prefix_space: true`).
 
