@@ -1154,7 +1154,13 @@ impl HarmonyNative {
             for id in &init.prompt_token_ids {
                 runtime.process_token(*id, &mut ignored)?;
             }
-            runtime.next_call_index = 0;
+            // Prompt calls were discarded. Reserve index zero only when generation
+            // will continue an open native call.
+            runtime.active_call_index = 0;
+            runtime.next_call_index = usize::from(
+                !runtime.legacy_tool_compatibility
+                    && matches!(runtime.route, Some(Route::Tool { .. })),
+            );
         }
         Ok(runtime)
     }
@@ -3987,6 +3993,85 @@ mod tests {
                     arguments: serde_json::json!("hello"),
                 }],
             );
+        }
+    }
+
+    #[test]
+    fn prompt_prefilled_native_calls_keep_distinct_generated_indices() {
+        let tools = [Tool {
+            name: "python".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"string"}),
+            strict: None,
+        }];
+        let history = format!(
+            "{START}assistant to=functions.history{CHANNEL}commentary{MESSAGE}{{}}{HANDOFF}"
+        );
+        let next = format!(
+            "{START}assistant to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"q\":1}}{HANDOFF}"
+        );
+        for (recipient, channel, body, name, arguments) in [
+            (
+                "python",
+                "analysis",
+                "print('雪')",
+                "python",
+                serde_json::json!("print('雪')"),
+            ),
+            (
+                "functions.first",
+                "commentary",
+                "{\"q\":0}",
+                "first",
+                serde_json::json!({"q":0}),
+            ),
+        ] {
+            let header = format!("{START}assistant to={recipient}{CHANNEL}{channel}");
+            let expected = [
+                UnifiedEvent::ToolCall {
+                    name: name.into(),
+                    arguments,
+                },
+                UnifiedEvent::ToolCall {
+                    name: "lookup".into(),
+                    arguments: serde_json::json!({"q":1}),
+                },
+            ];
+            for prior in ["", history.as_str()] {
+                for (prefill, opening) in [("", MESSAGE), (MESSAGE, "")] {
+                    let seed = format!("{prior}{header}{prefill}");
+                    let suffix = format!("{opening}{body}{HANDOFF}{next}");
+                    let mut parser = gpt_oss_unified(&tools);
+                    parser.initialize(&encode_harmony(&seed).unwrap()).unwrap();
+                    let assert_calls = |mut events: Vec<UnifiedParserEvent>| {
+                        assert_eq!(crate::unified::assemble(&events), expected, "seed={seed:?}");
+                        events.retain(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.complete));
+                        let indices: Vec<_> = events
+                            .iter()
+                            .filter_map(|event| match event {
+                                UnifiedParserEvent::ToolCall(call) => Some(call.tool_index),
+                                _ => None,
+                            })
+                            .collect();
+                        assert_eq!(indices, [0, 1], "seed={seed:?}");
+                    };
+                    for (split, _) in suffix.char_indices().chain([(suffix.len(), '\0')]) {
+                        let mut events = parser.push(&suffix[..split]).unwrap();
+                        events.extend(parser.push(&suffix[split..]).unwrap());
+                        events.extend(parser.finish().unwrap().events);
+                        assert_calls(events);
+                        assert!(parser.reset().is_empty());
+                    }
+                    let tokens = encode_harmony(&suffix).unwrap();
+                    for split in 0..=tokens.len() {
+                        let mut events = parser.push_tokens(&tokens[..split]).unwrap();
+                        events.extend(parser.push_tokens(&tokens[split..]).unwrap());
+                        events.extend(parser.finish().unwrap().events);
+                        assert_calls(events);
+                        assert!(parser.reset().is_empty());
+                    }
+                }
+            }
         }
     }
 

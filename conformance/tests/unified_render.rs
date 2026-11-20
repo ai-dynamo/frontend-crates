@@ -394,10 +394,11 @@ fn capture_native_case(
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
     init.apply(&mut parser, family);
-    capture::capture_step(
-        init.validate_capture(family, tool_schemas, chunks),
-        "structural tag",
-    )?;
+    // A failed verifier cannot establish an observation of the parser.
+    init.validate_capture(family, tool_schemas, chunks)
+        .map_err(|error| {
+            capture::CaptureFailure::Unavailable(format!("structural tag: {error:#}"))
+        })?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     capture::check_tool_call_ids(parser.as_ref(), &rows)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
@@ -417,6 +418,23 @@ fn capture_native_case(
         })
         .collect();
     Ok((assembled, rows, raw_args))
+}
+
+#[test]
+fn structural_tag_failure_cannot_be_recorded_as_parser_output() {
+    let init = Init {
+        structural_tag: Some(common::StructuralTagRequest {
+            schema: serde_json::json!({"type":"object"}),
+            rejected: Vec::new(),
+        }),
+        ..Init::default()
+    };
+    let result = capture_native_case("gpt_oss", &["{}".into()], &init, &[]);
+    assert!(matches!(
+        result,
+        Err(capture::CaptureFailure::Unavailable(ref reason))
+            if reason.contains("structural-tag request needs rejection probes")
+    ));
 }
 
 #[test]
