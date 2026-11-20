@@ -82,6 +82,41 @@ pub(crate) fn deepseek_v4_scanner(both_dialects: bool) -> WrappedBlockScanner<Ds
 
 pub(crate) struct DsmlEmitter;
 
+#[derive(Default)]
+pub(crate) struct DsmlInvokeFollower {
+    close_at: Option<usize>,
+    cursor: usize,
+}
+
+impl DsmlInvokeFollower {
+    pub(crate) fn follows(
+        &mut self,
+        candidate: &str,
+        close_at: usize,
+        invoke_end: &str,
+        invoke_start: &str,
+    ) -> Option<bool> {
+        if self.close_at != Some(close_at) {
+            self.close_at = Some(close_at);
+            self.cursor = close_at + invoke_end.len();
+        }
+        // A long whitespace separator can arrive one character at a time.
+        // Retain its cursor instead of rescanning it on every push.
+        while let Some(ch) = candidate[self.cursor..].chars().next() {
+            count_boundary_bytes(ch.len_utf8());
+            if !ch.is_whitespace() {
+                break;
+            }
+            self.cursor += ch.len_utf8();
+        }
+        let tail = &candidate[self.cursor..];
+        if invoke_start.starts_with(tail) && tail.len() < invoke_start.len() {
+            return None;
+        }
+        Some(tail.starts_with(invoke_start))
+    }
+}
+
 #[cfg(test)]
 std::thread_local! {
     static BOUNDARY_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
@@ -113,6 +148,7 @@ struct DsmlInvokeBoundary {
     cursor: usize,
     mode: DsmlLexMode,
     unterminated_parameter_block_end: Option<usize>,
+    following_invoke: DsmlInvokeFollower,
     guided_prefix_scanned: usize,
     guided_prefix_name_closed: bool,
     guided_prefix_rejected: bool,
@@ -302,6 +338,23 @@ impl InvokeBoundary for DsmlInvokeBoundary {
                         continue;
                     }
                     if rest.starts_with(INVOKE_END) {
+                        match self.following_invoke.follows(
+                            candidate,
+                            self.cursor,
+                            INVOKE_END,
+                            INVOKE_START_PREFIX,
+                        ) {
+                            Some(true) => {
+                                tracing::warn!(
+                                    why = "dsml_unterminated_parameter_before_invoke",
+                                    skipped_bytes = self.cursor,
+                                    "Dropped an unclosed DSML parameter before the next invocation"
+                                );
+                                return Some(self.cursor);
+                            }
+                            None if !flush => return None,
+                            _ => {}
+                        }
                         let invoke_end = self.cursor + INVOKE_END.len();
                         let after_invoke = candidate[invoke_end..].trim_start();
                         if after_invoke.is_empty() {
@@ -565,6 +618,155 @@ mod tests {
         InvalidGuidedPayloadPolicy, UnifiedToolOutputMode, guided_append_work,
         reset_guided_append_work,
     };
+
+    #[test]
+    fn unclosed_parameter_recovers_the_following_invoke_at_every_split() {
+        for (family, gap, block) in [
+            ("deepseek_v4", "", "tool_calls"),
+            ("deepseek_v41", " ", " calls"),
+        ] {
+            for (name, body, expected) in [
+                (
+                    "get_weather",
+                    format!(
+                        "<｜DSML｜{gap}parameter name=\"city\" string=\"true\">Paris café 杭州</｜DSML｜{gap}parameter>"
+                    ),
+                    serde_json::json!({"city":"Paris café 杭州"}),
+                ),
+                ("f", String::new(), serde_json::json!({})),
+            ] {
+                for separator in ["", " \n\t"] {
+                    let input = format!(
+                        "<｜DSML｜{block}><｜DSML｜{gap}invoke name=\"bad\"><｜DSML｜{gap}parameter name=\"x\" string=\"true\">unfinished</｜DSML｜{gap}invoke>{separator}<｜DSML｜{gap}invoke name=\"{name}\">{body}</｜DSML｜{gap}invoke>"
+                    );
+                    let want = vec![crate::unified::UnifiedEvent::ToolCall {
+                        name: name.into(),
+                        arguments: expected.clone(),
+                    }];
+                    let boundaries: Vec<_> = input
+                        .char_indices()
+                        .map(|(i, _)| i)
+                        .chain([input.len()])
+                        .collect();
+                    let chars = boundaries.windows(2).map(|w| &input[w[0]..w[1]]).collect();
+                    for chunks in boundaries
+                        .iter()
+                        .map(|&split| vec![&input[..split], "", &input[split..]])
+                        .chain(std::iter::once(chars))
+                    {
+                        let mut parser =
+                            crate::unified::create_unified_parser_for_family(family, &[]).unwrap();
+                        parser
+                            .initialize_request(UnifiedParserInit::default())
+                            .unwrap();
+                        let mut output = crate::unified::UnifiedParserOutput::default();
+                        for chunk in chunks {
+                            parser.parse_into(chunk, &mut output).unwrap();
+                        }
+                        assert_eq!(
+                            output.assembled(),
+                            want,
+                            "{family}: recovery must progress before the outer close or EOF"
+                        );
+                        parser
+                            .parse_into(&format!("</｜DSML｜{block}>"), &mut output)
+                            .unwrap();
+                        output.append(&mut parser.finish().unwrap());
+                        assert_eq!(output.assembled(), want, "{family}: finish");
+                        parser.reset();
+                        parser
+                            .initialize_request(UnifiedParserInit::default())
+                            .unwrap();
+                        assert_eq!(
+                            parser.parse_complete(&input).unwrap(),
+                            want,
+                            "{family}: reuse"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn invoke_follower_holds_partial_openers_and_scans_whitespace_once() {
+        let mut follower = DsmlInvokeFollower::default();
+        let mut candidate = INVOKE_END.to_string();
+        reset_boundary_examined_bytes();
+        for _ in 0..4_096 {
+            candidate.push(' ');
+            assert_eq!(
+                follower.follows(&candidate, 0, INVOKE_END, INVOKE_START_PREFIX),
+                None
+            );
+        }
+        assert_eq!(boundary_examined_bytes(), 4_096);
+        for ch in INVOKE_START_PREFIX.chars() {
+            candidate.push(ch);
+            let want = (candidate.len() == INVOKE_END.len() + 4_096 + INVOKE_START_PREFIX.len())
+                .then_some(true);
+            assert_eq!(
+                follower.follows(&candidate, 0, INVOKE_END, INVOKE_START_PREFIX),
+                want
+            );
+        }
+    }
+
+    #[test]
+    fn isolated_and_other_dialect_invoke_closers_remain_parameter_data() {
+        for (family, gap, other_gap, block) in [
+            ("deepseek_v4", "", " ", "tool_calls"),
+            ("deepseek_v41", " ", "", " calls"),
+        ] {
+            for tail in [
+                " \nordinary café".to_string(),
+                format!(" \n<｜DSML｜{other_gap}invoke name=\"literal\">"),
+            ] {
+                let value = format!("text</｜DSML｜{gap}invoke>{tail}");
+                let input = format!(
+                    "<｜DSML｜{block}><｜DSML｜{gap}invoke name=\"echo\"><｜DSML｜{gap}parameter name=\"x\" string=\"true\">{value}</｜DSML｜{gap}parameter></｜DSML｜{gap}invoke></｜DSML｜{block}>"
+                );
+                for split in input.char_indices().map(|(i, _)| i).chain([input.len()]) {
+                    let mut parser =
+                        crate::unified::create_unified_parser_for_family(family, &[]).unwrap();
+                    let mut output = crate::unified::UnifiedParserOutput::default();
+                    parser.parse_into(&input[..split], &mut output).unwrap();
+                    parser.parse_into(&input[split..], &mut output).unwrap();
+                    output.append(&mut parser.finish().unwrap());
+                    assert_eq!(
+                        output.assembled(),
+                        vec![crate::unified::UnifiedEvent::ToolCall {
+                            name: "echo".into(),
+                            arguments: serde_json::json!({"x": value}),
+                        }],
+                        "{family}: split {split}"
+                    );
+                    let pending = format!(
+                        "<｜DSML｜{block}><｜DSML｜{gap}invoke name=\"bad\"><｜DSML｜{gap}parameter name=\"x\" string=\"true\">bad</｜DSML｜{gap}invoke> \n<｜DSML｜{gap}invoke name=\""
+                    );
+                    parser.reset();
+                    parser
+                        .initialize_request(UnifiedParserInit::default())
+                        .unwrap();
+                    parser
+                        .parse_into(
+                            &pending,
+                            &mut crate::unified::UnifiedParserOutput::default(),
+                        )
+                        .unwrap();
+                    assert!(!parser.reset().is_empty());
+                    parser
+                        .initialize_request(UnifiedParserInit::default())
+                        .unwrap();
+                    assert_eq!(
+                        parser.parse_complete(&input).unwrap(),
+                        output.assembled(),
+                        "{family}: reset pending lookahead"
+                    );
+                }
+            }
+        }
+    }
 
     fn boundary_work_for_parameter_bytes(value_len: usize) -> usize {
         reset_boundary_examined_bytes();

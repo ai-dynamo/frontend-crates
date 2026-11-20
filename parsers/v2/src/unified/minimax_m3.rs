@@ -245,7 +245,7 @@ impl InvokeBoundary for M3InvokeBoundary {
                 if self.name.as_deref().is_some_and(|name| {
                     matches!(
                         parameter_path_kind(name, &self.path, &self.tools),
-                        M3ParameterKind::LiteralString { .. }
+                        M3ParameterKind::LiteralString
                     )
                 }) {
                     self.literal_close = Some(format!("{NS}</{tag}>"));
@@ -302,13 +302,8 @@ struct PartialArguments {
 
 struct PartialParameter {
     name: String,
-    /// Encoded string bytes streamed so far (streamable parameters only).
-    value_json: String,
-    close: String,
-    cursor: usize,
     start: usize,
-    boundary: Option<M3InvokeBoundary>,
-    streamable: bool,
+    boundary: M3InvokeBoundary,
 }
 
 impl InvokeEmitter for M3Emitter {
@@ -351,14 +346,10 @@ impl InvokeEmitter for M3Emitter {
         let mut arguments = String::new();
         loop {
             if let Some(active) = &mut partial.active {
-                if !active.streamable {
+                {
                     // Reuse the schema-aware cursor so nested strings own
                     // their literal tags while this typed parameter is open.
-                    let end = active
-                        .boundary
-                        .as_mut()
-                        .expect("typed boundary")
-                        .end_append(invoke, "", false, tool_index);
+                    let end = active.boundary.end_append(invoke, "", false, tool_index);
                     let Some(end) = end else {
                         break;
                     };
@@ -396,25 +387,6 @@ impl InvokeEmitter for M3Emitter {
                     partial.active = None;
                     continue;
                 }
-                let tail = &invoke[active.cursor..];
-                let close = tail.find(&active.close).map(|at| active.cursor + at);
-                let end = close.unwrap_or_else(|| {
-                    invoke.len() - marker_prefix_suffix_len(tail, [active.close.as_str()])
-                });
-                let encoded = serde_json::to_string(&invoke[active.cursor..end])?;
-                arguments.push_str(&encoded[1..encoded.len() - 1]);
-                active.value_json.push_str(&encoded[1..encoded.len() - 1]);
-                active.cursor = end;
-                if close.is_some() {
-                    arguments.push('"');
-                    partial
-                        .members
-                        .push((active.name.clone(), format!("\"{}\"", active.value_json)));
-                    partial.cursor = end + active.close.len();
-                    partial.active = None;
-                    continue;
-                }
-                break;
             }
             let tail = &invoke[partial.cursor..];
             let Some(relative) = tail.find(NS) else {
@@ -437,10 +409,8 @@ impl InvokeEmitter for M3Emitter {
             };
             partial.tag_scanned = 0;
             let parameter = &invoke[tag_start + 1..end];
-            // Strings stream while open. Other types are emitted as soon as their
-            // parameter closes, using the shared converter without speculation.
+            // A missing closer must remain recoverable without retracting bytes.
             let kind = parameter_kind(&partial.name, parameter, &self.tools);
-            let streamable = matches!(kind, M3ParameterKind::LiteralString { streamable: true });
             if parameter.is_empty()
                 || parameter.starts_with('/')
                 || !partial.seen.insert(parameter.to_string())
@@ -449,32 +419,19 @@ impl InvokeEmitter for M3Emitter {
                 partial.blocked = true;
                 break;
             }
-            if streamable {
-                arguments.push(if partial.emitted.is_empty() && arguments.is_empty() {
-                    '{'
-                } else {
-                    ','
-                });
-                arguments.push_str(&serde_json::to_string(parameter)?);
-                arguments.push_str(":\"");
-            }
             partial.active = Some(PartialParameter {
                 name: parameter.to_string(),
-                value_json: String::new(),
-                close: format!("{NS}</{parameter}>"),
-                cursor: end + 1,
                 start: tag_start - NS.len(),
-                boundary: (!streamable).then(|| M3InvokeBoundary {
+                boundary: M3InvokeBoundary {
                     tools: self.tools.clone(),
                     name: Some(partial.name.clone()),
                     cursor: end + 1,
                     path: vec![parameter.to_string()],
-                    literal_close: matches!(kind, M3ParameterKind::LiteralString { .. })
+                    literal_close: matches!(kind, M3ParameterKind::LiteralString)
                         .then(|| format!("{NS}</{parameter}>")),
                     parameter_only: true,
                     ..Default::default()
-                }),
-                streamable,
+                },
             });
         }
         if arguments.is_empty() {
@@ -516,12 +473,8 @@ impl InvokeEmitter for M3Emitter {
             // one JSON object whose last-wins reading is the batch result, so
             // whole and streamed input assemble identically at every split.
             let partial = partial.expect("a non-empty prefix was streamed");
-            let mut members = partial.members;
+            let members = partial.members;
             let mut rest = String::new();
-            if let Some(active) = partial.active.filter(|active| active.streamable) {
-                rest.push('"');
-                members.push((active.name, format!("\"{}\"", active.value_json)));
-            }
             for (key, value) in object_members(&arguments)? {
                 if members
                     .iter()

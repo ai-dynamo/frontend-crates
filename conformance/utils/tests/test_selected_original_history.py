@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 import json
+from pathlib import Path
 
 import pytest
 import unified_archives
@@ -93,6 +94,22 @@ def test_original_stores_validate_all_retained_yaml(historical_unified_sources):
     owners = unified_history.original_stores(root.parent.parent)
     assert owners
     assert sum(len(store.histories) for _, _, store in owners) > 0
+
+
+def test_retained_loose_history_uses_sparse_documents(history_source: Path) -> None:
+    roots = [history_source]
+    datasets = history_source / "conformance/history-datasets.json"
+    if datasets.is_file():
+        roots.extend(history_source / row["root"] for row in json.loads(datasets.read_bytes()))
+    invalid = []
+    for root in roots:
+        for path in sorted((root / "conformance/fixtures-unified-v2/families").glob("*/*.yaml")):
+            if unified_history.CAPTURE_DIRECTORY_RE.fullmatch(path.stem) is None:
+                continue
+            document = unified_history._parse_yaml_raw(path, path.read_bytes())
+            if document.get("schema_version") in {2, 3} or "capture_selection" in document:
+                invalid.append(str(path.relative_to(history_source)))
+    assert not invalid, f"retained loose history requires sparse overlays: {invalid}"
 
 
 def test_full_validation_rejects_unselected_malformed_yaml(tmp_path):

@@ -394,10 +394,11 @@ fn capture_native_case(
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
     init.apply(&mut parser, family);
-    capture::capture_step(
-        init.validate_capture(family, tool_schemas, chunks),
-        "structural tag",
-    )?;
+    // A failed verifier cannot establish an observation of the parser.
+    init.validate_capture(family, tool_schemas, chunks)
+        .map_err(|error| {
+            capture::CaptureFailure::Unavailable(format!("structural tag: {error:#}"))
+        })?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     capture::check_tool_call_ids(parser.as_ref(), &rows)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
@@ -417,6 +418,23 @@ fn capture_native_case(
         })
         .collect();
     Ok((assembled, rows, raw_args))
+}
+
+#[test]
+fn structural_tag_failure_cannot_be_recorded_as_parser_output() {
+    let init = Init {
+        structural_tag: Some(common::StructuralTagRequest {
+            schema: serde_json::json!({"type":"object"}),
+            rejected: Vec::new(),
+        }),
+        ..Init::default()
+    };
+    let result = capture_native_case("gpt_oss", &["{}".into()], &init, &[]);
+    assert!(matches!(
+        result,
+        Err(capture::CaptureFailure::Unavailable(ref reason))
+            if reason.contains("structural-tag request needs rejection probes")
+    ));
 }
 
 #[test]
@@ -1616,4 +1634,50 @@ print(g.emit_yaml("glm47"))
     );
     let input_case: InputCase = serde_json::from_value(json!({"tools":case.tools})).unwrap();
     assert_eq!(input_case.tools, case.tools);
+}
+
+#[test]
+fn approved_argument_regressions() {
+    let dir = common::ensure_unified_golden();
+    let mut failures = Vec::new();
+    for (family, scenario) in [
+        (
+            "minimax_m3",
+            "invoke_close_inside_open_parameter_then_empty_call",
+        ),
+        ("nemotron_v3", "enum_contradicting_declared_type"),
+        ("qwen3", "enum_contradicting_declared_type"),
+        ("gpt_oss", "gpt_oss_native_builtin_python_raw"),
+    ] {
+        let path = dir.join(common::unified_family(family).golden_spec);
+        let file: GoldenFile =
+            serde_yaml::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let (id, case) = file
+            .cases
+            .iter()
+            .find(|(id, _)| *id == &format!("UNIFIED.{scenario}.{family}"))
+            .unwrap();
+        let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+        let mut schedules = vec![
+            capture::input_chunks(&case.input, case.input_chunks.as_deref()),
+            vec![case.input.clone()],
+            case.input.chars().map(|ch| ch.to_string()).collect(),
+        ];
+        for (at, _) in case.input.char_indices().skip(1) {
+            schedules.push(vec![
+                case.input[..at].to_string(),
+                case.input[at..].to_string(),
+            ]);
+        }
+        for (schedule, chunks) in schedules.iter().enumerate() {
+            let (got, _, _) = capture_native_case(family, chunks, &case.init, &tools).unwrap();
+            if got != case.golden {
+                failures.push(format!(
+                    "{family}/{id} schedule={schedule}: input={:?}; measured={got:?}; desired={:?}",
+                    case.input, case.golden
+                ));
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

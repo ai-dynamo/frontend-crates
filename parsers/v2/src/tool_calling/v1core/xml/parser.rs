@@ -481,7 +481,7 @@ impl SchemaCoercion {
             .and_then(Value::as_str)
             .map(str::to_lowercase);
         let (allowed_types, has_type_constraints) =
-            collect_allowed_types(root, schema, LiteralTypes::All, remaining);
+            collect_allowed_types(root, schema, LiteralTypes::DeclaredFirst, remaining);
         Self {
             direct_type,
             allowed_types,
@@ -1046,39 +1046,6 @@ fn normalize_python_literal(s: &str) -> String {
     out
 }
 
-/// Safely parse a value - tries JSON, then falls back to string.
-/// Mimics SGLang's `_safe_val` function in spirit.
-/// NOTE: This function is deprecated and kept for reference. Use convert_param_value instead.
-#[allow(dead_code)]
-fn safe_parse_value(raw: &str) -> serde_json::Value {
-    // HTML unescape
-    let unescaped = html_unescape(raw.trim());
-
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(&unescaped) {
-        return value;
-    }
-
-    if let Ok(num) = unescaped.parse::<i64>() {
-        return serde_json::Value::Number(num.into());
-    }
-
-    if let Ok(num) = unescaped.parse::<f64>()
-        && let Some(num_val) = serde_json::Number::from_f64(num)
-    {
-        return serde_json::Value::Number(num_val);
-    }
-
-    match unescaped.to_lowercase().as_str() {
-        "true" => return serde_json::Value::Bool(true),
-        "false" => return serde_json::Value::Bool(false),
-        "null" | "none" => return serde_json::Value::Null,
-        _ => {}
-    }
-
-    // Default to string, stripping newlines from start and end.
-    serde_json::Value::String(unescaped.trim_matches('\n').to_string())
-}
-
 /// Simple HTML unescape for common entities.
 fn html_unescape(s: &str) -> String {
     s.replace("&lt;", "<")
@@ -1354,6 +1321,44 @@ mod schema_composition_tests {
             parameters: Some(parameters),
         };
         get_arguments_config("f", Some(&[tool]))
+    }
+
+    #[test]
+    fn declared_types_override_only_contradicting_enum_types() {
+        for schema in [
+            json!({"type":"integer","enum":["auto"]}),
+            json!({"$ref":"#/$defs/count"}),
+            json!({"allOf":[{"$ref":"#/$defs/count"}]}),
+            json!({"anyOf":[{"$ref":"#/$defs/count"},{"type":"null"}]}),
+        ] {
+            let config = document_config(
+                json!({"type":"object", "$defs":{"count":{"type":"integer","enum":["auto"]}}, "properties":{"x":schema}}),
+            );
+            assert_eq!(
+                serde_json::to_string(&convert_param_value("5", "x", &config, "f")).unwrap(),
+                "5"
+            );
+        }
+        for (schema, raw, expected) in [
+            (
+                json!({"type":"array","enum":["temperature"],"items":{"type":"string"}}),
+                "[\"temperature\",\"humidity\"]",
+                "[\"temperature\",\"humidity\"]",
+            ),
+            (json!({"type":"string","enum":["5"]}), "5", "\"5\""),
+            (
+                json!({"type":["string","null"],"enum":["5",null]}),
+                "5",
+                "\"5\"",
+            ),
+            (json!({"type":"integer","enum":[5]}), "5", "5"),
+        ] {
+            assert_eq!(
+                serde_json::to_string(&convert_param_value(raw, "x", &one_param("x", schema), "f"))
+                    .unwrap(),
+                expected
+            );
+        }
     }
 
     fn ser(pv: &ParsedValue) -> String {

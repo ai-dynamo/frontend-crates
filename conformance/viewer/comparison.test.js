@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectedCaptureOutcome, selectedCapturesDiffer, captureStatusLabels as statusLabels } from './model.js';
+import { selectedCaptureOutcome, selectedCapturesDiffer, rankUnifiedColumns, captureStatusLabels as statusLabels } from './model.js';
 import { comparisonView, focusComparison, captureCounts, isErrorOutcome, verticalDefault } from './comparison.js';
 import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
@@ -170,4 +170,21 @@ test('Difference compares selected parser outputs independently of GOLDEN', () =
   const folded = {...base, entries: [{...base.entries[0], leaves: [a,b]}]};
   assert.equal(focusComparison(folded, ['d', 'peer'], 'difference').focus, 'difference');
   assert.equal(focusComparison(comparisonView(matrix, {...state, search: 'same_wrong'}), ['d', 'peer'], 'difference').focus, 'all');
+});
+
+test('renamed shared cases remain searchable through historical family identities', () => {
+  const scenario = 'invoke_close_inside_open_parameter_then_call';
+  const aliases = ['5-dsml_unterminated_parameter_then_call', 'muse-unterminated_parameter_then_call', 'dsml_unterminated_parameter_then_call'];
+  const shared = {...tab, id: 'tab-unified',
+    columns: [{sub: scenario, label: '5-' + scenario, group_key: 'core'}],
+    rows: [{family: 'family', cells: {[scenario]: cell(scenario)}}]};
+  rankUnifiedColumns(shared, {unified_taxonomy: {[scenario]: {compact_prefix: '5', label: '5-' + scenario, display_order: 0}},
+    unified_aliases: {owners: Object.fromEntries(aliases.map(alias => [alias, [scenario]]))}});
+  for (const alias of aliases) {
+    for (const query of [alias, JSON.stringify(alias), 'col:' + JSON.stringify(alias)]) {
+      const view = comparisonView(shared, {...state, search: query});
+      assert.deepEqual(view.columns.map(c => c.sub), [scenario], query);
+      assert.equal(captureCounts(view, 'd').total, 1);
+    }
+  }
 });

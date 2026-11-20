@@ -9,6 +9,8 @@ import datetime
 import json
 import sys
 import viewer_codec
+import yaml
+from verify_publication_transport import runtime_catalog
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -158,3 +160,10 @@ def test_native_fragment_codec_roundtrip(value):
 def test_native_fragment_codec_rejects_invalid_values(value):
     with pytest.raises(ValueError):
         viewer_codec.decode_typed(value)
+
+
+def test_registered_leak_markers_reach_catalog_and_publication(source_catalog, published_viewer):
+    registry = yaml.safe_load((ROOT / "conformance/utils/src/parser_families.yaml").read_text())
+    expected = {family: spec["leak_markers"] for family, spec in registry["unified"].items()}
+    for catalog in (source_catalog, runtime_catalog(published_viewer)):
+        assert catalog["metadata"]["unified_leak_markers"]["families"] == expected

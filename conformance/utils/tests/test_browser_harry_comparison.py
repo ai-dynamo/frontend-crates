@@ -725,9 +725,15 @@ def test_errors_and_all_green_results_follow_focus(published_viewer):
         driver.find_element('css selector', '[data-focus=difference]').click()
         assert driver.find_element('css selector', '[data-focus=difference]').get_attribute('aria-pressed') == 'true'
         passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
-        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == .2
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
         green = driver.find_element('css selector', '.matrix-status.status-pass')
-        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == .2
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
+        driver.find_element('css selector', '[data-layout=split]').click()
+        passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == .2
+        driver.find_element('css selector', '[data-layout=stacked]').click()
+        green = driver.find_element('css selector', '.matrix-status.status-pass')
+        assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', green)) == 1
         driver.find_element('css selector', '[data-focus=all]').click()
         passed = driver.find_element('css selector', '.engine-status-bar > .status-pass:only-child')
         assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', passed)) == 1
@@ -738,12 +744,29 @@ def test_errors_and_all_green_results_follow_focus(published_viewer):
         field = driver.find_element('css selector', '[data-case-search]')
         field.send_keys(Keys.CONTROL, 'a', Keys.NULL)
         field.send_keys('model:gpt_oss AND "gpt_oss_native_builtin_python_raw"')
+        assert counts(driver)['dynamo']['pass'] == counts(driver)['dynamo']['total'] == 1
+        assert not driver.find_element('css selector', '[data-focus=disagreements]').is_enabled()
+        assert not driver.find_element('css selector', '[data-focus=errors]').is_enabled()
+        field.send_keys(Keys.CONTROL, 'a', Keys.NULL)
+        field.send_keys(Keys.BACKSPACE)
+        _choose_engine(driver, 0, 'sglang')
+        _ready(driver, 'tab-unified')
+        peer_key = driver.find_element('css selector', '[data-slot-capture="0"]').get_attribute('value')
+        family, case = driver.find_element('css selector',
+            '.matrix-cell:has(.status-diverge):not(:has(.status-error, .status-leak))'
+        ).get_attribute('aria-label').split('; ')[:2]
+        field = driver.find_element('css selector', '[data-case-search]')
+        field.send_keys(f'model:{json.dumps(family)} AND col:{json.dumps(case)}')
+        assert counts(driver)[peer_key]['diverge'] == counts(driver)[peer_key]['total'] > 0
         golden = driver.find_element('css selector', '[data-focus=disagreements]')
         errors = driver.find_element('css selector', '[data-focus=errors]')
         assert golden.is_enabled()
         assert errors.text == 'Errors'
         assert not errors.is_enabled()
         assert float(driver.execute_script('return getComputedStyle(arguments[0]).opacity', errors)) < 1
+        _choose_engine(driver, 0, 'dynamo')
+        _ready(driver, 'tab-unified')
+        field = driver.find_element('css selector', '[data-case-search]')
         field.send_keys(Keys.CONTROL, 'a', Keys.NULL)
         field.send_keys('model:beam AND "tool_only"')
         assert counts(driver)['dynamo']['pass'] == counts(driver)['dynamo']['total'] > 0
