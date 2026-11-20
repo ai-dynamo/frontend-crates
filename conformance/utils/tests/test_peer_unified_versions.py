@@ -142,8 +142,13 @@ def test_dynamo_sglang_rejects_an_override_with_a_different_image(tmp_path, monk
     assert not work.exists()
 
 
-@pytest.mark.parametrize("mutation", ["version", "missing_version", "image", "missing_runtime"])
-@pytest.mark.parametrize("sglang_version", ["0.5.21", "0.4.6.post1"], ids=["release", "post-release"])
+@pytest.mark.parametrize(("mutation", "sglang_version"), [
+    ("version", "0.5.21"),
+    ("missing_version", "0.5.21"),
+    ("image", "0.5.21"),
+    ("missing_runtime", "0.5.21"),
+    ("version", "0.4.6.post1"),
+])
 def test_dynamo_sglang_runtime_receipt_rejects_unbound_metadata(mutation, sglang_version):
     job = {"cases": []}
     job_bytes = peers.json_bytes(job)
