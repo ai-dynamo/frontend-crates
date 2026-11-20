@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.7...dynamo-parsers-v2-v0.10.8) - 2026-11-19
+
+### Bug fixes
+
+- *(parsers-v2)* Stream native GLM string arguments (DIS-3427) ([#598](https://github.com/ai-dynamo/frontend-crates/pull/598))
+
+## [0.10.7] - Unreleased
+
+### Bug fixes
+
+- Treat prose quotes as ordinary text by default, so they cannot hide reasoning or tool-call markers. Set `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING=0` to restore the previous quote-aware policy. Tool argument grammar is unchanged.
+- Recover malformed Hermes, GLM, MiniMax M3, and Kimi K3 headers without losing following calls, prose, or framing ownership. Complete Kimi K2 calls before EOF when malformed arguments contain escaped prose quotes.
+- Preserve definite visible prose at EOF after incomplete native envelopes in guided output, independent of chunk boundaries.
+
+## [0.10.6] - Unreleased
+
+### Bug fixes
+
+- *(dsml)* Recover the following invocation after an unclosed parameter in DeepSeek V4 and V4.1.
+
+## [0.10.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.4...dynamo-parsers-v2-v0.10.5) - 2026-11-11
+
+### Bug fixes
+
+- *(gpt-oss)* Preserve quoted control text in JSON strings and improve Harmony recovery.
+
+## [0.10.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.3...dynamo-parsers-v2-v0.10.4) - 2026-11-11
+
+### Bug fixes
+
+- *(parsers-v2)* Bound JSON whitespace in the Harmony final tag ([#583](https://github.com/ai-dynamo/frontend-crates/pull/583))
+
+### Documentation
+
+- Make parser creation workflow v2-first ([#584](https://github.com/ai-dynamo/frontend-crates/pull/584))
+
+## [0.10.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.2...dynamo-parsers-v2-v0.10.3) - 2026-11-10
+
+### Features
+
+- *(parsers-v2)* Add Mistral tekken tokenizer, native renderer and mistral_4 UnifiedParser
+
+## [0.10.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.1...dynamo-parsers-v2-v0.10.2) - 2026-11-09
+
+### Bug fixes
+
+- *(kimi-k3)* Generate unique V2 tool-call IDs ([#579](https://github.com/ai-dynamo/frontend-crates/pull/579))
+
+## [0.10.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.0...dynamo-parsers-v2-v0.10.1) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Add schema-safe native empty Qwen XML calls ([#570](https://github.com/ai-dynamo/frontend-crates/pull/570))
+
+## [0.9.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.14...dynamo-parsers-v2-v0.9.15) - 2026-11-09
+
+### Bug fixes
+
+- *(parsers)* Retain GPT-OSS return calls through v1 reasoning ([#574](https://github.com/ai-dynamo/frontend-crates/pull/574))
+
 ## [0.9.14](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.9.13...dynamo-parsers-v2-v0.9.14) - 2026-11-07
 
 ### Bug fixes

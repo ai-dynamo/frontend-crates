@@ -399,6 +399,7 @@ fn capture_native_case(
         "structural tag",
     )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
+    capture::check_tool_call_ids(parser.as_ref(), &rows)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
     let (assembled, raw_args) = capture::assembled_native_capture(&deltas);
     let assembled = assembled

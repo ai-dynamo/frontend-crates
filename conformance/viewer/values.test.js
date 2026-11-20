@@ -77,6 +77,19 @@ assert.equal(compareVersions('0.1.0-1.test', '0.1.0'), -1);
 for (const version of ['0.1.0-post1', '0.1.0-rc.post1', '0.1.0-alpha.patch1']) assert.equal(compareVersions(version, '0.1.0'), -1);
 for (const [a, b] of [['0.7.0', '0.7.0.post1'], ['0.7.0.post1', '0.7.0.post2'], ['0.7.0.patch1', '0.7.0.patch2']]) assert.equal(compareLegacyVersions(a, b), -1);
 
+for (const kind of ['text', 'reasoning']) {
+  const deltas = [
+    { kind, text: '{"visible":"<|start|>"}' },
+    { kind: 'tool_call', name: 'bad', arguments: '{"q":', complete: false },
+    { kind, text: 'Done.' },
+    { kind: 'tool_call', name: 'second', arguments: '{', complete: false },
+    { kind, text: 'é' },
+  ];
+  assert.deepEqual(assembleStream([deltas]), [{ kind, text: '{"visible":"<|start|>"}Done.é' }]);
+  assert.deepEqual(assembleStream(deltas.map(delta => [delta])), assembleStream([deltas]));
+  const completed = deltas.map(delta => delta.kind === 'tool_call' ? { ...delta, arguments: '{}', complete: true } : delta);
+  assert.deepEqual(assembleStream([completed]).map(event => event.kind), [kind, 'tool_call', kind, 'tool_call', kind]);
+}
 assert.deepEqual(assembleStream([[{ kind: 'tool_call', name: 'f', arguments: '{"n":9007199254740993}', complete: false }]]), []);
 assert.deepEqual(assembleStream([[{ kind: 'tool_call', name: 'f', arguments: '{"n":', complete: false }], [{ kind: 'tool_call', arguments: '9007199254740993}', complete: true }]]), [{ kind: 'tool_call', name: 'f', arguments: { n: 9007199254740993n } }]);
 const broken = [[{ kind: 'tool_call', name: 'f', arguments: 'bad' }]];

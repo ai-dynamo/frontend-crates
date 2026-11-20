@@ -6,7 +6,7 @@
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
-use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
+use super::common::{ThinkingMode, reasoning_text, resolve_thinking_mode, to_json};
 use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
 
 const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
@@ -199,10 +199,7 @@ fn normalize_content(messages: &mut [Value]) -> Result<()> {
             "DeepSeek V4.1 expects OpenAI content blocks in content"
         );
         ensure!(
-            !message
-                .get("reasoning_content")
-                .and_then(Value::as_str)
-                .is_some_and(|text| text.contains(IMAGE_PLACEHOLDER)),
+            !reasoning_text(message.get("reasoning_content")).contains(IMAGE_PLACEHOLDER),
             "Images must be supplied as image content blocks, not literal image placeholders"
         );
         if message.get("role").and_then(Value::as_str) == Some("developer") {

@@ -12,6 +12,7 @@ from fixture_disposition import (
     canonicalize_unified_inputs,
 )
 from impls import UNIFIED_BATCH_IMPLS
+from capture_versions import UNIFIED_VERSION_RE, capture_release_sort_key, provenance_release_version
 from viewer_codec import typed_equal
 from unified_taxonomy import V1_SPLIT_SCENARIOS
 from pathlib import Path, PurePosixPath
@@ -414,7 +415,7 @@ def _effective_capture_records(directory: Path, input_aliases: dict, families: s
             ident = canonical_unified_record_key(doc["family"], key, input_aliases)
             if ident in captures and not typed_equal(captures[ident][0], record):
                 raise ValueError(f"conflicting current capture aliases: {ident}")
-            captures[ident] = (record, raw, str(path.relative_to(directory)), bindings)
+            captures[ident] = (record, raw, str(path.relative_to(directory)), bindings, doc.get("captured_with", {}).get("dynamo_v2"))
     return captures
 
 
@@ -447,13 +448,33 @@ def validated_current_capture_docs(
     for ident, current in checked_inputs.items():
         if not isinstance(current.get("tools"), list):
             raise ValueError(f"current input has no executable tool schema: {ident}")
-        record, raw, relative, bindings = captures[ident]
+        record, raw, relative, bindings, document_version = captures[ident]
+        implementation, separator, version = directory.name.partition("-")
+        origin_version = record.get("producer_origin", {}).get("version", document_version)
+        if (implementation == "dynamo_v2" and separator and UNIFIED_VERSION_RE.fullmatch(version)
+                and origin_version is not None and record.get("verified_recapture") is None
+                and capture_release_sort_key(provenance_release_version(origin_version)) < capture_release_sort_key(version)):
+            # A derived release view deliberately drops the active receipt. Live replay
+            # can still compare a retained execution, under its actual producer version.
+            validate_recapture_archive(record, implementation=implementation)
+            executions = [candidate for candidate in reversed(record.get("verified_recaptures", []))
+                          if candidate["resolution"] == "fresh_execution"
+                          and candidate["provenance"].get("implementation") == implementation
+                          and capture_release_sort_key(provenance_release_version(origin_version))
+                          <= capture_release_sort_key(provenance_release_version(candidate["provenance"]["version"]))
+                          <= capture_release_sort_key(version)
+                          and typed_equal(candidate["result"].get("capture_input"), capture_input(current))]
+            if executions:
+                execution = max(executions, key=lambda candidate: capture_release_sort_key(provenance_release_version(candidate["provenance"]["version"])))
+                record = select_peer_observation({**record, "verified_recapture": execution}, current,
+                                                 implementation=implementation, version=execution["provenance"]["version"])
+                captures[ident] = (record, raw, relative, bindings, document_version)
         if record.get("verified_recapture") is not None:
             implementation, separator, version = directory.name.partition("-")
             if not separator:
                 raise ValueError("verified recapture requires an engine/version directory")
             record = select_peer_observation(record, current, implementation=implementation, version=version)
-            captures[ident] = (record, raw, relative, bindings)
+            captures[ident] = (record, raw, relative, bindings, document_version)
         failure = comparison_failure(record, current, raw, relative, bindings)
         if failure:
             raise ValueError(f"{ident}: {failure}")
@@ -465,7 +486,7 @@ def validated_current_capture_docs(
                     or not record["error"].partition(":")[2].strip() or "assembled" in record or "chunks" in record):
                 raise ValueError(f"current capture has invalid error output: {ident}")
     families = {}
-    for (family, key), (record, _raw, _relative, _bindings) in sorted(captures.items()):
+    for (family, key), (record, _raw, _relative, _bindings, _document_version) in sorted(captures.items()):
         families.setdefault(family, {})[input_keys[(family, key)]] = record
     return [{"family": family, "cases": records} for family, records in families.items()]
 

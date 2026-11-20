@@ -48,7 +48,7 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use crate::tool_calling::debug::env_is_truthy;
+use crate::tool_calling::debug::is_truthy;
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedTurnScope, Kind, MalformedToolCall,
@@ -1040,6 +1040,11 @@ pub(crate) struct JsonStringState {
 }
 
 impl JsonStringState {
+    /// Whether the next character starts inside a quoted string.
+    pub(crate) fn is_inside(&self) -> bool {
+        self.inside
+    }
+
     /// True when this character belongs to a quoted string, including its quotes.
     pub(crate) fn advance(&mut self, character: char) -> bool {
         if self.inside {
@@ -1071,6 +1076,14 @@ pub(crate) struct JsonValueBoundary {
 }
 
 impl JsonValueBoundary {
+    pub(crate) fn invalidate(&mut self) {
+        self.invalid = true;
+    }
+
+    pub(crate) fn inside_json_string(&self) -> bool {
+        !self.invalid && !self.complete && self.inside_string()
+    }
+
     pub(crate) fn inside_string(&self) -> bool {
         self.quoted.inside
     }
@@ -1223,34 +1236,9 @@ pub(crate) enum InvokeLatch {
     Always,
 }
 
-/// Grammar-aware overrides for locating invokes when marker-only scanning is
-/// insufficient.
-///
-#[cfg(test)]
-#[derive(Clone, Copy)]
-pub(crate) struct InvokeScan {
-    /// End of the invoke that begins at byte zero, just past its closer. `flush`
-    /// allows a family to recover a balanced body whose closer never arrived.
-    /// `tool_index` is the invoke's position in this stream (0 for the first
-    /// call) -- some best-effort recoveries are only justified for the first
-    /// call in a response (see `kimi_invoke_end`'s doc comment).
-    pub end: fn(text: &str, flush: bool, tool_index: usize) -> Option<usize>,
-    /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
-    pub opens: fn(text: &str, at: usize) -> bool,
-    /// Additional trailing bytes to retain while an opener is still arriving.
-    pub holdback: fn(text: &str) -> usize,
-    /// Find a later complete wrapped invoke after the current one proved
-    /// malformed. Families with ambiguous string syntax own this scan so a
-    /// block marker inside argument data cannot become a resynchronization
-    /// point. The hook must inspect `text` in linear time.
-    pub resync: Option<fn(text: &str, tool_index: usize) -> Option<usize>>,
-}
-
 /// Immutable family recipe for a request-local invoke boundary.
 #[derive(Clone)]
 pub(crate) enum InvokeBoundaryFactory {
-    #[cfg(test)]
-    Stateless(InvokeScan),
     Custom(fn() -> Box<dyn InvokeBoundary>),
     /// Native XML boundaries with a separate guided-prefix grammar.
     NativeOnly(fn() -> Box<dyn InvokeBoundary>),
@@ -1277,15 +1265,8 @@ pub(crate) enum GuidedInvokePrefix {
 }
 
 impl InvokeBoundaryFactory {
-    #[cfg(test)]
-    pub(crate) const fn stateless(stateless: InvokeScan) -> Self {
-        Self::Stateless(stateless)
-    }
-
     pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
         match self {
-            #[cfg(test)]
-            Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
             Self::Custom(create) | Self::NativeOnly(create) => create(),
             Self::Configured(create) => create(),
         }
@@ -1311,6 +1292,13 @@ pub(crate) trait InvokeBoundary: Send {
 
     /// Whether the outer block is also the invoke consumed by the emitter.
     fn block_is_invoke(&self) -> bool {
+        false
+    }
+
+    /// Whether text left in the block at EOF ends the block rather than a
+    /// truncated invoke. For a grammar with no block closer, where only EOF can
+    /// end the block.
+    fn block_ends_at_eof(&self) -> bool {
         false
     }
 
@@ -1364,7 +1352,9 @@ pub(crate) trait InvokeBoundary: Send {
         None
     }
 
-    /// Advance the bound candidate with newly appended bytes only.
+    /// Advance the bound candidate with newly appended bytes only. Returns the end of
+    /// the invoke at byte zero, just past its closer; `flush` may recover a balanced
+    /// body whose closer never arrived, and `tool_index` is 0 for the stream's first call.
     fn end_append(
         &mut self,
         candidate: &str,
@@ -1372,6 +1362,7 @@ pub(crate) trait InvokeBoundary: Send {
         flush: bool,
         tool_index: usize,
     ) -> Option<usize>;
+    /// Whether the `invoke_start` occurrence at `at` opens a real invoke.
     fn opens(&self, text: &str, at: usize) -> bool;
     fn accepts_buffer_start(&self, _previous: Option<char>) -> bool {
         true
@@ -1396,12 +1387,15 @@ pub(crate) trait InvokeBoundary: Send {
     fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
         self.opens(text, at)
     }
+    /// Trailing bytes to retain while an opener is still arriving.
     fn holdback(&self, text: &str) -> usize;
     /// The Unified consumer owns a separate input buffer from the wrapped scanner.
     /// Keep consumer-specific incremental scans apart when a boundary is shared.
     fn holdback_for_unified_input(&self, text: &str) -> usize {
         self.holdback(text)
     }
+    /// Find a later complete invoke after the current one proved malformed, so a block
+    /// marker inside argument data never becomes a resync point. Must run in linear time.
     fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
     fn reset(&mut self) {}
 
@@ -1416,36 +1410,6 @@ pub(crate) trait InvokeBoundary: Send {
 
     fn channel_body_at_eos(&mut self, body: &str) -> BodyScan {
         self.channel_body(body, true)
-    }
-}
-
-#[cfg(test)]
-struct StatelessInvokeBoundary {
-    scan: InvokeScan,
-}
-
-#[cfg(test)]
-impl InvokeBoundary for StatelessInvokeBoundary {
-    fn end_append(
-        &mut self,
-        candidate: &str,
-        _append: &str,
-        flush: bool,
-        tool_index: usize,
-    ) -> Option<usize> {
-        (self.scan.end)(candidate, flush, tool_index)
-    }
-
-    fn opens(&self, text: &str, at: usize) -> bool {
-        (self.scan.opens)(text, at)
-    }
-
-    fn holdback(&self, text: &str) -> usize {
-        (self.scan.holdback)(text)
-    }
-
-    fn resync(&mut self, text: &str, _flush: bool, tool_index: usize) -> Option<usize> {
-        self.scan.resync.and_then(|resync| resync(text, tool_index))
     }
 }
 
@@ -1631,9 +1595,13 @@ pub(crate) trait InvokeEmitter {
 }
 
 /// Whether quotes in model output can make a reasoning or tool-call marker literal text.
+/// Disabled by default; an explicitly nontruthy setting restores quote-aware parsing.
 fn quote_aware_parsing() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
-    *ENABLED.get_or_init(|| !env_is_truthy("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING"))
+    *ENABLED.get_or_init(|| {
+        std::env::var_os("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING")
+            .is_some_and(|value| !value.to_str().is_some_and(is_truthy))
+    })
 }
 
 #[derive(Clone, Copy, Default)]
@@ -2086,6 +2054,42 @@ impl EventSink for Vec<UnifiedParserEvent> {
     }
 }
 
+/// Holds a reasoning run's trailing whitespace until the next event shows
+/// whether the thought continues: more reasoning gets it back, and anything else
+/// drops it.
+struct TrimmedReasoningTail<'a, S: EventSink + ?Sized> {
+    out: &'a mut S,
+    held: &'a mut String,
+}
+
+impl<S: EventSink + ?Sized> EventSink for TrimmedReasoningTail<'_, S> {
+    fn push_text(&mut self, text: &str) {
+        if !text.is_empty() {
+            self.held.clear();
+            self.out.push_text(text);
+        }
+    }
+
+    fn push_reasoning(&mut self, text: &str) {
+        let kept = text.trim_end();
+        if kept.is_empty() {
+            self.held.push_str(text);
+            return;
+        }
+        if !self.held.is_empty() {
+            self.out.push_reasoning(self.held.as_str());
+            self.held.clear();
+        }
+        self.out.push_reasoning(kept);
+        self.held.push_str(&text[kept.len()..]);
+    }
+
+    fn push_call(&mut self, call: ToolCallDelta) {
+        self.held.clear();
+        self.out.push_call(call);
+    }
+}
+
 pub(crate) fn push_run<S: EventSink + ?Sized>(out: &mut S, kind: Kind, text: &str) {
     match kind {
         Kind::Text => out.push_text(text),
@@ -2117,6 +2121,10 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     buffer: String,
     buffer_previous: Option<char>,
     prose: ProseControlState,
+    /// Every marker outside a block is structural, even inside prose quotation.
+    special_token_markers: bool,
+    /// Trailing reasoning whitespace not yet emitted; `None` keeps it verbatim.
+    reasoning_tail: Option<String>,
     tool_separator: Option<ToolSeparator>,
     /// Raw block bytes consumed before any call delta commits them.
     uncommitted_block: String,
@@ -2188,6 +2196,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             buffer: String::new(),
             buffer_previous: None,
             prose: ProseControlState::default(),
+            special_token_markers: false,
+            reasoning_tail: None,
             tool_separator: None,
             uncommitted_block: String::new(),
             in_block: false,
@@ -2288,6 +2298,25 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             separator,
             prefixed_openers,
         });
+        self
+    }
+
+    /// Treat every marker outside a block as structural, even inside prose
+    /// quotation.
+    ///
+    /// For grammars whose markers are tokenizer special tokens with no closer to
+    /// bound a quoted span. The model emits such a marker as one control token,
+    /// so a quote in the surrounding prose or reasoning cannot make it literal,
+    /// and an odd quote must not hold the marker until EOF or a later quote.
+    pub(crate) fn with_special_token_markers(mut self) -> Self {
+        self.special_token_markers = true;
+        self
+    }
+
+    /// Drop the trailing whitespace of each reasoning run. Whitespace is held
+    /// until the next event, so a thought that continues keeps it.
+    pub(crate) fn with_trimmed_reasoning_tail(mut self) -> Self {
+        self.reasoning_tail = Some(String::new());
         self
     }
 
@@ -2424,14 +2453,19 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         out: &mut S,
     ) -> anyhow::Result<()> {
         self.buffer.push_str(chunk);
-        self.drain(false, out)
+        self.drain_into(false, out)
     }
 
     pub(crate) fn finish_ordered_into<S: EventSink + ?Sized>(
         &mut self,
         out: &mut S,
     ) -> anyhow::Result<()> {
-        self.drain(true, out)?;
+        let drained = self.drain_into(true, out);
+        // EOF ends any open thought, so its held tail is never emitted.
+        if let Some(held) = self.reasoning_tail.as_mut() {
+            held.clear();
+        }
+        drained?;
         if let Some(deferred) = self.pending_parse_error.take() {
             return Err(deferred.error);
         }
@@ -2456,6 +2490,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.next_index = 0;
         self.pending_parse_error = None;
         self.provisional_invoke = false;
+        // Held reasoning whitespace already left the buffer, so it is dropped, not returned.
+        if let Some(held) = self.reasoning_tail.as_mut() {
+            held.clear();
+        }
         self.emitter.reset();
         self.reset_invoke_boundary();
         self.env_mode = self.env_initial;
@@ -2466,6 +2504,26 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // read as string data (or a quoted marker read as the terminator).
         self.env_json.reset();
         pending
+    }
+
+    /// Drain into `out`, through the reasoning-tail trim when it is enabled.
+    fn drain_into<S: EventSink + ?Sized>(
+        &mut self,
+        flush: bool,
+        out: &mut S,
+    ) -> anyhow::Result<()> {
+        let Some(mut held) = self.reasoning_tail.take() else {
+            return self.drain(flush, out);
+        };
+        let drained = self.drain(
+            flush,
+            &mut TrimmedReasoningTail {
+                out,
+                held: &mut held,
+            },
+        );
+        self.reasoning_tail = Some(held);
+        drained
     }
 
     fn consume_buffer_prefix(&mut self, bytes: usize) {
@@ -2851,8 +2909,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 )
             })
             .unwrap_or_default();
+        let punctuation = if self.special_token_markers {
+            0
+        } else {
+            self.prose.punctuation_holdback(&self.buffer)
+        };
         regular
-            .max(self.prose.punctuation_holdback(&self.buffer))
+            .max(punctuation)
             .max(reasoning)
             .max(self.pending_label_len())
             .max(invoke)
@@ -3619,7 +3682,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             return self.drain_envelope(env, flush, out);
         }
         loop {
-            if !self.in_block && !self.anchored_invoke {
+            if !self.in_block && !self.anchored_invoke && !self.special_token_markers {
                 let control = self.prose.classify(
                     &self.buffer,
                     self.spec
@@ -3799,10 +3862,22 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
                             continue;
                         }
-                        tracing::warn!(
-                            why = %format!("{}_incomplete_invoke", self.spec.family),
-                            "stream dropped incomplete invoke at EOF"
-                        );
+                        if self
+                            .invoke_boundary
+                            .as_ref()
+                            .is_some_and(|boundary| boundary.block_ends_at_eof())
+                        {
+                            tracing::debug!(
+                                why = %format!("{}_block_ends_at_eof", self.spec.family),
+                                dropped_bytes = self.buffer.len(),
+                                "stream closed an unterminated block at EOF"
+                            );
+                        } else {
+                            tracing::warn!(
+                                why = %format!("{}_incomplete_invoke", self.spec.family),
+                                "stream dropped incomplete invoke at EOF"
+                            );
+                        }
                         self.consume_buffer_prefix(self.buffer.len());
                         self.abandon_invoke();
                         self.clear_uncommitted_block();
@@ -4143,6 +4218,13 @@ mod tests {
     use super::test_support::failing_scanner;
     use super::*;
 
+    mod quote_policy {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/quote_policy.rs"
+        ));
+    }
+
     #[test]
     fn open_invoke_block_end_search_is_linear() {
         let tools = [crate::tool_calling::traits::Tool {
@@ -4183,6 +4265,11 @@ mod tests {
 
     #[test]
     fn speculative_prose_quote_tail_advances_once_and_clear_releases_state() {
+        if !quote_policy::quote_aware_process(
+            "tool_calling::scan::tests::speculative_prose_quote_tail_advances_once_and_clear_releases_state",
+        ) {
+            return;
+        }
         let mut prose = ProseControlState::default();
         prose.consume("Quoted \"");
         let mut input = String::from("<control>");
@@ -4211,6 +4298,11 @@ mod tests {
 
     #[test]
     fn possessive_suffix_requires_a_closed_span_and_a_word_boundary() {
+        if !quote_policy::quote_aware_process(
+            "tool_calling::scan::tests::possessive_suffix_requires_a_closed_span_and_a_word_boundary",
+        ) {
+            return;
+        }
         for quote in ['`', '"'] {
             let name = format!("{quote}config{quote}");
             for (suffix, expected) in [
@@ -4240,36 +4332,6 @@ mod tests {
             state.resolve_apostrophe(None);
             assert_eq!(state.quote, Some('\''), "{escaped:?}");
         }
-    }
-
-    #[test]
-    fn invoke_boundary_factory_constructs_and_dispatches_stateless_callbacks() {
-        fn end(text: &str, flush: bool, tool_index: usize) -> Option<usize> {
-            (flush && tool_index == 2).then_some(text.len())
-        }
-        fn opens(text: &str, at: usize) -> bool {
-            text[at..].starts_with("open")
-        }
-        fn holdback(text: &str) -> usize {
-            text.len().min(3)
-        }
-        fn resync(text: &str, tool_index: usize) -> Option<usize> {
-            (tool_index == 2).then(|| text.find("resume")).flatten()
-        }
-
-        let factory = InvokeBoundaryFactory::stateless(InvokeScan {
-            end,
-            opens,
-            holdback,
-            resync: Some(resync),
-        });
-        let mut boundary = factory.create();
-
-        assert_eq!(boundary.end_append("call", "call", false, 2), None);
-        assert_eq!(boundary.end_append("call", "", true, 2), Some(4));
-        assert!(boundary.opens("open-call", 0));
-        assert_eq!(boundary.holdback("abcdef"), 3);
-        assert_eq!(boundary.resync("skip resume", false, 2), Some(5));
     }
 
     #[test]

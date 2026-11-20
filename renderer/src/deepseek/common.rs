@@ -3,6 +3,8 @@
 
 //! Shared DeepSeek native prompt-formatting helpers.
 
+use std::borrow::Cow;
+
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
 
@@ -136,7 +138,7 @@ pub(crate) fn to_json(value: &JsonValue) -> String {
 
     // Serializing a JsonValue into Vec<u8> is infallible; the output is always UTF-8.
     let mut buf = Vec::with_capacity(64);
-    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter);
+    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter::default());
     value
         .serialize(&mut ser)
         .expect("JsonValue serialization to Vec<u8> is infallible");
@@ -462,6 +464,21 @@ pub(crate) fn sort_tool_results_by_call_order(mut messages: Vec<JsonValue>) -> V
     }
 
     messages
+}
+
+pub(crate) fn reasoning_text(reasoning: Option<&JsonValue>) -> Cow<'_, str> {
+    match reasoning {
+        Some(JsonValue::String(text)) => Cow::Borrowed(text),
+        Some(JsonValue::Array(segments)) => Cow::Owned(
+            segments
+                .iter()
+                .filter_map(JsonValue::as_str)
+                .filter(|text| !text.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        ),
+        _ => Cow::Borrowed(""),
+    }
 }
 
 // Drop reasoning and non-essential messages before the last user message.

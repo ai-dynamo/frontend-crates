@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import tarfile
 import capture_sources
+import capture_stimulus
 import migrate_capture_sources
 from fixture_corpus import load_corpus, version_key
 import fixture_snapshot
@@ -15,6 +16,7 @@ import resolve_fixtures
 import resolve_reasoning_fixtures
 import resolve_stream_fixtures
 import unified_history
+import normalized_yaml
 from viewer_codec import typed_equal
 import yaml
 import shutil
@@ -35,6 +37,66 @@ def test_latest_unified_records_download_their_selected_complete_snapshot():
         snapshot = unified_history._parse_yaml(ROOT / row["path"], capture_sources.read(ROOT, row["path"]))
         for case, record in snapshot["records"].items():
             assert record["member"] == row["source"], (row["path"], case)
+
+
+def test_retained_possessive_captures_keep_their_published_request():
+    directory = ROOT / capture_sources.STORE / "families/hermes"
+    scenario = "quoted_name_backtick_possessive_reasoning"
+    case = unified_history.load_yaml(directory / "inputs_and_golden.yaml")["cases"][scenario]
+    for implementation in ("dynamo_v1", "dynamo_v1_jail"):
+        path = directory / f"{implementation}-11.0.6.yaml"
+        stimulus = unified_history.load_yaml(path)["changes"][scenario]["stimulus"]
+        unified_history._validate_stimulus(stimulus, case, str(path))
+        changed = copy.deepcopy(case)
+        changed["request"]["chunks"] = [{"delta_text": changed["request"]["input"]}]
+        with pytest.raises(ValueError, match="digest differs from the canonical request"):
+            unified_history._validate_stimulus(stimulus, changed, str(path))
+
+
+def _assert_authored_additions_preserve_existing(previous, current, where):
+    old_family = normalized_yaml.expand_family(previous)
+    new_family = normalized_yaml.expand_family(current)
+    for header in ("input_document", "golden_document"):
+        assert typed_equal(old_family[header], new_family[header]), where
+    if previous.get("schema_version") == normalized_yaml.SCHEMA:
+        old_requests = normalized_yaml.expand_requests(previous)
+        new_requests = normalized_yaml.expand_requests(current)
+        assert all(key in new_requests and typed_equal(value, new_requests[key])
+                   for key, value in old_requests.items()), where
+    assert all(key in new_family["cases"] and typed_equal(value, new_family["cases"][key])
+               for key, value in old_family["cases"].items()), where
+
+
+@pytest.mark.parametrize("section", ["request_defaults", "tools"])
+def test_authored_preservation_rejects_changed_shared_request_definitions(tmp_path, section):
+    root = _store(tmp_path / "store")
+    family = unified_history.load_authored_store(root).families["gemma4"].document
+    family["cases"]["text_only"]["request"]["tools"] = [{"name": "run", "parameters": {"type": "object"}}]
+    previous = normalized_yaml.encode_family(family)
+    current = copy.deepcopy(previous)
+    if section == "request_defaults":
+        current[section]["finish_reason"] = "length"
+    else:
+        next(iter(current[section].values()))[0]["parameters"]["type"] = "string"
+    with pytest.raises((AssertionError, ValueError)):
+        _assert_authored_additions_preserve_existing(previous, current, "authored.yaml")
+
+
+def test_authored_preservation_allows_appended_cases_and_equivalent_defaults(tmp_path):
+    root = _store(tmp_path / "store")
+    family = unified_history.load_authored_store(root).families["gemma4"].document
+    previous = normalized_yaml.encode_family(family)
+    added = copy.deepcopy(family["cases"]["text_only"])
+    added.update(scenario="new", display_id="UNIFIED.new")
+    added["request"].update(input="new", chunks=[{"delta_text": "new"}])
+    family["cases"]["new"] = added
+    current = normalized_yaml.encode_family(family)
+    _assert_authored_additions_preserve_existing(previous, current, "authored.yaml")
+    default = current["request_defaults"]["finish_reason"]
+    for request in current["requests"].values():
+        request.setdefault("finish_reason", default)
+    current["request_defaults"]["finish_reason"] = "length"
+    _assert_authored_additions_preserve_existing(previous, current, "authored.yaml")
 
 
 def test_preserved_history_matches_committed_baseline(history_source):
@@ -79,6 +141,18 @@ def test_preserved_history_matches_committed_baseline(history_source):
             header = process.stdout.readline().decode().strip().split()
             assert len(header) == 3 and header[1] == "blob", row["path"]
             remaining = int(header[2])
+            authored_inputs = (
+                row["path"].endswith("/inputs_and_golden.yaml") and source.endswith("/inputs_and_golden.yaml")
+            )
+            if authored_inputs and remaining >= 1024:
+                baseline = process.stdout.read(remaining)
+                assert process.stdout.read(1) == b"\n"
+                if hashlib.sha256(baseline).hexdigest() != row["sha256"]:
+                    previous = yaml.safe_load(baseline)
+                    current = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+                    _assert_authored_additions_preserve_existing(previous, current, row["path"])
+                    continue
+                continue
             if remaining != row["size"]:
                 assert remaining < 1024, row["path"]
                 pointer = process.stdout.read(remaining).decode().splitlines()
@@ -128,13 +202,28 @@ def test_current_unified_preserves_resolved_latest_records(history_source):
             family = store.families[row["family"]]
             assert set(snapshot["records"]) <= set(family.cases)
             if row["implementation"].startswith("dynamo"):
-                # Refreshed local measurements intentionally replace old parser observations.
                 for case, wrapped in snapshot["records"].items():
-                    stimulus = wrapped["value"]["stimulus"]
+                    value = wrapped["value"]
+                    metadata = value["document"].get("record_metadata", {})
+                    if "verified_recapture" in metadata:
+                        record, _document = unified_history.materialized_record(family.cases[case], value)
+                        record.update(metadata)
+                        effective = capture_stimulus.select_peer_observation(
+                            record, family.cases[case]["request"],
+                            implementation=row["implementation"], version=row["version"],
+                        )
+                        assert typed_equal(effective["capture_input"], family.cases[case]["request"])
+                        continue
+                    stimulus = value["stimulus"]
                     assert "ref" not in stimulus
                     if "inline" in stimulus:
                         assert typed_equal(stimulus["inline"], family.cases[case]["request"])
-                continue
+                # Refreshed releases can lack an older checkpoint; retained V1
+                # checkpoints additionally preserve their complete primary records.
+                retained = store.histories.get((row["family"], row["implementation"]))
+                if (row["implementation"] == "dynamo_v2" or retained is None
+                        or f"{row['implementation']}-{row['version']}" not in retained.captures):
+                    continue
             history = store.histories[row["family"], row["implementation"]]
             original = history.complete_snapshot(f"{row['implementation']}-{row['version']}", source_member=row["source"])
             authored = unified_history.load_yaml(view / capture_sources.STORE / "families" / row["family"] / "inputs_and_golden.yaml")

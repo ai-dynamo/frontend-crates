@@ -15,7 +15,7 @@ Reuse these features from `src/tool_calling/scan.rs` and the guided router in `s
 - reasoning open/close, and EOF promotion of an unterminated thought
 - tool-open break-out from INSIDE a thought, and resume after the call closes (invariant `I3`; case `12-2`)
 - guided-JSON decoding, including the reasoning envelope around the payload
-- a grammar-aware invoke scan for families whose markers cannot delimit a call on their own (`InvokeScan`)
+- a grammar-aware invoke scan for families whose markers cannot delimit a call on their own (`InvokeBoundary`, built by `InvokeBoundaryFactory`)
 - an optional structural role label after the reasoning opener (`ReasoningSpec::start_label`)
 
 The Gemma4 port added invoke scanning and optional reasoning labels. Extend these shared hooks before adding a family-specific drain loop.
@@ -74,7 +74,7 @@ Then add the family's inputs to `gen_unified_golden.py` and run the pipeline (se
 
 For wrapped-block families, first reuse `WrappedBlockScanner`, its invoke boundary/emitter hooks, and the guided router. Qwen, DeepSeek V4/V4.1, GLM, Gemma, and Kimi already have Unified factories; their original porting work is not a pending task. MiniMax M2/M3 have tool-only parsers and need a full conversion under the contract above. Channel grammars need their existing channel owner rather than a delimiter-pair approximation; Harmony now has a Unified implementation accepting text or token IDs, so inspect `input_capabilities()` before feeding input.
 
-Families without a Unified registry entry, including Granite, Inkling, Mistral, Step, and legacy append-think, require new grammar/initialization work. A reasoning parser name in v1 alone does not make that family available through Unified.
+Families without a Unified registry entry, including Granite, Inkling, Step, and legacy append-think, require new grammar/initialization work. A reasoning parser name in v1 alone does not make that family available through Unified.
 
 ## The reasoning half is the easy half
 

@@ -5,6 +5,7 @@ pub mod basetenkenizer;
 pub mod cache;
 pub mod fastokens;
 pub mod hf;
+pub mod tekken;
 pub mod tiktoken;
 
 // TODO: Add tokenizer benchmarks
@@ -25,6 +26,7 @@ pub use cache::{
 };
 pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
+pub use tekken::TekkenTokenizer;
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::{DecodeResult, PrefixSplitRules};
 
@@ -56,6 +58,24 @@ impl<'a> EncodeSegment<'a> {
     pub const fn control(text: &'a str) -> Self {
         Self::new(text, true)
     }
+}
+
+/// Reject an ordinary segment that encoded to a control-token id.
+///
+/// Every backend demotes control-token spellings in ordinary segments, but a
+/// base vocabulary whose merges assemble an added token's id would still let
+/// request text become a control token. Refusing the encode keeps that
+/// property independent of the vocabulary.
+pub(crate) fn reject_control_ids_in_ordinary_segment(
+    ids: &[TokenIdType],
+    control_ids: &std::collections::HashSet<TokenIdType>,
+) -> Result<()> {
+    if let Some(id) = ids.iter().find(|id| control_ids.contains(id)) {
+        return Err(Error::msg(format!(
+            "ordinary segment encoded to control-token id {id}; this tokenizer cannot keep request text out of the control vocabulary"
+        )));
+    }
+    Ok(())
 }
 
 /// Represents the type of tokenizer being used
@@ -229,6 +249,18 @@ pub mod traits {
         /// The default suits backends that match special tokens literally.
         fn prefix_split_rules(&self) -> PrefixSplitRules {
             PrefixSplitRules::default()
+        }
+
+        /// Validate that a segment which allows special tokens encodes to the ids
+        /// [`Encoder::encode`] gives its text, so the prefix cache can serve it.
+        ///
+        /// Implementations opt in by returning `Ok(())`, as with
+        /// [`Self::validate_prefix_cache`]. A backend whose segmented encoding cuts
+        /// the text by position, like the tiktoken reference pieces, must not.
+        fn validate_segment_prefix_cache(&self) -> Result<()> {
+            Err(Error::msg(
+                "tokenizer does not support prefix caching within a segment",
+            ))
         }
 
         /// Apply construction-time [`TokenizerOptions`].
@@ -447,9 +479,10 @@ where
 /// Create a tokenizer from a file path to a tokenizer file.
 /// The file extension is used to determine the tokenizer type.
 /// Supported file types are:
+/// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tokenizer>> {
     create_tokenizer_from_file_with_options(file_path, Default::default())
 }
@@ -457,9 +490,10 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// Create a tokenizer from a file path to a tokenizer file with additional tokenizer option.
 /// The file extension is used to determine the tokenizer type.
 /// Supported file types are:
+/// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
-///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
+///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3, kimi_k31)
 pub fn create_tokenizer_from_file_with_options(
     file_path: &str,
     options: TokenizerOptions,
@@ -467,6 +501,11 @@ pub fn create_tokenizer_from_file_with_options(
     use traits::Tokenizer as _;
 
     let path = Path::new(file_path);
+    if TekkenTokenizer::is_tekken_file(path) {
+        let tokenizer = TekkenTokenizer::from_file(file_path)?.with_options(options);
+        return Ok(Arc::new(tokenizer));
+    }
+
     let extension = path
         .extension()
         .and_then(std::ffi::OsStr::to_str)

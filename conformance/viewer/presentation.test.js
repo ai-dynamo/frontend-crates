@@ -51,6 +51,37 @@ const input = { lifecycle: 'active', scenario: 'tool_only', description: 'Shared
 catalog.metadata.unified_taxonomy.tool_only.description = 'Explicit shared summary.';
 const document = { input_document: { family: 'qwen3' }, golden_document: { family: 'qwen3' }, cases: { id: input } };
 const identity = { path: 'capture.yaml', implementation: 'dynamo_v2', version: '1.0.0' };
+for (const implementation of ['dynamo_v1', 'dynamo_v1_jail', 'vllm_python_batch', 'sglang_python_batch']) {
+  const batchCatalog = structuredClone(catalog);
+  batchCatalog.sources.candidates.push({ mode: 'unified', implementation, version: '1.0.0' });
+  const descriptor = tabCandidates(batchCatalog, { id: 'tab-unified', mode: 'unified' })
+    .find(item => item.source.implementation === implementation);
+  assert.equal(descriptor.control.parse_mode, 'batch');
+  const batchInput = structuredClone(input);
+  const call = { kind: 'tool_call', name: 'lookup', arguments: { city: 'Paris' } };
+  const text = { kind: 'text', text: 'Done.' };
+  batchInput.golden.assembled = [call, text];
+  const batchDocument = { ...document, cases: { id: batchInput } };
+  for (const normalText of ['Done.', 'Lost text']) {
+    const final = { reasoning_text: '', normal_text: normalText, calls: [{ name: 'lookup', arguments: '{"city":"Paris"}' }] };
+    const capture = { provenance: { status: 'captured', origin: { crate_version: '1.0.0', source_sha256: 'a'.repeat(64) } },
+      document: { record_metadata: { batch_final: final, producer_origin: { git_commit: 'b'.repeat(40) }, inherited_from: '0.9.0' } },
+      changes: { id: { case_key: input.display_id, stimulus: { ref: 'current' }, observation: { value: {
+        assembled: [{ kind: 'text', text: normalText }, call],
+      } } } }, metadata_changes: {}, document_overrides: {} };
+    const reader = { unifiedInputs: async () => ({ value: batchDocument }), unified: async () => ({
+      records: resolveUnified([{ ...identity, implementation, document: capture }], '1.0.0'),
+    }) };
+    const panel = await unifiedPanel(batchCatalog, reader, { selected: [descriptor.control.key], reference: null });
+    const candidate = toolOnlyCell(panel).tooltip.candidates.find(item => item.key === descriptor.control.key);
+    assert.equal(candidate.parse_mode, 'batch', implementation);
+    assert.deepEqual(candidate.block.batch_final, final, 'popup retains actual final fields');
+    assert.deepEqual(candidate.block.producer_origin, { git_commit: 'b'.repeat(40) }, 'popup retains the actual observation producer');
+    assert.equal(candidate.block.inherited_from, '0.9.0');
+    assert.equal(candidate.block.verdict, normalText === 'Done.' ? 'ORDER' : 'LOSS', 'final-field projection must distinguish ordering from text loss');
+    assert.deepEqual(batchInput.golden.assembled, [call, text], 'display cannot reorder the authored oracle');
+  }
+}
 for (const [version, recorded, nativeFamilies, boundary, expected] of [
   ['0.7.27', undefined, [], '0.7.28', 'split'],
   ['0.7.28', undefined, [], '0.7.28', 'unified'],

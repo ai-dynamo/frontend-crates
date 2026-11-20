@@ -53,8 +53,8 @@ export function columnKeysFor(metadata) {
 const missingCapture = { unavailable: 'Output not yet captured', unavailable_code: 'missing_capture' };
 
 
-function captureParserRoute(source, family, metadata, recorded) {
-  if (source.implementation !== 'dynamo_v2') return 'unified';
+function captureParserRoute({ source, control }, family, metadata, recorded) {
+  if (source.implementation !== 'dynamo_v2') return control.parse_mode;
   if (recorded) return recorded;
   const since = metadata.unified_presentation.parser_generations[family]?.native_unified_since;
   if (since) return compareVersions(source.version, since) < 0 ? 'split' : 'unified';
@@ -180,7 +180,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         const { source, control } = descriptor;
         const history = histories.get(`${family}\0${control.key}`);
         const capture = history.get(scenario);
-        const parseMode = captureParserRoute(source, family, metadata, capture?.parserPath);
+        const parseMode = captureParserRoute(descriptor, family, metadata, capture?.parserPath);
         let failure = capture ? Object.fromEntries(['unavailable', 'unavailable_code', 'error'].filter((key) => hasField(capture.value, key)).map((key) => [key, getField(capture.value, key)])) : {};
         const isDynamo = control.impl === 'dynamo';
         if (!capturesFamily(source, family)) {
@@ -203,6 +203,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
           block = hasFailure ? failure : missingCapture;
         } else {
           block = { events, verdict };
+          if (hasField(capture.value, 'batch_final')) block.batch_final = getField(capture.value, 'batch_final');
           if (isDynamo) {
             if (control.key === 'dynamo') block.todo = null;
             const route = parseMode === 'split' ? 'v1 reasoning + v2 tool parsing.' : null;
@@ -210,6 +211,9 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
               ? `Inherited from v2 ${capture.inherited}; selected release route: ${parseMode === 'unified' ? 'UnifiedParser' : parseMode || 'unknown'}.` : null;
             block.explanation = [route, inheritance].filter(Boolean).join(' ') || null;
           }
+        }
+        for (const field of ['producer_origin', 'inherited_from']) {
+          if (capture && hasField(capture.value, field)) block[field] = getField(capture.value, field);
         }
         const label = source.implementation === 'dynamo_v2' && parseMode
           ? control.label.replace(/recorded history|UnifiedParser/, parseMode === 'unified' ? 'UnifiedParser' : parseMode) : control.label;

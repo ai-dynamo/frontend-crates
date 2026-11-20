@@ -31,7 +31,7 @@ SRC = UTILS / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS
+from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS, MODEL_CONTRACTS
 from conformance.utils.tests.schema_oracle import _local_reference, matches_schema
 from conformance.utils.tests.fixture_test_support import assert_unique_behaviour, semantic_key
 
@@ -72,9 +72,13 @@ from unified_taxonomy import (  # noqa: E402
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
-NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES and G._MANIFEST[family].get("scenario_profile") != "native")
+NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES
+                        and (G._MANIFEST[family].get("scenario_profile") != "native"
+                             or G._MANIFEST[family].get("shared_scenarios")))
 V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
 NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS and scenario not in taxonomy.RETIRED_SCENARIOS}
+# Native families that also accept guided tool output (Mistral refuses it).
+GUIDED_NATIVE_FAMILIES = tuple(family for family in NATIVE_FAMILIES if family in G.GUIDED_FAMILIES)
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -181,11 +185,11 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 
 
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
-    for family in NATIVE_FAMILIES:
+    for family in GUIDED_NATIVE_FAMILIES:
         prefix = invoke_header_prefix(family)
-        if family in {"glm47", "gpt_oss"}:
-            # GLM uses its outer marker as the invoke opener. Harmony routes a
-            # native call in the message header, so neither has a body prefix.
+        if family in {"glm47", "gpt_oss", "hermes"}:
+            # GLM and Hermes use their outer marker as the invoke opener;
+            # Harmony routes the native call in the message header.
             assert prefix == ""
             continue
         assert prefix
@@ -212,12 +216,12 @@ def _assert_dsml_recovery_input(family, scenario, case):
 
 
 @pytest.mark.parametrize("scenario", [
-    "dsml_unterminated_parameter_then_empty_call",
-    "dsml_unterminated_parameter_then_call",
+    "invoke_close_inside_open_parameter_then_empty_call",
+    "invoke_close_inside_open_parameter_then_call",
 ])
 def test_dsml_recovery_cases_keep_a_complete_trailing_invoke(scenario):
-    assert set(G.scenario_families(scenario)) == {"deepseek_v4", "deepseek_v41"}
-    for family in G.scenario_families(scenario):
+    assert set(G.scenario_families(scenario)) == set(G.OPEN_PARAMETER_BOUNDARY_FAMILIES)
+    for family in ["deepseek_v4", "deepseek_v41"]:
         case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
         _assert_dsml_recovery_input(family, scenario, case)
 
@@ -586,9 +590,8 @@ def test_deepseek_v41_empty_calls_envelope_keeps_4b():
 def test_gpt_oss_response_applicability_is_not_derived_from_the_denylist() -> None:
     scenarios = {
         "native_unmatched_quote_then_call",
+        "native_quoted_complete_call_default",
         "guided_json_orphan_tool_close_before_payload",
-        "guided_response_quoted_control_braces_required",
-        "guided_response_quoted_control_braces_named",
         "guided_json_native_parameter_object_before_payload",
         "guided_json_native_parameter_array_before_payload",
         "guided_json_native_parameter_string_before_payload",
@@ -603,6 +606,9 @@ def test_gpt_oss_response_applicability_is_not_derived_from_the_denylist() -> No
 
 def test_response_state_uses_only_control_marker_contracts() -> None:
     response_scenarios = {
+        "reason_markup_in_arg_empty_span_then_text",
+        "reason_markup_in_arg_empty_span_then_text_with_path",
+        "native_quoted_control_then_call_progress",
         "prefilled_response_reasoning_markers_literal",
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_header_after_payload",
@@ -612,6 +618,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
         "native_quoted_incomplete_header",
         "native_quoted_control_then_call",
         "native_unmatched_quote_then_call",
+        "native_quoted_complete_call_default",
         "guided_response_quoted_control_braces_named",
         "guided_response_quoted_control_braces_required",
         "guided_json_native_parameter_object_before_payload",
@@ -651,7 +658,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
-        expected = response_scenarios | extra
+        expected = {scenario for scenario in response_scenarios | extra
+                    if family in G.scenario_families(scenario)}
         if family == "gpt_oss":
             expected -= G.HARMONY_INAPPLICABLE_EDGE_CASES
             expected |= {
@@ -659,7 +667,10 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 for scenario, active in taxonomy.GPT_OSS_PR424_REQUEST_VARIANTS.items()
                 if active and scenario in expected
             }
-        assert set(response_cases) == expected
+        assert set(response_cases) == {
+            scenario for scenario in expected
+            if family in G.scenario_families(scenario.removesuffix("_pr424"))
+        }
         native_scenarios = {
             "native_quoted_control_in_response",
             "native_single_quoted_word_control",
@@ -667,6 +678,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             "native_quoted_incomplete_header",
             "native_quoted_control_then_call",
             "native_unmatched_quote_then_call",
+            "native_quoted_complete_call_default",
             "guided_response_quoted_control_braces_named",
             "guided_response_quoted_control_braces_required",
         }
@@ -679,6 +691,13 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 }[scenario]
             elif family == "gpt_oss" and scenario == "prefilled_response_reasoning_markers_literal":
                 marker = "<think>"
+            elif scenario in {
+                "reason_markup_in_arg_empty_span_then_text",
+                "reason_markup_in_arg_empty_span_then_text_with_path",
+            }:
+                marker = "<think></think>answer"
+            elif scenario == "native_quoted_control_then_call_progress":
+                marker = G._NATIVE_QUOTED_CONTROL.get(family, "<tool_call>")
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
             elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
@@ -756,13 +775,15 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
 
 def test_scenario_families_matches_declared_scope():
     scoped = {
+        "structured_response_after_reasoning": set(MODEL_CONTRACTS["nativeReviewFamilies"]["structured"]),
+        **{scenario: set(MODEL_CONTRACTS["nativeReviewFamilies"]["dotted"]) for scenario in G.DOTTED_NAME_SCENARIOS},
         "guided_json_quoted_bare_header_in_answer": set(G.GUIDED_FAMILIES),
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer", "muse_spark"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
-        "arg_json_null_ref": set(G._TEMPLATE_FAMILIES),
-        "arg_string_null_ref": set(G._TEMPLATE_FAMILIES),
-        "arg_null_mixed_labels": set(G._TEMPLATE_FAMILIES),
+        "arg_json_null_ref": set(NATIVE_FAMILIES) - {"gpt_oss"},
+        "arg_string_null_ref": set(NATIVE_FAMILIES) - {"gpt_oss"},
+        "arg_null_mixed_labels": set(NATIVE_FAMILIES),
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
         "glm_ref_json_looking_strings": set(FAMILIES),
@@ -774,6 +795,16 @@ def test_scenario_families_matches_declared_scope():
     assert G.scenario_families("arg_json_null") == set(FAMILIES)
     assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == set(NATIVE_FAMILIES)
     assert G.scenario_families("tool_only") == set(FAMILIES)
+
+
+def test_default_quote_cases_emit_every_declared_registered_family():
+    for scenario in G.DEFAULT_STRUCTURAL_QUOTE_CASES:
+        for family in G.scenario_families(scenario):
+            case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+            assert case["init"]["tool_output_mode"] == "Native"
+            if family not in G.UNIFIED_FAMILIES:
+                assert case["expect"]["dynamo"]["verdict"] == "diverge"
+                assert case["expect"]["dynamo"]["class"] == "UNSUPPORTED"
 
 
 def test_only_families_rejects_an_empty_or_unknown_scope():
@@ -812,7 +843,7 @@ def test_null_variants_preserve_the_declared_json_type(family, scenario, value):
 
 
 @pytest.mark.parametrize("scenario,value", [("arg_json_null_ref", None), ("arg_string_null_ref", "null")])
-@pytest.mark.parametrize("family", NATIVE_FAMILIES)
+@pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family != "gpt_oss"])
 def test_reference_goldens_use_the_tool_parameters_root(family, scenario: str, value: object) -> None:
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     case["tools"] = json.loads(json.dumps(case["tools"]))
@@ -1028,7 +1059,8 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 278 + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 6
+    mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
+    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1065,7 +1097,14 @@ def test_kimi_k3_corpus_uses_xtml_not_kimi_k2_wire_syntax():
     cases = build_cases("kimi_k3")
     assert cases
     for case_id, case in cases.items():
-        leaked = [marker for marker in forbidden if marker in case["input"]]
+        wire = case["input"]
+        if _scenario_of(case_id, "kimi_k3") in {
+            "reason_markup_in_arg_empty_span_then_text",
+            "reason_markup_in_arg_empty_span_then_text_with_path",
+        }:
+            assert case["golden"][0]["arguments"]["content"] == "<think></think>answer"
+            wire = wire.replace("<think></think>answer", "")
+        leaked = [marker for marker in forbidden if marker in wire]
         assert not leaked, f"{case_id} copied Kimi K2 wire syntax: {leaked}"
 
 
@@ -1353,6 +1392,10 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 
 def _family_value(scenario, family):
     family = G.unified_grammar_family(family)
+    if scenario == "gpt_oss_quoted_call_header_then_visible_prose":
+        if family == "gpt_oss":
+            return GPT_OSS_RECOVERY_ORACLES[scenario][1][0]["text"]
+        return None
     if scenario == "guided_json_noncall_before_native_array_before_payload":
         return "{}" + _family_value("guided_json_native_parameter_array_before_payload", family)
     reason_open, reason_close, _, _ = control_tokens(family)
@@ -1377,19 +1420,19 @@ def _family_value(scenario, family):
         "native_quoted_control_in_reasoning",
         "native_quoted_control_then_call",
     }:
-        return f'The literal "{marker}" marker is part of the explanation.'
+        return 'The literal "'
     if scenario == "native_single_quoted_word_control":
-        return f"The literal 'example {marker} marker' is part of the explanation."
+        return "The literal 'example "
     if scenario in {
         "native_single_quote_contraction_response",
         "native_single_quote_contraction_reasoning",
     }:
-        return f"The literal 'doesn't {marker} marker' stays quoted."
+        return "The literal 'doesn't "
     if scenario in {
         "guided_quoted_reasoning_closer_named",
         "guided_quoted_reasoning_closer_required",
     }:
-        return f"The literal 'doesn't {reason_close} marker' stays quoted."
+        return "The literal 'doesn't "
     if scenario in {
         "quoted_name_backtick_nonpossessive_some",
         "quoted_name_backtick_nonpossessive_s_name",
@@ -1398,15 +1441,18 @@ def _family_value(scenario, family):
     }:
         quote = "`" if scenario.startswith("quoted_name_backtick_") else '"'
         word = "some" if scenario.endswith("_some") else "s_name"
-        return f"{quote}load_config{quote}'{word} {reason_close} marker' stays quoted."
+        return f"{quote}load_config{quote}'{word} "
     if scenario in {
         "guided_response_quoted_control_braces_named",
         "guided_response_quoted_control_braces_required",
     }:
-        return f'The literal "{marker} {{ example }}" stays visible. '
+        if family in {"beam", "gpt_oss", "kimi_k3"}:
+            return 'The literal "'
+        return ('The literal "assistant to=get_weather{ example }" stays visible. '
+                if family in {"muse_glimmer", "muse_spark"}
+                else 'The literal "{ example }" stays visible. ')
     if scenario == "native_quoted_incomplete_header":
-        header = G.r_tool(family, "get_weather", "city", "Paris", 0).split("Paris", 1)[0]
-        return f"The literal `{header}` header is part of the explanation."
+        return "The literal `"
     if scenario == "deepseek_v41_mixed_control_text_in_string":
         if family == "gpt_oss":
             implicit = reason_open.removeprefix("<|start|>assistant")
@@ -1419,8 +1465,10 @@ def _family_value(scenario, family):
             "deepseek_v41": "</｜DSML｜ invoke>",
             "gemma4": "}<tool_call|>",
             "glm47": "</tool_call>",
+            "hermes": "</tool_call>",
             "kimi_k2": "<|tool_call_end|>",
             "kimi_k3": "<|close|>call<|sep|>",
+            "mistral_4": "[TOOL_CALLS]",
             "muse_glimmer": "</atem:function_calls>",
             "muse_spark": "</atem:function_calls>",
             "gpt_oss": "<|call|>",
@@ -1442,6 +1490,7 @@ def _family_value(scenario, family):
             "gpt_oss": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>",
             "kimi_k2": "<think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>",
             "kimi_k3": "<|open|><|sep|><|close|><|end_of_msg|>",
+            "mistral_4": "[TOOL_CALLS][ARGS][CALL_ID][THINK][/THINK]",
         }[family]
     if scenario == "gpt_oss_quoted_message_header_literal":
         return {
@@ -1449,6 +1498,7 @@ def _family_value(scenario, family):
             "muse_glimmer": "<|eom|><|start|>assistant to=user<|message|>literal<|eom|>",
             "muse_spark": "<|eom|><|start|>assistant to=user<|message|>literal<|eom|>",
             "kimi_k3": "<|close|>call<|sep|><|open|>response<|sep|>literal<|close|>response<|sep|>",
+            "mistral_4": "[TOOL_CALLS]literal[ARGS]{}",
         }[family]
     quoted = {
         "guided_json_quoted_bare_header_in_answer": "self",
@@ -1665,6 +1715,27 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
     body is not evidence that the parser must dispatch it. The caller keeps DSML's
     empty-output EOF contract separate.
     """
+    if family == "hermes":
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+        calls = []
+        cursor = 0
+        while (start := raw.find("<tool_call>", cursor)) >= 0:
+            at = start + len("<tool_call>")
+            at += len(raw[at:]) - len(raw[at:].lstrip())
+            if not raw.startswith("{", at):
+                cursor = at
+                continue
+            try:
+                envelope, end = decoder.raw_decode(raw, at)
+            except json.JSONDecodeError:
+                cursor = at
+                continue
+            cursor = end
+            if isinstance(envelope, dict) and isinstance(envelope.get("name"), str):
+                arguments = envelope.get("arguments", envelope.get("parameters", {}))
+                if isinstance(arguments, dict):
+                    calls.append({"kind": "tool_call", "name": envelope["name"], "arguments": arguments})
+        return calls
     if family == "minimax_m3":
         return _m3_input_calls(raw, tools, exact_numbers=exact_numbers)
     if family == "glm47":
@@ -1699,6 +1770,22 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
             if outer_end < 0:
                 return calls
             cursor = outer_end + len("</tool_call>")
+
+    if family == "mistral_4":
+        # A call is `[TOOL_CALLS]NAME[CALL_ID]ID[ARGS]{json}` with any run of `[CALL_ID]ID`
+        # and `[ARGS]` separators; a missing or unparseable body is `{}`.
+        header = re.compile(r"\[TOOL_CALLS\]([^\[{]*)(?:\[CALL_ID\][^\[{]*|\[ARGS\])*\s*")
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+        calls = []
+        cursor = 0
+        while match := header.search(raw, cursor):
+            cursor = match.end()
+            try:
+                arguments, cursor = decoder.raw_decode(raw, match.end())
+            except json.JSONDecodeError:
+                arguments = {}
+            calls.append({"kind": "tool_call", "name": match[1].strip(), "arguments": arguments})
+        return calls
 
     if family == "beam":
         # Independent authoring-contract decoder for the Beam wire (not the parser):
@@ -1964,9 +2051,11 @@ def _assert_malformed_recovery(family, case):
         "kimi_k3": '<|open|>call tool="echo"',
         "qwen3": "<tool_call>\n<function=echo>",
         "glm47": "<tool_call>echo",
+        "hermes": '<tool_call>{"name":"echo"',
         "deepseek_v4": '<｜DSML｜invoke name="echo">',
         "deepseek_v41": '<｜DSML｜ invoke name="echo">',
         "gemma4": "<|tool_call>call:echo{",
+        "mistral_4": "[TOOL_CALLS]echo[ARGS]",
         "muse_glimmer": "<|start|>assistant to=echo<|message|>",
         "muse_spark": "<|start|>assistant to=echo<|message|>",
         "gpt_oss": "<|start|>assistant<|channel|>commentary to=functions.echo",
@@ -1977,10 +2066,10 @@ def _assert_malformed_recovery(family, case):
     prefix, suffix = raw[:at], raw[at:]
     broken = (
         'x:<|"|>unfinished' if family == "gemma4"
-        else '{\\"x\\":\\"unfinished' if family == "gpt_oss"
+        else '{\\"x\\":\\"unfinished' if family in {"gpt_oss", "hermes"}
         else '{"x":"unfinished'
     )
-    if family == "gpt_oss":
+    if family in {"gpt_oss", "hermes"}:
         assert broken in prefix
         calls = _native_input_calls(family, prefix)
         assert len(calls) == 1
@@ -1997,16 +2086,18 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v41": "</｜DSML｜ parameter></｜DSML｜ invoke>",
         "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>", "muse_spark": "</atem:invoke>",
         "gpt_oss": "<|call|>",
+        "hermes": "</tool_call>",
         "beam": "</rfl:parameter><|call|>",
         "minimax_m3": "]<]minimax[>[</value>]<]minimax[>[</invoke>",
     }
-    assert closers[family] in prefix
+    # Mistral has no call closer: the next `[TOOL_CALLS]` bounds the body.
+    assert family == "mistral_4" or closers[family] in prefix
     echoes = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
     assert _native_input_calls(family, suffix) == echoes
     bad = []
-    if family == "kimi_k2":
+    if family in {"kimi_k2", "mistral_4"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
-    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3"}:
+    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss", "muse_spark", "beam", "minimax_m3", "hermes"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
     assert case["golden"] == bad + echoes
     if family != "gpt_oss":
@@ -2149,9 +2240,285 @@ def _assert_guided_native_recovery(family, scenario, case):
     return reasoning
 
 
+def _without_unquoted_markup(raw: str) -> str:
+    decoder = json.JSONDecoder()
+    parts = []
+    cursor = 0
+    for match in re.finditer(r'[\[{\"]', raw):
+        if match.start() < cursor:
+            continue
+        try:
+            _, end = decoder.raw_decode(raw, match.start())
+        except json.JSONDecodeError:
+            continue
+        parts.append(re.sub(r"<[^<>]*>", "", raw[cursor:match.start()]))
+        parts.append(raw[match.start():end])
+        cursor = end
+    parts.append(re.sub(r"<[^<>]*>", "", raw[cursor:]))
+    return "".join(parts)
+
+
+def test_coalesced_prose_preserves_json_literals_without_inventing_words():
+    raw = 'before<|end|>{"example":"<|channel|>commentary"}<|return|>after'
+    assert _without_unquoted_markup(raw) == 'before{"example":"<|channel|>commentary"}after'
+    case = {"input": raw, "golden": [{"kind": "text", "text": 'before\n{"example":"<|channel|>commentary"}\nafter'}]}
+    _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
+    for text in ["after before", "before invented after"]:
+        case["golden"][0]["text"] = text
+        with pytest.raises(AssertionError, match="input lost output prose"):
+            _assert_input_carries_events("gpt_oss", "coalesced_prose", case)
+
+
+GPT_OSS_RECOVERY_ORACLES = {
+    'gpt_oss_quoted_call_header_then_visible_prose': (
+        '<|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>',
+        [{'kind': 'text', 'text': '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'}],
+    ),
+    'gpt_oss_unclosed_commentary_then_quoted_final': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>',
+        [{'kind': 'text', 'text': '"LookingHe said "yes".'}],
+    ),
+    'gpt_oss_unclosed_commentary_then_empty_quoted_final': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|> <|start|>assistant<|channel|>final<|message|>""<|return|>',
+        [{'kind': 'text', 'text': '"Looking ""'}],
+    ),
+    'gpt_oss_quoted_commentary_rejects_nonassistant_body': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{'kind': 'text', 'text': '"LookingDone'}],
+    ),
+    'gpt_oss_invalid_json_quote_prefix_then_final': (
+        '<|start|>assistant<|channel|>commentary<|message|>"Looking\n<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>',
+        [{'kind': 'text', 'text': '"Looking\nHe said "yes".'}],
+    ),
+    'gpt_oss_visible_scalar_string_quoted_controls': (
+        '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
+        [{'kind': 'text', 'text': '"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}],
+    ),
+    'gpt_oss_native_builtin_python_raw': (
+        '<|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>',
+        [{'kind': 'tool_call', 'name': 'python', 'arguments': '"print(1)"'}],
+    ),
+    'gpt_oss_quoted_tool_header_in_final_json': ('<|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>', [{'kind': 'text', 'text': 'Preamble{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}'}]),
+
+    'gpt_oss_unfinished_visible_json_then_tool': ('<|start|>assistant<|channel|>final<|message|>{"x":"unfinished<|start|>assistant to=functions.lookup<|message|>{}<|call|>', [{'kind': 'text', 'text': '{"x":"unfinished'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}]),
+    'gpt_oss_broadcast_recipient_analysis': ('<|start|>assistant to=all<|channel|>analysis<|message|>checking<|end|>', [{'kind': 'reasoning', 'text': 'checking'}]),
+    'gpt_oss_native_builtin_recipient_json': ('<|start|>assistant to=python<|channel|>commentary<|message|>{"code":"print(1)"}<|call|>', [{'kind': 'tool_call', 'name': 'python', 'arguments': {'code': 'print(1)'}}]),
+
+    "gpt_oss_orphan_terminator_preserves_messages": (
+        '<|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>',
+        [{'kind': 'text', 'text': 'visibledone'}],
+    ),
+    "gpt_oss_unfinished_directed_analysis": (
+        '<|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished', [],
+    ),
+    "gpt_oss_malformed_then_recipient_first_call": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>',
+        [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}],
+    ),
+    "gpt_oss_unknown_channel_before_final": (
+        '<|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>',
+        [{'kind': 'text', 'text': 'firstsecond'}],
+    ),
+    "gpt_oss_final_then_unframed_recipient_first_call": (
+        '<|channel|>final<|message|>before<|return|>to=functions.lookup<|channel|>commentary<|message|>{"path":"雪","content":"<|return|>"}<|call|>',
+        [{"kind": "text", "text": "before"}, {"kind": "tool_call", "name": "lookup", "arguments": {"path": "雪", "content": "<|return|>"}}],
+    ),
+    "gpt_oss_unfinished_header_then_valid_call": (
+        '<|channel|>commentary to=functions.bad<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{"path":"ok"}<|return|>',
+        [{"kind": "tool_call", "name": "lookup", "arguments": {"path": "ok"}}],
+    ),
+    "gpt_oss_unfinished_directed_header_then_final": (
+        '<|channel|>commentary to=functions.bad<|channel|>final<|message|>ANSWER<|return|>',
+        [{"kind": "text", "text": "ANSWER"}],
+    ),
+    "gpt_oss_nonassistant_analysis_then_final": (
+        '<|start|>user<|channel|>analysis<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>',
+        [{"kind": "text", "text": "ANSWER"}],
+    ),
+    "gpt_oss_recipientless_json_call_then_final": (
+        '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{'kind': 'text', 'text': '{"city":"NYC"}Done'}],
+    ),
+    "gpt_oss_recipientless_json_return_then_final": (
+        '<|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{'kind': 'text', 'text': '{"city":"NYC"}Done'}],
+    ),
+    "gpt_oss_final_then_unframed_visible_tail": (
+        '<|channel|>final<|message|>before<|return|>after',
+        [{'kind': 'text', 'text': 'beforeafter'}],
+    ),
+    "gpt_oss_recipientless_json_interrupted_by_final": (
+        '<|channel|>commentary<|message|>{"x":1}<|start|>assistant<|channel|>final<|message|>Done.<|return|>',
+        [{'kind': 'text', 'text': '{"x":1}Done.'}],
+    ),
+    "gpt_oss_recipientless_constrained_whitespace_call": (
+        '<|channel|>commentary <|constrain|>json<|message|>  <|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>',
+        [{'kind': 'text', 'text': '  Done'}],
+    ),
+    "gpt_oss_nonassistant_unfinished_final_header": (
+        '<|start|>user<|channel|>final SHOULD_HIDE', [],
+    ),
+    "gpt_oss_nonassistant_unfinished_analysis_header": (
+        '<|start|>user<|channel|>analysis SHOULD_HIDE', [],
+    ),
+    "gpt_oss_malformed_then_nonassistant_call": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>user<|channel|>commentary to=functions.fake<|message|>{"x":1}<|return|>', [],
+    ),
+    "gpt_oss_malformed_then_native_opaque_name": (
+        '<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>commentary to=functions.f/x<|message|>{"x":1}<|return|>',
+        [{"kind": "tool_call", "name": "f/x", "arguments": {"x": 1}}],
+    ),
+    "gpt_oss_native_opaque_name_handoff": (
+        '<|start|>assistant<|channel|>commentary to=functions.@f<|message|>{"x":1}<|return|>',
+        [{"kind": "tool_call", "name": "@f", "arguments": {"x": 1}}],
+    ),
+    "gpt_oss_named_tool_unfinished_final_header": (
+        '<|start|>python<|channel|>final SECRET', [],
+    ),
+    "gpt_oss_named_author_less_than_lookalike": (
+        '<|start|>assistant<g<|channel|>final SECRET', [],
+    ),
+    "gpt_oss_named_author_nbsp_lookalike": (
+        '<|start|>assistant\u00a0user<|channel|>final SECRET', [],
+    ),
+    'gpt_oss_recovered_tool_header_return': (
+        '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>commentary to=functions.lookup <|return|><|message|>{"city":"Paris"}<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'city': 'Paris'}}, {'kind': 'text', 'text': 'Done.'}],
+    ),
+    'gpt_oss_recovered_final_header_return': (
+        '<|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>', [{'kind': 'text', 'text': 'Done.'}],
+    ),
+    'gpt_oss_initial_json_prefix_then_tool': (
+        '{"visible":"<|start|>"}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>', [{'kind': 'text', 'text': '{"visible":"<|start|>"}'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}],
+    ),
+    'gpt_oss_initial_json_prefix_then_recovered_final': (
+        '{"visible":"<|start|>"}<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>', [{'kind': 'text', 'text': '{"visible":"<|start|>"}Done.'}],
+    ),
+    'gpt_oss_tab_separated_assistant_recipient': (
+        'assistant\tto=functions.lookup<|channel|>commentary<|message|>{"q":"雪"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}],
+    ),
+    'gpt_oss_implicit_recipient_prelude': (
+        'functions.lookup<|channel|>commentary<|message|>{"q":"x"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': 'x'}}],
+    ),
+    'gpt_oss_assistant_implicit_recipient_analysis': (
+        'assistant functions.lookup<|channel|>analysis<|message|>{"q":"雪"}<|return|>', [{'kind': 'tool_call', 'name': 'lookup', 'arguments': {'q': '雪'}}],
+    ),
+    'gpt_oss_assistant_role_only_final': (
+        'assistant <|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_analysis_text_interrupted_by_final': (
+        '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_final': (
+        '<|channel|>commentary<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'BeforeDone'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_user': (
+        '<|channel|>commentary<|message|>Before<|start|>user<|channel|>final<|message|>UNTRUSTED<|return|>', [{'kind': 'text', 'text': 'Before'}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_invalid_author': (
+        '<|channel|>commentary<|message|>Before<|start|>python<|channel|>final<|message|>UNTRUSTED<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'BeforeDone'}],
+    ),
+    'gpt_oss_unconfirmed_header_return_at_eof': (
+        '<|channel|>final<|message|>Before<|start|>assistant<|channel|>final<|return|>', [{'kind': 'text', 'text': 'Before<|start|>assistant<|channel|>final'}],
+    ),
+    'gpt_oss_unknown_channel_header_only_eof': (
+        '<|channel|>finalx', [],
+    ),
+    'gpt_oss_analysis_interrupted_by_final_then_tool': (
+        '<|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Visible'}, {'kind': 'tool_call', 'name': 'lookup', 'arguments': {}}],
+    ),
+    'gpt_oss_commentary_text_interrupted_by_bare_final': (
+        '<|channel|>commentary<|message|>Before<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before\nDone'}],
+    ),
+    'gpt_oss_analysis_text_interrupted_by_bare_final': (
+        '<|channel|>analysis<|message|>Before<|channel|>final<|message|>Done<|return|>', [{'kind': 'reasoning', 'text': 'Before'}, {'kind': 'text', 'text': 'Done'}],
+    ),
+    'gpt_oss_initial_json_prefix_then_bare_final': (
+        '{"x":"<|start|>"}<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': '{"x":"<|start|>"}Done'}],
+    ),
+    'gpt_oss_literal_bare_analysis_in_visible_body': (
+        '<|channel|>commentary<|message|>Before<|channel|>analysis<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before<|channel|>analysis<|message|>Done'}],
+    ),
+    'gpt_oss_literal_bare_unknown_channel_in_visible_body': (
+        '<|channel|>commentary<|message|>Before<|channel|>finalx<|message|>Done<|return|>', [{'kind': 'text', 'text': 'Before<|channel|>finalx<|message|>Done'}],
+    ),
+    'gpt_oss_literal_bare_tool_header_in_visible_body': (
+        '<|channel|>final<|message|>Use <|channel|>commentary to=functions.lookup<|message|>{}<|call|>', [{'kind': 'text', 'text': 'Use <|channel|>commentary to=functions.lookup<|message|>{}'}],
+    ),
+    'gpt_oss_visible_json_prelude_indentation': (
+        '    {"x":1}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': '    {"x":1}\nDone'}],
+    ),
+    'gpt_oss_visible_quoted_json_prelude_whitespace': (
+        ' \n{"x":"<|start|>"}\n<|channel|>final<|message|>Done<|return|>', [{'kind': 'text', 'text': ' \n{"x":"<|start|>"}\nDone'}],
+    ),
+    'gpt_oss_assistant_default_channel_visible_response': (
+        '<|start|>assistant<|message|>Answer<|return|>', [{'kind': 'text', 'text': 'Answer'}],
+    ),
+}
+
+
+@pytest.mark.parametrize("scenario", sorted(set(GPT_OSS_RECOVERY_ORACLES) - taxonomy.RETIRED_SCENARIOS))
+def test_harmony_recovery_oracles_reject_changed_input_or_output(scenario):
+    case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
+    _assert_input_carries_events("gpt_oss", scenario, case)
+    # _preserve_historical_requests can mask a wrong channel or payload in these producer specs.
+    for name, _description, wire, golden in (*G._GPT_OSS_REVIEW_CASES, *G._GPT_OSS_RECOVERY_CASES):
+        if name == scenario:
+            _assert_input_carries_events("gpt_oss", scenario, {**case, "input": wire, "golden": golden})
+    for field, replacement in [("input", ""), ("golden", [{"kind": "reasoning", "text": "invented"}])]:
+        changed = {**case, field: replacement}
+        with pytest.raises(AssertionError, match="Harmony recovery"):
+            _assert_input_carries_events("gpt_oss", scenario, changed)
+
+
+def _assert_structural_quoted_json_call(family: str, case: dict) -> None:
+    literal = json.dumps(G.r_tool_arguments(family, "lookup", {"q": "x"}, 0), ensure_ascii=False) + " trailing"
+    assert case["input"] == G.default_response_prefix(family) + G.r_text(family, literal)
+    family = G.unified_grammar_family(family)
+    # Serialized newlines are the two literal bytes backslash+n. Attribute and
+    # JSON-string escapes instead make the native payload malformed.
+    if family in {"qwen3", "glm47"}:
+        arguments = {"q": "\\nx\\n" if family == "qwen3" else "x"}
+    elif family in {"gemma4", "kimi_k2"}:
+        arguments = {}
+    else:
+        assert case["golden"] == [{"kind": "text", "text": '"" trailing'}]
+        return
+    assert case["golden"] == [
+        {"kind": "text", "text": '"'},
+        {"kind": "tool_call", "name": "lookup", "arguments": arguments},
+        {"kind": "text", "text": '" trailing'},
+    ]
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+    request_family = family
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
+    if family == "gpt_oss" and scenario in GPT_OSS_RECOVERY_ORACLES:
+        expected_input, expected_events = GPT_OSS_RECOVERY_ORACLES[scenario]
+        assert case["input"] == expected_input, "Harmony recovery input"
+        assert case["golden"] == expected_events, "Harmony recovery output"
+        assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}, "Harmony recovery mode"
+        assert case["finish_reason"] == "stop", "Harmony recovery finish"
+        return
+    if scenario == "gpt_oss_quoted_call_header_then_visible_prose":
+        _assert_structural_quoted_json_call(request_family, case)
+        return
+    if scenario in {"guided_response_quoted_control_braces_named", "guided_response_quoted_control_braces_required"}:
+        marker = G._NATIVE_QUOTED_CONTROL[family]
+        named = scenario.endswith("_named")
+        payload = json.dumps({"city": "Paris"} if named else {"name": "get_weather", "arguments": {"city": "Paris"}})
+        assert case["input"] == f'The literal "{marker} {{ example }}" stays visible. ' + payload
+        assert case["init"] == {"starting_state": "Response", "tool_output_mode": "GuidedJson", "named_tool": "get_weather" if named else None}
+        prefix = ('The literal "assistant to=get_weather{ example }" stays visible. '
+                  if family in {"muse_glimmer", "muse_spark"}
+                  else 'The literal "{ example }" stays visible. ')
+        expected = [{"kind": "text", "text": prefix},
+                    {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+        if family in {"beam", "gpt_oss", "kimi_k3"}:
+            expected = [{"kind": "text", "text": 'The literal "'}]
+        assert case["golden"] == expected
+        return
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
@@ -2160,8 +2527,8 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
         return
     if scenario.startswith("kimi_native_"):
         _assert_kimi_native_golden(scenario, case)
-    if scenario in {"dsml_unterminated_parameter_then_call", "dsml_unterminated_parameter_then_empty_call"}:
-        _assert_dsml_recovery_input(family, scenario, case)
+    if scenario in G.OPEN_PARAMETER_BOUNDARY_SCENARIOS:
+        _assert_open_parameter_boundary(family, scenario, case)
         return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
@@ -2170,6 +2537,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 or (family == "minimax_m3" and scenario in _GUIDED_NATIVE_RECOVERY_SCENARIOS)):
             candidates = _native_input_calls(family, raw, case.get("tools", []), exact_numbers=True)
             for candidate in candidates:
+                # Only object arguments have properties to type against a schema.
+                if not isinstance(candidate["arguments"], dict):
+                    continue
                 tool_schema = next(
                     (tool for tool in case.get("tools", []) if tool["name"] == candidate["name"]),
                     None,
@@ -2241,24 +2611,35 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             if text in raw:
                 continue
             controls_removed = raw
-            for marker in control_tokens(family):
-                controls_removed = controls_removed.replace(marker, "")
+            for marker in (*control_tokens(family), *G.r_text(family, "\x00").split("\x00")):
+                if marker:
+                    controls_removed = controls_removed.replace(marker, "")
             if text in controls_removed:
                 continue
             # Coalescing can remove intervening control/native spans, but it may
             # not invent or reorder the ordinary words on either side of them.
-            plain = re.sub(r"<[^<>]*>", "", raw)
-            cursor = 0
-            for word in re.findall(r"\S+", text):
-                at = plain.find(word, cursor)
-                assert at >= 0, (family, scenario, "input lost output prose", word)
-                cursor = at + len(word)
+            projections = (re.sub(r"<[^<>]*>", "", raw), _without_unquoted_markup(raw))
+            for plain in projections:
+                cursor = 0
+                for word in re.findall(r"\S+", text):
+                    at = plain.find(word, cursor)
+                    if at < 0:
+                        break
+                    cursor = at + len(word)
+                else:
+                    break
+            else:
+                raise AssertionError((family, scenario, "input lost output prose", text))
             continue
         assert event["kind"] == "tool_call"
         name, arguments = event["name"], event["arguments"]
         if isinstance(arguments, str):
             arguments = json.loads(arguments, parse_float=Decimal)
         assert name in raw or case["init"]["named_tool"] == name, (family, scenario, "input tool name", name)
+        if scenario == "mistral_non_object_arguments":
+            # Non-object arguments pass through by design; the input spells each value.
+            assert json.dumps(arguments) in raw, (family, scenario, "input argument value", arguments)
+            continue
         assert isinstance(arguments, dict), (family, scenario, "argument object")
         for key, value in arguments.items():
             assert key in raw, (family, scenario, "input argument key", key)
@@ -2269,9 +2650,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 assert "null" in raw, (family, scenario, "input null argument value", key)
     reasons = [event for event in case["golden"] if event["kind"] == "reasoning"]
     if reasons and case["init"]["starting_state"] == "None" and not default_reasoning:
-        if family == "gpt_oss":
+        if family == "gpt_oss" or (family == "beam" and scenario == "structured_response_after_reasoning"):
             assert re.search(r"<\|channel\|>(?:analysis|redacted)<\|message\|>", raw), (
-                family, scenario, "missing Harmony reasoning channel",
+                family, scenario, "missing reasoning channel",
             )
         else:
             assert control_tokens(family)[0] in raw, (family, scenario, "missing reasoning opener")
@@ -2336,7 +2717,8 @@ def _assert_cross_family_contract(corpus):
                 assert init == {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
-            events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+            events = (_assert_open_parameter_boundary(family, scenario, case) if scenario in G.OPEN_PARAMETER_BOUNDARY_SCENARIOS
+                      else _assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _assert_missing_inner_closers(family, case)
                       if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
@@ -2352,7 +2734,7 @@ def _assert_cross_family_contract(corpus):
                 assert malformed in case["input"]
                 assert case["input"].index(malformed) < case["input"].rindex("get_weather")
                 following = [{"kind": "tool_call", "name": "get_weather", "arguments": {} if empty else {"city": "Paris"}}]
-                assert events == ([{"kind": "tool_call", "name": "bad", "arguments": {}}] if family in {"kimi_k2", "deepseek_v4"} else []) + following
+                assert events == ([{"kind": "tool_call", "name": "bad", "arguments": {}}] if family in {"kimi_k2", "deepseek_v4", "mistral_4"} else []) + following
                 events = following
             if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
                 following = [{"kind": "text", "text": "recovered"}]
@@ -2361,11 +2743,32 @@ def _assert_cross_family_contract(corpus):
                 events = following
             if scenario == "gpt_oss_quoted_truncated_tool_then_final":
                 assert events == [{"kind": "text", "text": "Answer"}], (family, scenario, "missing recovered answer")
+            if scenario == "gpt_oss_quoted_call_header_then_visible_prose":
+                # Exact per-family grammar results are checked above. Harmony
+                # owns its JSON string; other families either accept the native
+                # wire call or reject its JSON-escaped framing/arguments.
+                events = None
+            if scenario in {"guided_response_quoted_control_braces_named", "guided_response_quoted_control_braces_required"}:
+                expected = [{"kind": "text", "text": "FAMILY_MARKER_VALUE"}]
+                if family not in {"beam", "gpt_oss", "kimi_k3"}:
+                    expected.append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+                assert events == expected
+                # A partial header owns the remainder; a stripped stray token
+                # permits the later bare JSON payload. Compare other request
+                # metadata only after this exact family-specific assertion.
+                events = None
+            if scenario == "native_quoted_complete_call_default":
+                expected = [{"kind": "text", "text": 'Example: "'},
+                            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+                if family != "mistral_4":
+                    expected.append({"kind": "text", "text": '".'})
+                assert events == expected
+                events = expected[:2]
             if scenario == "structured_response_after_reasoning":
                 # Compare the schema and invalid payloads after checking each
                 # native envelope; Harmony generates headers, others prefill.
                 assert case["tools"] == []
-                assert init["starting_state"] == ("None" if family == "gpt_oss" else "Reasoning")
+                assert init["starting_state"] == ("None" if family in {"gpt_oss", "beam"} else "Reasoning")
                 response = events[1]["text"]
                 if G.unified_grammar_family(family) == "qwen3":
                     assert response.startswith("\n\n")
@@ -2587,7 +2990,7 @@ def test_guided_native_recovery_contract_rejects_changed_calls(scenario, mutatio
         _assert_guided_native_recovery(family, scenario, case)
 
 
-@pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family not in {"muse_glimmer", "muse_spark"}])
+@pytest.mark.parametrize("family", [family for family in GUIDED_NATIVE_FAMILIES if family not in {"muse_glimmer", "muse_spark"}])
 def test_cross_family_contract_rejects_prose_only_recipient_case(family):
     corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     _assert_cross_family_contract(corpus)
@@ -2649,6 +3052,8 @@ def test_cross_family_contract_rejects_single_family_mutations(family, mutation)
     elif mutation == "input_value":
         case["input"] = case["input"].replace("Paris", "Rome")
     elif mutation == "guided_array_value":
+        if family not in GUIDED_NATIVE_FAMILIES:
+            pytest.skip(f"{family} has no guided cases")
         case = corpus[family][f"UNIFIED.guided_json_array_argument.{family}"]
         prefix = G.default_response_prefix(family)
         calls = json.loads(case["input"].removeprefix(prefix))
@@ -2769,6 +3174,73 @@ def test_kimi_display_sections_match_their_applicable_family():
             assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
 
 
+def test_open_parameter_boundary_uses_shared_display_and_historical_aliases():
+    labels = taxonomy.display_case_labels(UNIFIED_TAX)
+    for scenario in G.OPEN_PARAMETER_BOUNDARY_SCENARIOS:
+        assert taxonomy.display_section(scenario)[0] == "unified_g5"
+        assert labels[scenario]["label"] == "5-" + scenario
+        assert labels[scenario]["compact_prefix"] == "5"
+        suffix = scenario.removeprefix("invoke_close_inside_open_parameter_then_")
+        for family_prefix in ["dsml", "muse"]:
+            for old in [family_prefix + "_unterminated_parameter_then_" + suffix,
+                        ("5-dsml_unterminated_parameter_then_" if family_prefix == "dsml" else "muse-unterminated_parameter_then_") + suffix]:
+                assert historical_case_label(old) == case_label(scenario)
+
+
+def _assert_open_parameter_boundary(family, scenario, case):
+    assert family in G.OPEN_PARAMETER_BOUNDARY_FAMILIES
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    empty = scenario.endswith("empty_call")
+    if family in {"deepseek_v4", "deepseek_v41"}:
+        _assert_dsml_recovery_input(family, scenario, case)
+        return
+    if family in {"muse_glimmer", "muse_spark"}:
+        parameter, closer, invocation_end = '<atem:parameter name="', '</atem:parameter>', '</atem:invoke>'
+        tool, key = ("get_weather", "city") if empty else ("f", "x")
+    elif family in {"qwen3", "nemotron_v3"}:
+        parameter, closer, invocation_end = '<parameter=', '</parameter>', '</function>'
+        tool, key = "get_weather", "city"
+    elif family == "minimax_m3":
+        parameter, closer, invocation_end = ']<]minimax[>[<city>', ']<]minimax[>[</city>', ']<]minimax[>[</invoke>'
+        tool, key = "get_weather", "city"
+    else:
+        parameter, closer, invocation_end = '<|open|>argument ', '<|close|>argument<|sep|>', '<|close|>call<|sep|>'
+        tool, key = "get_weather", "city"
+    raw = case["input"]
+    start = raw.index(parameter)
+    value_at = raw.index("bad", start)
+    invocation_at = raw.index(invocation_end, value_at)
+    parameter_at = raw.find(closer, value_at)
+    assert parameter_at < 0 or invocation_at < parameter_at, "the first parameter must remain open at the invocation fence"
+    if family == "kimi_k3":
+        expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if empty else [
+            {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+    elif empty:
+        assert parameter_at < 0
+        expected = [] if family in {"muse_glimmer", "muse_spark"} else [
+            {"kind": "tool_call", "name": tool, "arguments": {"city": "bad"} if family in {"qwen3", "nemotron_v3"} else {}},
+            {"kind": "tool_call", "name": "f", "arguments": {}}]
+    else:
+        assert parameter_at > invocation_at
+        value = raw[value_at:parameter_at]
+        assert "Paris" in value
+        expected = [{"kind": "tool_call", "name": tool, "arguments": {key: value}}]
+    assert case["golden"] == expected
+
+
+@pytest.mark.parametrize("family", sorted(G.OPEN_PARAMETER_BOUNDARY_FAMILIES))
+@pytest.mark.parametrize("scenario", G.OPEN_PARAMETER_BOUNDARY_SCENARIOS)
+def test_open_parameter_boundary_input_and_family_oracle(family, scenario):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_open_parameter_boundary(family, scenario, case)
+    changed = deepcopy(case)
+    changed["golden"] = [{"kind": "text", "text": "invented"}]
+    with pytest.raises(AssertionError):
+        _assert_open_parameter_boundary(family, scenario, changed)
+    assert "missing_inner_closers_then_valid_call" in case["description"]
+    assert "Family oracle:" in case["description"]
+
+
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     scenarios = list(UNIFIED_TAX)
     identities = {scenario: numbered_id(scenario) for scenario in scenarios}
@@ -2815,9 +3287,9 @@ def test_gpt_oss_variants_use_shared_parents_or_explicit_header_grammar(scenario
 
 
 @pytest.mark.parametrize(("scenario", "parent", "families"), [
-    ("tool_body_whitespace", "tool_only", {"gpt_oss", "kimi_k2", "kimi_k3"}),
+    ("tool_body_whitespace", "tool_only", set(MODEL_CONTRACTS["nativeReviewFamilies"]["whitespace"])),
     ("gpt_oss_quoted_truncated_tool_then_final", "tool_no_close", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
-    ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3"}),
+    ("gpt_oss_quoted_message_header_literal", "arg_marker_in_string", {"gpt_oss", "muse_glimmer", "muse_spark", "kimi_k3", "mistral_4"}),
 ])
 def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, parent, families):
     assert G.scenario_families(scenario) == families
@@ -2842,14 +3314,27 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
             assert event["name"] == ("get_weather" if parent == "tool_only" else "lookup")
             assert matches_schema(event["arguments"], case["tools"][0]["parameters"])
             if parent == "tool_only":
-                assert ' \n\t{"city":' in case["input"]
+                assert ' \n\t{"' in case["input"]
                 assert event["arguments"] == {"city": "Paris"}
             else:
                 payload = event["arguments"]["q"]
                 assert payload in case["input"]
                 assert "literal" in payload
                 assert ("assistant to=user<|message|>" if family in {"muse_glimmer", "muse_spark"}
+                        else "[TOOL_CALLS]" if family == "mistral_4"
                         else '<|open|>response<|sep|>') in payload
+
+
+def test_quoted_json_root_with_prose_uses_default_structural_coverage():
+    scenario = "gpt_oss_quoted_call_header_then_visible_prose"
+    families = set(NATIVE_FAMILIES) - {"beam", "mistral_4"}
+    assert G.scenario_families(scenario) == families
+    assert taxonomy.case_fold(scenario)[0] == "native_quoted_control_in_response"
+    assert taxonomy.display_tax(scenario)[0] == 8
+    for family in families - {"gpt_oss"}:
+        case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+        _assert_structural_quoted_json_call(family, case)
+        _assert_input_carries_events(family, scenario, case)
 
 
 def test_display_policy_has_no_dangling_groups_or_scenarios():
@@ -2879,7 +3364,7 @@ def test_single_call_variants_keep_the_shared_weather_example():
     assert ' \n\t{"city":"Paris"}' in source[2]
     for family, (raw, golden, _) in G._native_review_variants("tool_body_whitespace").items():
         assert golden == expected, family
-        assert ' \n\t{"city":' in raw, family
+        assert ' \n\t{"' in raw, family
     for family in G.UNIFIED_FAMILIES:
         cases = build_cases(family)
         assert cases[f"UNIFIED.tool_only.{family}"]["golden"] == expected, family
@@ -2887,7 +3372,7 @@ def test_single_call_variants_keep_the_shared_weather_example():
         if variant is None:
             continue
         assert variant["golden"] == expected, family
-        assert ' \n\t{"city":' in variant["input"], family
+        assert ' \n\t{"' in variant["input"], family
         assert taxonomy.case_fold("tool_body_whitespace")[0] == "tool_only"
 
 
@@ -2963,3 +3448,50 @@ def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
         case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
     with pytest.raises(AssertionError):
         _assert_input_carries_events(family, scenario, case)
+
+
+def test_tool_call_ids_unique_uses_identical_calls_for_every_native_family():
+    expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}] * 2
+    for family in sorted(G.UNIFIED_FAMILIES):
+        case = build_cases(family)[f"UNIFIED.tool_call_ids_unique.{family}"]
+        assert case["golden"] == expected
+        assert case["input"].count("Paris") == 2
+        if family == "kimi_k2":
+            assert case["input"].count("functions.get_weather:0") == 1
+            assert case["input"].count("functions.get_weather:1") == 1
+        elif family == "kimi_k3":
+            assert case["input"].count('index="1"') == 2
+            assert 'index="2"' not in case["input"]
+
+
+def test_issue595_split_inventory_matches_authored_scenarios():
+    scenarios = G.ISSUE595_SCENARIOS | {"quoted_name_backtick_possessive_reasoning"}
+    for family in NATIVE_FAMILIES:
+        selected = {
+            case_id.removeprefix("UNIFIED.").removesuffix(f".{family}")
+            for case_id, case in build_cases(family).items()
+            if case["description"].startswith("#595:")
+        }
+        assert selected == {
+            scenario for scenario in scenarios if family in G.scenario_families(scenario)
+        }, family
+
+
+def test_issue595_ordinary_requests_use_whole_input_and_progress_uses_semantic_chunks():
+    for family in NATIVE_FAMILIES:
+        cases = build_cases(family)
+        for scenario in G.ISSUE595_SCENARIOS:
+            if family not in G.scenario_families(scenario):
+                continue
+            case = cases[f"UNIFIED.{scenario}.{family}"]
+            assert case["init"]["tool_output_mode"] == "Native"
+            assert "".join(case["input_chunks"]) == case["input"]
+            assert case["finish_step"] is True
+            if scenario == "native_quoted_control_then_call_progress":
+                assert len(case["input_chunks"]) == 3
+                assert "Paris" not in case["input_chunks"][1]
+                assert "Paris" in case["input_chunks"][2]
+            else:
+                assert case["input_chunks"] == [case["input"]]
+            if case["init"]["starting_state"] == "Reasoning":
+                assert case["tools"] == []

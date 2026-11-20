@@ -94,6 +94,15 @@ fn assert_published_identities(
     completed
 }
 
+fn assert_call_id(family: &str, actual: Option<&str>, expected: Option<&str>) {
+    if family == "kimi_k3" && expected.is_some() {
+        let id = actual.unwrap().strip_prefix("call-").unwrap();
+        assert_eq!(uuid::Uuid::parse_str(id).unwrap().get_version_num(), 4);
+    } else {
+        assert_eq!(actual, expected);
+    }
+}
+
 // The conformance table compares final assembly. These checkpoints instead reject
 // output that arrives before ownership is settled or only after a later push/EOF.
 fn assert_checkpoints(
@@ -178,7 +187,7 @@ fn assert_checkpoints(
                     );
                     assert!(completed.len() <= phase.ids.len(), "premature completion");
                     for (index, id) in completed.iter().zip(&phase.ids) {
-                        assert_eq!(parser.tool_call_id(*index), id.as_deref());
+                        assert_call_id(family, parser.tool_call_id(*index), id.as_deref());
                     }
                 }
                 assert_eq!(
@@ -208,7 +217,7 @@ fn assert_checkpoints(
                 "duplicate/unfinished EOF call"
             );
             for (index, id) in completed.iter().zip(&final_ids) {
-                assert_eq!(parser.tool_call_id(*index), *id);
+                assert_call_id(family, parser.tool_call_id(*index), *id);
             }
             let mut expected = phases.last().unwrap().events.clone();
             expected.extend_from_slice(eof);

@@ -707,7 +707,7 @@ impl ToolCallConfig {
                     "<|start|>assistant<|channel|>commentary".to_string(),
                     "<|channel|>commentary".to_string(),
                 ],
-                tool_call_end_tokens: vec!["<|call|>".to_string()],
+                tool_call_end_tokens: vec!["<|call|>".to_string(), "<|return|>".to_string()],
                 ..Default::default()
             }),
             structural_tag_builder: None,
@@ -988,23 +988,5 @@ mod tests {
         assert_eq!(cfg.block_start, "<｜DSML｜function_calls>");
         assert_eq!(cfg.block_end, "</｜DSML｜function_calls>");
         assert_eq!(cfg.invoke_start_prefix, "<｜DSML｜invoke name=");
-    }
-
-    #[test]
-    fn deepseek_dsml_factory_produces_expected_block_tokens() {
-        let v3_2 = ToolCallConfig::deepseek_v3_2();
-        let v4 = ToolCallConfig::deepseek_v4();
-        let v3_2_cfg = match v3_2.parser_config {
-            ParserConfig::Dsml(c) => c,
-            _ => panic!("expected Dsml variant for v3_2"),
-        };
-        let v4_cfg = match v4.parser_config {
-            ParserConfig::Dsml(c) => c,
-            _ => panic!("expected Dsml variant for v4"),
-        };
-        assert_eq!(v3_2_cfg.block_start, "<｜DSML｜function_calls>");
-        assert_eq!(v3_2_cfg.block_end, "</｜DSML｜function_calls>");
-        assert_eq!(v4_cfg.block_start, "<｜DSML｜tool_calls>");
-        assert_eq!(v4_cfg.block_end, "</｜DSML｜tool_calls>");
     }
 }

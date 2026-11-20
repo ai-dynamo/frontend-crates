@@ -124,9 +124,10 @@ def test_glm_uses_the_registered_reasoning_detector_name():
 
 def test_all_authored_families_have_explicit_detector_pairs():
     module = _load(_Released)
-    # GPT-OSS uses Harmony framing; this split-detector adapter has no registered pair.
-    assert "gpt_oss" not in module.FAMILY_PARSERS
-    assert set(module.FAMILY_PARSERS) | {"gpt_oss"} == UNIFIED_FAMILIES
+    # Harmony has no split pair; Hermes adds Dynamo support without a SGLang pipeline.
+    unpaired = {"gpt_oss", "hermes"}
+    assert not unpaired & set(module.FAMILY_PARSERS)
+    assert set(module.FAMILY_PARSERS) | unpaired == UNIFIED_FAMILIES
     assert module.FAMILY_PARSERS["nemotron_v3"] == ("nemotron_3", "qwen3_coder")
     with mock.patch.object(module, "version", return_value="0.5.16"):
         assert module._registration_unavailable({"family": "deepseek_v4"}) is None

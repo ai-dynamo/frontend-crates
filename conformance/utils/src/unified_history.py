@@ -804,7 +804,8 @@ def _validate_capture_file(
                 metadata["capture_provenance"],
                 f"{path}:{case_id}.document_overrides.capture_provenance",
             )
-            if set(provenance) != {"captured_with", "capture_origin", "inherited_from"}:
+            required = {"captured_with", "capture_origin"}
+            if not required <= provenance.keys() or provenance.keys() - (required | {"inherited_from"}):
                 raise ValueError(
                     f"{path}:{case_id}.document_overrides.capture_provenance has invalid keys"
                 )
@@ -823,7 +824,7 @@ def _validate_capture_file(
             origin = provenance["capture_origin"]
             if origin is not None:
                 _validate_source_origin(origin, f"{path}:{case_id}.document_overrides.capture_provenance.capture_origin")
-            if provenance["inherited_from"] is not None and not isinstance(
+            if "inherited_from" in provenance and provenance["inherited_from"] is not None and not isinstance(
                 provenance["inherited_from"], str
             ):
                 raise ValueError(
@@ -2571,6 +2572,7 @@ def _set_capture_snapshot(history: History, capture_id: str, target: dict, previ
         return
     changes, metadata_changes, _document_overrides = _snapshot_delta(target, previous)
     capture = history.captures[capture_id]
+    previous_overrides = copy.deepcopy(capture["document_overrides"])
     capture.update(
         changes=changes, metadata_changes=metadata_changes,
         document_overrides={},
@@ -2585,6 +2587,14 @@ def _set_capture_snapshot(history: History, capture_id: str, target: dict, previ
             cursor.advance(previous_id)
     natural = cursor.preview(capture_id)
     _changes, _metadata_changes, document_overrides = _snapshot_delta(target, natural)
+    # Absent inheritance preserves derived-view lineage; explicit null suppresses it.
+    for case_id, override in document_overrides.items():
+        prior = previous_overrides.get(case_id, {}).get("capture_provenance")
+        provenance = override.get("capture_provenance")
+        if (prior is not None and "inherited_from" not in prior
+                and "inherited_from" not in target[case_id]["document"]
+                and provenance is not None and provenance.get("inherited_from") is None):
+            provenance.pop("inherited_from", None)
     capture["document_overrides"] = document_overrides
     cursor.advance(capture_id)
 

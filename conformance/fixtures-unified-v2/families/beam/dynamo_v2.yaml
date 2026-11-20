@@ -1,31 +1,93 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","version":"0.9.12"}],"mode":"unified","payload_sha256":"4120fc52bacabaf06565b34101cc30fa0367cd5c750a82812433b3cae8a064fb","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml","surface":"unified","version":"0.9.12"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"41861f3df7385a8e62f6cf71f7fa34fb1c29b713a14ece461b89ebc29c3fd202","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_8d49f6f1ab8b2b8b
+  origin: origin_883f78c28b7d2088
 origins:
-  origin_8d49f6f1ab8b2b8b:
-    crate_version: 0.9.12
-    source_sha256: 1075176cfa7db0de6e0730ff9f09db7dc10b850d461e179a1ece7d013bf1f51b
-    git_commit: aa59e9bfc90a119d2ff0f08b0c917d5a0f40b76f
+  origin_883f78c28b7d2088:
+    crate_version: 0.10.7
+    source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
+    git_commit: 731c488a763345d2940794be01d3a5d7c89ebc3a
 producers:
-  producer_ee44b7b594ba2c8f:
+  producer_446828e67b23fad3:
     captured_with:
-      dynamo_v2: 0.9.12
-    capture_origin: origin_8d49f6f1ab8b2b8b
+      dynamo_v2: 0.10.7
+    capture_origin: origin_883f78c28b7d2088
 contexts:
-  context_01419a81194b5a21:
-    family: beam
+  context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.9.12.yaml
-  producer: producer_ee44b7b594ba2c8f
-  context: context_01419a81194b5a21
+  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml
+  producer: producer_446828e67b23fad3
+  context: context_cdf0b3c0134ec96f
 records:
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 42fcf736846d710e825dd235e3289c8940d9c048b7ae978c8aacbd45e7cace61
+    output:
+      assembled:
+      - kind: reasoning
+        text: analysis "
+      - kind: text
+        text: Answer"
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: analysis "
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: Answer"
+      - expected: []
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    case_key: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 9deb0d9318d233457f706f8084aefa9cc79f92d8779427be3039356b6f3f13b5
+    output:
+      assembled:
+      - kind: reasoning
+        text: Use re.split(r'(\s)', text). Let's final.
+      - kind: text
+        text: The code prints ['a', ' ', 'b'].
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Use re.split(r'(\s)', text). Let's final.
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: text
+          text: The code prints ['a', ' ', 'b'].
+      - expected: []
+  UNIFIED.8-native_quoted_complete_call_default:
+    case_key: UNIFIED.8-native_quoted_complete_call_default
+    request: 816999e18ba3eec7d8bbec9937e0c1b365152b1983d710d21bd68c7a54e209f3
+    output:
+      assembled:
+      - kind: text
+        text: 'Example: "'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      - kind: text
+        text: '".'
+      chunks:
+      - expected:
+        - kind: text
+          text: 'Example: "'
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+      - expected:
+        - kind: text
+          text: '".'
+      - expected: []
   arg_array_quoted_parameter_close:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
     request: 227a9fc7013121bf2c7a7009de447ce073f511eba1ad91cce188fa8080b29d43
@@ -1398,6 +1460,22 @@ records:
             '
       - expected: []
       - expected: []
+  closed_command_quote_before_reasoning_closer:
+    case_key: UNIFIED.40-closed_command_quote_before_reasoning_closer
+    request: fd0dfa139b742314566478a61c4be2f88d2a893afee2452531ea99e18f153d8a
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, I should run this command "grep -v '
+      - kind: text
+        text: ''' ..."'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, I should run this command "grep -v '
+        - kind: text
+          text: ''' ..."'
+      - expected: []
   conditional_schema_number_types:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-conditional_schema_number_types
     request: 34727d3934fdc54d82afd7a4401eefad03e196b4557bc9fb55242e73ddd042fa
@@ -1532,6 +1610,54 @@ records:
           name: null
           arguments: '}'
           complete: true
+      - expected: []
+  decade_apostrophe_before_reasoning_closer:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    request: 1555e38d937cd90f659d8491e9bfdd534918c9592c1eb8bc4942619f64e54242
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the year is 80s'
+      - kind: text
+        text: 'Yes'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, the year is 80s'
+        - kind: text
+          text: 'Yes'
+      - expected: []
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+    request: 31b05a2234f46b3dca89556abf4436506617593086530131486cd5a4970e1c4d
+    output:
+      assembled:
+      - kind: reasoning
+        text: '''90s'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '''90s'
+        - kind: text
+          text: '''Answer'''
+      - expected: []
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    case_key: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+    request: 0e8ea222492942984e8915142b762370f12f2cd3ee2ee98ebd20a09f02841f7c
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the reference is 80s' music
+      - kind: text
+        text: '''Yes'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, the reference is 80s' music
+        - kind: text
+          text: '''Yes'''
       - expected: []
   deepseek_v41_mixed_control_text_in_string:
     case_key: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
@@ -1856,6 +1982,21 @@ records:
           name: noop
           arguments: '{}'
           complete: true
+  enum_contradicting_declared_type:
+    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
+    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
+    output:
+      assembled:
+      - kind: tool_call
+        name: capture_payload
+        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: capture_payload
+          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
+          complete: true
+      - expected: []
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets
     request: bd56a6ac01f9373ebece7ffa4efc72388028dbe295966da5e22c02eefbe05dec
@@ -2467,11 +2608,7 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: 'before <rfl:parameter name="x">
-
-          é🙂<par{value}
-
-          </rfl:parameter> after'
+        text: "before <rfl:parameter name=\"x\">\né\U0001F642<par{value}\n</rfl:parameter> after"
       - kind: tool_call
         name: get_weather
         arguments: '{"city": "Paris"}'
@@ -2489,9 +2626,7 @@ records:
           text: <rfl:parameter name="x">
       - expected:
         - kind: reasoning
-          text: '
-
-            é🙂'
+          text: "\né\U0001F642"
       - expected:
         - kind: reasoning
           text: '<par{value}
@@ -3138,7 +3273,9 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: The literal 'doesn't <|end|> marker' stays quoted.
+        text: 'The literal ''doesn''t '
+      - kind: text
+        text: ' marker'' stays quoted.'
       - kind: tool_call
         name: get_weather
         arguments: '{"city": "Paris"}'
@@ -3147,10 +3284,10 @@ records:
         - kind: reasoning
           text: 'The literal ''doesn''t '
       - expected: []
-      - expected:
-        - kind: reasoning
-          text: <|end|> marker' stays quoted.
       - expected: []
+      - expected:
+        - kind: text
+          text: ' marker'' stays quoted.'
       - expected:
         - kind: tool_call
           name: get_weather
@@ -3163,7 +3300,9 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: The literal 'doesn't <|end|> marker' stays quoted.
+        text: 'The literal ''doesn''t '
+      - kind: text
+        text: ' marker'' stays quoted.'
       - kind: tool_call
         name: get_weather
         arguments: '{"city": "Paris"}'
@@ -3172,10 +3311,10 @@ records:
         - kind: reasoning
           text: 'The literal ''doesn''t '
       - expected: []
-      - expected:
-        - kind: reasoning
-          text: <|end|> marker' stays quoted.
       - expected: []
+      - expected:
+        - kind: text
+          text: ' marker'' stays quoted.'
       - expected:
         - kind: tool_call
           name: get_weather
@@ -3218,10 +3357,7 @@ records:
     output:
       assembled:
       - kind: text
-        text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
+        text: The literal "
       chunks:
       - expected:
         - kind: text
@@ -3230,23 +3366,14 @@ records:
       - expected: []
       - expected: []
       - expected: []
-      - expected:
-        - kind: text
-          text: '<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
+      - expected: []
   guided_response_quoted_control_braces_required:
     case_key: UNIFIED.35-guided_response_quoted_control_braces_required
     request: ad7195c2008c1e9cf2a0344b74e0a8b55d7e05769b94565de81135c2a4f1556e
     output:
       assembled:
       - kind: text
-        text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-      - kind: tool_call
-        name: get_weather
-        arguments: '{"city": "Paris"}'
+        text: The literal "
       chunks:
       - expected:
         - kind: text
@@ -3255,13 +3382,39 @@ records:
       - expected: []
       - expected: []
       - expected: []
+      - expected: []
+  inch_mark_before_reasoning_closer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer
+    request: cc894a32bbc1d9430900b78317fcb49c2adb1bfb9f8d7d445e50c973cfbc4e7b
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, the TV size is 40"
+      - kind: text
+        text: 'Yes'
+      chunks:
       - expected:
+        - kind: reasoning
+          text: Let me think, the TV size is 40"
         - kind: text
-          text: '<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
-        - kind: tool_call
-          name: get_weather
-          arguments: '{"city": "Paris"}'
-          complete: true
+          text: 'Yes'
+      - expected: []
+  inch_mark_before_reasoning_closer_quoted_answer:
+    case_key: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+    request: 649b193c7b27aeb47358fbc1fe986b894cd2d6a4f7f243c2432ea688bcec27f6
+    output:
+      assembled:
+      - kind: reasoning
+        text: 27"
+      - kind: text
+        text: '"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 27"
+        - kind: text
+          text: '"Answer"'
+      - expected: []
   interrupted_reasoning_then_response:
     case_key: UNIFIED.10-reason_then_content_interrupted
     request: 838acab12e6bc65283f63ade423be9ca9464452d38093d53fe14671b4d789867
@@ -3422,6 +3575,26 @@ records:
           arguments: '{"location": "unfinished<|call|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"location\">\nParis"}'
           complete: true
       - expected: []
+  mixed_quotes_before_reasoning_closer:
+    case_key: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: 88cbbcbded88c3cb413f3e6f263e6bcfb45afa1b161871cc024de39c418410ca
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'f''" OR x -- ''
+
+          '
+      - kind: text
+        text: '"Answer"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'f''" OR x -- ''
+
+            '
+        - kind: text
+          text: '"Answer"'
+      - expected: []
   narrated_calls:
     case_key: UNIFIED.8-narrated_calls
     request: d071272d4a455db8e65a19dbadb5a4aad42015b4821b3fb4bedd88e2bbee0eb4
@@ -3492,7 +3665,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -3528,7 +3701,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -3648,6 +3821,54 @@ records:
           arguments: '` header is part of the explanation.'
           complete: false
       - expected: []
+  native_quoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: a989f8f104cba6071fb14284436dea1981c22975daa106e6553077696948844c
+    output:
+      assembled:
+      - kind: reasoning
+        text: The special "
+      - kind: text
+        text: '" marker is used to delineate parser paths'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: The special "
+        - kind: text
+          text: '" marker is used to delineate parser paths'
+      - expected: []
+  native_quoted_reasoning_closer_then_answer:
+    case_key: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: 2f55f7108d54877204bd2549f82074309b77e5ed5b278c3e50d9d84e5dfedfdb
+    output:
+      assembled:
+      - kind: reasoning
+        text: ''''
+      - kind: text
+        text: '''Answer'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: ''''
+        - kind: text
+          text: '''Answer'
+      - expected: []
+  native_reasoning_closer_in_quoted_sentence:
+    case_key: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    request: 987baebdf838f32082c86ef89fac7b6a838291a9bff82da64f24038386c7fcfa
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'Let me think, "The marker '
+      - kind: text
+        text: ' is a special marker"'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'Let me think, "The marker '
+        - kind: text
+          text: ' is a special marker"'
+      - expected: []
   native_single_quote_contraction_reasoning:
     case_key: UNIFIED.40-native_single_quote_contraction_reasoning
     request: 5cace03c987a90f7aa69a5f40b633e2e18204780b5d533fb7b8753666966e67a
@@ -3737,6 +3958,38 @@ records:
           name: null
           arguments: '}'
           complete: true
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    request: 3ca79e581ef21dc2ed734727ac7c9b331ac0603c706bb9aa769bf15dfb5c1856
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'Let me think, the marker '
+      - kind: text
+        text: ' is a special marker'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'Let me think, the marker '
+        - kind: text
+          text: ' is a special marker'
+      - expected: []
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    case_key: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+    request: 2e498278a70bd5cbd1fda2c0782f4b0e488b066969cc0e8ad6c826a0099fd760
+    output:
+      assembled:
+      - kind: reasoning
+        text: 'Let me think, user is asking if '
+      - kind: text
+        text: ' is specialYes'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: 'Let me think, user is asking if '
+        - kind: text
+          text: ' is specialYes'
       - expected: []
   not_keyword_type_complement:
     case_key: UNIFIED.7-tool-argument-unions-and-intersections-not_keyword_type_complement
@@ -4137,6 +4390,22 @@ records:
           arguments: '}'
           complete: true
       - expected: []
+  quoted_name_possessive_inline_closer:
+    case_key: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: 0d125123b3255119dae876ccc92e735db0fe987d98ac012e9cc61eba251fb287
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name`''s path.'
+      - kind: text
+        text: '''Answer'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name`''s path.'
+        - kind: text
+          text: '''Answer'''
+      - expected: []
   reason_after_tool:
     case_key: UNIFIED.11-reason_after_tool
     request: d44be147cf407f5825a7a60a3426286b3e6e5e3152432e525efc6d3e06ad5fdd
@@ -4236,7 +4505,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -4272,7 +4541,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -4325,7 +4594,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -4361,7 +4630,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -4441,6 +4710,36 @@ records:
         - kind: tool_call
           name: null
           arguments: '}'
+          complete: true
+      - expected: []
+  reason_markup_in_arg_empty_span_then_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: 7b2528d1820d4415e183b9afc7937fa4be9e0ce4f7dbc48feb6edb4b4e9c3c71
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"content": "<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"content": "<think></think>answer"}'
+          complete: true
+      - expected: []
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    case_key: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+    request: 1388351c40896ea32ce3911f74af907b010a7e868c2dd686a17ab5a92fe83403
+    output:
+      assembled:
+      - kind: tool_call
+        name: write_file
+        arguments: '{"path": "/tmp/literal.txt", "content": "<think></think>answer"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: write_file
+          arguments: '{"path": "/tmp/literal.txt", "content": "<think></think>answer"}'
           complete: true
       - expected: []
   reason_markup_in_arg_with_text:
@@ -4671,7 +4970,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -4707,7 +5006,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -4771,7 +5070,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -4816,7 +5115,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -5512,7 +5811,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -5549,7 +5848,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -5586,7 +5885,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -5623,7 +5922,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -6478,6 +6777,21 @@ records:
           arguments: '}'
           complete: true
       - expected: []
+  schema_declared_integer_boolean_number_order:
+    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
+    output:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments: '{"value": 1}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: schema_probe
+          arguments: '{"value": 1}'
+          complete: true
+      - expected: []
   schema_declared_null:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_null
     request: d93cb48758d06bcb451529c2f6428ca64a7c69cafebbe1fc4867a76a541cb112
@@ -6685,7 +6999,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -6962,7 +7276,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -8599,6 +8913,38 @@ records:
           arguments: '}'
           complete: true
       - expected: []
+  sql_fragment_before_reasoning_closer:
+    case_key: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 0c4f66249b1e33cf4b40121b46055ac749dfa84be82efd21eb08fa0d83d0b9e8
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, this SQL fragment is '1'='1
+      - kind: text
+        text: '''Yes'''
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, this SQL fragment is '1'='1
+        - kind: text
+          text: '''Yes'''
+      - expected: []
+  structured_response_after_reasoning:
+    case_key: UNIFIED.36-structured_response_after_reasoning
+    request: 997ad07a5cc00be56dabdced99b55bc74b6864ea99961dec27c9ecbd06f3a9c9
+    output:
+      assembled:
+      - kind: reasoning
+        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+      - kind: text
+        text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        - kind: text
+          text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+      - expected: []
   text_before_tool:
     case_key: UNIFIED.8-text_before_tool
     request: 1f29c025c3f80a0e3b4cd213441b90a776207ce340b454a1801bf271c51ce2c3
@@ -8676,7 +9022,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -8712,7 +9058,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -8796,7 +9142,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -8841,7 +9187,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -8927,6 +9273,28 @@ records:
       - expected: []
       - expected: []
       - expected: []
+      - expected: []
+  tool_call_ids_unique:
+    case_key: UNIFIED.2-tool_call_ids_unique
+    request: 7c6b5c4b4a80be59c5cb79def8c3edc9e5fe8c93ebdae629cab276adc6d801c8
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"city": "Paris"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": "Paris"}'
+          complete: true
       - expected: []
   tool_in_reason:
     case_key: UNIFIED.12-tool_in_reason
@@ -9299,7 +9667,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -9326,7 +9694,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -9457,6 +9825,66 @@ records:
           text: done
       - expected: []
       - expected: []
+  unclosed_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: 9d50545196129788019dcf8b8126b571be1af71caebbfff71075713d5f70443a
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`name'
+      - kind: text
+        text: '`Answer`'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`name'
+        - kind: text
+          text: '`Answer`'
+      - expected: []
+  unclosed_command_backtick_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: 70fa6141bab2993f774552f030e804c62fd794c5a76f2956240eebab83f51527
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, I should try `pytest -x
+      - kind: text
+        text: Run pytest
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, I should try `pytest -x
+        - kind: text
+          text: Run pytest
+      - expected: []
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    case_key: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+    request: 5f9f921ac4c573bd7a5938cab8817697775f941cb5a553a64be892c634576d08
+    output:
+      assembled:
+      - kind: reasoning
+        text: '`pytest -x'
+      - kind: text
+        text: Run `pytest`
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: '`pytest -x'
+        - kind: text
+          text: Run `pytest`
+      - expected: []
+  unclosed_command_quote_before_reasoning_closer:
+    case_key: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+    request: 9a783a11157dd4e26d68a786f811da88d20e1b61793bfa849debbc5ccec17c3e
+    output:
+      assembled:
+      - kind: reasoning
+        text: Let me think, I should run this command "grep -v '
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Let me think, I should run this command "grep -v '
+      - expected: []
   unused_reference_graph_parameter_types:
     case_key: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
     request: 16427c88de7b109ba66367a9ce0d39019ec5564ff1ea5e21e952af8ebf7ec662
@@ -9580,35 +10008,5 @@ records:
         - kind: tool_call
           name: null
           arguments: '}'
-          complete: true
-      - expected: []
-  schema_declared_integer_boolean_number_order:
-    case_key: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
-    request: c2a2122f6f4b615892e753867ab6b12daa7e0dc7318c4aabea5e523685de2f6e
-    output:
-      assembled:
-      - kind: tool_call
-        name: schema_probe
-        arguments: '{"value": 1}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: schema_probe
-          arguments: '{"value": 1}'
-          complete: true
-      - expected: []
-  enum_contradicting_declared_type:
-    case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    request: b03f7496b700c8e62b14748d3b7ca30ca52c065f5c843951ea27772633312962
-    output:
-      assembled:
-      - kind: tool_call
-        name: capture_payload
-        arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: capture_payload
-          arguments: '{"metrics": ["temperature", "humidity"], "count": 5}'
           complete: true
       - expected: []

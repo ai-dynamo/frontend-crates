@@ -354,6 +354,13 @@ async function initialize() {
     const reload = document.createElement('button'); reload.textContent = 'Reload report';
     reload.addEventListener('click', () => location.reload()); notice.appendChild(reload);
   }
+  function reserveCaptureSize(panel, reserve) {
+    const controls = panel.querySelector('.capture-slot-controls');
+    if (!controls) return;
+    if (reserve && panel.dataset.hasModel) {
+      if (!controls.style.minHeight) controls.style.minHeight = controls.getBoundingClientRect().height + 'px';
+    } else controls.style.removeProperty('min-height');
+  }
   const loader = new SelectionLoader({
     async build(tabId, selection) {
       const generation = loader.generation;
@@ -368,6 +375,7 @@ async function initialize() {
       if (error) window.__conformanceError = error.stack;
       const panel = document.getElementById(tabId);
       const scroll = { x: window.scrollX, y: window.scrollY };
+      if (state !== 'loading') reserveCaptureSize(panel, false);
       panel.dataset.loadState = state;
       panel.setAttribute('aria-busy', String(state === 'loading'));
       panel.querySelector('.load-status')?.remove();
@@ -418,7 +426,7 @@ async function initialize() {
   slotOwner = window.mountConformanceCaptureSlots(page, panel, () => {
     if (!slotOwner) return;
     load(panel);
-  }, { availableIdentities: historyAvailable ? null : embeddedIdentities });
+  }, { availableIdentities: historyAvailable ? null : embeddedIdentities, beforeUpdate: () => reserveCaptureSize(panel, true) });
   comparison = mountComparison(panel, controller, () => catalog.sources.unified.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
   const firstLoad = load(controller.activePanel());
   async function discoverOlderResults() {

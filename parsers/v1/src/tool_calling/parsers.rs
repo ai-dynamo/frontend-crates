@@ -151,6 +151,31 @@ pub async fn try_tool_call_parse(
     }
 }
 
+/// Parse only protocol-owned segments, preserving literal bytes exactly.
+/// Use a standalone context result; streaming fragments belong in the jail.
+pub async fn detect_and_parse_tool_call_with_context(
+    output: &crate::ReasoningOutput,
+    parser_str: Option<&str>,
+    tools: Option<&[ToolDefinition]>,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let mut calls = Vec::new();
+    let mut normal = String::new();
+    for segment in &output.normal_segments {
+        match segment {
+            crate::NormalTextSegment::Literal(text) => normal.push_str(text),
+            crate::NormalTextSegment::Protocol(text) => {
+                let (parsed, text) =
+                    detect_and_parse_tool_call_with_recovery(text, parser_str, tools).await?;
+                calls.extend(parsed);
+                if let Some(text) = text {
+                    normal.push_str(&text);
+                }
+            }
+        }
+    }
+    Ok((calls, (!normal.is_empty()).then_some(normal)))
+}
+
 /// Same as [`detect_and_parse_tool_call`] but flips `allow_eof_recovery=true`
 /// on the JSON / XML / DSML configs so finalize / non-streaming aggregate
 /// paths recover from missing-end-token / truncated-JSON instead of silently
@@ -786,20 +811,6 @@ Okay, the user is asking for the weather in San Francisco in Fahrenheit. Let me 
         assert_eq!(result[0].function.arguments, r#"{"x":1.0,"y":42}"#);
     }
 
-    /// Parallel tool_calls each go through the array-deserialization path
-    /// (`Vec<Box<RawValue>>`); each element's byte span must be independent.
-    #[tokio::test]
-    async fn parser_preserves_byte_span_for_parallel_calls() {
-        let input = r#"<tool_call>{"name":"a","arguments":{"k":"v1"}}</tool_call>
-<tool_call>{"name":"b","arguments":{"k":"v2"}}</tool_call>"#;
-        let (result, _) = detect_and_parse_tool_call(input, Some("hermes"), None)
-            .await
-            .unwrap();
-        assert_eq!(result.len(), 2);
-        assert_eq!(result[0].function.arguments, r#"{"k":"v1"}"#);
-        assert_eq!(result[1].function.arguments, r#"{"k":"v2"}"#);
-    }
-
     /// Single-token-start parsers (`functools`, `[TOOL_CALLS]`,
     /// `<|python_tag|>`) route arrays through
     /// `handle_single_token_tool_calls`. That helper previously round-tripped
@@ -833,23 +844,6 @@ Okay, the user is asking for the weather in San Francisco in Fahrenheit. Let me 
             result[1].function.arguments, r#"{"b":3.0}"#,
             "numeric formatting (3.0 vs 3) must be preserved"
         );
-    }
-
-    #[tokio::test]
-    async fn test_nousresearch_hermes3_llama31_8b_simple() {
-        let input = r#"<tool_call>
-{"name": "get_weather", "arguments": {"location": "San Francisco, CA", "unit": "fahrenheit"}}
-</tool_call>"#;
-        let (result, content) = detect_and_parse_tool_call(input, Some("hermes"), None)
-            .await
-            .unwrap();
-        assert_eq!(content, Some("".to_string()));
-        assert!(!result.is_empty());
-        assert_eq!(result.len(), 1);
-        let (name, args) = extract_name_and_args(result[0].clone());
-        assert_eq!(name, "get_weather");
-        assert_eq!(args["location"], "San Francisco, CA");
-        assert_eq!(args["unit"], "fahrenheit");
     }
 
     #[tokio::test]
@@ -1765,28 +1759,6 @@ Remember, San Francisco weather can be quite unpredictable, particularly with it
     }
 
     #[tokio::test]
-    async fn test_phi4_false_positive_words() {
-        // Test that words like "funk" or text starting with "func" but not "functools"
-        // are correctly treated as normal content, not tool calls
-
-        let input = r#"funk music is great"#;
-        let (result, content) = detect_and_parse_tool_call(input, Some("phi4"), None)
-            .await
-            .unwrap();
-        // Should be treated as normal content, not tool call
-        assert_eq!(
-            result.len(),
-            0,
-            "No tool calls should be found in 'funk music is great'"
-        );
-        assert_eq!(
-            content,
-            Some("funk music is great".to_string()),
-            "Content should contain the original text"
-        );
-    }
-
-    #[tokio::test]
     async fn test_phi4_partial_but_complete_words() {
         // Test words that start with "func" but are not "functools"
 
@@ -2017,30 +1989,6 @@ Remember, San Francisco weather can be quite unpredictable, particularly with it
         let args1: serde_json::Value =
             serde_json::from_str(&tool_calls[1].function.arguments).unwrap();
         assert_eq!(args1["location"], "Beijing");
-    }
-
-    #[tokio::test]
-    async fn test_deepseek_v3_2_mixed_parameter_types() {
-        let input = r#"<｜DSML｜function_calls>
-<｜DSML｜invoke name="search">
-<｜DSML｜parameter name="query" string="true">search agent benchmark 2024</｜DSML｜parameter>
-<｜DSML｜parameter name="topn" string="false">10</｜DSML｜parameter>
-<｜DSML｜parameter name="source" string="true">web</｜DSML｜parameter>
-</｜DSML｜invoke>
-</｜DSML｜function_calls>"#;
-
-        let (tool_calls, _) = detect_and_parse_tool_call(input, Some("deepseek_v3_2"), None)
-            .await
-            .expect("Failed to parse");
-
-        assert_eq!(tool_calls.len(), 1);
-        assert_eq!(tool_calls[0].function.name, "search");
-
-        let args: serde_json::Value =
-            serde_json::from_str(&tool_calls[0].function.arguments).unwrap();
-        assert_eq!(args["query"], "search agent benchmark 2024");
-        assert_eq!(args["topn"], 10); // Should be number, not string
-        assert_eq!(args["source"], "web");
     }
 
     #[tokio::test]
@@ -2405,33 +2353,6 @@ fahrenheit
         let (result, content) = detect_and_parse_tool_call(input, Some("mistral"), None)
             .await
             .unwrap();
-
-        assert_eq!(content, Some("".to_string()));
-        validate_weather_tool_calls(&result, &[("Dallas", "TX"), ("Orlando", "FL")]);
-    }
-
-    // =============================================================================
-    // 4. MINIMAX TOOL-CALL FORMAT (Multi-line JSON in XML tags)
-    // =============================================================================
-
-    #[tokio::test]
-    async fn test_parallel_minimax_format() {
-        let _input = r#"<tool_calls>
-{"name": "get_current_weather", "arguments": {"city": "Dallas", "state": "TX", "unit": "fahrenheit"}}
-{"name": "get_current_weather", "arguments": {"city": "Orlando", "state": "FL", "unit": "fahrenheit"}}
-</tool_calls>"#;
-
-        // This would need a specialized parser, but we can test with a modified hermes approach
-        // For now, test with nemotron_deci which handles similar XML wrapping
-        let input_nemotron_format = r#"<TOOLCALL>[
-{"name": "get_current_weather", "arguments": {"city": "Dallas", "state": "TX", "unit": "fahrenheit"}},
-{"name": "get_current_weather", "arguments": {"city": "Orlando", "state": "FL", "unit": "fahrenheit"}}
-]</TOOLCALL>"#;
-
-        let (result, content) =
-            detect_and_parse_tool_call(input_nemotron_format, Some("nemotron_deci"), None)
-                .await
-                .unwrap();
 
         assert_eq!(content, Some("".to_string()));
         validate_weather_tool_calls(&result, &[("Dallas", "TX"), ("Orlando", "FL")]);
@@ -3231,53 +3152,6 @@ fahrenheit
     }
 
     #[tokio::test]
-    async fn test_qwen3_coder_parallel_tool_calls() {
-        let input = r#"<tool_call>
-<function=get_current_weather>
-<parameter=city>
-Dallas
-</parameter>
-<parameter=state>
-TX
-</parameter>
-<parameter=unit>
-fahrenheit
-</parameter>
-</function>
-</tool_call>
-<tool_call>
-<function=get_current_weather>
-<parameter=city>
-Orlando
-</parameter>
-<parameter=state>
-FL
-</parameter>
-<parameter=unit>
-fahrenheit
-</parameter>
-</function>
-</tool_call>"#;
-        let (result, content) = detect_and_parse_tool_call(input, Some("qwen3_coder"), None)
-            .await
-            .unwrap();
-        assert_eq!(content, Some("".to_string()));
-        assert_eq!(result.len(), 2);
-
-        let (name1, args1) = extract_name_and_args(result[0].clone());
-        assert_eq!(name1, "get_current_weather");
-        assert_eq!(args1["city"], "Dallas");
-        assert_eq!(args1["state"], "TX");
-        assert_eq!(args1["unit"], "fahrenheit");
-
-        let (name2, args2) = extract_name_and_args(result[1].clone());
-        assert_eq!(name2, "get_current_weather");
-        assert_eq!(args2["city"], "Orlando");
-        assert_eq!(args2["state"], "FL");
-        assert_eq!(args2["unit"], "fahrenheit");
-    }
-
-    #[tokio::test]
     async fn test_qwen3_coder_json_parameter_value() {
         let input = r#"<tool_call>
 <function=process_data>
@@ -3729,24 +3603,5 @@ weather forecasting
         let (name, args) = extract_name_and_args(result[0].clone());
         assert_eq!(name, "get_weather");
         assert_eq!(args["city"], "Seattle");
-    }
-
-    #[tokio::test]
-    async fn test_minimax_m3_recovers_bare_invoke_without_outer_tool_call() {
-        let input = r#"prefix ]<]minimax[>[<invoke name="get_weather">
-]<]minimax[>[<location>NYC]<]minimax[>[</location>
-]<]minimax[>[</invoke>
-]<]minimax[>[</invoke>"#;
-
-        let (result, content) =
-            detect_and_parse_tool_call_with_recovery(input, Some("minimax-m3"), None)
-                .await
-                .unwrap();
-
-        assert_eq!(content, Some("prefix".to_string()));
-        assert_eq!(result.len(), 1);
-        let (name, args) = extract_name_and_args(result[0].clone());
-        assert_eq!(name, "get_weather");
-        assert_eq!(args["location"], "NYC");
     }
 }

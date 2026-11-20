@@ -54,7 +54,7 @@ pub fn deepseek_formatter_for(
     None
 }
 
-/// If the model is Kimi K3, return its native XTML formatter. K3 ships no
+/// If the model is Kimi K3 or K3.1, return its native XTML formatter. Neither ships a
 /// Jinja chat template and must preserve special-vs-ordinary segment boundaries
 /// until tokenization.
 pub fn kimi_k3_formatter_for(
@@ -66,19 +66,38 @@ pub fn kimi_k3_formatter_for(
         return None;
     }
 
+    // Configuration is authoritative; only infer the version from the display
+    // name when the model card does not provide a model type.
+    let is_k31 = match model_type_lower.as_deref() {
+        Some(model_type) => model_type == "kimi_k31",
+        None => [
+            "kimi-k3.1",
+            "kimi_k3.1",
+            "kimik3.1",
+            "kimi-k31",
+            "kimi_k31",
+            "kimik31",
+        ]
+        .iter()
+        .any(|needle| display_name_lower.contains(needle)),
+    };
+    let formatter = if is_k31 {
+        super::kimi_k3::KimiK3Formatter::new_k31(exclude_tools_when_tool_choice_none)
+    } else {
+        super::kimi_k3::KimiK3Formatter::new(exclude_tools_when_tool_choice_none)
+    };
+
     tracing::info!(
         model_type = ?model_type_lower,
         display_name = %display_name_lower,
-        "Detected Kimi K3 model, using native Rust XTML formatter",
+        "Detected Kimi K3 family model, using native Rust XTML formatter",
     );
-    Some(PromptFormatter::OAI(Arc::new(
-        super::kimi_k3::KimiK3Formatter::new(exclude_tools_when_tool_choice_none),
-    )))
+    Some(PromptFormatter::OAI(Arc::new(formatter)))
 }
 
 fn is_kimi_k3(model_type_lower: &Option<String>, display_name_lower: &str) -> bool {
     match model_type_lower.as_deref() {
-        Some("kimi_k3") => true,
+        Some("kimi_k3" | "kimi_k31") => true,
         Some(_) => false,
         None => ["kimi-k3", "kimi_k3", "kimik3"]
             .iter()
@@ -200,6 +219,8 @@ struct JinjaEnvironment {
 /// separate instead of being reshaped for a rule it does not have.
 #[derive(Debug, Default, Clone, Copy)]
 struct SystemNormalization {
+    /// Template accepts `system` but rejects the equivalent `developer` turn.
+    fallback_developer: bool,
     /// Template raises on a `system` turn that is not first.
     demote_nonleading_system: bool,
     /// Template raises on two adjacent `user` turns.
@@ -208,7 +229,7 @@ struct SystemNormalization {
 
 impl SystemNormalization {
     fn is_required(&self) -> bool {
-        self.demote_nonleading_system || self.coalesce_consecutive_users
+        self.fallback_developer || self.demote_nonleading_system || self.coalesce_consecutive_users
     }
 }
 
@@ -223,12 +244,22 @@ impl SystemNormalization {
 struct HfTokenizerConfigJsonFormatter {
     env: Environment<'static>,
     config: ChatTemplate,
+    /// The model's control-token spellings. They are shielded in request text
+    /// so only template-owned markers encode as control tokens, unless
+    /// [`ChatTemplate::with_request_control_tokens_as_text`] turns that off
+    /// for a template without Harmony framing.
+    control_markers: oai::ControlMarkers,
     mixins: Arc<ContextMixins>,
     supports_add_generation_prompt: bool,
     /// How message content is shaped for the template. `Auto` uses
-    /// `requires_content_arrays` and `image_placeholder_template`.
+    /// `requires_content_arrays`, per-role text-array capabilities, and
+    /// `image_placeholder_template`.
     content_format: ChatTemplateContentFormat,
     requires_content_arrays: bool,
+    /// Roles whose text parts the selected template renders without printing
+    /// their containers. Keep these arrays so the template owns separators.
+    default_native_text_array_roles: Vec<&'static str>,
+    tool_use_native_text_array_roles: Vec<&'static str>,
     /// When true, strip tool definitions from the chat template when tool_choice is "none".
     /// This prevents models from generating raw XML tool calls in the content field.
     exclude_tools_when_tool_choice_none: bool,
@@ -384,7 +415,13 @@ mod detection_tests {
 
     #[test]
     fn kimi_k3_detection_prefers_config_model_type() {
-        assert!(is_kimi_k3(&Some("kimi_k3".to_string()), "served-name"));
+        for model_type in ["kimi_k3", "kimi_k31"] {
+            assert!(is_kimi_k3(&Some(model_type.to_string()), "served-name"));
+            assert!(
+                super::kimi_k3_formatter_for(&Some(model_type.to_string()), "served-name", false)
+                    .is_some()
+            );
+        }
         assert!(!is_kimi_k3(
             &Some("kimi_k2".to_string()),
             "moonshot-kimi-k3"

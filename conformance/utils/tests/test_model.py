@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """The production JavaScript engine owns matrix assertions; no generated HTML fixture."""
 import json
+import re
 import subprocess
+from html import unescape
 from pathlib import Path
 
 import pytest
@@ -104,3 +106,32 @@ process.stdout.write(context.window.audit.outputBlock({unavailable}, 'gemma4', {
     rendered = _run_view_javascript(script, unavailable)
     prefix = "" if isinstance(unavailable, dict) and unavailable.get("code") == "missing_capture" else "unavailable: "
     assert rendered == f'<span class="expl">{prefix}{reason}</span>'
+
+
+@pytest.mark.parametrize("load_colorizer", [False, True])
+def test_text_and_reasoning_output_do_not_red_highlight_marker_shaped_content(load_colorizer):
+    block = {"events": [
+        {"kind": "text", "text": 'quoted <|start|>assistant<|message|> text'},
+        {"kind": "reasoning", "text": 'literal <|channel|>analysis value'},
+    ]}
+    script = r"""
+const marker = '// --- Output block rendering (mirrors _format_output_block_html) ------------';
+const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+if (input.load_colorizer) {
+  context.self = context.window;
+  vm.runInContext(fs.readFileSync(process.argv[1].replace('conformance_view.js', 'colorize.js'), 'utf8'), context);
+}
+vm.runInContext(source.replace(marker, 'window.audit = {outputBlock};\n' + marker), context);
+const colorizer = context.window.__markupColorize;
+const colors = colorizer ? colorizer.newLinkCtx() : null;
+if (colorizer) {
+  context.window.audit.outputBlock(input.block, 'gpt_oss', colors, []);
+  colorizer.sealLinkCtx(colors);
+}
+process.stdout.write(context.window.audit.outputBlock(input.block, 'gpt_oss', colors, []));
+"""
+    rendered = _run_view_javascript(script, {"block": block, "load_colorizer": load_colorizer})
+    assert "tt-orphan" not in rendered and "tt-mbg-orphan" not in rendered
+    plain = unescape(re.sub(r"<[^>]*>", "", rendered))
+    for event in block["events"]:
+        assert event["text"] in plain

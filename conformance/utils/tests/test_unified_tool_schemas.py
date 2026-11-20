@@ -129,13 +129,32 @@ def _assert_golden_schemas(cases, tools):
                     continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
-                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3"}
-                    assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
+                    assert family in {"kimi_k2", "mistral_4", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3", "hermes"}
+                    assert event["arguments"] == ({} if family in {"kimi_k2", "mistral_4"} else {"value": '{"x":"unfinished'})
+                    continue
+                if case_id.startswith("UNIFIED.mistral_name_before_marker.") and event["name"] == "":
+                    # The malformed generation surfaces as a nameless call no schema offers.
+                    continue
+                if case_id.startswith("UNIFIED.mistral_non_object_arguments."):
+                    # Non-object arguments pass through; no object schema can accept them.
                     continue
                 arguments = event["arguments"]
                 if isinstance(arguments, str):
                     arguments = json.loads(arguments, parse_float=Decimal)
                 _assert_value(arguments, schemas[event["name"]])
+
+
+@pytest.mark.parametrize("mutation", ["malformed_arguments", "successor_schema"])
+def test_hermes_malformed_recovery_exclusion_preserves_exact_calls(mutation):
+    case_id = "UNIFIED.malformed_json_then_two_valid_calls.hermes"
+    case = copy.deepcopy(G.build_cases("hermes")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    if mutation == "malformed_arguments":
+        case["golden"][0]["arguments"]["value"] = "changed"
+    else:
+        case["golden"][1]["arguments"]["value"] = 42
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("family", ["qwen3", "gpt_oss"])
@@ -187,7 +206,8 @@ def test_all_authored_successful_calls_match_offered_schemas(family):
     _assert_golden_schemas(G.build_cases(family), unified_tools())
 
 
-@pytest.mark.parametrize("family", sorted(G.UNIFIED_FAMILIES))
+# `sum_values` is offered only by the guided cases.
+@pytest.mark.parametrize("family", sorted(f for f in G.UNIFIED_FAMILIES if G._MANIFEST[f].get("guided_tool_output", True)))
 def test_schema_guard_rejects_old_array_as_string_declaration(family):
     tools = unified_tools()
     next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}

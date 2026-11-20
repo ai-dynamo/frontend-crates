@@ -170,7 +170,8 @@ pub trait ToolParser: Send {
         Ok(ToolParseResult::default())
     }
 
-    /// Return the model-emitted identifier for a completed call, when the grammar names one.
+    /// Return a stable parser-supplied API ID for a call, when available.
+    /// `None` delegates ID generation to the serving layer.
     fn tool_call_id(&self, _tool_index: usize) -> Option<&str> {
         None
     }

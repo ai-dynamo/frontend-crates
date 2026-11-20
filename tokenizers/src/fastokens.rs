@@ -33,17 +33,25 @@ fn fast_encode(encoder: &fastokens::Tokenizer, input: &str) -> Result<Encoding> 
 fn fast_encode_segments(
     encoder: &fastokens::Tokenizer,
     segments: &[EncodeSegment<'_>],
+    control_ids: &HashSet<u32>,
 ) -> Result<Encoding> {
-    let segments: Vec<fastokens::EncodeSegment<'_>> = segments
-        .iter()
-        .map(|segment| fastokens::EncodeSegment {
-            text: segment.text,
-            allow_special: segment.allow_special,
-        })
-        .collect();
-    let ids = encoder
-        .encode_segments(&segments)
-        .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
+    // Each segment is encoded once and its ids joined, which is what
+    // `fastokens` does itself: neither tokenizer here keeps the truncation or
+    // padding that would apply to the joined ids.
+    let mut ids = Vec::new();
+    for segment in segments {
+        let start = ids.len();
+        let segment_ids: Vec<u32> = encoder
+            .encode_segments_unpadded(&[fastokens::EncodeSegment {
+                text: segment.text,
+                allow_special: segment.allow_special,
+            }])
+            .map_err(|e| Error::msg(format!("Fastokens segmented encode error: {e}")))?;
+        ids.extend(segment_ids);
+        if !segment.allow_special {
+            crate::reject_control_ids_in_ordinary_segment(&ids[start..], control_ids)?;
+        }
+    }
     Ok(Encoding::Sp(ids))
 }
 
@@ -56,9 +64,15 @@ pub struct FastTokenizer {
 }
 
 impl FastTokenizer {
+    /// Load `tokenizer.json`, ignoring its `truncation` and `padding` blocks as Python
+    /// `transformers` does unless a call asks for them. `fastokens` would apply both on
+    /// every encode, and [`CachedTokenizer`](crate::CachedTokenizer) would then apply
+    /// them to each separately encoded piece instead of the whole input.
     pub fn from_file(path: &str) -> Result<Self> {
-        let fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
+        let mut fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
             .map_err(|e| Error::msg(format!("Error loading fastokens tokenizer: {e}")))?;
+        fast_encoder.set_truncation(None);
+        fast_encoder.set_padding(None);
         let hf_decoder = HuggingFaceTokenizer::from_file(path)?;
         Ok(Self {
             fast_encoder,
@@ -77,7 +91,7 @@ impl Encoder for FastTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        fast_encode_segments(&self.fast_encoder, segments)
+        fast_encode_segments(&self.fast_encoder, segments, self.hf_decoder.added_ids())
     }
 }
 
@@ -110,6 +124,12 @@ impl Tokenizer for FastTokenizer {
             }
         }
         rules
+    }
+
+    // `fastokens` runs one pipeline for `encode` and for a segment that allows
+    // special tokens.
+    fn validate_segment_prefix_cache(&self) -> Result<()> {
+        Ok(())
     }
 
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
@@ -147,6 +167,9 @@ pub struct FastTikTokenTokenizer {
     id_to_bytes: FxHashMap<u32, Vec<u8>>,
     special_token_ids: HashSet<u32>,
     special_tokens: Vec<String>,
+    /// Every added-token id, `special: true` or not; see
+    /// [`crate::reject_control_ids_in_ordinary_segment`].
+    added_ids: HashSet<u32>,
 }
 
 impl FastTikTokenTokenizer {
@@ -173,6 +196,7 @@ impl FastTikTokenTokenizer {
                 .map(|(content, &id)| (id, content.as_bytes().to_vec())),
         );
         let special_token_strings = tiktoken::sorted_special_token_strings(&tokens);
+        let added_ids = tokens.values().copied().collect();
 
         let config =
             fastokens::tiktoken::TiktokenConfig::new(pattern, tokens.into_iter().collect());
@@ -186,6 +210,7 @@ impl FastTikTokenTokenizer {
             id_to_bytes,
             special_token_ids: skip_ids,
             special_tokens: special_token_strings,
+            added_ids,
         })
     }
 
@@ -207,7 +232,7 @@ impl Encoder for FastTikTokenTokenizer {
     }
 
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
-        fast_encode_segments(&self.inner, segments)
+        fast_encode_segments(&self.inner, segments, &self.added_ids)
     }
 }
 
@@ -391,6 +416,74 @@ mod tests {
                 .unwrap()
                 .token_ids()
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn test_fast_segmented_encoding_rejects_ordinary_control_ids() {
+        // `H`+`e` merges to id 18, declared here as the added token `He`:
+        // ordinary text must not come back as that control id.
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TOKENIZER_PATH).unwrap()).unwrap();
+        json["added_tokens"] = serde_json::json!([{
+            "id": 18,
+            "content": "He",
+            "single_word": false,
+            "lstrip": false,
+            "rstrip": false,
+            "normalized": false,
+            "special": true
+        }]);
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let tokenizer = FastTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        let control = tokenizer
+            .encode_segments(&[EncodeSegment::control("He")])
+            .unwrap();
+        assert_eq!(control.token_ids(), &[18]);
+        let error = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary("He")])
+            .unwrap_err();
+        assert!(
+            error.to_string().contains("control-token id 18"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn tokenizer_json_truncation_and_padding_are_ignored() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("tokenizer.json");
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(SEGMENTED_TOKENIZER_PATH).unwrap())
+                .unwrap();
+        // Both reference encodings are longer than 12 ids, so each block alone changes them.
+        json["truncation"] = serde_json::json!({
+            "direction": "Right", "max_length": 12, "strategy": "LongestFirst", "stride": 0
+        });
+        json["padding"] = serde_json::json!({
+            "strategy": {"Fixed": 512}, "direction": "Right", "pad_to_multiple_of": null,
+            "pad_id": 0, "pad_type_id": 0, "pad_token": "<unk>"
+        });
+        std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+
+        let reference = FastTokenizer::from_file(SEGMENTED_TOKENIZER_PATH).unwrap();
+        let tokenizer = FastTokenizer::from_file(path.to_str().unwrap()).unwrap();
+        let user = "hello world ".repeat(16);
+        let segments = [
+            EncodeSegment::control("<s>"),
+            EncodeSegment::ordinary(&user),
+            EncodeSegment::control("</s>"),
+        ];
+        assert_eq!(
+            tokenizer.encode(&user).unwrap().token_ids(),
+            reference.encode(&user).unwrap().token_ids()
+        );
+        assert_eq!(
+            tokenizer.encode_segments(&segments).unwrap().token_ids(),
+            reference.encode_segments(&segments).unwrap().token_ids()
         );
     }
 

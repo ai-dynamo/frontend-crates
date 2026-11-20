@@ -182,6 +182,58 @@ def test_current_capture_guard_uses_the_bound_recapture_without_rewriting_histor
         capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"])
 
 
+@pytest.mark.parametrize("changed_request", [False, True])
+def test_live_replay_uses_an_inherited_execution_without_relabeling_it(tmp_path, changed_request):
+    current = _input("same") | {"tools": unified_tools()}
+    selected = tmp_path / "dynamo_v2-0.8.0"
+    result = {"capture_input": capture_stimulus.capture_input(current), "assembled": [], "chunks": []}
+    recapture = {"resolution": "fresh_execution", "result": result, "provenance": {
+        "implementation": "dynamo_v2", "version": "0.7.24", "source_sha256": "a" * 64,
+        "adapter_sha256": "b" * 64, "job_sha256": "c" * 64,
+    }}
+    if changed_request:
+        result["capture_input"]["input"] = "different"
+    future = {**recapture, "provenance": {**recapture["provenance"], "version": "0.9.0"}}
+    record = {"capture_input": capture_stimulus.capture_input(current),
+              "error": "structural tag: missing verifier", "verified_recaptures": [recapture, future]}
+    _write(tmp_path, "inputs", current)
+    path = _write(tmp_path, selected.name, record)
+    document = yaml.safe_load(path.read_bytes())
+    document["captured_with"] = {"dynamo_v2": "0.7.23"}
+    path.write_text(yaml.safe_dump(document))
+    original = path.read_bytes()
+    if changed_request:
+        with pytest.raises(ValueError, match="invalid error output"):
+            capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"])
+    else:
+        docs = capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"])
+        actual = docs[0]["cases"]["UNIFIED.7-2"]
+        assert actual["producer_origin"]["crate_version"] == "0.7.24"
+        assert actual["producer_origin"]["version"] == "0.7.24"
+        assert actual["assembled"] == []
+        assert "error" not in actual
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("suffix", ["", "+source." + "a" * 64, "+source." + "a" * 64 + ".patch10"])
+def test_live_replay_does_not_replace_a_newer_primary_error(tmp_path, suffix):
+    current = _input("same") | {"tools": unified_tools()}
+    recapture = {"resolution": "fresh_execution", "result": {
+        "capture_input": capture_stimulus.capture_input(current), "assembled": [], "chunks": [],
+    }, "provenance": {
+        "implementation": "dynamo_v2", "version": "0.7.24", "source_sha256": "a" * 64,
+        "adapter_sha256": "b" * 64, "job_sha256": "c" * 64,
+    }}
+    record = {"capture_input": capture_stimulus.capture_input(current),
+              "error": "native push: current parser failure", "producer_origin": {"version": "0.8.0"},
+              "verified_recaptures": [recapture]}
+    _write(tmp_path, "inputs", current)
+    selected = tmp_path / ("dynamo_v2-0.8.0" + suffix)
+    _write(tmp_path, selected.name, record)
+    actual = capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"])[0]["cases"]["UNIFIED.7-2"]
+    assert actual == record
+
+
 def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
     current = _input("same")
     del current["tools"]

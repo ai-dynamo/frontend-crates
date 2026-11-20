@@ -150,6 +150,13 @@ tools:
           allOf:
           - type: boolean
           - description: flag
+  tools_d8addf2617a1bde2:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
   tools_0af1c035b667e8b0:
   - name: schema_probe
     parameters:
@@ -161,6 +168,19 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_eadda4709f8bddfd:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
   tools_7351122c3d50bd6e:
   - name: schema_probe
     parameters:
@@ -298,6 +318,15 @@ tools:
         count:
           type: integer
           $id: https://example.com/count
+  tools_14bcb316cd445c47:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+      - content
   tools_8284eae54735c3ce:
   - name: schema_probe
     parameters:
@@ -312,6 +341,27 @@ tools:
         Literal:
           const: '[1,2]'
     strict: true
+  tools_6a0d489d9bf7b79c:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        x:
+          type: string
+  - name: bad
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        x:
+          type: string
   tools_d7d32f10737ac6cd:
   - name: schema_probe
     parameters:
@@ -382,6 +432,35 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_2aaa8f6abd5fa314:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
+  - name: unfinished
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
   tools_592bf92c162ae226:
   - name: schema_probe
     parameters:
@@ -876,6 +955,13 @@ tools:
       required:
       - value
       additionalProperties: false
+  tools_2acebbd998d45260:
+  - name: python
+    parameters:
+      type: object
+      properties:
+        code:
+          type: string
   tools_799032ba2fa9936f:
   - name: schema_probe
     parameters:
@@ -913,6 +999,10 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_4878f82e06d1ba60:
+  - name: python
+    parameters:
+      type: string
   tools_746b20394956becb:
   - name: schema_probe
     parameters:
@@ -1043,6 +1133,31 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_ef89696e2e8e3b85:
+  - name: bad
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
+  - name: fake
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: integer
   tools_8f1359f32bcc5c31:
   - name: schema_probe
     parameters:
@@ -1065,6 +1180,18 @@ tools:
           anyOf:
           - minLength: 1
           - type: 'null'
+  tools_a7861137bdb03589:
+  - name: write_file
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+      - path
+      - content
   tools_0e1126661e4ae595:
   - name: schema_probe
     parameters:
@@ -1248,6 +1375,21 @@ tools:
         Literal:
           const: '&lt;'
     strict: true
+  tools_373bf6b23615f428:
+  - name: unfinished
+    parameters:
+      type: object
+      properties:
+        city:
+          type: string
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
   tools_87f9a4e69313cc76:
   - name: schema_probe
     parameters:
@@ -1262,6 +1404,30 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_286d83a3fe238aa7:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        x:
+          type: string
+  tools_e94c703bbce7a0bf:
+  - name: bad
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
   tools_61f8e5714fc9d54c:
   - name: capture_payload
     parameters:
@@ -1352,6 +1518,31 @@ tools:
         Café:
           const: '42'
     strict: true
+  tools_f5ed23a58d5feebe:
+  - name: bad
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
+  - name: f/x
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: integer
   tools_0227aaa772b4b3da:
   - name: schema_probe
     parameters:
@@ -1377,6 +1568,31 @@ tools:
         Literal:
           const: auto
     strict: true
+  tools_1a363c00fe79c1c3:
+  - name: lookup
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
+  - name: bad
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: string
   tools_9c8a74c317d60415:
   - name: schema_probe
     parameters:
@@ -1602,6 +1818,19 @@ tools:
       required:
       - location
       additionalProperties: false
+  tools_0a9c21b86d7d969b:
+  - name: '@f'
+    parameters:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        q:
+          type: string
+        x:
+          type: integer
   tools_ca0b5b673641dda3:
   - name: schema_probe
     parameters:
@@ -1743,6 +1972,9 @@ requests:
     - 14
     - 8
     finish_step: true
+  02ad9e72a7470248879f8f792e31783a52aa043b42c2b4021df4e9f52b276246:
+    input: <|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   03cf32cd2680c098498f768c8bb09fc6c676279ae4c8e33a2d2ed582d97c6035:
     init:
       starting_state: None
@@ -1783,6 +2015,11 @@ requests:
     chunk_sizes:
     - 239
     finish_step: true
+  07a6d31733409018702a5b8084cfd5eff14083769d14efeeffb1e0eb5c5fdeef:
+    input: '    {"x":1}
+
+      <|channel|>final<|message|>Done<|return|>'
+    tools: tools_9db8284c68087826
   088ace30c8072d8eecaf333eb31373f14b563ecdbd5c30b1754eb4c8e00e25fa:
     input: <|start|>assistant to=functions.get_weather<|channel|>commentary <|message|>{"city":"Paris"}
     tools: tools_9db8284c68087826
@@ -1844,6 +2081,39 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
     tools: tools_9db8284c68087826
+  0c4f66249b1e33cf4b40121b46055ac749dfa84be82efd21eb08fa0d83d0b9e8:
+    input: Let me think, this SQL fragment is '1'='1<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 108
+    finish_step: true
+  0cb3ba38b80b8577795be6aebdb59f5634dfb046261c3c3adaedaaf650aab2a9:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: analysis "<|end|><|start|>assistant<|channel|>final<|message|>Answer"<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 10
+    - 1
+    - 6
+    - 62
+    finish_step: true
+  0d125123b3255119dae876ccc92e735db0fe987d98ac012e9cc61eba251fb287:
+    input: '`name`''s path.<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
+    finish_step: true
   0d2cb75d70ae9a140f1fd284032017682b06d32335eb2564c19acf6c26899326:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "  spaced  "}<|call|>'
     tools: tools_48fa3ded1d3c517d
@@ -1853,6 +2123,9 @@ requests:
   0da9e8f8c97739f9dc03ca27f4ea01342aca72f0d0bb3e21dc999c4865ae4224:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 42}<|call|>'
     tools: tools_b216df93b649987b
+  0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>
+    tools: tools_9db8284c68087826
   0ddb7576faadb33bc6440d8618eb5deaa5b58101239778d30b704a63fdbc304e:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"category": {"label": "Garden Tools", "children": []}, "tree": {"label": "root", "children": [{"label": "leaf", "children": []}]}, "retries": 37, "dry_run": false}<|call|>'
     tools: tools_5d30b2f70e9f541a
@@ -1870,6 +2143,16 @@ requests:
   0e2b637058ba58160862ad1cb7d1ad9f23e1f83219d2a6ff97e2e33260501107:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_b216df93b649987b
+  0e8ea222492942984e8915142b762370f12f2cd3ee2ee98ebd20a09f02841f7c:
+    input: Let me think, the reference is 80s' music<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 108
+    finish_step: true
   0ec24da0d83ad1039c6269e40b474ad39d1084c4902ef8b8ca17a15d9857f080:
     input: '<|start|>assistant<|channel|>commentary to=functions.lookup json<|message|>{"q": "weather"}<|call|>'
     tools: tools_9db8284c68087826
@@ -1882,9 +2165,21 @@ requests:
     - 16
     - 8
     finish_step: true
+  10862a2710e5fff0e5bbd28a71f0ea61748b932b209e247d1c779f098415aa2f:
+    input: <|channel|>commentary to=functions.get_current_weather <|constrain|>json<|message|>{"format":"celsius","location":"San Francisco"}<|return|>
+    tools: tools_9db8284c68087826
+  10b12312e84e258ec4774528d3e0e9a4fd44f2d5eb86f9a5ea603de403bb6921:
+    input: '{"visible":"<|start|>"}<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>'
+    tools: tools_d8addf2617a1bde2
+  11245492e574092c4d46be774fcdc05e2217bb923b2cbc7557dedb514ae1d6b6:
+    input: <|start|>assistant user<|channel|>final SECRET
+    tools: tools_9db8284c68087826
   12a2fcdbb1b3c36a8d42251b0bacb5d212e2412ea59e55cb5fb373dbc852ec74:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "plain"}<|call|>'
     tools: tools_0af1c035b667e8b0
+  137286254d65f0906dc3c59be68f5de01a9db36760306a4b910a6bb89ea80187:
+    input: functions.lookup<|channel|>commentary<|message|>{"q":"x"}<|return|>
+    tools: tools_eadda4709f8bddfd
   13aebdf3109098179329079c86aa951f168c52751f8cf5393c9db6b5a39553d1:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
     tools: tools_7351122c3d50bd6e
@@ -1894,6 +2189,16 @@ requests:
   154a5e2144d0c9215de3b0d531c35790c1e31cfb6ff5d29e764aac9d58e4f681:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "null"}<|call|>'
     tools: tools_7ae123f7897654fb
+  1555e38d937cd90f659d8491e9bfdd534918c9592c1eb8bc4942619f64e54242:
+    input: Let me think, the year is 80s'<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 95
+    finish_step: true
   15e4a9774a41f70fbc4316b919986734ad1141298a47277cfddbc6663d2a15f4:
     init:
       starting_state: Reasoning
@@ -1939,6 +2244,9 @@ requests:
       named_tool: null
     input: '<|call|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|call|>'
     tools: tools_9db8284c68087826
+  1902013b95039b76e22fbcfa2fa86d8b97cf0eb3eee0fba8d9321b8dfddeb2d0:
+    input: <|start|>assistant<|channel|>final<|message|>{"x":"unfinished<|start|>assistant to=functions.lookup<|message|>{}<|call|>
+    tools: tools_eadda4709f8bddfd
   1983c995df57e40b13aaf9ebd66ec6413e4207dc3843ee160fe1ee6068087cb0:
     input: '<|start|>assistant<|channel|>final<|message|>Logging now: <|start|>assistant to=functions.log<|channel|>commentary <|message|>{"note":"<|start|>assistant<|channel|>analysis<|message|>secret<|end|>"}<|call|><|start|>assistant<|channel|>final<|message|> done.<|return|>'
     tools: tools_9db8284c68087826
@@ -1978,12 +2286,18 @@ requests:
     chunk_sizes:
     - 118
     finish_step: true
+  1b1ac7e2794eb3e1b815fc7a3ef16b91b3982f24e90809d4b265b59b56c7d551:
+    input: <|channel|>commentary <|constrain|>json<|message|>  <|call|><|start|>assistant<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   1c6c59687e13f5a62160ba5ce791db8832c8ac482a43bb4d053d123327dbbe48:
     input: '<|channel|>commentary to=functions.my-tool.v2 <|constrain|>json<|message|>{"location": "Beijing"}<|call|>'
     tools: tools_89d6d7dc387a8930
     chunk_sizes:
     - 105
     finish_step: true
+  1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|> <|start|>assistant<|channel|>final<|message|>""<|return|>
+    tools: tools_9db8284c68087826
   1f1d49dae957fb3564a2b6bef2cfa219ceaeb00942478841a7e1663b67135e6b:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": null}<|call|>'
     tools: tools_b61bcb374d1c66b2
@@ -2017,12 +2331,28 @@ requests:
       named_tool: null
     input: '<|channel|>analysis<|message|>I''ll use <|call|> next<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
     tools: tools_9db8284c68087826
+  20b812d86994ea8308bfba9a00c1f8cdad17fad46c81c151b17ce493915f3e75:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Use re.split(r'(\s)', text). Let's final.<|end|><|start|>assistant<|channel|>final<|message|>The code prints ['a', ' ', 'b'].<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 41
+    - 1
+    - 6
+    - 87
+    finish_step: true
   2115927b76ca331316eae238fdcd1a5d2a0911820adf38bdfd22d617245e0ff4:
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
+    tools: tools_9db8284c68087826
+  24b4be1bcdd047828c64cb750da7b978d64253946344567b3c8769828b0b3948:
+    input: '{"x":"<|start|>"}<|channel|>final<|message|>Done<|return|>'
     tools: tools_9db8284c68087826
   256004757470aacfa149c42c449b054b1b0c423623bf32db1a349e44f85c3cbb:
     init:
@@ -2076,8 +2406,14 @@ requests:
   2ab328dcecdb3d23347c5c60723ba468008f277b77b42b044bdbf142502cd1f9:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": true}<|call|>'
     tools: tools_1ffd69270532e13e
+  2cd6777c1f622ddaedb72e00046749816b01e2dc8c4146cfb554298811a1d937:
+    input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
+    tools: tools_9db8284c68087826
   2d5d42a8cb9a42a608f3183a678bc7a67d8d3faa3b39945a270629113ab4c5ff:
     input: '<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": " <|channel|>analysis<|message|>quoted<|end|> <|start|> <|message|> <|call|> <|return|> &amp; \"x\"\\\n "}<|call|>'
+    tools: tools_9db8284c68087826
+  2d8b42261cb4fae3ca55d2e0918adfb81ceb49fb2441c13e07573ee97c39545a:
+    input: <|channel|>final<|message|>before<|return|>after
     tools: tools_9db8284c68087826
   2e2bc267c32fd66f1cee9f7390b930af291fd551db48d4c10a2b3de44b2db21d:
     input: '<|start|>assistant<|channel|>final<|message|>
@@ -2114,6 +2450,26 @@ requests:
   2e45930509d53ca7ad5f8cebbd94fd13766e8d8475484ad67b252f99c228196e:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "true"}<|call|>'
     tools: tools_141694f76bec2b1b
+  2e498278a70bd5cbd1fda2c0782f4b0e488b066969cc0e8ad6c826a0099fd760:
+    input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|return|><|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 170
+    finish_step: true
+  2f55f7108d54877204bd2549f82074309b77e5ed5b278c3e50d9d84e5dfedfdb:
+    input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|return|><|end|><|start|>assistant<|channel|>final<|message|>Answer<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 132
+    finish_step: true
   2fcdb894199e9d5316cb4c4d1f86e2ba607be58af4e873392813ea51b6dc0e4a:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count": 42}<|call|>'
     tools: tools_54f45eb2676e3be9
@@ -2161,6 +2517,26 @@ requests:
     - 40
     - 7
     - 4
+    finish_step: true
+  31b05a2234f46b3dca89556abf4436506617593086530131486cd5a4970e1c4d:
+    input: '''90s<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 74
+    finish_step: true
+  32413cfebffbd44e253fadc807cb8fb978a95f80883c21e1a8c2342b17124b86:
+    input: '<|start|>assistant<|channel|>commentary to=functions.write_file <|constrain|>json<|message|>{"content": "<think></think>answer"}<|call|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_14bcb316cd445c47
+    chunk_sizes:
+    - 136
     finish_step: true
   32a2c9ae4ee1e5cb9ad4644cce20a88e499c2d2b5118ef1304084901f1cd1cc3:
     input: '<|channel|>final<|message|>On it: <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
@@ -2234,6 +2610,22 @@ requests:
     - 2
     - 8
     finish_step: true
+  3420f89c80349efbce3003d17ddd43680d68d69953a7aee2fb033b4dd4130f66:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|end|>Answer<|return|>'
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 77
+    finish_step: true
+  3491fd00a60e4ff6ccd35c911036baf0824aa6ad68977f0534bbfade9c9ce631:
+    input: <|channel|>commentary to=functions.bad<|message|>{"q":"<|channel|>commentary to=functions.fake"}to=functions.lookup<|channel|>commentary<|message|>{"path":"ok"}<|return|>
+    tools: tools_6a0d489d9bf7b79c
+    chunk_sizes:
+    - 170
+    finish_step: true
   34ad9ff9150c67b81ab16e2ad34d0b447f6a5960b5e79fdc75d2514a21c7d289:
     input: <|start|>assistant to=functions.lookup<|channel|>commentary <|message|>{"markers":"<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>"}<|call|>
     tools: tools_9db8284c68087826
@@ -2285,6 +2677,16 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": <|call|>'
     tools: tools_9db8284c68087826
+  3ca79e581ef21dc2ed734727ac7c9b331ac0603c706bb9aa769bf15dfb5c1856:
+    input: Let me think, the marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 107
+    finish_step: true
   3d352e75afc03e25aba4d13708959faab9b2e432cc9b16bcfbe28da74a5edc94:
     init:
       starting_state: None
@@ -2349,6 +2751,9 @@ requests:
   408eb4e1b1e80c4d83128fb76a0a4b8a5463ec135973f9cac9a2c37604870230:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": null}<|call|>'
     tools: tools_97ab5757d6f3f219
+  41114125df0365135dacba01ffcbb7d80fae97cabf61bb02c4977b4435e4df07:
+    input: <|start|>user<|channel|>analysis<|message|>UNTRUSTED<|end|><|start|>assistant<|channel|>final<|message|>ANSWER<|return|>
+    tools: tools_9db8284c68087826
   413256fb316a28d4263fa7fdaf956ab23b9a0c34860fb8cbc0b4ab68e4eded36:
     init:
       starting_state: None
@@ -2394,6 +2799,9 @@ requests:
     - 16
     - 8
     finish_step: true
+  4278e4078f439cb737dca1b0b9cea0577a451372c87653d0e0d775e5efd6b099:
+    input: <|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>commentary to=functions.lookup <|return|><|message|>{"city":"Paris"}<|call|><|start|>assistant<|channel|>final<|message|>Done.<|return|>
+    tools: tools_2aaa8f6abd5fa314
   427b403a2899f8743a3625cf5ba375864d9a88ed8aea55c516573f249424cea8:
     init:
       starting_state: None
@@ -2421,6 +2829,9 @@ requests:
     - 7
     - 8
     finish_step: true
+  42fc7b7148b05c5dcc0233d74db5feaf1afad4a278e5e95b6af24c369f850c78:
+    input: <|start|>python<|channel|>final SECRET
+    tools: tools_9db8284c68087826
   43725f47dff26b3e36edc473e36621213595c7a6ad48a226e5df9ceb47b2f1e0:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": [1, 2]}<|call|>'
     tools: tools_592bf92c162ae226
@@ -2466,6 +2877,9 @@ requests:
     - 7
     - 57
     finish_step: true
+  4587beae99b999a6513b6fdabd12a93a64039f38216ed284b4e791b291aef29d:
+    input: "assistant\tto=functions.lookup<|channel|>commentary<|message|>{\"q\":\"雪\"}<|return|>"
+    tools: tools_eadda4709f8bddfd
   459b643753bf6f4cd4a9c23bcb4d502c31968fca2b290f9f7d9aa60cc2934b9c:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3}<|call|>'
     tools: tools_19a5070486dcbf53
@@ -2493,6 +2907,9 @@ requests:
   46e9af26161cfc52d281804c1e0742a955517fe9ae26b971e6eba551c290f259:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "true"}<|call|>'
     tools: tools_7592cfa2edef2954
+  489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95:
+    input: <|start|>assistant<|channel|>commentary<|message|>"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing<|return|>
+    tools: tools_eadda4709f8bddfd
   495a251b9e90a129b08db8981cf84ef40d9b2e3fe5fe290268fed9c8b4e6261e:
     init:
       starting_state: None
@@ -2515,6 +2932,9 @@ requests:
       tool_output_mode: GuidedJson
       named_tool: null
     input: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+    tools: tools_9db8284c68087826
+  4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>user<|channel|>final<|message|>"UNTRUSTED"<|end|><|start|>assistant<|channel|>final<|message|>Done<|return|>
     tools: tools_9db8284c68087826
   50cbdcd340af07be9dbeb60d27629e6dc9e08f4a6faf4a9e7a79b424644e768b:
     input: '<|start|>assistant<|channel|>analysis<|message|>check<|end|><|start|>assistant to=functions.lookup<|channel|>commentary json<|message|>{"q": "weather"}<|call|><|start|>assistant<|channel|>final<|message|>found<|return|>'
@@ -2684,6 +3104,18 @@ requests:
   5a046d4a6492da35e1802d8cad462c287ccc7ba1f1dda345dd7b210ed51c9839:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": null}<|call|>'
     tools: tools_dc2ae18fede7bc39
+  5abd903eb0ba84ae1fa6e25498e14aa87a25702c8374e9e41606f487b3b77c14:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: 'Example: "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>".<|return|>'
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 10
+    - 118
+    - 57
+    finish_step: true
   5c0b3366a29da0d1be1463c9cda8355ce5d10c91feb48f2a92b67c6a614a9001:
     init:
       starting_state: Response
@@ -2738,6 +3170,9 @@ requests:
     - 7
     - 57
     finish_step: true
+  5c419331ab856b85ca5157e8a8c3ef34e44cf74d73e976f8dd6ed90facc6d031:
+    input: <|channel|>commentary<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   5cf1a8da613996ef9f62ad13f254b249d25addd6dbb389412e66c1d857eed03c:
     init:
       starting_state: Reasoning
@@ -2821,6 +3256,16 @@ requests:
     - 57
     - 8
     finish_step: true
+  5f9f921ac4c573bd7a5938cab8817697775f941cb5a553a64be892c634576d08:
+    input: '`pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run `pytest`<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
+    finish_step: true
   60335802e5f272837210007dbb80fb7909b9f43942cf7d401ca2644249a2c9f2:
     input: "<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{\"q\":\"x\"}<|call|>"
     tools: tools_9db8284c68087826
@@ -2855,6 +3300,9 @@ requests:
     - 19
     - 8
     finish_step: true
+  63b18eee115dd48e250c27e0a9eb1138ec2957c39b3230c6183b34a94a20f24a:
+    input: <|channel|>final<|message|>Before<|start|>assistant<|channel|>final<|return|>
+    tools: tools_9db8284c68087826
   6427f008d1b42c4fe0330dc2b340cb4cdb2c836026b9ab7c1abf507d0cc02a3c:
     init:
       starting_state: None
@@ -2893,6 +3341,16 @@ requests:
   6486bd373f590f8c61b27c864bdcb8f463bd688d764f5a2d7f8e91586083a2bb:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "null"}<|call|>'
     tools: tools_a6445198800af10f
+  649b193c7b27aeb47358fbc1fe986b894cd2d6a4f7f243c2432ea688bcec27f6:
+    input: 27"<|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 73
+    finish_step: true
   66a24ff84f2928a5e93981bc7d11c96f10522ca33a141c450000e27df924f07a:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_2da5b5660d13bc3f
@@ -2965,6 +3423,16 @@ requests:
   6fd6d7605f9ba0e2e5bd92cb1be743a95f9e4bc0c1005b83ce297530b5316a05:
     input: <|call|>still thinking about it
     tools: tools_9db8284c68087826
+  70fa6141bab2993f774552f030e804c62fd794c5a76f2956240eebab83f51527:
+    input: Let me think, I should try `pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run pytest<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 109
+    finish_step: true
   712994908f4ed1624e90608946cd8b24678590aeea3c521f75da6010c685fff3:
     input: '<|start|>assistant<|channel|>final<|message|>
 
@@ -2983,6 +3451,9 @@ requests:
   7258d0e20f9204c4c816695b198032f5d81ffcd5c37df548845a89b49127d017:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3.5}<|call|>'
     tools: tools_7c3821d79a8dd3d3
+  73a7aa56bc403846b08c98edcad520d97da01778ea54d54ff20ace4c6d6521a4:
+    input: <|channel|>commentary<|message|>Before<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   740fd26fc9c51aab33959bae93588b36e302080a720038c251b80ae242e9a488:
     init:
       starting_state: Reasoning
@@ -3011,8 +3482,14 @@ requests:
   77fc4cb262d456be919173f19086c4cc755d87e2db5d4b0dbadc185ed5dc7a33:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": {"x": 1}}<|call|>'
     tools: tools_2da5b5660d13bc3f
+  7878a13ae16d7b8f1288967d63171e7e9a90baa3cdd8f65926bfca1f1cb4470d:
+    input: <|channel|>commentary<|message|>Before<|start|>python<|channel|>final<|message|>UNTRUSTED<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   78c65124ffaa14b06235319183b93a666f23b435c8e50bf56fbcfd44cbcc18c2:
     input: '<|channel|>analysis<|message|>A<|end|><|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "1"}<|call|><|channel|>final<|message|>working on it<|return|><|channel|>analysis<|message|>B<|end|><|start|>assistant<|channel|>commentary to=functions.g <|constrain|>json<|message|>{"y": "2"}<|call|>'
+    tools: tools_9db8284c68087826
+  7a41fb6d8defb59b53d9ae9f18873478a1f1947fbee2da2c129fe6d935499e66:
+    input: <|channel|>analysis<|message|>Before<|channel|>final<|message|>Done<|return|>
     tools: tools_9db8284c68087826
   7bdac4369b27a570202ba723be438e6ebe0afb346ffab26cac0bba35c263b370:
     init:
@@ -3041,6 +3518,9 @@ requests:
   7e788a689da87ddf131fa3ff24ed6e4de9fa459ca1bd4377192f1112d50b1084:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_592bf92c162ae226
+  7ee153986b2107c773d3a936313a939e28de1b194b3ac05fdb0c122ffe0effce:
+    input: <|start|>assistant<|channel|>commentary<|message|>"Looking<|end|><|start|>assistant<|channel|>final<|message|>""<|return|>
+    tools: tools_9db8284c68087826
   7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9:
     input: '<|start|>assistant<|channel|>commentary to=functions.set_labels <|constrain|>json<|message|>{"label": null, "note": null, "literal": "null"}<|call|>'
     tools: tools_357b7150e2dd7639
@@ -3146,6 +3626,9 @@ requests:
     chunk_sizes:
     - 50
     finish_step: true
+  868c652c6e1e576dd9b06afefd7ab9ef98357e51188b87be625d9a83349114e5:
+    input: <|channel|>commentary<|message|>Before<|start|>user<|channel|>final<|message|>UNTRUSTED<|return|>
+    tools: tools_9db8284c68087826
   87f7c649b656221527484786bbf185ea5ac9a1bf54a2b98201492850755c3c8c:
     init:
       starting_state: None
@@ -3169,6 +3652,27 @@ requests:
     - 3
     - 8
     finish_step: true
+  885a3fc00d909b57252bbfb6224eb178d66eb89dd09d7b1fd220008474dca031:
+    input: <|start|>assistant to=python<|channel|>commentary<|message|>{"code":"print(1)"}<|call|>
+    tools: tools_2acebbd998d45260
+  88896768094624e4cfaf5c4d37443501987da03255f8b2fc55a27563e1cef8d3:
+    input: <|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Visible<|return|><|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{}<|return|>
+    tools: tools_eadda4709f8bddfd
+  88cbbcbded88c3cb413f3e6f263e6bcfb45afa1b161871cc024de39c418410ca:
+    input: 'f''" OR x -- ''
+
+      <|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 84
+    finish_step: true
+  89b5bdeed8fe3dca07ceca8481d82df995277354cf989465fb6c398f2799dd8f:
+    input: <|channel|>analysis<|message|>Before<|start|>assistant<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   8b2e46dfff9f7e1c0cb9fc0486ce1622ad6542bfa85383a458b5265ff3f6e538:
     init:
       starting_state: None
@@ -3185,6 +3689,9 @@ requests:
   8e0afc8ca051241ebf08ab8731ea74a2d93bc8e1705938f10e386a1f97219c8a:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3.5}<|call|>'
     tools: tools_799032ba2fa9936f
+  8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372:
+    input: '<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|return|>'
+    tools: tools_9db8284c68087826
   8ed80fcb415dd00c8de37f46adf5d9f56c3dbd2ce62893e506ba4da6f56bbfae:
     input: <|start|>assistant<|channel|>analysis<|message|>check<|end|><|start|>assistant to=functions.lookup<|channel|>commentary <|constrain|>json<|message|>{"q":"weather"}<|call|><|start|>assistant<|channel|>final<|message|>found<|return|>
     tools: tools_9db8284c68087826
@@ -3276,6 +3783,9 @@ requests:
   9225fe80c6c1dd9a7e800d65f865284f8c56fa51c853d8ac65f40127630833bd:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": 3.5}<|call|>'
     tools: tools_686a0bb91b79903e
+  926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8:
+    input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+    tools: tools_4878f82e06d1ba60
   92c8ba60c1d18b491eea53d9e6692708609712735d93beadb393d8e22764ccd9:
     init:
       starting_state: Response
@@ -3305,6 +3815,9 @@ requests:
   9384561b15b245d6f4743db6e7443aa6292586909895bc6960d724982d6e19ac:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "true"}<|call|>'
     tools: tools_70f2b5e9ad67ba1e
+  944077d3682a923af691a938a82446301354124a7ff836c462973bef2213176b:
+    input: <|channel|>commentary<|message|>Before<|channel|>finalx<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   947947e45e39b3cd75e03bebdb7c6e6f3726a0662d7500af9c77fca7dc7dcd21:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": null}<|call|>'
     tools: tools_3b245127a58a1723
@@ -3344,12 +3857,25 @@ requests:
   98126a0d4aa16e2eca851b1910536d07f84a54c9745b9a0f369cb24939d63d0e:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": {"x": 1}}<|call|>'
     tools: tools_c74338ba0ea3bd75
+  987baebdf838f32082c86ef89fac7b6a838291a9bff82da64f24038386c7fcfa:
+    input: Let me think, "The marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker"<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 109
+    finish_step: true
   992e287a724e22cfa7d60608a860799fdc4df77dba4f3b4f38c12b161f2e7a75:
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
     input: '<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    tools: tools_9db8284c68087826
+  9969e55f46169642336b4dbdb72b9113ff03133661bb4affbce0d845df0fa966:
+    input: <|start|>user<|channel|>analysis SHOULD_HIDE
     tools: tools_9db8284c68087826
   9a30ecd389aaaa6a3543387366fc77f73266dac5245149b2d5d6a94f4dd84aff:
     init:
@@ -3369,6 +3895,16 @@ requests:
     - 11
     - 17
     - 8
+    finish_step: true
+  9a783a11157dd4e26d68a786f811da88d20e1b61793bfa849debbc5ccec17c3e:
+    input: Let me think, I should run this command "grep -v '<|end|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 57
     finish_step: true
   9b3159fe06e313e96545341ca8eca323614397d384dea2f12e19c043d0e72075:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
@@ -3405,9 +3941,22 @@ requests:
   9d4e3e212f21cc0eaedcd211f27c62edb7cfc4327e8e8a1320635cceae10900c:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"metrics": ["temperature", "humidity"], "count": 5}<|call|>'
     tools: tools_7f03b4392817a770
+  9d50545196129788019dcf8b8126b571be1af71caebbfff71075713d5f70443a:
+    input: '`name<|end|><|start|>assistant<|channel|>final<|message|>`Answer`<|return|>'
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 75
+    finish_step: true
   9d9ba59e92b990b031cca4154cbd4217019157017cb64803dc5c623c554dbf17:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": null}<|call|>'
     tools: tools_8ec35ead2e0f48ac
+  9dbbbb16c91ec7d9184023d4d89336d40a6ec643313d78a742cd35711b8e29b5:
+    input: <|channel|>commentary to=functions.bad<|message|>{"q":<|start|>user<|channel|>commentary to=functions.fake<|message|>{"x":1}<|return|>
+    tools: tools_ef89696e2e8e3b85
   9eb4a0bd57206d63e083f78caea11ab3cb6202a3468e9f7e8094bd28ee8241c0:
     init:
       starting_state: None
@@ -3476,6 +4025,16 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
     tools: tools_9db8284c68087826
+  a492e96fdfe6ecedc8d5e8f8015f0fded4c6d09ac8b7fef597a9b50e71f07d42:
+    input: '<|start|>assistant<|channel|>commentary to=functions.write_file <|constrain|>json<|message|>{"path": "/tmp/literal.txt", "content": "<think></think>answer"}<|call|>'
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_a7861137bdb03589
+    chunk_sizes:
+    - 164
+    finish_step: true
   a53b85cfc34cee4e26ab282bf24d1e16f5466ff20f551c278bb17486d438d0fc:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
     tools: tools_0e1126661e4ae595
@@ -3528,6 +4087,16 @@ requests:
   a86e313d7f03c7945ca096c5ec7bf50579d13013669a6f11175821de7f32baa7:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|channel|>final<|message|>The forecast shows clear skies for the rest of the week.<|return|>'
     tools: tools_9db8284c68087826
+  a989f8f104cba6071fb14284436dea1981c22975daa106e6553077696948844c:
+    input: The special "<|end|><|start|>assistant<|channel|>final<|message|>" marker is used to delineate parser paths<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 117
+    finish_step: true
   aa58c97a06b8e5e32b555935ac1271301c6a9bb852c35707889a9957799c7304:
     input: '<|start|>assistant<|channel|>final<|message|>Sure. <|return|><|start|>assistant<|channel|>analysis<|message|>I should check. <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>analysis<|message|> now answer<|end|><|start|>assistant<|channel|>final<|message|> Here you go.<|return|>'
     tools: tools_9db8284c68087826
@@ -3764,6 +4333,9 @@ requests:
   b966a1f4c3a2c6d74755030e0c532bb7422119550b85bb23c0fb004972c747c2:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "&lt;"}<|call|>'
     tools: tools_4ce5fbd93f1be6e2
+  ba440b467ef6b977987efde446de78ab0ed517c41f5120a39c8c89f50286d7e9:
+    input: <|channel|>commentary to=functions.unfinished<|message|>{}<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>
+    tools: tools_373bf6b23615f428
   ba8c75755c529c50ce48fb5ae3a412921b313635f5b909a929f9da0615add6c2:
     input: '<|start|>assistant<|channel|>analysis<|message|>I should check. <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>analysis<|message|> now answer<|end|>'
     tools: tools_9db8284c68087826
@@ -3808,12 +4380,24 @@ requests:
     - 7
     - 17
     finish_step: true
+  bbe45b5e973572795594c7f4b68cb20a3117fa8456df48b989981e4be77bc1fe:
+    input: <|channel|>analysis to=functions.lookup<|message|>{"path":"x","content":"unfinished
+    tools: tools_286d83a3fe238aa7
+    chunk_sizes:
+    - 83
+    finish_step: true
+  bc247c617879720e3c488ba8575504b5cfec7be851d2b3851f8af90f93b33a60:
+    input: <|start|>assistant<|channel|>final<|message|>"é\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>
+    tools: tools_9db8284c68087826
   bc2e12ac5f5f0358e79166dd8a040ab6bb6292d1026cc886194c2e1c396923bc:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_9d7e29c38b45febb
   bdf2417b52e65d84fdf00601bb95573590d76d84dac0b4ff7abb06162d32d5b9:
     input: '<|channel|>analysis<|message|>a<|end|><|channel|>final<|message|>Here you go: <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|>'
     tools: tools_9db8284c68087826
+  be31a3e30ff2b6fe1081abe5e0d7ee134f84e8d047595e9d9d0eefc55d7be781:
+    input: <|channel|>commentary to=functions.bad<|channel|>final<|message|>ANSWER<|return|>
+    tools: tools_e94c703bbce7a0bf
   bf60f74a573d9a56c8b87ddcf85ec7eeca1ae8bc4d78d155e875988c5f82802c:
     init:
       starting_state: None
@@ -3838,6 +4422,9 @@ requests:
     finish_reason: tool_calls
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean <|channel|>analysis<|message|>self literal<|end|>'
     tools: tools_9db8284c68087826
+  c12207dae6892715a742309efa60a5edd7145260ff75c8fe23e3b2a2b9115f46:
+    input: assistant functions.lookup<|channel|>analysis<|message|>{"q":"雪"}<|return|>
+    tools: tools_eadda4709f8bddfd
   c14967933b95ff062527f064cbb052855bb5fa16aad8c862cd4c0c30616a4d5f:
     input: <|start|>assistant<|channel|>commentary to=functions.echo <|constrain|>json<|message|>{"city":"Paris","value":-1E+400}<|call|>
     tools: tools_81ef407beab6fe3e
@@ -3889,6 +4476,9 @@ requests:
     chunk_sizes:
     - 23
     finish_step: true
+  c33ade402eb5935e79eb3d9db3b2f43d73d280e49fffb854722fa702fb3f3f37:
+    input: <|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>commentary to=functions.f/x<|message|>{"x":1}<|return|>
+    tools: tools_f5ed23a58d5feebe
   c4455c8e486f644fde75ec6d84b1908dd7dd78c94aeab562e7fab4554996adfe:
     init:
       starting_state: None
@@ -3945,6 +4535,12 @@ requests:
   c70b7ab39f5c880fa70e1a3b7d8b2b840c5dd2441c3c6ff7057a597b67823178:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_68095193d4321478
+  c92f8067190de68778212e506bc6750f4f8aee5a28119d24d249b90080db71e2:
+    input: <|start|>assistant to=all<|channel|>analysis<|message|>checking<|end|>
+    tools: tools_9db8284c68087826
+  c9da1f2c90cbb51c01a248a3dedd6004312844d850b082ddb2bfe259fb8eb53b:
+    input: <|channel|>commentary to=functions.bad<|start|>assistant<|channel|>commentary to=functions.lookup<|message|>{"path":"ok"}<|return|>
+    tools: tools_1a363c00fe79c1c3
   cb060a50d46a5f6ad68c0e1ceeea90b1323f49fa9794844a3384ef955fe38d72:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
     tools: tools_9c8a74c317d60415
@@ -3982,6 +4578,16 @@ requests:
   cc810b95bcd093b6bffe62be8b78127d921b32e748ef5ab7f4e3385eae145362:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "null"}<|call|>'
     tools: tools_c7317ba7db1bcfa8
+  cc894a32bbc1d9430900b78317fcb49c2adb1bfb9f8d7d445e50c973cfbc4e7b:
+    input: Let me think, the TV size is 40"<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 97
+    finish_step: true
   ccbc22c8b27f08ddc4be2ddfa4c1fd0b4071dcdf7de76eede8a37b839bdbc95d:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"payload": {"x": 1}}<|call|>'
     tools: tools_eb14ad8c4a7a4413
@@ -4003,6 +4609,9 @@ requests:
   cf5bda6632e3c477a14a965c81e421e7db7393ff0a13e4eeb011117c7b433f94:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"space": 42, "utf8_plus": 42, "pointer": 42}<|call|>'
     tools: tools_2931a9ad742a4419
+  d02327944df2f2c94cc6c4896748f1a883e9447dbbf9ffa3ac70323c51dc80bb:
+    input: <|channel|>commentary<|message|>{"x":1}<|start|>assistant<|channel|>final<|message|>Done.<|return|>
+    tools: tools_9db8284c68087826
   d073bb9cc5b9a50cc89a2f7faefec60471e3a0ca76772459b50fd980b43d6d24:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "São Paulo 東京"}<|call|>'
     tools: tools_9db8284c68087826
@@ -4038,6 +4647,12 @@ requests:
     - 7
     - 57
     finish_step: true
+  d19438fd794e75d10dd2decb1bc6b3c9d9941185c3abf2584aad3dd77eede186:
+    input: <|channel|>finalx<|message|>first<|end|><|start|>assistant<|channel|>final<|message|>second<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 101
+    finish_step: true
   d1983d43f9ceffbd1d1fa294a0f0c86da3ab15de92d11d08483996fc181ba4f7:
     init:
       starting_state: None
@@ -4056,6 +4671,9 @@ requests:
     finish_step: true
   d1dc011ca8f714c1070c6f4ef99390d69ccb090ea40a8619ffee41da16b40f30:
     input: '<|start|>assistant<|channel|>commentary to=functions.run <|constrain|>json<|message|>{"cmd": "git log <|call|> --oneline"}<|call|>'
+    tools: tools_9db8284c68087826
+  d2b48083a6b82df241eb127849989fb638a6f65a134a237a606aa32d54e53a24:
+    input: assistant <|channel|>final<|message|>Done<|return|>
     tools: tools_9db8284c68087826
   d2c18ba1d87d1ac80aa9e1a997432fa1817ee82eca75c7b98b852682a9b48a27:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": true}<|call|>'
@@ -4083,12 +4701,18 @@ requests:
     - 7
     - 57
     finish_step: true
+  d436b933d3a4b2d91af899afc5fb8baed1178934ae51478130fd6bef445c804e:
+    input: <|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>
+    tools: tools_4878f82e06d1ba60
   d459b8e6d6942b72df37649fec24d7c2b478c458c392186412be71361fa3bf95:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "[1,2]"}<|call|>'
     tools: tools_1c0b6cc6a42cfbde
   d4f815d6fb8707dfa62dbe2ba91902adc5b2cf9d3bedecea450353bb1b81fc79:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "auto"}<|call|>'
     tools: tools_799032ba2fa9936f
+  d510abc734a08662cce3521108e4d394a846c33fcefa2847e4eeaf99ab0f3d65:
+    input: <|channel|>commentary <|constrain|>json<|message|>{"city":"NYC"}<|return|><|start|>assistant<|channel|>final<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
   d5891591a764d9e9527a2fa20983c29fc8ed838f0fd95be2a8556a53cc893a50:
     init:
       starting_state: None
@@ -4096,12 +4720,18 @@ requests:
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": '
     tools: tools_9db8284c68087826
+  d7672ad57c481855ae9a7ba6a6c7cd6de989c5f77f80414363ec19db8d20ca4a:
+    input: <|start|>user<|channel|>final SHOULD_HIDE
+    tools: tools_9db8284c68087826
   d7768d28c9de61c936c21be97cfba714f059b3ed00a6f1229b8f0a2fb91a17c0:
     init:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
     input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|call|>'
+    tools: tools_9db8284c68087826
+  d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b:
+    input: <|start|>assistant<|message|>Answer<|return|>
     tools: tools_9db8284c68087826
   d9f6c3a6e43d7ed894f4a71a46c786330d154c69bd668d95bbd8ec4346660c93:
     input: '<|start|>assistant<|channel|>analysis<|message|>first<|end|><|start|>assistant<|channel|>analysis<|message|>
@@ -4215,6 +4845,9 @@ requests:
   e0acc680f0a193a3ac8979dd180a33ac1ca2de5dd0fa1cd2d4836942df29ffde:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "null"}<|call|>'
     tools: tools_d84ac5f342102778
+  e160bc7da0a1e3dc15e9f38943854dedd5da1baa2679b15f44150a3e95969716:
+    input: " \n{\"x\":\"<|start|>\"}\n<|channel|>final<|message|>Done<|return|>"
+    tools: tools_9db8284c68087826
   e2038a252edfeb0d509cf455701c62ced579e706d424bb8b139e4e22a34234a3:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "{\"x\":1}"}<|call|>'
     tools: tools_a59dec8969ac978b
@@ -4232,6 +4865,12 @@ requests:
     - 11
     - 18
     finish_step: true
+  e40419b6c67ae6b9b711e0bc5105da081c464739c4c76293ac739f30c78a9068:
+    input: <|start|>assistant<g<|channel|>final SECRET
+    tools: tools_9db8284c68087826
+  e43af50580df1cb90a56a08bd34be9e54e70e95fb4e2c9d28fd2aaef61270e79:
+    input: <|channel|>final<|message|>Use <|channel|>commentary to=functions.lookup<|message|>{}<|call|>
+    tools: tools_eadda4709f8bddfd
   e55fb100a8f324f282c949fd82a96d232747bc784883486705687d066f3b9cc2:
     input: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"value":0.0e-400}<|call|>
     tools: tools_3b9cefdb4fbe7e81
@@ -4244,6 +4883,9 @@ requests:
     chunk_sizes:
     - 116
     finish_step: true
+  e5e77281f1c821bba106dfd14267b964e7a968b3922b609320b6181c6b710917:
+    input: '{"visible":"<|start|>"}<|channel|>commentary to=functions.bad<|message|>{"q":<|start|>assistant<|channel|>final <|return|><|message|>Done.<|return|>'
+    tools: tools_e94c703bbce7a0bf
   e6ccf78958b72190c74a3f2396e60c13dd563e74e6aff9e4e9d6789d78b1caf5:
     init:
       starting_state: Reasoning
@@ -4341,6 +4983,12 @@ requests:
     - 57
     - 8
     finish_step: true
+  ed97fe02b65e4ca692f803b01734c5ad745ff2fa19613de996243eb18d97a039:
+    input: <|channel|>finalx
+    tools: tools_9db8284c68087826
+  ee0d4b94c45d99566ecf4b48e1058e4d51ae1f2ede875115275562d500b643ef:
+    input: <|start|>assistant<|channel|>commentary to=functions.@f<|message|>{"x":1}<|return|>
+    tools: tools_0a9c21b86d7d969b
   eef36eb16468e467bd3291d878d959eb535b773669647c94dba1ef5df212af7f:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": true}<|call|>'
     tools: tools_49d1d4dc29b4d728
@@ -4441,6 +5089,12 @@ requests:
   f6d9aec6c7d25e89b388ca4cd1f60a27eda9ec4a6ad5dbcfe2c8235f143c5ef3:
     input: '<|start|>assistant<|channel|>commentary to=functions.capture_payload <|constrain|>json<|message|>{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}<|call|>'
     tools: tools_e3ff7e072a11e815
+  f7ec73139e1a04a11aa6973b81122686d7deceb8ee6a4cfb5fd7dbd1cc27a3bc:
+    input: <|channel|>commentary<|message|>visible<|end|><|return|><|start|>assistant<|channel|>final<|message|>done<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 115
+    finish_step: true
   f8a0f32eba8f930dc98f37666d48cf93b5eadb7ce17555e0b311acde0e8021b1:
     init:
       starting_state: None
@@ -4497,6 +5151,21 @@ requests:
     chunk_sizes:
     - 133
     finish_step: true
+  fd0dfa139b742314566478a61c4be2f88d2a893afee2452531ea99e18f153d8a:
+    input: Let me think, I should run this command "grep -v '<|end|><|start|>assistant<|channel|>final<|message|>' ..."<|return|>
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 118
+    finish_step: true
+  fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00:
+    input: '<|start|>assistant<|channel|>commentary<|message|>"Looking
+
+      <|end|><|start|>assistant<|channel|>final<|message|>He said "yes".<|return|>'
+    tools: tools_9db8284c68087826
   fd5f1a342b9e8d4df5e4ed0eca1762709cd63dd259a884e0d03fd3f5c8d1d839:
     input: <|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>
     tools: tools_9db8284c68087826
@@ -4513,6 +5182,9 @@ requests:
     finish_step: true
   fdaacaaa30d88df8112f3a478ba90e38c270c705fc0ba36e6adbe9c711c2a5c0:
     input: <|channel|>final<|message|>The answer is 42, no tools needed.<|return|>
+    tools: tools_9db8284c68087826
+  fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0:
+    input: <|channel|>commentary<|message|>Preamble<|end|><|start|>assistant<|channel|>final<|message|>{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}<|return|>
     tools: tools_9db8284c68087826
   fe32f026e0625ee43ed1c368e80306eb1e8c5499035eeacb2300888cd8deaef2:
     input: '<|start|>assistant<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{"value": "42"}<|call|>'
@@ -4535,6 +5207,22 @@ requests:
   fefd853178bd61fc0bc63692951e49e9916c1dc23bab5f618cc16a2113227144:
     input: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "null"}<|call|>'
     tools: tools_84aaff47dfbac1c3
+  ffa90c4df91d3f5de40a1110f5b20fd9b303a978bde8b12805fc59c4ca14f721:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|end|>Yes<|return|>
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 115
+    finish_step: true
+  ffb1bfbaa90d0d13f4f58ff6beed313743f6c95da7badf107186025eff9521ee:
+    input: <|channel|>commentary<|message|>Before<|channel|>analysis<|message|>Done<|return|>
+    tools: tools_9db8284c68087826
+  ffbd00b3dd9c9dfa3486837f6029f197a04cc0b7cd63f1c7acefdf4995b143d8:
+    input: <|channel|>final<|message|>before<|return|>to=functions.lookup<|channel|>commentary<|message|>{"path":"雪","content":"<|return|>"}<|call|>
+    tools: tools_eadda4709f8bddfd
 cases:
   tool_only:
     description: Single tool call, no reasoning. Must stay green everywhere (the existing tool suite's world).
@@ -4812,6 +5500,7 @@ cases:
       arguments:
         city: null
   arg_json_null_anyof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4825,6 +5514,7 @@ cases:
       arguments:
         city: null
   arg_json_null_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4838,6 +5528,7 @@ cases:
       arguments:
         city: null
   arg_json_null_nullable:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4851,6 +5542,7 @@ cases:
       arguments:
         city: null
   arg_json_null_oneof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4877,6 +5569,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4890,6 +5583,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_enum:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4903,6 +5597,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_sibling_anyof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4916,6 +5611,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_sibling_oneof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4929,6 +5625,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_union:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4942,6 +5639,7 @@ cases:
       arguments:
         city: 'null'
   arg_string_null_untyped_branch:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4966,6 +5664,7 @@ cases:
       arguments:
         city: São Paulo 東京
   schema_const_array_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -4992,6 +5691,7 @@ cases:
       arguments:
         value: '[1,2]'
   schema_const_array_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5005,6 +5705,7 @@ cases:
       arguments:
         value: '[1,2]'
   schema_const_array_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5018,6 +5719,7 @@ cases:
       arguments:
         value: '[1,2]'
   schema_const_boolean_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5044,6 +5746,7 @@ cases:
       arguments:
         value: 'true'
   schema_const_boolean_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5057,6 +5760,7 @@ cases:
       arguments:
         value: 'true'
   schema_const_boolean_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5070,6 +5774,7 @@ cases:
       arguments:
         value: 'true'
   schema_const_entity_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5096,6 +5801,7 @@ cases:
       arguments:
         value: '&lt;'
   schema_const_entity_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5109,6 +5815,7 @@ cases:
       arguments:
         value: '&lt;'
   schema_const_entity_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5122,6 +5829,7 @@ cases:
       arguments:
         value: '&lt;'
   schema_const_null_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5148,6 +5856,7 @@ cases:
       arguments:
         value: 'null'
   schema_const_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5161,6 +5870,7 @@ cases:
       arguments:
         value: 'null'
   schema_const_null_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5174,6 +5884,7 @@ cases:
       arguments:
         value: 'null'
   schema_const_number_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5200,6 +5911,7 @@ cases:
       arguments:
         value: '42'
   schema_const_number_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5213,6 +5925,7 @@ cases:
       arguments:
         value: '42'
   schema_const_number_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5226,6 +5939,7 @@ cases:
       arguments:
         value: '42'
   schema_const_object_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5252,6 +5966,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_const_object_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5265,6 +5980,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_const_object_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5278,6 +5994,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_const_plain_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5304,6 +6021,7 @@ cases:
       arguments:
         value: auto
   schema_const_plain_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5317,6 +6035,7 @@ cases:
       arguments:
         value: auto
   schema_const_plain_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5330,6 +6049,7 @@ cases:
       arguments:
         value: auto
   schema_const_quoted_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5356,6 +6076,7 @@ cases:
       arguments:
         value: '"hello"'
   schema_const_quoted_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5369,6 +6090,7 @@ cases:
       arguments:
         value: '"hello"'
   schema_const_quoted_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5382,6 +6104,7 @@ cases:
       arguments:
         value: '"hello"'
   schema_const_space_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5408,6 +6131,7 @@ cases:
       arguments:
         value: '  spaced  '
   schema_const_space_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5421,6 +6145,7 @@ cases:
       arguments:
         value: '  spaced  '
   schema_const_space_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5434,6 +6159,7 @@ cases:
       arguments:
         value: '  spaced  '
   schema_const_unicode_allof:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5460,6 +6186,7 @@ cases:
       arguments:
         value: café
   schema_const_unicode_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5473,6 +6200,7 @@ cases:
       arguments:
         value: café
   schema_const_unicode_typed:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5580,6 +6308,7 @@ cases:
       arguments:
         value: plain
   schema_enum_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5593,6 +6322,7 @@ cases:
       arguments:
         value: 42
   schema_enum_string:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5606,6 +6336,7 @@ cases:
       arguments:
         value: '42'
   schema_escaped_ref_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5680,6 +6411,7 @@ cases:
         flag: true
         narrowed: 42
   schema_id_direct_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5693,6 +6425,7 @@ cases:
       arguments:
         value: 42
   schema_integer_const_ambiguous:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5706,6 +6439,7 @@ cases:
       arguments:
         value: '42'
   schema_intersection_anyof:
+    lifecycle: retired
     scenario: schema_intersection_anyOf
     policy:
     - I7
@@ -5720,6 +6454,7 @@ cases:
       arguments:
         value: 42
   schema_intersection_oneof:
+    lifecycle: retired
     scenario: schema_intersection_oneOf
     policy:
     - I7
@@ -5747,6 +6482,7 @@ cases:
       arguments:
         count: 42
   schema_null_union_ambiguous:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5774,6 +6510,7 @@ cases:
         const_text: 'null'
         enum_text: 'null'
   schema_nullable_string:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5787,6 +6524,7 @@ cases:
       arguments:
         value: null
   schema_object_const_union:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5800,6 +6538,7 @@ cases:
       arguments:
         value: '{"x":1}'
   schema_percent_ref_const:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5813,6 +6552,7 @@ cases:
       arguments:
         value: '42'
   schema_ref_sibling_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5840,6 +6580,7 @@ cases:
       arguments:
         value: -7
   schema_ref_union_anyof_string:
+    lifecycle: retired
     scenario: schema_ref_union_anyOf_string
     policy:
     - I7
@@ -5854,6 +6595,7 @@ cases:
       arguments:
         value: auto
   schema_ref_union_oneof_integer:
+    lifecycle: retired
     scenario: schema_ref_union_oneOf_integer
     policy:
     - I7
@@ -5868,6 +6610,7 @@ cases:
       arguments:
         value: -7
   schema_ref_union_oneof_string:
+    lifecycle: retired
     scenario: schema_ref_union_oneOf_string
     policy:
     - I7
@@ -5882,6 +6625,7 @@ cases:
       arguments:
         value: auto
   schema_type_array_integer_null:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5895,6 +6639,7 @@ cases:
       arguments:
         value: 42
   schema_type_array_integer_null_null:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5908,6 +6653,7 @@ cases:
       arguments:
         value: null
   schema_type_array_string_integer:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -5921,6 +6667,7 @@ cases:
       arguments:
         value: '42'
   schema_union_anyof_array_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_reverse_string
     policy:
     - I7
@@ -5935,6 +6682,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_array_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_reverse_typed
     policy:
     - I7
@@ -5951,6 +6699,7 @@ cases:
         - 1
         - 2
   schema_union_anyof_array_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_string
     policy:
     - I7
@@ -5965,6 +6714,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_array_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_array_typed
     policy:
     - I7
@@ -5981,6 +6731,7 @@ cases:
         - 1
         - 2
   schema_union_anyof_boolean_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_reverse_string
     policy:
     - I7
@@ -5995,6 +6746,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_boolean_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_reverse_typed
     policy:
     - I7
@@ -6009,6 +6761,7 @@ cases:
       arguments:
         value: true
   schema_union_anyof_boolean_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_string
     policy:
     - I7
@@ -6023,6 +6776,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_boolean_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_boolean_typed
     policy:
     - I7
@@ -6037,6 +6791,7 @@ cases:
       arguments:
         value: true
   schema_union_anyof_integer_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_reverse_string
     policy:
     - I7
@@ -6051,6 +6806,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_integer_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_reverse_typed
     policy:
     - I7
@@ -6065,6 +6821,7 @@ cases:
       arguments:
         value: 42
   schema_union_anyof_integer_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_string
     policy:
     - I7
@@ -6079,6 +6836,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_integer_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_integer_typed
     policy:
     - I7
@@ -6093,6 +6851,7 @@ cases:
       arguments:
         value: 42
   schema_union_anyof_null_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_reverse_string
     policy:
     - I7
@@ -6107,6 +6866,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_null_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_reverse_typed
     policy:
     - I7
@@ -6121,6 +6881,7 @@ cases:
       arguments:
         value: null
   schema_union_anyof_null_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_string
     policy:
     - I7
@@ -6135,6 +6896,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_null_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_null_typed
     policy:
     - I7
@@ -6149,6 +6911,7 @@ cases:
       arguments:
         value: null
   schema_union_anyof_number_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_reverse_string
     policy:
     - I7
@@ -6163,6 +6926,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_number_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_reverse_typed
     policy:
     - I7
@@ -6177,6 +6941,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_anyof_number_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_string
     policy:
     - I7
@@ -6191,6 +6956,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_number_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_number_typed
     policy:
     - I7
@@ -6205,6 +6971,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_anyof_object_reverse_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_reverse_string
     policy:
     - I7
@@ -6219,6 +6986,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_object_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_reverse_typed
     policy:
     - I7
@@ -6234,6 +7002,7 @@ cases:
         value:
           x: 1
   schema_union_anyof_object_string:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_string
     policy:
     - I7
@@ -6248,6 +7017,7 @@ cases:
       arguments:
         value: auto
   schema_union_anyof_object_typed:
+    lifecycle: retired
     scenario: schema_union_anyOf_object_typed
     policy:
     - I7
@@ -6263,6 +7033,7 @@ cases:
         value:
           x: 1
   schema_union_oneof_array_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_reverse_string
     policy:
     - I7
@@ -6277,6 +7048,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_array_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_reverse_typed
     policy:
     - I7
@@ -6293,6 +7065,7 @@ cases:
         - 1
         - 2
   schema_union_oneof_array_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_string
     policy:
     - I7
@@ -6307,6 +7080,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_array_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_array_typed
     policy:
     - I7
@@ -6323,6 +7097,7 @@ cases:
         - 1
         - 2
   schema_union_oneof_boolean_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_reverse_string
     policy:
     - I7
@@ -6337,6 +7112,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_boolean_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_reverse_typed
     policy:
     - I7
@@ -6351,6 +7127,7 @@ cases:
       arguments:
         value: true
   schema_union_oneof_boolean_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_string
     policy:
     - I7
@@ -6365,6 +7142,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_boolean_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_boolean_typed
     policy:
     - I7
@@ -6379,6 +7157,7 @@ cases:
       arguments:
         value: true
   schema_union_oneof_integer_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_reverse_string
     policy:
     - I7
@@ -6393,6 +7172,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_integer_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_reverse_typed
     policy:
     - I7
@@ -6407,6 +7187,7 @@ cases:
       arguments:
         value: 42
   schema_union_oneof_integer_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_string
     policy:
     - I7
@@ -6421,6 +7202,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_integer_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_integer_typed
     policy:
     - I7
@@ -6435,6 +7217,7 @@ cases:
       arguments:
         value: 42
   schema_union_oneof_null_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_reverse_string
     policy:
     - I7
@@ -6449,6 +7232,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_null_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_reverse_typed
     policy:
     - I7
@@ -6463,6 +7247,7 @@ cases:
       arguments:
         value: null
   schema_union_oneof_null_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_string
     policy:
     - I7
@@ -6477,6 +7262,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_null_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_null_typed
     policy:
     - I7
@@ -6491,6 +7277,7 @@ cases:
       arguments:
         value: null
   schema_union_oneof_number_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_reverse_string
     policy:
     - I7
@@ -6505,6 +7292,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_number_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_reverse_typed
     policy:
     - I7
@@ -6519,6 +7307,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_oneof_number_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_string
     policy:
     - I7
@@ -6533,6 +7322,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_number_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_number_typed
     policy:
     - I7
@@ -6547,6 +7337,7 @@ cases:
       arguments:
         value: 3.5
   schema_union_oneof_object_reverse_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_reverse_string
     policy:
     - I7
@@ -6561,6 +7352,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_object_reverse_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_reverse_typed
     policy:
     - I7
@@ -6576,6 +7368,7 @@ cases:
         value:
           x: 1
   schema_union_oneof_object_string:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_string
     policy:
     - I7
@@ -6590,6 +7383,7 @@ cases:
       arguments:
         value: auto
   schema_union_oneof_object_typed:
+    lifecycle: retired
     scenario: schema_union_oneOf_object_typed
     policy:
     - I7
@@ -7114,12 +7908,14 @@ cases:
   guided_quoted_reasoning_closer_named:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_named
     request: b42f3d319d9d63fe4c1ea4818fe57cfb53ad33cc67497a10bafca26f57c257ac
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|end|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7127,12 +7923,14 @@ cases:
   guided_quoted_reasoning_closer_required:
     policy:
     - I7
-    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload.
+    description: Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; the first closer ends reasoning under the default structural policy, and the following guided payload dispatches.
     display_id: UNIFIED.34-guided_quoted_reasoning_closer_required
     request: 740fd26fc9c51aab33959bae93588b36e302080a720038c251b80ae242e9a488
     golden:
     - kind: reasoning
-      text: The literal 'doesn't <|end|> marker' stays quoted.
+      text: 'The literal ''doesn''t '
+    - kind: text
+      text: ' marker'' stays quoted.'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -7360,6 +8158,7 @@ cases:
       arguments:
         city: Paris
   guided_json_gt_in_argument_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - I3
     description: 'Guided JSON, payload is gt_in_argument, surrounded by a stray tool CLOSE after the payload. Markers around a recoverable payload must not cost the call (`I3`). Preserves PR #424''s distinct request and chunk schedule for UNIFIED.30-guided_json_gt_in_argument_trailing_close.'
@@ -7371,6 +8170,7 @@ cases:
       arguments:
         city: a > b
   guided_json_gt_in_argument_wrapped_pr424:
+    lifecycle: retired
     policy:
     - I3
     description: 'Guided JSON, payload is gt_in_argument, surrounded by the payload wrapped in native tool markup. Markers around a recoverable payload must not cost the call (`I3`). Preserves PR #424''s distinct request and chunk schedule for UNIFIED.30-guided_json_gt_in_argument_wrapped.'
@@ -7382,6 +8182,7 @@ cases:
       arguments:
         city: a > b
   guided_json_marker_inside_argument_pr424:
+    lifecycle: retired
     policy:
     - I7
     description: 'A control marker of the family''s OWN grammar inside a guided argument VALUE. Once the payload has opened, a marker is argument DATA and must survive byte-exact (`I7`) — re-reading it as a channel token corrupts the call the tool receives while looking like a successful dispatch. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.30-guided_json_marker_inside_argument.'
@@ -7393,6 +8194,7 @@ cases:
       arguments:
         note: <|end|>
   guided_json_native_markup_only_pr424:
+    lifecycle: retired
     policy:
     - I3
     - I6
@@ -7401,6 +8203,7 @@ cases:
     request: 645ad4c615fc16ff8fc90eade4c15fb0fa6f18fa93f145f48ae6a3801ca468d9
     golden: []
   guided_json_tool_close_after_payload_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'A native tool CLOSER follows the payload. The leading side was handled long before this one: once the payload''s opening brace latches visible-only, every later byte is appended verbatim, so a trailing marker rides into the buffer and the call is lost. Markers can BRACKET a payload, not only precede it. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.32-guided_json_tool_close_after_payload.'
@@ -7412,6 +8215,7 @@ cases:
       arguments:
         city: Paris
   guided_json_wrapped_in_tool_markup_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'The payload wrapped in a full native envelope, opener AND closer. This is the shape a template emits when guided decoding is applied INSIDE a tool block; handling only one end still loses the call. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.32-guided_json_wrapped_in_tool_markup.'
@@ -7423,6 +8227,7 @@ cases:
       arguments:
         city: Paris
   guided_json_schema_error_nameless_element_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_nameless_element_trailing_close.'
@@ -7432,6 +8237,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
   guided_json_schema_error_nameless_element_wrapped_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_nameless_element, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_nameless_element_wrapped.'
@@ -7441,6 +8247,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
   guided_json_schema_error_not_a_call_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_not_a_call, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_not_a_call_trailing_close.'
@@ -7450,6 +8257,7 @@ cases:
     - kind: text
       text: '{"unexpected": "shape"}'
   guided_json_schema_error_not_a_call_wrapped_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is schema_error_not_a_call, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_schema_error_not_a_call_wrapped.'
@@ -7459,6 +8267,7 @@ cases:
     - kind: text
       text: '{"unexpected": "shape"}'
   guided_json_syntax_error_trailing_close_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is syntax_error, surrounded by a stray tool CLOSE after the payload. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_syntax_error_trailing_close.'
@@ -7468,6 +8277,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_syntax_error_wrapped_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'Guided JSON, payload is syntax_error, surrounded by the payload wrapped in native tool markup. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.33-guided_json_syntax_error_wrapped.'
@@ -7477,6 +8287,7 @@ cases:
     - kind: text
       text: '[{"name": "get_weather", "arguments": {"city":'
   guided_json_bare_tool_header_recovers_inside_a_thought_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'A bare `to=NAME` header inside an OPEN thought, leading into the guided payload — the missing-terminator recovery boundary, with no framing on the header because the prompt consumed the turn''s opening framing. The contrast with the quoted cases is the point: the same bare shape is structural here and prose there, decided by scope, not by whether a header has been seen before. A reader that closes its latch on the turn''s first header demotes this one and leaks `to=NAME` into the reasoning. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_json_bare_tool_header_recovers_inside_a_thought.'
@@ -7530,6 +8341,7 @@ cases:
       arguments:
         city: Paris
   guided_json_orphan_reason_close_before_payload_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'An orphan reasoning CLOSER with nothing open, ahead of the payload. The native scanner strips a stray closer wherever it appears before an opener; the guided path must agree or the same bytes read differently by request mode (`I3`). Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_json_orphan_reason_close_before_payload.'
@@ -7597,6 +8409,7 @@ cases:
       arguments:
         city: Paris
   guided_quoted_reasoning_closer_named_pr424:
+    lifecycle: retired
     policy:
     - I7
     description: 'Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_quoted_reasoning_closer_named.'
@@ -7610,6 +8423,7 @@ cases:
       arguments:
         city: Paris
   guided_quoted_reasoning_closer_required_pr424:
+    lifecycle: retired
     policy:
     - I7
     description: 'Prefilled guided reasoning quotes its closer inside a contraction-bearing single quotation; only the later unquoted closer ends reasoning and dispatches the payload. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.34-guided_quoted_reasoning_closer_required.'
@@ -7675,6 +8489,7 @@ cases:
       arguments:
         city: Paris
   prefilled_reasoning_with_guided_json_pr424:
+    lifecycle: retired
     policy:
     - P5
     description: 'Reasoning channel is pre-filled (policy P5), stream begins inside <think> with no opener, and the model emits tool calls as guided JSON. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.40-prefilled_reasoning_with_guided_json.'
@@ -7892,6 +8707,7 @@ cases:
     - kind: text
       text: recovered
   guided_json_orphan_tool_close_before_payload_pr424:
+    lifecycle: retired
     policy:
     - P2
     description: 'An orphan tool CLOSER before the payload. Paired with the opener case above: for a while the closer was stripped and the opener beside it was not, so which marker leaked depended on which one the model happened to emit. Preserves PR #424''s distinct request and chunk schedule for UNIFIED.32-guided_json_orphan_tool_close_before_payload.'
@@ -7961,29 +8777,21 @@ cases:
   guided_response_quoted_control_braces_named:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_named
     request: 46733b8e2a3938ca09b7b029db5398f7a2c6e2cba37a5a36a2bc5ac79dbcdc2c
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> { example }" stays visible. '
-    - kind: tool_call
-      name: get_weather
-      arguments:
-        city: Paris
+      text: The literal "
   guided_response_quoted_control_braces_required:
     policy:
     - I7
-    description: Prefilled guided Response quotes a native opener and braces as visible prose before the real payload; a brace inside the balanced quotation cannot start payload ownership.
+    description: Prefilled guided Response contains a quoted native opener and non-call braces. With structural prose controls, stray markers strip and valid guided calls dispatch; an incomplete routed/header envelope instead owns and drops its unfinished body.
     display_id: UNIFIED.35-guided_response_quoted_control_braces_required
     request: 44af50e5129ca11013e96f23b28554be89a727a250c373179ec7ad165d219a71
     golden:
     - kind: text
-      text: 'The literal "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> { example }" stays visible. '
-    - kind: tool_call
-      name: get_weather
-      arguments:
-        city: Paris
+      text: The literal "
   native_unmatched_quote_then_call:
     policy:
     - I7
@@ -8201,7 +9009,7 @@ cases:
     policy:
     - P5
     - I5
-    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS emits its analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
+    description: 'No-tools response_format schema with free reasoning before the constrained JSON response. GPT-OSS and Beam emit their analysis and final headers; other supported builders close prompt-prefilled reasoning. The real structural tag must accept the authored Unicode stream and every split, reject wrong types, missing/extra keys and invalid values, then the native parser must preserve reasoning and response separately. Dynamo issue #16787.'
     display_id: UNIFIED.36-structured_response_after_reasoning
     request: 3d352e75afc03e25aba4d13708959faab9b2e432cc9b16bcfbe28da74a5edc94
     golden:
@@ -8377,6 +9185,7 @@ cases:
       name: get_weather
       arguments: '{"value":4.2e1}'
   arg_numeric_14_enum_decimal:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -8390,6 +9199,7 @@ cases:
       name: get_weather
       arguments: '{"value":42.0}'
   arg_numeric_14_enum_exponent:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -8653,6 +9463,7 @@ cases:
         value:
           s: </atem:parameter>
   arg_json_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -8666,6 +9477,7 @@ cases:
       arguments:
         city: null
   arg_string_null_ref:
+    lifecycle: retired
     policy:
     - I7
     historical_ids:
@@ -8846,7 +9658,7 @@ cases:
     - I3
     historical_ids:
     - UNIFIED.10-interrupted_reasoning_then_response
-    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and following visible answer with the existing native response-header cases.
     display_id: UNIFIED.10-reason_then_content_interrupted
     request: 838acab12e6bc65283f63ade423be9ca9464452d38093d53fe14671b4d789867
     golden:
@@ -8855,7 +9667,7 @@ cases:
     - kind: text
       text: The answer is 42.
   reason_markup_in_arg_consistent:
-    description: '''Tool call contains reasoning'' — a reasoning-channel marker sits inside a QUOTED tool-arg value. This is NOT a leak: a leak is control markup surfacing in visible content or reasoning, but here the markup is a tool ARGUMENT VALUE (data bound for the function, inside the grammar''s string delimiters), so by I7 the parser preserves it byte-exact. The gemma4 native UnifiedParser confirms this golden exactly. Failure mode: a reasoning-first pipeline extracts the `<think>`/`<|channel>` from inside the arg BEFORE tool parsing, hoisting it into a spurious reasoning event and corrupting the arg to empty.'
+    description: Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.
     display_id: UNIFIED.12-reason_markup_in_arg_consistent
     request: 6fa35eb281f363e72214dc26bd47b0b43d95b94cc4b707db3743eeb438ec9259
     golden:
@@ -8864,7 +9676,7 @@ cases:
       arguments:
         note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
   reason_markup_in_arg_with_text_consistent:
-    description: 'reason_markup_in_arg (tool arg value contains reasoning markup, I7 data) WITH visible narration before and after the call. All three channels at once: leading text -> tool call whose arg holds reasoning markup -> trailing text. Golden keeps the visible text as text, the call as a call, and the markup byte-exact in the arg. A reasoning-first pipeline both corrupts the arg (extracting the embedded reasoning) and can reorder/misroute the surrounding text.'
+    description: Native reasoning markers inside a tool argument remain literal data. Reuse the shared reconsider prose while preserving the original Harmony markers and surrounding narration.
     display_id: UNIFIED.12-reason_markup_in_arg_with_text_consistent
     request: 0a4415d75a8c5461fd5255f795baaba42ac5151cf0c1e9aef3d999a83e9a26d6
     golden:
@@ -8976,6 +9788,7 @@ cases:
         - humidity
         count: 5
   schema_declared_integer_boolean_number_order:
+    lifecycle: retired
     policy:
     - I7
     description: 'Schema probe declared_integer_boolean_number_order: independently authored value 1 under {"type": ["integer", "boolean", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
@@ -8986,3 +9799,1000 @@ cases:
       arguments:
         value: 1
     display_id: UNIFIED.7-tool-argument-declared-types-declared_integer_boolean_number_order
+  gpt_oss_single_return_ending_tool_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A channel-first commentary tool call with a constrained JSON body ends with one turn-end marker and no handoff marker. It must still produce the complete tool call.
+    display_id: UNIFIED.gpt_oss-single_return_ending_tool_call
+    request: 10862a2710e5fff0e5bbd28a71f0ea61748b932b209e247d1c779f098415aa2f
+    golden:
+    - kind: tool_call
+      name: get_current_weather
+      arguments:
+        format: celsius
+        location: San Francisco
+  gpt_oss_reasoning_then_return_ending_tool_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Analysis precedes a channel-first constrained JSON tool call ending in return. Preserve both reasoning and the tool call through the reasoning-to-tool handoff. The existing reason_then_tool case is the call-ending control; only the ending differs.
+    display_id: UNIFIED.gpt_oss-reasoning_then_return_ending_tool_call
+    request: 8e4c47b9aa58bb34693dc77f9d354918722969514f0494f427729ee0c6ad3372
+    golden:
+    - kind: reasoning
+      text: Check weather.
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  gpt_oss_quoted_tool_header_in_final_json:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.
+    display_id: UNIFIED.gpt_oss-quoted_tool_header_in_final_json
+    request: fdafb5416fde09f02e1aaa477c82b1775fe063caff59a91e2397909138802da0
+    golden:
+    - kind: text
+      text: Preamble{"example":"<|channel|>commentary to=functions.fake<|message|>{}<|return|>"}
+  gpt_oss_orphan_terminator_preserves_messages:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A completed recipientless commentary message is followed by an orphan turn terminator and then a framed final message. Preserve both visible messages in order while suppressing the orphan control.
+    display_id: UNIFIED.gpt_oss-orphan_terminator_preserves_messages
+    request: f7ec73139e1a04a11aa6973b81122686d7deceb8ee6a4cfb5fd7dbd1cc27a3bc
+    golden:
+    - kind: text
+      text: visibledone
+  gpt_oss_unfinished_directed_analysis:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A directed analysis message ends inside its JSON string without an action stop. Its recipient makes the unfinished arguments tool data rather than reasoning or visible content; no complete call is fabricated. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-unfinished_directed_analysis
+    request: bbe45b5e973572795594c7f4b68cb20a3117fa8456df48b989981e4be77bc1fe
+    golden: []
+  gpt_oss_malformed_then_recipient_first_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished commentary call has a JSON string quoting a partial tool header, followed by an unframed recipient-first Harmony header and a complete call. Keep the quoted header as data and resume before the later recipient; discard the unfinished first call.
+    display_id: UNIFIED.gpt_oss-malformed_then_recipient_first_call
+    request: 3491fd00a60e4ff6ccd35c911036baf0824aa6ad68977f0534bbfade9c9ce631
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        path: ok
+  gpt_oss_unknown_channel_before_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless text under an unknown Harmony channel precedes a framed final message. Recover the unknown-channel text at its original position, before the later visible response.
+    display_id: UNIFIED.gpt_oss-unknown_channel_before_final
+    request: d19438fd794e75d10dd2decb1bc6b3c9d9941185c3abf2584aad3dd77eede186
+    golden:
+    - kind: text
+      text: firstsecond
+  gpt_oss_final_then_unframed_recipient_first_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: After a completed Harmony final message, an unframed recipient precedes the next commentary channel. Preserve the final text before the complete routed call; its quoted return marker belongs to the JSON arguments.
+    display_id: UNIFIED.gpt_oss-final_then_unframed_recipient_first_call
+    request: ffbd00b3dd9c9dfa3486837f6029f197a04cc0b7cd63f1c7acefdf4995b143d8
+    golden:
+    - kind: text
+      text: before
+    - kind: tool_call
+      name: lookup
+      arguments:
+        path: 雪
+        content: <|return|>
+  gpt_oss_unfinished_directed_header_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A directed Harmony commentary header has no message delimiter or body before a recipientless final channel begins. Discard the unfinished routing metadata and preserve the later final answer as visible text.
+    display_id: UNIFIED.gpt_oss-unfinished_directed_header_then_final
+    request: be31a3e30ff2b6fe1081abe5e0d7ee134f84e8d047595e9d9d0eefc55d7be781
+    golden:
+    - kind: text
+      text: ANSWER
+  gpt_oss_unfinished_header_then_valid_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A directed Harmony commentary header has no message delimiter or body before a new framed tool message begins. The unfinished header cannot borrow the later body or recipient; emit only the later complete call.
+    display_id: UNIFIED.gpt_oss-unfinished_header_then_valid_call
+    request: c9da1f2c90cbb51c01a248a3dedd6004312844d850b082ddb2bfe259fb8eb53b
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        path: ok
+  gpt_oss_nonassistant_analysis_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: 'A framed user message names the analysis channel before an assistant final message. The message role owns attribution: user bytes cannot become assistant reasoning or content; preserve only the assistant answer.'
+    display_id: UNIFIED.gpt_oss-nonassistant_analysis_then_final
+    request: 41114125df0365135dacba01ffcbb7d80fae97cabf61bb02c4977b4435e4df07
+    golden:
+    - kind: text
+      text: ANSWER
+  gpt_oss_recipientless_json_call_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless constrained commentary JSON ends with a call action, followed by an assistant final answer. No recipient establishes a tool route, so preserve the visible JSON body and the answer without adding a separator.
+    display_id: UNIFIED.gpt_oss-recipientless_json_call_then_final
+    request: 02ad9e72a7470248879f8f792e31783a52aa043b42c2b4021df4e9f52b276246
+    golden:
+    - kind: text
+      text: '{"city":"NYC"}Done'
+  gpt_oss_recipientless_json_return_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless constrained commentary JSON ends with a return action, followed by an assistant final answer. The body remains visible text with either ending; preserve its JSON before the final answer without adding a separator.
+    display_id: UNIFIED.gpt_oss-recipientless_json_return_then_final
+    request: d510abc734a08662cce3521108e4d394a846c33fcefa2847e4eeaf99ab0f3d65
+    golden:
+    - kind: text
+      text: '{"city":"NYC"}Done'
+  gpt_oss_final_then_unframed_visible_tail:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A completed Harmony final message precedes bare visible text without another message header. Preserve the final message and recover the never-emitted trailing header text at EOF, without adding a separator.
+    display_id: UNIFIED.gpt_oss-final_then_unframed_visible_tail
+    request: 2d8b42261cb4fae3ca55d2e0918adfb81ceb49fb2441c13e07573ee97c39545a
+    golden:
+    - kind: text
+      text: beforeafter
+  gpt_oss_recipientless_json_interrupted_by_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless commentary contains complete JSON but no own message ending before a framed final message. The new header owns the final body; preserve the commentary JSON and final text in order without exposing the intervening protocol markers.
+    display_id: UNIFIED.gpt_oss-recipientless_json_interrupted_by_final
+    request: d02327944df2f2c94cc6c4896748f1a883e9447dbbf9ffa3ac70323c51dc80bb
+    golden:
+    - kind: text
+      text: '{"x":1}Done.'
+  gpt_oss_recipientless_constrained_whitespace_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless commentary explicitly constrained to JSON contains only two spaces before a call action, followed by a final answer. Content type does not establish a recipient; preserve the two spaces and final answer as visible text.
+    display_id: UNIFIED.gpt_oss-recipientless_constrained_whitespace_call
+    request: 1b1ac7e2794eb3e1b815fc7a3ef16b91b3982f24e90809d4b265b59b56c7d551
+    golden:
+    - kind: text
+      text: '  Done'
+  gpt_oss_malformed_then_native_opaque_name:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A malformed directed assistant call precedes a complete assistant call whose native recipient is f/x. Recovery must retain the entire recipient, as ordinary native extraction already does, instead of truncating it to a different function name.
+    display_id: UNIFIED.gpt_oss-malformed_then_native_opaque_name
+    request: c33ade402eb5935e79eb3d9db3b2f43d73d280e49fffb854722fa702fb3f3f37
+    golden:
+    - kind: tool_call
+      name: f/x
+      arguments:
+        x: 1
+  gpt_oss_malformed_then_nonassistant_call:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A malformed directed assistant call precedes a complete user-authored commentary call. Recovery must discard the malformed assistant payload and preserve the later user role; the offered fake function must not execute from user bytes. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-malformed_then_nonassistant_call
+    request: 9dbbbb16c91ec7d9184023d4d89336d40a6ec643313d78a742cd35711b8e29b5
+    golden: []
+  gpt_oss_nonassistant_unfinished_analysis_header:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A framed user message ends in an unfinished analysis-channel header without a message delimiter. EOF recovery must retain its user role rather than projecting its header text as assistant reasoning. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-nonassistant_unfinished_analysis_header
+    request: 9969e55f46169642336b4dbdb72b9113ff03133661bb4affbce0d845df0fa966
+    golden: []
+  gpt_oss_nonassistant_unfinished_final_header:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A framed user message ends in an unfinished final-channel header without a message delimiter. EOF recovery must retain its user role rather than projecting its header text as an assistant answer. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-nonassistant_unfinished_final_header
+    request: d7672ad57c481855ae9a7ba6a6c7cd6de989c5f77f80414363ec19db8d20ca4a
+    golden: []
+  gpt_oss_native_opaque_name_handoff:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native assistant call uses the recipient @f, accepted verbatim by baseline direct extraction. Reasoning-to-tool handoff must preserve the entire native name even though its first character is outside an identifier-style recovery regex.
+    display_id: UNIFIED.gpt_oss-native_opaque_name_handoff
+    request: ee0d4b94c45d99566ecf4b48e1058e4d51ae1f2ede875115275562d500b643ef
+    golden:
+    - kind: tool_call
+      name: '@f'
+      arguments:
+        x: 1
+  gpt_oss_named_tool_unfinished_final_header:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: The native named tool author python ends in an unfinished final-channel header without a message delimiter. Native author parsing assigns it the tool role, so EOF recovery must not treat its header text as an assistant answer just because it is not a fixed role word. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-named_tool_unfinished_final_header
+    request: 42fc7b7148b05c5dcc0233d74db5feaf1afad4a278e5e95b6af24c369f850c78
+    golden: []
+  gpt_oss_named_author_less_than_lookalike:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: The native author assistant<g ends in an unfinished final-channel header. Its ordinary less-than character is part of a named tool author, not the end of the exact assistant role word; EOF recovery must not expose the header text as an assistant answer. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-named_author_less_than_lookalike
+    request: e40419b6c67ae6b9b711e0bc5105da081c464739c4c76293ac739f30c78a9068
+    golden: []
+  gpt_oss_named_author_nbsp_lookalike:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: The native author starts with assistant followed by a non-breaking space and user, then ends in an unfinished final-channel header. That Unicode space belongs to the named tool author instead of separating an exact assistant role word; EOF recovery must not expose the header text. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-named_author_nbsp_lookalike
+    request: 11245492e574092c4d46be774fcdc05e2217bb923b2cbc7557dedb514ae1d6b6
+    golden: []
+  gpt_oss_recovered_final_header_return:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A malformed predecessor is followed by a recovered assistant final header containing a premature return before its message delimiter. Header metadata does not own body termination; preserve the complete final answer.
+    display_id: UNIFIED.gpt_oss-recovered_final_header_return
+    request: ba440b467ef6b977987efde446de78ab0ed517c41f5120a39c8c89f50286d7e9
+    golden:
+    - kind: text
+      text: Done.
+  gpt_oss_recovered_tool_header_return:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A malformed predecessor is followed by a recovered assistant tool header containing a premature return before its message delimiter. That header action cannot end or discard the later complete lookup body; preserve the lookup call and subsequent final answer.
+    display_id: UNIFIED.gpt_oss-recovered_tool_header_return
+    request: 4278e4078f439cb737dca1b0b9cea0577a451372c87653d0e0d775e5efd6b099
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        city: Paris
+    - kind: text
+      text: Done.
+  gpt_oss_initial_json_prefix_then_tool:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An initial visible JSON object contains a quoted Harmony start marker before a complete assistant tool call. JSON string ownership keeps that marker literal; preserve the visible JSON text before the lookup call instead of treating it as an unfinished header.
+    display_id: UNIFIED.gpt_oss-initial_json_prefix_then_tool
+    request: 10b12312e84e258ec4774528d3e0e9a4fd44f2d5eb86f9a5ea603de403bb6921
+    golden:
+    - kind: text
+      text: '{"visible":"<|start|>"}'
+    - kind: tool_call
+      name: lookup
+      arguments: {}
+  gpt_oss_initial_json_prefix_then_recovered_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An initial visible JSON object contains a quoted Harmony start marker before a malformed directed call and a recovered final header with a premature return action. Preserve the literal JSON prefix and final body; the bare prelude is not a separate completed message and introduces no newline.
+    display_id: UNIFIED.gpt_oss-initial_json_prefix_then_recovered_final
+    request: e5e77281f1c821bba106dfd14267b964e7a968b3922b609320b6181c6b710917
+    golden:
+    - kind: text
+      text: '{"visible":"<|start|>"}Done.'
+  gpt_oss_tab_separated_assistant_recipient:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unframed assistant author is separated from its recipient by an ASCII tab before a commentary tool body. Native role-header whitespace includes tabs as well as spaces; preserve the complete lookup call and its Unicode argument without leaking routing text.
+    display_id: UNIFIED.gpt_oss-tab_separated_assistant_recipient
+    request: 4587beae99b999a6513b6fdabd12a93a64039f38216ed284b4e791b291aef29d
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        q: 雪
+  gpt_oss_assistant_implicit_recipient_analysis:
+    lifecycle: retired
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A generated native header begins with assistant followed by functions.lookup without the to= spelling before an analysis channel. The directed payload belongs to the function, so preserve its call and Unicode argument without leaking routing metadata into reasoning.
+    display_id: UNIFIED.gpt_oss-assistant_implicit_recipient_analysis
+    request: c12207dae6892715a742309efa60a5edd7145260ff75c8fe23e3b2a2b9115f46
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        q: 雪
+  gpt_oss_assistant_role_only_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A generated native header retains only the assistant author and a space before its final channel. The role prefix is header metadata rather than bare visible text; emit only the final answer.
+    display_id: UNIFIED.gpt_oss-assistant_role_only_final
+    request: d2b48083a6b82df241eb127849989fb638a6f65a134a237a606aa32d54e53a24
+    golden:
+    - kind: text
+      text: Done
+  gpt_oss_implicit_recipient_prelude:
+    lifecycle: retired
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A generated native header begins with functions.lookup and omits both the assistant author and the to= spelling before its commentary channel. Preserve this native implicit recipient call instead of reclassifying the recipient as visible prelude text.
+    display_id: UNIFIED.gpt_oss-implicit_recipient_prelude
+    request: 137286254d65f0906dc3c59be68f5de01a9db36760306a4b910a6bb89ea80187
+    golden:
+    - kind: tool_call
+      name: lookup
+      arguments:
+        q: x
+  gpt_oss_analysis_text_interrupted_by_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An assistant analysis body contains ordinary text without its own message ending before a framed assistant final answer. The new message header owns its final body; preserve the earlier analysis as reasoning and the answer as visible text without absorbing protocol markers into reasoning.
+    display_id: UNIFIED.gpt_oss-analysis_text_interrupted_by_final
+    request: 89b5bdeed8fe3dca07ceca8481d82df995277354cf989465fb6c398f2799dd8f
+    golden:
+    - kind: reasoning
+      text: Before
+    - kind: text
+      text: Done
+  gpt_oss_commentary_text_interrupted_by_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless commentary contains ordinary visible text without its own message ending before a framed assistant final answer. Recover the next message at the body transition and preserve both visible messages without adding a separator.
+    display_id: UNIFIED.gpt_oss-commentary_text_interrupted_by_final
+    request: 5c419331ab856b85ca5157e8a8c3ef34e44cf74d73e976f8dd6ed90facc6d031
+    golden:
+    - kind: text
+      text: BeforeDone
+  gpt_oss_commentary_text_interrupted_by_user:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless assistant commentary contains ordinary visible text without its own message ending before a framed user message. Preserve the earlier assistant commentary, while the new user role owns and excludes its body from assistant output.
+    display_id: UNIFIED.gpt_oss-commentary_text_interrupted_by_user
+    request: 868c652c6e1e576dd9b06afefd7ab9ef98357e51188b87be625d9a83349114e5
+    golden:
+    - kind: text
+      text: Before
+  gpt_oss_commentary_text_interrupted_by_invalid_author:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless assistant commentary is interrupted without its own ending by a complete python author frame that lacks native routing metadata, followed by a valid assistant final answer. Native header validation rejects that unknown author frame; preserve both assistant messages while suppressing the invalid frame and its body.
+    display_id: UNIFIED.gpt_oss-commentary_text_interrupted_by_invalid_author
+    request: 7878a13ae16d7b8f1288967d63171e7e9a90baa3cdd8f65926bfca1f1cb4470d
+    golden:
+    - kind: text
+      text: BeforeDone
+  gpt_oss_unconfirmed_header_return_at_eof:
+    lifecycle: retired
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An existing final body is followed by a framed-looking assistant final header without a message delimiter or body before EOF. The unconfirmed header bytes remain literal data in the original body; the true return action ends that body and must not be exposed as visible payload.
+    display_id: UNIFIED.gpt_oss-unconfirmed_header_return_at_eof
+    request: 63b18eee115dd48e250c27e0a9eb1138ec2957c39b3230c6183b34a94a20f24a
+    golden:
+    - kind: text
+      text: Before<|start|>assistant<|channel|>final
+  gpt_oss_analysis_interrupted_by_final_then_tool:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Analysis text lacks its own message ending before a complete framed assistant final answer and a later lookup call. The first new framed header owns the transition; preserve the earlier reasoning, the intermediate visible answer, and the later complete call in order, without borrowing the final or tool action as the earlier analysis ending.
+    display_id: UNIFIED.gpt_oss-analysis_interrupted_by_final_then_tool
+    request: 88896768094624e4cfaf5c4d37443501987da03255f8b2fc55a27563e1cef8d3
+    golden:
+    - kind: reasoning
+      text: Before
+    - kind: text
+      text: Visible
+    - kind: tool_call
+      name: lookup
+      arguments: {}
+  gpt_oss_unknown_channel_header_only_eof:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unframed Harmony header names the unknown channel finalx and reaches EOF without a message delimiter, body, or ending. Native header metadata cannot become visible content or reasoning merely because a known channel name is its prefix. The turn emits nothing.
+    display_id: UNIFIED.gpt_oss-unknown_channel_header_only_eof
+    request: ed97fe02b65e4ca692f803b01734c5ad745ff2fa19613de996243eb18d97a039
+    golden: []
+  gpt_oss_analysis_text_interrupted_by_bare_final:
+    lifecycle: retired
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Analysis contains ordinary reasoning text without its own ending before a bare final channel header with a message delimiter. The new native header owns the final body even without a start frame; preserve the earlier reasoning and the later visible answer separately.
+    display_id: UNIFIED.gpt_oss-analysis_text_interrupted_by_bare_final
+    request: 7a41fb6d8defb59b53d9ae9f18873478a1f1947fbee2da2c129fe6d935499e66
+    golden:
+    - kind: reasoning
+      text: Before
+    - kind: text
+      text: Done
+  gpt_oss_commentary_text_interrupted_by_bare_final:
+    lifecycle: retired
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Recipientless commentary contains ordinary visible text without its own ending before a bare final channel header with a message delimiter. Native generated suffixes can omit the start frame; preserve both visible messages with the established newline separator without exposing routing markers.
+    display_id: UNIFIED.gpt_oss-commentary_text_interrupted_by_bare_final
+    request: 73a7aa56bc403846b08c98edcad520d97da01778ea54d54ff20ace4c6d6521a4
+    golden:
+    - kind: text
+      text: 'Before
+
+        Done'
+  gpt_oss_initial_json_prefix_then_bare_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Initial visible JSON contains a quoted start marker before a bare final channel header. Keep the marker literal inside its JSON string and preserve the complete JSON prefix before the final answer; the bare prelude is not a completed message and introduces no newline.
+    display_id: UNIFIED.gpt_oss-initial_json_prefix_then_bare_final
+    request: 24b4be1bcdd047828c64cb750da7b978d64253946344567b3c8769828b0b3948
+    golden:
+    - kind: text
+      text: '{"x":"<|start|>"}Done'
+  gpt_oss_literal_bare_analysis_in_visible_body:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An existing commentary body contains a bare analysis header without a start frame or earlier message ending. The bare header remains literal text in the original visible body; reasoning handoff and tool extraction must preserve its exact marker bytes instead of reinterpreting them as new reasoning.
+    display_id: UNIFIED.gpt_oss-literal_bare_analysis_in_visible_body
+    request: ffb1bfbaa90d0d13f4f58ff6beed313743f6c95da7badf107186025eff9521ee
+    golden:
+    - kind: text
+      text: Before<|channel|>analysis<|message|>Done
+  gpt_oss_literal_bare_tool_header_in_visible_body:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An existing final body narrates a bare commentary tool header and empty argument object without a new start frame. Ownership keeps the offered lookup header literal and prevents tool execution; the call action ends the original body without becoming visible content.
+    display_id: UNIFIED.gpt_oss-literal_bare_tool_header_in_visible_body
+    request: e43af50580df1cb90a56a08bd34be9e54e70e95fb4e2c9d28fd2aaef61270e79
+    golden:
+    - kind: text
+      text: Use <|channel|>commentary to=functions.lookup<|message|>{}
+  gpt_oss_literal_bare_unknown_channel_in_visible_body:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An existing commentary body contains a bare finalx channel header without a start frame or earlier message ending. This unknown channel is literal body data, including its marker bytes; composition must preserve it rather than treating the flattened visible string as a new native message.
+    display_id: UNIFIED.gpt_oss-literal_bare_unknown_channel_in_visible_body
+    request: 944077d3682a923af691a938a82446301354124a7ff836c462973bef2213176b
+    golden:
+    - kind: text
+      text: Before<|channel|>finalx<|message|>Done
+  gpt_oss_visible_json_prelude_indentation:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A visible JSON prelude begins with four spaces and ends with a newline before a bare final header. The spaces are meaningful Markdown code-block indentation; preserve them and the newline exactly while removing only the final header and its ending.
+    display_id: UNIFIED.gpt_oss-visible_json_prelude_indentation
+    request: 07a6d31733409018702a5b8084cfd5eff14083769d14efeeffb1e0eb5c5fdeef
+    golden:
+    - kind: text
+      text: '    {"x":1}
+
+        Done'
+  gpt_oss_visible_quoted_json_prelude_whitespace:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A visible JSON prelude begins with a space and newline and contains a quoted start marker before a bare final header. The quoted marker belongs to JSON data; select the first unquoted protocol boundary and preserve all leading and trailing prelude whitespace exactly.
+    display_id: UNIFIED.gpt_oss-visible_quoted_json_prelude_whitespace
+    request: e160bc7da0a1e3dc15e9f38943854dedd5da1baa2679b15f44150a3e95969716
+    golden:
+    - kind: text
+      text: " \n{\"x\":\"<|start|>\"}\nDone"
+  gpt_oss_assistant_default_channel_visible_response:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native assistant message omits both recipient and channel. The message delimiter begins an ordinary visible body; preserve Answer through the return ending without requiring an explicit final channel or inventing a tool call.
+    display_id: UNIFIED.gpt_oss-assistant_default_channel_visible_response
+    request: d903a94de40ebbc0d355c32616d70f93ad487022d285e5e2094e47277116064b
+    golden:
+    - kind: text
+      text: Answer
+  tool_call_ids_unique:
+    description: Two identical invocations must remain distinct calls with unique parser-supplied IDs within the response. K2 preserves distinct protocol IDs; K3 regenerates API IDs even when XTML indices repeat. Absent IDs delegate identity generation to the serving layer.
+    display_id: UNIFIED.2-tool_call_ids_unique
+    request: 2cd6777c1f622ddaedb72e00046749816b01e2dc8c4146cfb554298811a1d937
+    golden:
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+  gpt_oss_broadcast_recipient_analysis:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Dynamo normalizes to=all like an omitted recipient, following openai-harmony 0.0.8 renderer behavior. This compatibility policy keeps the analysis body as reasoning; it is not a claim that format.md defines all.
+    display_id: UNIFIED.gpt_oss-broadcast_recipient_analysis
+    request: c92f8067190de68778212e506bc6750f4f8aee5a28119d24d249b90080db71e2
+    golden:
+    - kind: reasoning
+      text: checking
+  gpt_oss_native_builtin_recipient_json:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: 'Dynamo Native Unified projects a JSON object addressed to python as a generic tool call. This deliberately noncanonical commentary-channel case tests Dynamo''s JSON projection policy: the dictionary body does not execute its code string. Canonical builtin Python requests use analysis and raw Python code; vLLM filters builtin recipients differently.'
+    display_id: UNIFIED.gpt_oss-native_builtin_recipient_json
+    request: 885a3fc00d909b57252bbfb6224eb178d66eb89dd09d7b1fd220008474dca031
+    golden:
+    - kind: tool_call
+      name: python
+      arguments:
+        code: print(1)
+  gpt_oss_unfinished_visible_json_then_tool:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished JSON string in an assistant final message precedes a complete framed JSON tool call. At EOF preserve the emitted visible prefix and recover the later complete call; a complete quoted JSON value retains its literal controls instead.
+    display_id: UNIFIED.gpt_oss-unfinished_visible_json_then_tool
+    request: 1902013b95039b76e22fbcfa2fa86d8b97cf0eb3eee0fba8d9321b8dfddeb2d0
+    golden:
+    - kind: text
+      text: '{"x":"unfinished'
+    - kind: tool_call
+      name: lookup
+      arguments: {}
+  gpt_oss_visible_scalar_string_quoted_controls:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.
+    display_id: UNIFIED.gpt_oss-visible_scalar_string_quoted_controls
+    request: bc247c617879720e3c488ba8575504b5cfec7be851d2b3851f8af90f93b33a60
+    golden:
+    - kind: text
+      text: '"é\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'
+  gpt_oss_native_builtin_python_raw:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: 'A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony''s documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.'
+    display_id: UNIFIED.gpt_oss-native_builtin_python_raw
+    request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
+    golden:
+    - kind: tool_call
+      name: python
+      arguments: '"print(1)"'
+  gpt_oss_invalid_json_quote_prefix_then_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A raw newline makes a leading commentary quote an invalid JSON prefix before the ending arrives. Its quote state cannot claim subsequent message controls; retain the original newline and final text.
+    display_id: UNIFIED.gpt_oss-invalid_json_quote_prefix_then_final
+    request: fd5c7dcfca55ca2cf28e665f8b101a5277ed2cc0bc0fdcb29b5512ca06dcbb00
+    golden:
+    - kind: text
+      text: '"Looking
+
+        He said "yes".'
+  gpt_oss_quoted_commentary_rejects_nonassistant_body:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A user message with quoted content follows an unfinished assistant commentary quote. Preserve the commentary prefix and the later assistant final; quoted user content must never enter assistant text.
+    display_id: UNIFIED.gpt_oss-quoted_commentary_rejects_nonassistant_body
+    request: 4f1facdd5a2039e0015a09fa01c3ebf0eac730eb8c0554f85137ae1d43696d46
+    golden:
+    - kind: text
+      text: '"LookingDone'
+  gpt_oss_unclosed_commentary_then_empty_quoted_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An empty quoted final body follows an unfinished commentary quote with a space between the message ending and next header. Whole-input and character delivery must recover the same final bytes rather than committing a JSON prefix between the two final quotes.
+    display_id: UNIFIED.gpt_oss-unclosed_commentary_then_empty_quoted_final
+    request: 1d0753dd9470a381e9d795ce7c2b615390c76618d576432a13a9760754fdf5ee
+    golden:
+    - kind: text
+      text: '"Looking ""'
+  gpt_oss_unclosed_commentary_then_quoted_final:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: An unfinished commentary quote precedes a complete assistant final message containing its own quotes. The later quote cannot validate the earlier JSON-looking prefix; retain both visible bodies and remove the real message controls.
+    display_id: UNIFIED.gpt_oss-unclosed_commentary_then_quoted_final
+    request: 0dbd67584d590c41a76359947c25247f60e5f6cbae348d4e17b555827e9909ba
+    golden:
+    - kind: text
+      text: '"LookingHe said "yes".'
+  gpt_oss_quoted_call_header_then_visible_prose:
+    policy:
+    - I3
+    - I5
+    - I7
+    historical_ids:
+    - UNIFIED.gpt_oss-quoted_call_header_then_visible_prose
+    description: A visible JSON string quotes a native tool call before ordinary prose. Harmony retains grammar-owned JSON string data; other families apply structural prose controls, accepting valid native call bytes and recovering or rejecting JSON-escaped malformed framing.
+    display_id: UNIFIED.8-native_quoted_control_in_response_json_string_then_prose
+    request: 489177477cbea4bedae23d91d09403ac58f06da04ba7d4a937bb188537520c95
+    golden:
+    - kind: text
+      text: '"<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{}<|call|>" trailing'
+  UNIFIED.40-native_quoted_reasoning_closer_default:
+    scenario: native_quoted_reasoning_closer_default
+    policy:
+    - I2
+    - I5
+    description: A balanced prose quote crosses the reasoning boundary. The default structural policy ends reasoning at the first family-native closer, before the answer closes the quote.
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_default
+    request: 0cb3ba38b80b8577795be6aebdb59f5634dfb046261c3c3adaedaaf650aab2a9
+    golden:
+    - kind: reasoning
+      text: analysis "
+    - kind: text
+      text: Answer"
+  UNIFIED.40-native_raw_string_before_reasoning_closer:
+    scenario: native_raw_string_before_reasoning_closer
+    policy:
+    - I2
+    - I5
+    description: Python raw-string notation and apostrophes precede the reasoning closer. They cannot hide the boundary or absorb the visible answer under the default structural prose policy.
+    display_id: UNIFIED.40-native_raw_string_before_reasoning_closer
+    request: 20b812d86994ea8308bfba9a00c1f8cdad17fad46c81c151b17ce493915f3e75
+    golden:
+    - kind: reasoning
+      text: Use re.split(r'(\s)', text). Let's final.
+    - kind: text
+      text: The code prints ['a', ' ', 'b'].
+  UNIFIED.8-native_quoted_complete_call_default:
+    scenario: native_quoted_complete_call_default
+    policy:
+    - I3
+    - I5
+    - I7
+    description: A complete native tool call inside a prose quotation remains structural under the default policy. Tool arguments retain their own grammar; Mistral's closerless call owns and drops its trailing prose.
+    display_id: UNIFIED.8-native_quoted_complete_call_default
+    request: 5abd903eb0ba84ae1fa6e25498e14aa87a25702c8374e9e41606f487b3b77c14
+    golden:
+    - kind: text
+      text: 'Example: "'
+    - kind: tool_call
+      name: get_weather
+      arguments:
+        city: Paris
+    - kind: text
+      text: '".'
+  inch_mark_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer
+    request: cc894a32bbc1d9430900b78317fcb49c2adb1bfb9f8d7d445e50c973cfbc4e7b
+    golden:
+    - kind: reasoning
+      text: Let me think, the TV size is 40"
+    - kind: text
+      text: 'Yes'
+  decade_apostrophe_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer
+    request: 1555e38d937cd90f659d8491e9bfdd534918c9592c1eb8bc4942619f64e54242
+    golden:
+    - kind: reasoning
+      text: Let me think, the year is 80s'
+    - kind: text
+      text: 'Yes'
+  decade_apostrophe_before_reasoning_closer_mixed_quotes:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_mixed_quotes
+    request: 0e8ea222492942984e8915142b762370f12f2cd3ee2ee98ebd20a09f02841f7c
+    golden:
+    - kind: reasoning
+      text: Let me think, the reference is 80s' music
+    - kind: text
+      text: '''Yes'''
+  native_unquoted_reasoning_closer_in_sentence_then_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first the native reasoning closer could be a literal mention in the question; only the second closer would end reasoning, leaving text=Yes.'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence_then_closer
+    request: 2e498278a70bd5cbd1fda2c0782f4b0e488b066969cc0e8ad6c826a0099fd760
+    golden:
+    - kind: reasoning
+      text: 'Let me think, user is asking if '
+    - kind: text
+      text: ' is specialYes'
+  native_unquoted_reasoning_closer_in_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: even without quotation marks, the wording mentions the marker as a subject. A reader could expect the whole sentence to remain reasoning.'
+    display_id: UNIFIED.40-native_unquoted_reasoning_closer_in_sentence
+    request: 3ca79e581ef21dc2ed734727ac7c9b331ac0603c706bb9aa769bf15dfb5c1856
+    golden:
+    - kind: reasoning
+      text: 'Let me think, the marker '
+    - kind: text
+      text: ' is a special marker'
+  native_reasoning_closer_in_quoted_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the whole quotation discusses the marker. A reader could expect the complete quoted sentence to remain reasoning.'
+    display_id: UNIFIED.40-native_reasoning_closer_in_quoted_sentence
+    request: 987baebdf838f32082c86ef89fac7b6a838291a9bff82da64f24038386c7fcfa
+    golden:
+    - kind: reasoning
+      text: 'Let me think, "The marker '
+    - kind: text
+      text: ' is a special marker"'
+  closed_command_quote_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the grep command quotes a literal search pattern. A reader could expect the entire command, including the native reasoning closer, to remain reasoning.'
+    display_id: UNIFIED.40-closed_command_quote_before_reasoning_closer
+    request: fd0dfa139b742314566478a61c4be2f88d2a893afee2452531ea99e18f153d8a
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+    - kind: text
+      text: ''' ..."'
+  unclosed_command_quote_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the unfinished grep command may be quoting a literal the native reasoning closer search pattern. A reader could retain the entire unfinished command in reasoning through EOF.'
+    display_id: UNIFIED.40-unclosed_command_quote_before_reasoning_closer
+    request: 9a783a11157dd4e26d68a786f811da88d20e1b61793bfa849debbc5ccec17c3e
+    golden:
+    - kind: reasoning
+      text: Let me think, I should run this command "grep -v '
+  unclosed_command_backtick_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this could be an unfinished code snippet containing a literal the native reasoning closer. The unfinished backtick does not by itself establish which boundary was intended.'
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer
+    request: 70fa6141bab2993f774552f030e804c62fd794c5a76f2956240eebab83f51527
+    golden:
+    - kind: reasoning
+      text: Let me think, I should try `pytest -x
+    - kind: text
+      text: Run pytest
+  sql_fragment_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: a reader treating the fragment as quoted SQL data could keep the native reasoning closer inside reasoning. The incomplete SQL and quotation make intent uncertain.'
+    display_id: UNIFIED.40-sql_fragment_before_reasoning_closer
+    request: 0c4f66249b1e33cf4b40121b46055ac749dfa84be82efd21eb08fa0d83d0b9e8
+    golden:
+    - kind: reasoning
+      text: Let me think, this SQL fragment is '1'='1
+    - kind: text
+      text: '''Yes'''
+  quoted_name_possessive_inline_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-quoted_name_possessive_inline_closer
+    request: 0d125123b3255119dae876ccc92e735db0fe987d98ac012e9cc61eba251fb287
+    golden:
+    - kind: reasoning
+      text: '`name`''s path.'
+    - kind: text
+      text: '''Answer'''
+  inch_mark_before_reasoning_closer_quoted_answer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-inch_mark_before_reasoning_closer_quoted_answer
+    request: 649b193c7b27aeb47358fbc1fe986b894cd2d6a4f7f243c2432ea688bcec27f6
+    golden:
+    - kind: reasoning
+      text: 27"
+    - kind: text
+      text: '"Answer"'
+  unclosed_backtick_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the backtick that closes after the marker could make the native reasoning closer literal code within reasoning.'
+    display_id: UNIFIED.40-unclosed_backtick_before_reasoning_closer
+    request: 9d50545196129788019dcf8b8126b571be1af71caebbfff71075713d5f70443a
+    golden:
+    - kind: reasoning
+      text: '`name'
+    - kind: text
+      text: '`Answer`'
+  decade_apostrophe_before_reasoning_closer_leading_apostrophe:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule.'
+    display_id: UNIFIED.40-decade_apostrophe_before_reasoning_closer_leading_apostrophe
+    request: 31b05a2234f46b3dca89556abf4436506617593086530131486cd5a4970e1c4d
+    golden:
+    - kind: reasoning
+      text: '''90s'
+    - kind: text
+      text: '''Answer'''
+  unclosed_command_backtick_before_reasoning_closer_later_backticks:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the later backtick could close a code span containing the native reasoning closer, keeping that marker in reasoning.'
+    display_id: UNIFIED.40-unclosed_command_backtick_before_reasoning_closer_later_backticks
+    request: 5f9f921ac4c573bd7a5938cab8817697775f941cb5a553a64be892c634576d08
+    golden:
+    - kind: reasoning
+      text: '`pytest -x'
+    - kind: text
+      text: Run `pytest`
+  mixed_quotes_before_reasoning_closer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: this code-shaped fragment could be read as quoted reasoning data containing the native reasoning closer, rather than a channel boundary.'
+    display_id: UNIFIED.40-mixed_quotes_before_reasoning_closer
+    request: 88cbbcbded88c3cb413f3e6f263e6bcfb45afa1b161871cc024de39c418410ca
+    golden:
+    - kind: reasoning
+      text: 'f''" OR x -- ''
+
+        '
+    - kind: text
+      text: '"Answer"'
+  native_quoted_reasoning_closer_then_answer:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the first quoted the native reasoning closer could be literal reasoning data; only the second closer would end reasoning, leaving text=Answer.'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_then_answer
+    request: 2f55f7108d54877204bd2549f82074309b77e5ed5b278c3e50d9d84e5dfedfdb
+    golden:
+    - kind: reasoning
+      text: ''''
+    - kind: text
+      text: '''Answer'
+  native_quoted_reasoning_closer_in_sentence:
+    policy:
+    - I2
+    - I5
+    - P6
+    description: '#595: start in Reasoning with Native output. Under #606 the first family-native closer ends reasoning despite prose quotes or code. Preserve non-control bytes; consume subsequent orphan closers. Mistral retains its established trailing-reasoning-whitespace stripping rule. Alternative interpretation: the sentence explicitly discusses the marker. A reader could expect the entire sentence, including the quoted the native reasoning closer, to remain reasoning.'
+    display_id: UNIFIED.40-native_quoted_reasoning_closer_in_sentence
+    request: a989f8f104cba6071fb14284436dea1981c22975daa106e6553077696948844c
+    golden:
+    - kind: reasoning
+      text: The special "
+    - kind: text
+      text: '" marker is used to delineate parser paths'
+  reason_markup_in_arg_empty_span_then_text:
+    policy:
+    - I7
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text
+    request: 32413cfebffbd44e253fadc807cb8fb978a95f80883c21e1a8c2342b17124b86
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        content: <think></think>answer
+  reason_markup_in_arg_empty_span_then_text_with_path:
+    policy:
+    - I7
+    description: '#595: start in Response with Native output and an offered write_file tool. The complete native envelope owns the content string; preserve literal <think></think>answer and the path when supplied. This tests output argument fidelity, independently of input tokenization.'
+    display_id: UNIFIED.12-reason_markup_in_arg_empty_span_then_text_with_path
+    request: a492e96fdfe6ecedc8d5e8f8015f0fded4c6d09ac8b7fef597a9b50e71f07d42
+    golden:
+    - kind: tool_call
+      name: write_file
+      arguments:
+        path: /tmp/literal.txt
+        content: <think></think>answer

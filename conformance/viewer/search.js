@@ -4,6 +4,7 @@ const lower = value => String(value ?? '').toLowerCase();
 const compact = value => lower(value).replace(/[^\p{L}\p{N}]/gu, '');
 const numberedAlias = /^(?:UNIFIED\.)?\w+-\d+$/i;
 const unprefix = value => value.replace(/^UNIFIED\./i, '');
+const caseIdentity = value => lower(unprefix(String(value))).replace(/^\d+-/, '');
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const wordMatch = (value, fields, quoted = false) => {
   const pattern = new RegExp('(?:^|[^\\p{L}\\p{N}])' + escapeRegex(lower(value))
@@ -65,6 +66,7 @@ export function compileSearch(query = '', context = {families: [], aliases: new 
     const quoted = token.value.startsWith('"');
     let value = quoted ? token.value.slice(1, -1).replace(/\\(["\\])/g, '$1') : token.value;
     if (!value) throw new SyntaxError('Enter text inside the quotes.');
+    const numberedDescription = /^(?:UNIFIED\.)?(\d+)-([a-z_].*)$/i.exec(value);
     position++;
     // Only recognized family names join spaced words; column words remain implicit AND.
     if (!quoted && (!scope || scope === 'parser' || scope === 'model') && (scope || !numberedAlias.test(value))) {
@@ -82,13 +84,13 @@ export function compileSearch(query = '', context = {families: [], aliases: new 
       const resolved = context.aliases?.get(lower(unprefix(value)));
       if (resolved) {
         value = resolved;
-        replacements.push({start: token.start, end: token.end, value: quoted ? JSON.stringify(value) : value});
+        replacements.push({start: token.start, end: token.end, value: JSON.stringify(value)});
       } else notices.push(`Case ${value} is not numbered in this report.`);
       stable = true;
     }
     const prefix = /^(?:UNIFIED\.)?(\w+)-[a-z_]/i.exec(value)?.[1];
     if (scope === 'col' && prefix && (/^\d+$/.test(prefix) || casePrefixes.has(lower(prefix)))) stable = true;
-    return {type: 'term', scope, value, quoted, stable};
+    return {type: 'term', scope, value, quoted, stable, numberedDescription};
   }
   function expression(operator) {
     const next = operator === 'or' ? () => expression('and') : term;
@@ -115,8 +117,12 @@ export function compileSearch(query = '', context = {families: [], aliases: new 
     const values = node.scope === 'parser' ? models : node.scope === 'description' ? descriptions : fields;
     if (node.scope === 'col' && numberedAlias.test(node.value)) return false;
     if (node.stable) {
-      const identity = value => lower(unprefix(String(value))).replace(/^\d+-/, '');
-      return values.some(value => identity(value) === identity(node.value));
+      const identity = caseIdentity(node.value);
+      // Quoted canonical IDs keep alias searches exact across report changes.
+      if (node.numberedDescription && !node.quoted) {
+        return values.some(value => caseIdentity(value).startsWith(identity));
+      }
+      return values.some(value => caseIdentity(value) === identity);
     }
     return node.scope === 'parser' ? matchesFamily(node.value, values, node.quoted)
       : wordMatch(node.value, values, node.quoted);

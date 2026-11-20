@@ -8,6 +8,8 @@ Direct Git-blob comparison preserves all 804 baseline evidence paths: 713 versio
 
 ## Active workflow
 
+Whenever Rust changes observable conformance behavior, the affected latest YAML must be refreshed from that Rust source and delivered in the same PR. Always. Parser code, regression cases, and captures share one delivery approval; HTML regeneration cannot replace a checked-in capture update. The strict current-native replay must pass locally and in pre-merge CI on the pushed head; an older green head does not cover pending changes. See [Parser behavior changes and recorded YAML](../conformance/README.md#parser-behavior-changes-and-recorded-yaml) for the command and the boundary between native v2 replay, advisory GOLDEN comparison, and retained peer/history evidence.
+
 Unified v2 is the only active conformance report and executor. Deprecated batch, stream, batch-on-stream, and Reasoning generators, runners, renderers, and tests are retired. Existing Dynamo v1 observations measured against Unified requests remain selectable comparisons. The retained split scenarios preserve their IDs and observations; the old archive-import writer is retired. Parser-library APIs and unrelated workspace checks are unchanged.
 
 The viewer has seven runtime owners plus the existing DOM/detail/coloring boundaries. Development YAML stays outside production. One Node qualification CLI owns status, model, snapshot, and marker checks; six Node suites replace 25 test files. Shared Python owners cover request normalization, peer compatibility, inventory/coverage, migrations, and evidence verification. Historical readers and independent publication validation remain separate from production publishing.

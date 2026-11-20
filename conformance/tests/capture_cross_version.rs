@@ -799,6 +799,7 @@ fn native_capture(
 ) -> Result<Captured, CaptureFailure> {
     apply_init(parser, init)?;
     let captured = capture::native_capture(parser, chunks)?;
+    capture::check_tool_call_ids(parser.as_ref(), &captured)?;
     let deltas: Vec<_> = captured.iter().flatten().cloned().collect();
     let rows = captured
         .iter()

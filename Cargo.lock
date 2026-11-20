@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-multimodal"
-version = "0.2.6"
+version = "0.2.14"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -1220,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.8"
+version = "11.0.13"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1244,7 +1244,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.9.14"
+version = "0.10.8"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "10.0.1"
+version = "10.0.2"
 dependencies = [
  "async-openai",
  "derive_builder",
@@ -1291,13 +1291,15 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.2.0"
+version = "10.4.5"
 dependencies = [
+ "aho-corasick",
  "anyhow",
  "chrono",
  "dynamo-protocols",
  "dynamo-tokenizers",
  "either",
+ "memchr",
  "minijinja",
  "minijinja-contrib",
  "serde",
@@ -1308,9 +1310,10 @@ dependencies = [
 
 [[package]]
 name = "dynamo-structural-tag"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
+ "jsonschema",
  "regex",
  "serde",
  "serde_json",
@@ -1318,13 +1321,14 @@ dependencies = [
 
 [[package]]
 name = "dynamo-tokenizers"
-version = "4.1.1"
+version = "4.3.1"
 dependencies = [
  "aho-corasick",
  "anyhow",
  "base64 0.22.1",
  "basetenkenizer",
  "blake3",
+ "fancy-regex 0.13.0",
  "fastokens",
  "moka",
  "rayon",

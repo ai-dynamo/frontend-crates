@@ -9,13 +9,13 @@ use chrono::{DateTime, Local};
 use either::Either;
 use std::borrow::Cow;
 
-use minijinja::value::{Kwargs, StringInput, from_args};
+use minijinja::value::{Kwargs, ObjectRepr, StringInput, ValueKind, from_args};
 use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
+use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
 
 use crate::python::{
-    PyFloats, PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace,
-    python_splitlines,
+    PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace, python_splitlines,
 };
 
 #[allow(dead_code)]
@@ -85,6 +85,16 @@ pub struct ChatTemplate {
     tokenizer_class: Option<String>,
     truncation_size: Option<String>,
     use_default_system_prompt: Option<bool>,
+
+    /// The `added_tokens` of the model's `tokenizer.json`; see
+    /// [`ChatTemplate::with_tokenizer_json`].
+    #[serde(skip)]
+    tokenizer_added_tokens: Vec<AddedTokensDecoder>,
+
+    /// See [`ChatTemplate::with_request_control_tokens_as_text`]; `None` is the
+    /// default, on.
+    #[serde(skip)]
+    pub(crate) request_control_tokens_as_text: Option<bool>,
 }
 
 impl ChatTemplate {
@@ -107,6 +117,76 @@ impl ChatTemplate {
             Either::Left(ref lit) => Some(lit.clone()),
             Either::Right(ref added) => Some(added.content.clone()),
         }
+    }
+
+    /// Add the `added_tokens` of the model's `tokenizer.json` to
+    /// [`ChatTemplate::added_token_spellings`]. Some repos declare no
+    /// `added_tokens_decoder` in `tokenizer_config.json` (DeepSeek V3/R1,
+    /// GLM-5, Gemma 4), so their chat markers are listed only there.
+    pub fn with_tokenizer_json(mut self, tokenizer_json: &str) -> anyhow::Result<Self> {
+        #[derive(Deserialize)]
+        struct TokenizerJson {
+            #[serde(default)]
+            added_tokens: Vec<AddedTokensDecoder>,
+        }
+        self.tokenizer_added_tokens =
+            serde_json::from_str::<TokenizerJson>(tokenizer_json)?.added_tokens;
+        Ok(self)
+    }
+
+    /// Whether control-token spellings in request text render as ordinary
+    /// text, so that only the template's own markers encode as control tokens.
+    /// On by default; `false` turns it off, except under a template with
+    /// Harmony framing, which always renders this way.
+    ///
+    /// The spellings come back as ordinary segments of
+    /// [`OAIPromptFormatter::render_prompt`](crate::OAIPromptFormatter::render_prompt),
+    /// to encode with [`crate::RenderedPrompt::encode_segments`]; `render`
+    /// returns the same text without them. A model that lists its markers
+    /// only in `tokenizer.json` also needs [`ChatTemplate::with_tokenizer_json`].
+    /// In assistant history, a marker the template itself reads stays a
+    /// control token.
+    pub fn with_request_control_tokens_as_text(mut self, enabled: bool) -> Self {
+        self.request_control_tokens_as_text = Some(enabled);
+        self
+    }
+
+    /// Spellings the tokenizer turns into one added token, each with whether it
+    /// is `special`: every `added_tokens_decoder` entry, the `tokenizer.json`
+    /// `added_tokens` when given, the `additional_special_tokens`, and the
+    /// bos/eos/unk literals. Whitespace-only spellings are dropped; a spelling
+    /// listed twice is special if either entry says so. Sorted for a stable
+    /// result.
+    pub(crate) fn added_token_spellings(&self) -> Vec<(String, bool)> {
+        fn insert(spellings: &mut HashMap<String, bool>, spelling: Option<String>, special: bool) {
+            if let Some(spelling) = spelling
+                && !spelling.trim().is_empty()
+            {
+                *spellings.entry(spelling).or_insert(false) |= special;
+            }
+        }
+        let mut spellings = HashMap::new();
+        for token in self
+            .added_tokens_decoder
+            .iter()
+            .flat_map(HashMap::values)
+            .chain(&self.tokenizer_added_tokens)
+        {
+            insert(
+                &mut spellings,
+                Some(token.content.clone()),
+                token.special.unwrap_or(false),
+            );
+        }
+        for token in self.additional_special_tokens.iter().flatten() {
+            insert(&mut spellings, Some(token.clone()), true);
+        }
+        insert(&mut spellings, self.bos_tok(), true);
+        insert(&mut spellings, self.eos_tok(), true);
+        insert(&mut spellings, self.unk_tok(), true);
+        let mut spellings: Vec<_> = spellings.into_iter().collect();
+        spellings.sort();
+        spellings
     }
 }
 
@@ -227,28 +307,69 @@ pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value
 
 /// Mirrors HF transformers' `tojson` filter, not stock Jinja2's. Transformers
 /// overrides Jinja's HTML-safe `tojson` with plain
-/// `json.dumps(x, ensure_ascii=False)` in its chat-template environment, and
-/// vLLM/SGLang render through that — so chat templates (and the models trained
-/// on their output) expect Python separators and **no** HTML escaping
-/// (`'`, `<`, `>`, `&` stay literal). serde_json leaves non-ASCII unescaped by
-/// default, matching `ensure_ascii=False`.
+/// `json.dumps(x, ensure_ascii=ensure_ascii, indent=indent, separators=separators,
+/// sort_keys=sort_keys)`, `ensure_ascii` defaulting to `False`, in its chat-template
+/// environment, and vLLM/SGLang render through that — so chat templates (and the
+/// models trained on their output) expect Python separators and **no** HTML
+/// escaping (`'`, `<`, `>`, `&` stay literal).
 pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
-    let value = crate::python::template_json(value).map_err(|err| {
+    // Python takes a space count or the indent string itself.
+    let indent = kwargs
+        .get::<Option<Value>>("indent")?
+        .map(|indent| match indent.as_str() {
+            Some(text) => Ok(text.to_owned()),
+            None => i64::try_from(indent)
+                .map(|n| " ".repeat(usize::try_from(n).unwrap_or(0)))
+                .map_err(|_| {
+                    Error::new(
+                        ErrorKind::InvalidOperation,
+                        "tojson indent must be an int or a string",
+                    )
+                }),
+        })
+        .transpose()?;
+    // Python unpacks any two-item iterable of strings, so `',:'` works too.
+    let separators = kwargs
+        .get::<Option<Value>>("separators")?
+        .map(|pair| {
+            let pair: Vec<Value> = pair.try_iter().map(Iterator::collect).unwrap_or_default();
+            match pair.as_slice() {
+                [item, key] => item.as_str().zip(key.as_str()),
+                _ => None,
+            }
+            .map(|(item, key)| (item.to_owned(), key.to_owned()))
+            .ok_or_else(|| {
+                Error::new(
+                    ErrorKind::InvalidOperation,
+                    "tojson separators must be an (item, key) pair of strings",
+                )
+            })
+        })
+        .transpose()?;
+    // Python defaults to `(", ", ": ")`, or `(",", ": ")` when `indent` is set.
+    let (item_sep, key_sep) = match &separators {
+        Some((item, key)) => (item.as_str(), key.as_str()),
+        None if indent.is_some() => (",", ": "),
+        None => (", ", ": "),
+    };
+    let flag = |key| -> Result<bool, Error> {
+        Ok(kwargs
+            .get::<Option<Value>>(key)?
+            .is_some_and(|v| v.is_true()))
+    };
+    let value = if flag("sort_keys")? {
+        crate::python::template_json(PySortedKeys(value))
+    } else {
+        crate::python::template_json(value)
+    }
+    .map_err(|err| {
         Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
     })?;
+    let formatter =
+        PyJsonFormatter::new(item_sep, key_sep, indent.as_deref(), flag("ensure_ascii")?);
     let mut buf = Vec::new();
-    let result = if let Ok(indent) = kwargs.get("indent") {
-        // Python `json.dumps(indent=n)` separators are `(",", ": ")` with the
-        // item separator followed by newline + indent — PrettyFormatter matches.
-        let repeat = b" ".repeat(indent);
-        let formatter = PyFloats(serde_json::ser::PrettyFormatter::with_indent(&repeat));
-        let mut serializer = serde_json::Serializer::with_formatter(&mut buf, formatter);
-        value.serialize(&mut serializer)
-    } else {
-        let mut serializer = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter);
-        value.serialize(&mut serializer)
-    };
-    result.map_err(|err| {
+    let mut serializer = serde_json::Serializer::with_formatter(&mut buf, formatter);
+    value.serialize(&mut serializer).map_err(|err| {
         Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
     })?;
     String::from_utf8(buf)
@@ -256,6 +377,57 @@ pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
             Error::new(ErrorKind::BadSerialization, "cannot serialize to JSON").with_source(err)
         })
         .map(Value::from_safe_string)
+}
+
+/// A template value whose maps serialize with their keys in Python's `sorted()` order.
+/// `json.dumps(sort_keys=True)` sorts the original keys and only then writes them as
+/// strings, so `{10: 'a', 2: 'b'}` puts 2 first, where sorting the strings would put
+/// `"10"` first.
+struct PySortedKeys(Value);
+
+impl Serialize for PySortedKeys {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let Some(object) = self.0.as_object() else {
+            return self.0.serialize(serializer);
+        };
+        match object.repr() {
+            ObjectRepr::Map => {
+                let mut pairs: Vec<_> = object.try_iter_pairs().into_iter().flatten().collect();
+                python_sort_keys(&mut pairs).map_err(S::Error::custom)?;
+                serializer.collect_map(
+                    pairs
+                        .into_iter()
+                        .map(|(key, value)| (key, PySortedKeys(value))),
+                )
+            }
+            ObjectRepr::Seq | ObjectRepr::Iterable => {
+                serializer.collect_seq(object.try_iter().into_iter().flatten().map(PySortedKeys))
+            }
+            _ => self.0.serialize(serializer),
+        }
+    }
+}
+
+/// Python's `sorted()` over dict keys: strings order among strings, and numbers, bools
+/// included, among numbers. Python raises `TypeError` for any other mix, so it fails
+/// the render.
+fn python_sort_keys(pairs: &mut [(Value, Value)]) -> Result<(), Error> {
+    let number = |key: &Value| match key.kind() {
+        ValueKind::Bool => Some(Value::from(i64::from(key.is_true()))),
+        ValueKind::Number => Some(key.clone()),
+        _ => None,
+    };
+    if pairs.iter().all(|(key, _)| key.kind() == ValueKind::String) {
+        pairs.sort_by(|(a, _), (b, _)| a.as_str().cmp(&b.as_str()));
+    } else if pairs.iter().all(|(key, _)| number(key).is_some()) {
+        pairs.sort_by_cached_key(|(key, _)| number(key));
+    } else if pairs.len() > 1 {
+        return Err(Error::new(
+            ErrorKind::InvalidOperation,
+            "tojson sort_keys cannot order keys of different types",
+        ));
+    }
+    Ok(())
 }
 
 /// Parse a JSON string into a structured value.
@@ -342,5 +514,147 @@ CALL {{ tc.function.name }} loc={{ a.location }} unit={{ a.unit }}{% endfor %}",
             }])})
             .expect("tool_use template must render once `fromjson` is registered");
         assert_eq!(rendered, "CALL get_weather loc=San Francisco unit=F");
+    }
+}
+
+/// Expected strings are HF transformers' `tojson` output for the same input and
+/// kwargs, i.e. Python `json.dumps(x, ensure_ascii=False, ...)`.
+#[cfg(test)]
+mod tojson_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn try_render(tmpl: &str, x: serde_json::Value) -> Result<String, Error> {
+        let mut env = minijinja::Environment::new();
+        env.add_filter("tojson", tojson);
+        env.render_str(tmpl, minijinja::context! { x })
+    }
+
+    fn render(tmpl: &str, x: serde_json::Value) -> String {
+        try_render(tmpl, x).unwrap()
+    }
+
+    fn shape() -> serde_json::Value {
+        json!({"a": [1, 2], "b": {"c": "é"}, "d": [], "e": {}})
+    }
+
+    /// Kimi K2.x `tool_declare` renders `tools | tojson(separators=(',', ':'))`.
+    #[test]
+    fn honours_separators() {
+        let tools = json!([{"type": "function", "function": {"name": "get_weather",
+            "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}}}]);
+        assert_eq!(
+            render("{{ x | tojson(separators=(',', ':')) }}", tools),
+            r#"[{"type":"function","function":{"name":"get_weather","parameters":{"type":"object","properties":{"city":{"type":"string"}}}}}]"#
+        );
+    }
+
+    #[test]
+    fn honours_separators_with_indent() {
+        assert_eq!(
+            render(
+                "{{ x | tojson(indent=2, separators=(', ', ':')) }}",
+                shape()
+            ),
+            "{\n  \"a\":[\n    1, \n    2\n  ], \n  \"b\":{\n    \"c\":\"é\"\n  }, \n  \"d\":[], \n  \"e\":{}\n}"
+        );
+    }
+
+    /// Python takes the indent string itself as well as a space count.
+    #[test]
+    fn indent_accepts_a_string() {
+        assert_eq!(
+            render("{{ x | tojson(indent='\t') }}", json!({"a": [1]})),
+            "{\n\t\"a\": [\n\t\t1\n\t]\n}"
+        );
+    }
+
+    /// Python unpacks `separators` from any two-item iterable, a string included.
+    #[test]
+    fn separators_accept_a_two_character_string() {
+        assert_eq!(
+            render("{{ x | tojson(separators=',:') }}", shape()),
+            r#"{"a":[1,2],"b":{"c":"é"},"d":[],"e":{}}"#
+        );
+    }
+
+    /// Python's `json.dumps` raises on these too.
+    #[test]
+    fn rejects_malformed_kwargs() {
+        for tmpl in [
+            "{{ x | tojson(separators=(',',)) }}",
+            "{{ x | tojson(separators=(1, 2)) }}",
+            "{{ x | tojson(indent=[2]) }}",
+        ] {
+            let err = try_render(tmpl, shape()).unwrap_err();
+            assert_eq!(err.kind(), ErrorKind::InvalidOperation, "{tmpl}");
+        }
+    }
+
+    #[test]
+    fn sort_keys_sorts_nested_maps() {
+        let x = json!({"b": 1, "a": {"d": [{"z": 1, "y": 2}], "c": 3}});
+        assert_eq!(
+            render("{{ x | tojson(sort_keys=true) }}", x),
+            r#"{"a": {"c": 3, "d": [{"y": 2, "z": 1}]}, "b": 1}"#
+        );
+    }
+
+    /// Python sorts the original keys and only then writes them as strings, so 2
+    /// precedes 10, and comparing a string key with a number key raises.
+    #[test]
+    fn sort_keys_compares_original_keys() {
+        assert_eq!(
+            render(
+                "{{ {10: 'ten', 2: 'two'} | tojson(sort_keys=true) }}",
+                json!(null)
+            ),
+            r#"{"2": "two", "10": "ten"}"#
+        );
+        assert!(
+            try_render(
+                "{{ {'2': 'str', 2: 'int'} | tojson(sort_keys=true) }}",
+                json!(null)
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn ensure_ascii_escapes_like_python() {
+        let x = json!({"clé": "café 😀 \u{7f} \n"});
+        assert_eq!(
+            render("{{ x | tojson(ensure_ascii=true) }}", x),
+            r#"{"cl\u00e9": "caf\u00e9 \ud83d\ude00 \u007f \n"}"#
+        );
+    }
+
+    #[test]
+    fn defaults_unchanged() {
+        let flat = r#"{"a": [1, 2], "b": {"c": "é"}, "d": [], "e": {}}"#;
+        assert_eq!(render("{{ x | tojson }}", shape()), flat);
+        assert_eq!(
+            render(
+                "{{ x | tojson(separators=none, ensure_ascii=false) }}",
+                shape()
+            ),
+            flat
+        );
+        assert_eq!(
+            render("{{ x | tojson(indent=2) }}", shape()),
+            "{\n  \"a\": [\n    1,\n    2\n  ],\n  \"b\": {\n    \"c\": \"é\"\n  },\n  \"d\": [],\n  \"e\": {}\n}"
+        );
+    }
+
+    /// `sort_keys` re-serializes through `serde_json::Value`; floats keep Python spelling.
+    #[test]
+    fn sort_keys_keeps_python_floats() {
+        assert_eq!(
+            render(
+                "{{ x | tojson(separators=(',', ':'), sort_keys=true) }}",
+                json!({"n": 1e16, "lr": 0.000001})
+            ),
+            r#"{"lr":1e-06,"n":1e+16}"#
+        );
     }
 }

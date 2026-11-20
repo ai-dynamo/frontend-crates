@@ -33,4 +33,4 @@ def test_custom_quote_display_is_family_specific_and_preserves_aliases(quotes):
     assert unified_taxonomy.numbered_id(string) == f"UNIFIED.7-tool-argument-declared-types-{string}"
     assert unified_taxonomy.display_tax(string)[0] == 7
     assert unified.scenario_families(custom) == {"qwen3", "nemotron_v3"}
-    assert unified.scenario_families(string) == set(unified._TEMPLATE_FAMILIES)
+    assert unified.scenario_families(string) == set(unified.NATIVE_INPUT_FAMILIES)

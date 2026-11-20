@@ -23,10 +23,11 @@ from test_unified_taxonomy_covers_corpus import retained_unified_snapshots
 
 SCENARIO = "structured_response_after_reasoning"
 HISTORY_CONTRACT = MODEL_CONTRACTS["structuralRequestHistory"]
+STRUCTURAL_FAMILIES = tuple(MODEL_CONTRACTS["nativeReviewFamilies"]["structured"])
 
 
 def test_structural_case_has_one_shared_id_and_explicit_builder_scope():
-    assert scenario_families(SCENARIO) == {"gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark"}
+    assert scenario_families(SCENARIO) == set(STRUCTURAL_FAMILIES)
     assert numbered_id(SCENARIO) == "UNIFIED.36-structured_response_after_reasoning"
     assert f"UNIFIED.{SCENARIO}.nemotron_v3" not in build_cases("nemotron_v3")
     assert "UNIFIED.guided_response_native_wrapper_whitespace_before_prose.nemotron_v3" in build_cases("nemotron_v3")
@@ -39,8 +40,15 @@ def _assert_bound_columns(states, case_id, digest):
 
 
 def _requires_structural_capture(family, version):
-    return (version in HISTORY_CONTRACT["versions"][family]
-            or capture_release_sort_key(version) >= capture_release_sort_key(HISTORY_CONTRACT["futureFrom"]))
+    assert family in STRUCTURAL_FAMILIES
+    first = HISTORY_CONTRACT["futureFromByFamily"].get(family, HISTORY_CONTRACT["futureFrom"])
+    return (version in HISTORY_CONTRACT["versions"].get(family, [])
+            or capture_release_sort_key(version) >= capture_release_sort_key(first))
+
+
+def _assert_structural_capture(family, version, capture_id, state, case_id, digest):
+    if case_id in state or _requires_structural_capture(family, version):
+        _assert_bound_columns({capture_id: state}, case_id, digest)
 
 
 def _assert_required_resources(resources):
@@ -75,8 +83,8 @@ def test_structural_request_is_bound_in_every_retained_dynamo_column(historical_
         states = {resource["path"]: {key: record["value"] for key, record in document["records"].items()}}
         # Expanded archives predate this authored case. Preserve their absent
         # evidence; main's pinned historical captures and future captures stay mandatory.
-        if case_id in states[resource["path"]] or _requires_structural_capture(family, resource["version"]):
-            _assert_bound_columns(states, case_id, digest)
+        _assert_structural_capture(family, resource["version"], resource["path"],
+                                   states[resource["path"]], case_id, digest)
         checked.add(family)
     assigned = ci_coverage.select_resources([row for row in resources
         if row["kind"] == "history" and row["implementation"] == "dynamo_v2" and row["family"] in expected],
@@ -91,7 +99,7 @@ def test_structural_request_guard_rejects_missing_oldest_checkpoint():
         _assert_bound_columns({"oldest": {}, "newest": {SCENARIO: {"stimulus": {"semantic_sha256": "digest"}}}}, SCENARIO, "digest")
 
 
-@pytest.mark.parametrize("family", ["gpt_oss", "qwen3", "glm47", "deepseek_v4"])
+@pytest.mark.parametrize("family", STRUCTURAL_FAMILIES)
 def test_job_retains_generation_request_and_peers_cannot_claim_parser_only_success(family):
     case = build_cases(family)[f"UNIFIED.{SCENARIO}.{family}"]
     request = capture_input({**case, "chunks": [{"delta_text": case["input"]}]})
@@ -134,6 +142,40 @@ def test_structural_history_contract_retains_every_family_including_muse_spark()
             for family, versions in HISTORY_CONTRACT["versions"].items() for version in versions]
     with pytest.raises(AssertionError, match="missing structural family evidence"):
         _assert_required_resources(rows)
+    rows.extend({"kind": "history", "implementation": "dynamo_v2", "family": family,
+                 "version": "0.10.3", "path": f"{family}/0.10.3"}
+                for family in HISTORY_CONTRACT["futureFromByFamily"])
+    with pytest.raises(AssertionError, match="missing structural family evidence"):
+        _assert_required_resources(rows)
     rows.append({"kind": "history", "implementation": "dynamo_v2", "family": "muse_spark", "version": "0.7.28", "path": "muse_spark/0.7.28"})
     _assert_required_resources(rows)
     assert {row["family"] for row in rows} == scenario_families(SCENARIO)
+
+
+@pytest.mark.parametrize("family", sorted(HISTORY_CONTRACT["futureFromByFamily"]))
+def test_new_structural_families_preserve_unmeasured_history_and_require_current(family):
+    assert not _requires_structural_capture(family, "0.10.4")
+    _assert_structural_capture(family, "0.10.4", "older", {}, SCENARIO, "digest")
+    with pytest.raises(AssertionError):
+        _assert_structural_capture(family, "0.10.4", "older", {
+            SCENARIO: {"stimulus": {"semantic_sha256": "changed"}},
+        }, SCENARIO, "digest")
+    for version in ("0.10.5", "0.10.6"):
+        assert _requires_structural_capture(family, version)
+        with pytest.raises(AssertionError, match="missing structured request"):
+            _assert_structural_capture(family, version, "current-or-future", {}, SCENARIO, "digest")
+
+
+def test_latest_structural_requests_remain_bound_for_every_applicable_family():
+    root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
+    store, _ = unified_history.selected_materialization_store(root, ["latest:dynamo_v2"])
+    for family in STRUCTURAL_FAMILIES:
+        authored = store.families[family]
+        case_id = next(key for key, case in authored.cases.items() if case["scenario"] == SCENARIO)
+        digest = unified_history._request_digest(authored.cases[case_id]["request"])
+        history = store.histories[(family, "dynamo_v2")]
+        capture_id = history.ordered_capture_ids()[-1]
+        version = history.captures[capture_id]["runtime_version"]
+        assert _requires_structural_capture(family, version)
+        state = history.resolve(capture_id)
+        _assert_structural_capture(family, version, capture_id, state, case_id, digest)
