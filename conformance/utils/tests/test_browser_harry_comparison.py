@@ -10,6 +10,7 @@ import pytest
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index, _published_capture
@@ -37,10 +38,10 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         assert individual_case["description"]
         assert individual_case["independent"]
 
-        def search(value):
-            field = driver.find_element("css selector", "[data-case-search]")
-            field.send_keys(Keys.CONTROL, "a", Keys.NULL)
-            field.send_keys(value or Keys.BACKSPACE)
+        def search(value: str) -> WebElement:
+            field = driver.find_element("css selector", "#tab-unified [data-case-search]")
+            # Submit the complete query; caret editing is exercised separately below.
+            driver.execute_script("arguments[0].value=arguments[1];arguments[0].dispatchEvent(new Event('input',{bubbles:true}));", field, value)
             return field
 
         search("TC Trun")
@@ -628,10 +629,11 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         driver.get(f"http://127.0.0.1:{server.server_port}/{query}")
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.firstComparisonPaint") is vertical
-        assert len(driver.find_elements("css selector", ".capture-slot")) == 3
-        assert len(driver.find_elements("css selector", ".tabs .tab-button")) == 0
+        assert len(driver.find_elements("css selector", "#tab-unified .capture-slot")) == 3
+        assert [button.get_attribute("id") for button in driver.find_elements("css selector", ".tabs .tab-button")] == [
+            "tab-unified-button", "tab-renderer-button"]
         sha = driver.find_element("css selector", ".source-commit")
-        assert driver.find_element("css selector", "#viewer > h1").text == "Parser Conformance"
+        assert driver.find_element("css selector", "#viewer > h1").text == "Dynamo Conformance"
         assert driver.find_elements("css selector", ".generated .source-commit") == [sha]
         assert re.fullmatch(r"[a-f0-9]{12}", sha.text)
         assert sha.get_attribute("title") in sha.get_attribute("href")
@@ -658,7 +660,7 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
             const header=document.querySelector('.capture-slots'), rect=header.getBoundingClientRect();
             return rect.left>=0 && rect.right<=innerWidth && header.scrollWidth<=header.clientWidth+1;
         """)
-        for card in driver.find_elements("css selector", ".capture-slot"):
+        for card in driver.find_elements("css selector", "#tab-unified .capture-slot"):
             assert card.rect["width"] <= 480
     finally:
         driver.quit(); server.shutdown(); server.server_close()
@@ -681,7 +683,7 @@ def test_source_sha_appears_once_on_second_line(published_viewer):
                 """, source, generated)
             heading = driver.find_element("css selector", "#viewer > h1")
             line = driver.find_element("css selector", "#viewer > .generated")
-            assert heading.text == 'Parser Conformance'
+            assert heading.text == 'Dynamo Conformance'
             assert re.findall(r'\b[a-f0-9]{12}\b', line.text) == [source[:12]]
             assert line.rect['y'] >= heading.rect['y'] + heading.rect['height']
             assert len(driver.find_elements("css selector", ".source-commit")) == 1
@@ -809,8 +811,8 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
         all_button = driver.find_element('css selector', "[data-focus='all']")
         assert all_button.tag_name == 'button'
         assert all_button.get_attribute('aria-pressed') == 'true'
-        assert len(driver.find_elements('css selector', '[data-focus]')) == 4
-        assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
+        assert len(driver.find_elements('css selector', '#tab-unified [data-focus]')) == 4
+        assert driver.execute_script("return [...document.querySelectorAll('#tab-unified [data-focus][aria-pressed=true]')].length") == 1
         all_button.click()
         assert all_button.get_attribute('aria-pressed') == 'true'
         for focus, statuses in [('disagreements', ['diverge']), ('errors', ['error', 'leak'])]:
@@ -823,7 +825,7 @@ def test_focus_filters_axes_and_restores_shared_urls(published_viewer, vertical,
             button.click()
             assert driver.find_element('css selector', "[data-focus='all']").get_attribute('aria-pressed') == 'false'
             assert button.get_attribute('aria-pressed') == 'true'
-            assert driver.execute_script("return [...document.querySelectorAll('[data-focus][aria-pressed=true]')].length") == 1
+            assert driver.execute_script("return [...document.querySelectorAll('#tab-unified [data-focus][aria-pressed=true]')].length") == 1
             assert counts(driver) == before
             labels = driver.execute_script("""
                 return [...document.querySelectorAll('.matrix-cell[role=button]')]
@@ -1017,17 +1019,17 @@ def test_capture_cards_and_menu_share_one_row_and_notice_stays_at_bottom(publish
                 driver.execute_script("document.documentElement.dataset.theme=arguments[0]", theme)
                 geometry = driver.execute_script("""
                   const rect=node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}};
-                  const menu=document.querySelector('.comparison-toolbar'), cards=[...document.querySelectorAll('.capture-slot')];
+                  const menu=document.querySelector('#tab-unified .comparison-toolbar'), cards=[...document.querySelectorAll('#tab-unified .capture-slot')];
                   return {cards:cards.map(rect), menu:rect(menu),
                     matrix:rect(document.querySelector('.comparison-matrix-scroll')),
                     notice:rect(document.querySelector('.publication-history-notice')),
                     overflow:[menu,...cards].some(node=>node.scrollWidth>node.clientWidth+1),
-                    optionsParent:menu.querySelector('.tabs-right').parentElement.className,
+                    optionsParent:document.querySelector('#viewer > .tabs .tabs-right').parentElement.className,
                     lastChild:document.querySelector('#viewer').lastElementChild.className};
                 """)
                 cards, menu = geometry["cards"], geometry["menu"]
                 assert len(cards) == 3, geometry
-                assert geometry["optionsParent"] == "comparison-filter-row", geometry
+                assert geometry["optionsParent"] == "tabs", geometry
                 assert not geometry["overflow"], geometry
                 if width > 900:
                     assert all(abs(card["y"] - menu["y"]) <= 1 for card in cards), geometry

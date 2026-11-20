@@ -937,6 +937,7 @@ pub fn projection(catalog: &Value) -> Result<Value> {
         "unified_leak_markers",
         "documentation",
         "peer_versions",
+        "renderer",
     ];
     let mut metadata = json!({});
     for key in keys {
@@ -980,7 +981,7 @@ pub fn projection(catalog: &Value) -> Result<Value> {
             .as_array()
             .context("missing tabs")?
             .iter()
-            .filter(|t| t["suite"] == "unified")
+            .filter(|t| t["suite"] == "unified" || t["suite"] == "renderer")
             .collect::<Vec<_>>()
     );
     metadata["selection_policy"] = json!({"unified":metadata["selection_policy"].get("unified").cloned().unwrap_or(json!({}))});
@@ -1002,6 +1003,11 @@ pub fn projection(catalog: &Value) -> Result<Value> {
     let mut sources = json!({});
     if let Some(original) = catalog["sources"].get("original_unified") {
         sources["original_unified"] = original.clone();
+    }
+    for key in ["renderer", "original_renderer"] {
+        if let Some(value) = catalog["sources"].get(key) {
+            sources[key] = value.clone();
+        }
     }
     sources["archives"] = json!([]);
     sources["unified"] = catalog["sources"]["unified"].clone();

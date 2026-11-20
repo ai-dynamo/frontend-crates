@@ -13,7 +13,7 @@ def test_capture_selector_leaves_loaded_comparison_as_selection_authority():
     assert "panel._comparisonSelection = { keys: [], reference: null };" in selector
     assert "__applyConformanceSelection(panel, selection.keys, null)" not in selector
     assert "function applyCtl(panel)" in comparison
-    assert "const oracle = panel.id === 'tab-unified' && !!panel._comparisonSelection" in comparison
+    assert "const oracle = ['tab-unified', 'tab-renderer'].includes(panel.id) && !!panel._comparisonSelection" in comparison
     assert "compareBarHtml(tab)" in table
     assert "data-red-on-diff" in table
     assert "function outputStatus(" not in comparison

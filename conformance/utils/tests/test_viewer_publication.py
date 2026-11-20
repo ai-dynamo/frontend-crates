@@ -98,12 +98,23 @@ def test_publication_source_integrity_and_revision(published_viewer, source_cata
     assert 'id="conformance-publication"' in (site / "index.html").read_text()
     assert not [path for path in site.rglob("*") if path.is_file() and path.name.endswith((".yaml", ".yml", ".tar.gz", ".md", ".txt", ".test.js"))]
     decoder = Decoder(site.resolve())
-    for resource in catalog["sources"]["unified"]:
+    for resource in [*catalog["sources"]["unified"], *catalog["sources"].get("renderer", [])]:
         data = snapshot_bytes(site, resource, decoder)
         assert len(data) == resource["size"]
         assert hashlib.sha256(data).hexdigest() == resource["sha256"]
         assert data.endswith(b"\n")
     originals = {resource["path"]: resource for kind in ("unified", "archives") for resource in source_catalog["sources"][kind]}
+    if catalog["sources"].get("renderer"):
+        store = ROOT / "conformance/fixtures-renderer"
+        manifest = json.loads((store / "manifest.json").read_bytes())
+        paths = {store / "manifest.json"}
+        for model in manifest["models"]:
+            paths.update(store / asset["path"] for asset in model["assets"])
+            paths.update(store / "families" / model["id"] / name
+                         for name in ("inputs.json", "reference.json", "dynamo.json"))
+        for path in paths:
+            data = path.read_bytes()
+            originals[path.relative_to(ROOT).as_posix()] = {"size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
     seen = set()
     for descriptor in catalog["transport"]["raw_buckets"].values():
         for path, entry in read_index(site, descriptor).items():

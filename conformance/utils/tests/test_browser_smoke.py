@@ -882,12 +882,12 @@ def test_popup_headings_include_compact_references(driver, viewer_url):
 
 def test_three_cards_and_toolbar_do_not_overlap(driver, viewer_url):
     _navigate(driver, f"{viewer_url}?tab=tab-unified")
-    cards = driver.find_elements(By.CSS_SELECTOR, '.capture-slot')
+    cards = driver.find_elements(By.CSS_SELECTOR, '#tab-unified .capture-slot')
     assert len(cards) == 3
     assert all(c.find_elements(By.CSS_SELECTOR, '.capture-summary') for c in cards)
     assert _script(driver, """
-        const cards=[...document.querySelectorAll('.capture-slot')].map(e=>e.getBoundingClientRect());
-        const toolbar=document.querySelector('.comparison-toolbar').getBoundingClientRect();
+        const cards=[...document.querySelectorAll('#tab-unified .capture-slot')].map(e=>e.getBoundingClientRect());
+        const toolbar=document.querySelector('#tab-unified .comparison-toolbar').getBoundingClientRect();
         return cards.every((a,i)=>cards.slice(i+1).every(b=>a.right<=b.left || b.right<=a.left || a.bottom<=b.top || b.bottom<=a.top))
           && cards.every(a=>a.right<=toolbar.left || toolbar.right<=a.left || a.bottom<=toolbar.top || toolbar.bottom<=a.top);
     """)

@@ -3,13 +3,14 @@
 import { escapeHtml, captureStatusLabels, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, rankUnifiedColumns, validateCaseColumns, caseSchemas, compareVersions } from './model.js';
 import { isMapping, hasField, getField, compareText, mappingEntries, mergeMappings, deleteField, sameValue } from './values.js';
 import { materializeUnifiedRecord, canonicalUnifiedLabel } from './resources.js';
+import { rendererPanel, rendererStatusLabels } from './renderer.js';
 
 const esc = escapeHtml;
 const sourceHref = (path, link) => esc(link ? link(path) : `source:${path.replace(/\/$/, '')}`);
 
-export function captureSegmentHtml(status, key) {
+export function captureSegmentHtml(status, key, labels = captureStatusLabels) {
   return '<i class="matrix-status status-' + esc(status) + '" data-capture="' + esc(key)
-    + '" aria-label="' + esc(key + ': ' + captureStatusLabels[status]) + '"></i>';
+    + '" aria-label="' + esc(key + ': ' + labels[status]) + '"></i>';
 }
 
 
@@ -17,6 +18,12 @@ export function tabPresentation(spec, catalog, descriptors, link = null) {
   const href = (path) => link ? link(path) : `source:${path.replace(/\/$/, '')}`;
   const source = (path, label) => `<a href="${esc(href(path))}">${label}</a>`;
   const base = { label: spec.label, captured_note: '', details_note_html: null };
+  if (spec.suite === 'renderer') return { ...base, active: false, label_html: 'Renderer',
+    tab_title: 'Renderer: prompt text and metadata compared with pinned independent model references',
+    case_prefix: 'RENDERER.', case_section_id: 'renderer',
+    case_docs_href: href('conformance/fixtures-renderer/README.md'), case_docs_label: 'Renderer cases and capture workflow',
+    comparison_slot_engines: ['reference', 'dynamo'], comparison_slot_count: 2,
+    comparison_initial_all: true, comparison_languages: ['Python', 'Rust'], status_labels: rendererStatusLabels };
   return { ...base, active: false,
     label_html: 'Unified v2 <span class="tab-sub">(reasoning + tools)</span>', tab_title: 'Unified: one ordered event stream (reasoning + content + tool calls) measured against the GOLDEN oracle',
     case_prefix: 'UNIFIED.', case_section_id: 'unified', case_docs_href: href(catalog.metadata.documentation.unified), case_docs_label: 'lib/parsers/UNIFIED_CASES.md',
@@ -47,6 +54,7 @@ export function columnKeysFor(metadata) {
   // Fixed columns are already mounted by the shell; only case groups arrive late.
   const keys = new Set();
   for (const spec of Object.values(metadata.unified_taxonomy)) keys.add(spec.section);
+  for (const group of metadata.renderer?.groups || []) keys.add(`renderer_${typeof group === 'string' ? group : group.key}`);
   return [...keys];
 }
 
@@ -260,6 +268,8 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
 export async function buildTab(catalog, reader, tabId, options = {}) {
   const spec = catalog.metadata.tabs.find((tab) => tab.id === tabId);
   if (!spec) throw new Error(`unknown tab: ${tabId}`);
+  if (spec.suite === 'renderer') return Object.assign(await rendererPanel(catalog, reader, options),
+    tabPresentation(spec, catalog, tabCandidates(catalog, spec), options.sourceLink));
   if (spec.suite !== 'unified') throw new Error(`unsupported report suite: ${spec.suite}`);
   const tab = await unifiedPanel(catalog, reader, options);
   return Object.assign(tab, tabPresentation(spec, catalog, tabCandidates(catalog, spec), options.sourceLink));
@@ -268,7 +278,7 @@ export async function buildTab(catalog, reader, tabId, options = {}) {
 export function pageMetadata(catalog, { commitSha = null, sourceLink = null } = {}) {
   if (commitSha !== null && !/^[0-9a-f]{40}$/.test(commitSha)) throw new Error('commitSha must be an immutable full SHA');
   const markers = Object.fromEntries(Object.entries(catalog.metadata.markers).map(([family, declaration]) => [family, Object.fromEntries(['pairs', 'singletons', 'opaque'].filter((key) => declaration[key]?.length).map((key) => [key, declaration[key]]))]).filter(([, declaration]) => Object.keys(declaration).length));
-  return { schema: 1, meta: { title: 'Dynamo Parser Conformance Table', sha: commitSha, short_sha: commitSha?.slice(0, 12) || '' },
+  return { schema: 1, meta: { title: catalog.metadata.tabs.some(tab => tab.suite === 'renderer') ? 'Dynamo Conformance Tables' : 'Dynamo Parser Conformance Table', sha: commitSha, short_sha: commitSha?.slice(0, 12) || '' },
     parser_ni: {}, legend_html: legendHtml(catalog.metadata, sourceLink), family_markers: markers };
 }
 

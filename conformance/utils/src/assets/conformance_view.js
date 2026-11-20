@@ -584,7 +584,43 @@
   }
 
   // --- Tooltip content (built lazily into the empty .ttip) -------------------
+  function rendererPre(value, className) {
+    return '<pre class="ttip-pre ' + (className || '') + '">' + escapeHtml(typeof value === 'string' ? value : JSON.stringify(value ?? null, null, 2)) + '</pre>';
+  }
+
+  function buildRendererTooltipHtml(m) {
+    var h = '<div class="ttip-head">' + popupCaseHeadingHtml(m)
+      + (m.description ? ' <span class="ttip-head-desc">' + escapeHtml(m.description) + '</span>' : '') + '</div>';
+    if (m.renderer_cases) return h + m.renderer_cases.map(item => '<section class="renderer-model-case"><h3>'
+      + escapeHtml(item.model.label) + '</h3>' + buildRendererTooltipHtml({ ...item, head: '', description: '' }) + '</section>').join('');
+    if (m.applicable === false) return h + '<p>Not applicable to this model.</p>';
+    const model = m.model || {};
+    h += '<div class="renderer-model-source">' + escapeHtml(model.label || '') + ' · '
+      + linkify('https://huggingface.co/' + model.repository + '/tree/' + model.revision) + '</div>';
+    if (m.first_difference) h += '<h3>First different UTF-8 byte</h3>' + rendererPre(m.first_difference, 'renderer-first-difference');
+    if (m.metadata_differences?.length) h += '<h3>Different metadata fields</h3>' + rendererPre(m.metadata_differences, 'renderer-metadata-differences');
+    h += '<details class="renderer-request-details"><summary>Renderer request</summary>' + rendererPre(m.input?.request, 'renderer-request') + '</details>';
+    h += '<details class="renderer-settings-details"><summary>Rendering settings</summary>' + rendererPre(m.settings, 'renderer-settings') + '</details>';
+    const records = [{ key: 'renderer_reference', label: 'Model reference', record: m.reference, producer: m.reference_producer },
+      { key: 'renderer_dynamo', label: 'Dynamo renderer', record: m.dynamo, producer: m.dynamo_producer }];
+    h += '<table class="renderer-results"><thead><tr><th>Result</th>' + records.map(item => '<th data-cand="' + item.key + '">' + item.label + '</th>').join('') + '</tr></thead><tbody>';
+    const result = item => item.record?.result;
+    const output = item => !result(item) ? '<p>Missing capture.</p>' : result(item).kind === 'prompt'
+      ? rendererPre(result(item).text, 'renderer-prompt') : rendererPre(result(item), 'renderer-error');
+    h += '<tr><th>Exact prompt / rejection</th>' + records.map(item => '<td data-cand="' + item.key + '">' + output(item) + '</td>').join('') + '</tr>';
+    h += '<tr><th>Renderer metadata</th>' + records.map(item => '<td data-cand="' + item.key + '">' + rendererPre(result(item)?.kind === 'prompt'
+      ? { segments: result(item).segments, pending_segments: result(item).pending_segments, media_message_order: result(item).media_message_order } : null, 'renderer-metadata') + '</td>').join('') + '</tr>';
+    h += '<tr><th>Producer provenance</th>' + records.map(item => '<td data-cand="' + item.key + '">' + rendererPre(item.producer, 'renderer-provenance') + '</td>').join('') + '</tr></tbody></table>';
+    h += '<h3>Metadata expectation authority</h3>' + rendererPre({ origin: m.reference?.metadata_origin || m.metadata_origin, expectation: m.metadata_expectation }, 'renderer-metadata-authority');
+    if (m.reference?.reference_input !== undefined) h += '<details class="renderer-reference-input"><summary>Exact reference adapter input</summary>'
+      + rendererPre(m.reference.reference_input) + '</details>';
+    if (m.reference?.transformations?.length) h += '<h3>Reference adapter transformations</h3>' + rendererPre(m.reference.transformations, 'renderer-transformations');
+    if (m.notes?.length) h += '<h3>Documented differences</h3>' + rendererPre(m.notes, 'renderer-notes');
+    return h;
+  }
+
   function buildTooltipHtml(m) {
+    if (m?.renderer) return buildRendererTooltipHtml(m);
     if (m && m.grammar) { return buildGrammarHtml(m); }
     var h = '';
     // Id + description on ONE line, matching the column grammar popup: the id keeps its
@@ -664,7 +700,7 @@
   // impl matches. Bucket A = reference (radio checked, own compare box locked-on);
   // bucket A or B = compare-with checked; C = off.
   function compareBarHtml(tab) {
-    if (tab.kind === 'unified') return '';
+    if (['unified', 'renderer'].includes(tab.kind)) return '';
     var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
@@ -776,6 +812,8 @@
   }
 
   function columnGrammarModel(tab, col) {
+    if (tab.kind === 'renderer') return { renderer: true, head: col.case_id, popupCase: col, description: col.desc,
+      renderer_cases: tab.rows.map(row => row.cells[col.sub]?.tooltip).filter(Boolean) };
     var rows = [];
     var caseId = null;   // canonical ID from the cell, independent of its scenario slug
     var colDefs = null;  // shared output-candidate columns [{key,label,pin}], first row wins
@@ -1220,6 +1258,7 @@
     return _summaryLegendHtml || '';
   }
   function detailsLegendHtml(tab, page) {
+    if (tab.kind === 'renderer') return '<div class="legend details-only">Prompt text and renderer metadata are compared with pinned independent model references. Reference differences are advisory; recorded Dynamo output changes fail CI.</div>';
     if (page.tabs.length === 1 && tab.id === 'tab-unified') { return captureLegendHtml(); }
     var h = '<div class="legend details-only">' + (page.legend_html || '');
     if (tab.captured_note) {
@@ -1391,7 +1430,7 @@
       _familyMarkers = page.family_markers || {};
       _summaryLegendHtml = page.meta?.summary_legend_html || null;
       const heading = document.createElement('h1');
-      heading.textContent = 'Parser Conformance';
+      heading.textContent = page.tabs.some(tab => tab.kind === 'renderer') ? 'Dynamo Conformance' : 'Parser Conformance';
       document.title = page.meta.title;
       const header = [heading];
       const revision = document.createElement('p');

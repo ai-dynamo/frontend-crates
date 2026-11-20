@@ -4,3 +4,6 @@
 //! Conformance fixtures and normalized storage shared by native readers.
 
 pub mod normalization;
+pub mod renderer;
+#[cfg(feature = "renderer-runner")]
+pub mod renderer_runner;

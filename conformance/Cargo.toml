@@ -8,6 +8,23 @@ license = "Apache-2.0"
 description = "Runs the vendored Dynamo parity fixtures against dynamo-parsers"
 publish = false
 
+[features]
+default = ["renderer-runner"]
+renderer-runner = ["dep:dynamo-renderer", "dep:dynamo-protocols", "dep:minijinja"]
+
+[dependencies]
+anyhow.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
+sha2 = "0.10"
+dynamo-renderer = { workspace = true, optional = true }
+dynamo-protocols = { workspace = true, optional = true }
+minijinja = { workspace = true, optional = true }
+
+[[example]]
+name = "renderer_capture"
+required-features = ["renderer-runner"]
+
 [dev-dependencies]
 anyhow = { workspace = true }
 dynamo-parsers = { workspace = true }
@@ -19,3 +36,4 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_yaml = "0.9"
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tempfile.workspace = true
