@@ -365,16 +365,17 @@ fn beam_preserves_declared_coercion_preference() {
 }
 
 #[test]
-fn glm_enum_hints_preserve_native_string_ambiguity() {
+fn glm_enum_hints_follow_the_json_first_policy() {
     for (schema, raw, expected) in [
         (json!({"enum":[1,2,4]}), "2", json!(2)),
         (json!({"enum":[true,false]}), "true", json!(true)),
         (json!({"enum":["42"]}), "42", json!("42")),
-        (json!({"enum":[1,"auto"]}), "1", json!("1")),
+        // JSON first: a JSON value the schema admits wins over text it rejects.
+        (json!({"enum":[1,"auto"]}), "1", json!(1)),
         (
             json!({"anyOf":[{"type":"string","enum":["auto"]},{"type":"integer"}]}),
             "42",
-            json!("42"),
+            json!(42),
         ),
         (json!({"type":"number","enum":[1,"auto"]}), "1", json!(1)),
         (

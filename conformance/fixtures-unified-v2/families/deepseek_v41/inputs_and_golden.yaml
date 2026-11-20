@@ -146,6 +146,26 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_d230d7587b8694b6:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          $ref: '#/$defs/Scoped'
+      required:
+      - value
+      additionalProperties: false
+      $defs:
+        Scoped:
+          $id: https://example.test/scoped
+          $defs:
+            T:
+              type: string
+          $ref: '#/$defs/T'
+        T:
+          type: integer
+    strict: true
   tools_4b74086a372173ba:
   - name: schema_probe
     parameters:
@@ -296,6 +316,50 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_198257bbe3d54bef:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - integer
+          not:
+            const: 42
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_12b86fd0f8545d62:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - enum:
+            - 1
+            - 2
+          - type: string
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_fc76b9687957190a:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - integer
+          minimum: 100
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_3e9459ef2d935104:
   - name: schema_probe
     parameters:
@@ -409,6 +473,19 @@ tools:
       properties:
         city:
           $ref: '#/$defs/City'
+  tools_db4a86f747eb0066:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          type:
+          - string
+          - number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_5d30b2f70e9f541a:
   - name: capture_payload
     parameters:
@@ -904,6 +981,21 @@ tools:
           type: string
       required:
       - x
+  tools_2b23015d5b439f25:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          oneOf:
+          - type:
+            - string
+            - integer
+          - type: integer
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_eb14ad8c4a7a4413:
   - name: capture_payload
     parameters:
@@ -992,6 +1084,21 @@ tools:
       properties:
         value:
           type: number
+      required:
+      - value
+      additionalProperties: false
+    strict: true
+  tools_f9e3493f1e9b0ddf:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - type: string
+            enum:
+            - auto
+          - type: integer
       required:
       - value
       additionalProperties: false
@@ -1527,6 +1634,21 @@ tools:
       required:
       - location
       additionalProperties: false
+  tools_75c228684e14e834:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - enum:
+            - 'True'
+            - 'False'
+          - type: boolean
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_d7ee0d5304d6d110:
   - name: schema_probe
     parameters:
@@ -1586,6 +1708,19 @@ tools:
         text:
           not:
             type: integer
+  tools_afb443bdf3323900:
+  - name: schema_probe
+    parameters:
+      type: object
+      properties:
+        value:
+          anyOf:
+          - const: 9007199254740992.0
+          - type: string
+      required:
+      - value
+      additionalProperties: false
+    strict: true
   tools_99160bb5b93d07f2:
   - name: schema_probe
     parameters:
@@ -2044,21 +2179,21 @@ requests:
     - 15
     finish_step: true
   0a0d9446e430656f4bef4fad97910011bb15caae9599bd82fc2b963d886849db:
-    input: '''90s</think>''Answer'''
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '''90s</think>''Answer'''
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 20
     finish_step: true
   0a351ec6831a4828665f02897e3df9f67f0251a45d4ab1ffe011882751be3dff:
-    input: Let me think, this SQL fragment is '1'='1</think>'Yes'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, this SQL fragment is '1'='1</think>'Yes'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 54
@@ -2112,11 +2247,11 @@ requests:
     - 15
     finish_step: true
   0bfd6ddcf8e7fc3fa807e93142a6f620937b55d940310118ece733832d7968ed:
-    input: '`name</think>`Answer`'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`name</think>`Answer`'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 21
@@ -2145,6 +2280,9 @@ requests:
     - 57
     - 15
     finish_step: true
+  0c47076af74ceba0c013c0c920067ca86e78f6beaafc8b0d1a4359f26ed7558e:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_d230d7587b8694b6
   0d91ede31d4488ce4ea3957674723577dfe818a30b2d501ad437e0971306071c:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">"hello"</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_4b74086a372173ba
@@ -2177,13 +2315,13 @@ requests:
     - 15
     finish_step: true
   0fb1c9d4b222a6ab6afea7ab400bb1d263cdb021aa732c9447f6ad9787bb54f3:
-    input: 'f''" OR x -- ''
-
-      </think>"Answer"'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: 'f''" OR x -- ''
+
+      </think>"Answer"'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 30
@@ -2353,21 +2491,21 @@ requests:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_81ef407beab6fe3e
   21adf7e2971a3aaebaa2284c20bc3c56e122075a387a7d754d2023af8ca4edef:
-    input: '`pytest -x</think>Run `pytest`'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`pytest -x</think>Run `pytest`'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 30
     finish_step: true
   22af829fed7d15ebd08f7442c8ce51dd9434b7cf5e7bc0e63d6928774e2a3b0f:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="write_file"><｜DSML｜ parameter name="content" string="true"><think></think>answer</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="write_file"><｜DSML｜ parameter name="content" string="true"><think></think>answer</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_14bcb316cd445c47
     chunk_sizes:
     - 165
@@ -2435,6 +2573,15 @@ requests:
     - 16
     - 15
     finish_step: true
+  2aa9dc5ff018ef5894c5eb5934a91cbe8fcfb123e2b745d315050de6df6d03cd:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_198257bbe3d54bef
+  2ac18a0dd6dcea9c2e602977f4350c107640c4e03d7b8a27ae61fa1cbfc039e3:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_12b86fd0f8545d62
+  2b63c671381e3ecb1676e54ba01f9b8ed3bca659eebdd4e70d08f3e4fc6e3f54:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_fc76b9687957190a
   2ba99f0ed9c85344b6f90f198de9bb67cb6f34f892a1caecf5ea26ac0f54e8d2:
     input: Sure. <think>check A</think><｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> and <think>check B</think><｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_cbf47ccf5fd2ef00
@@ -2532,11 +2679,11 @@ requests:
     - 15
     finish_step: true
   31231374e4ae37fb4f617d6f24635721105e3b33ef447d464b085a775a610591:
-    input: Let me think, the marker </think> is a special marker
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the marker </think> is a special marker
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 53
@@ -2746,6 +2893,9 @@ requests:
     - 53
     - 15
     finish_step: true
+  38cfa7c6ed905f3b6a692ac5d99be62e8017c96dbd66546ed2787e1aac7075ad:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_db4a86f747eb0066
   39636a74b21453601bfaa4becb878c46b3b636f3ecef42aedb1fa50d80070dc3:
     init:
       starting_state: Reasoning
@@ -2936,11 +3086,11 @@ requests:
     - 15
     finish_step: true
   4339065b4c0af2a2c2fcd98f9221de4bcd773a1a629a6ada18f427123cbfb266:
-    input: Let me think, I should try `pytest -x</think>Run pytest
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should try `pytest -x</think>Run pytest
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 55
@@ -3089,11 +3239,11 @@ requests:
     - 15
     finish_step: true
   4c4d56f0ed35b32a61314759ccc935fa3423b2d0b484117ebb5c35e894dbe4fc:
-    input: Let me think, I should run this command "grep -v '</think>' ..."
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should run this command "grep -v '</think>' ..."
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 64
@@ -3512,11 +3662,11 @@ requests:
     - 15
     finish_step: true
   5fa11fd6bf79ada6c3a6f2deb0d1017d1275e3d44f005074f86d26698ac41aac:
-    input: Let me think, user is asking if </think> is special</think>Yes
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, user is asking if </think> is special</think>Yes
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 62
@@ -3585,16 +3735,16 @@ requests:
     - 17
     finish_step: true
   61dfd4cdfdf94bebadec391fd39f793687a8a0a89331265cbfea932519ec0776:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 101
@@ -3660,12 +3810,15 @@ requests:
     - 23
     - 15
     finish_step: true
+  647b9ed302b11f628b7c8eaa90315a03f76821a8e7372b7c6dce85ef052c120f:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_2b23015d5b439f25
   650fc6d18b09ecda0770925216ed69680a3cf262779f10bc874ee754b6e13e86:
-    input: '`name`''s path.</think>''Answer'''
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`name`''s path.</think>''Answer'''
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 30
@@ -3695,11 +3848,11 @@ requests:
     - 15
     finish_step: true
   67465259bb7d5b82c21c47fc2463f219eb828c1d48f4b6eaf1fee22d9782eae7:
-    input: <｜DSML｜ calls><｜DSML｜ invoke name="write_file"><｜DSML｜ parameter name="path" string="true">/tmp/literal.txt</｜DSML｜ parameter><｜DSML｜ parameter name="content" string="true"><think></think>answer</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="write_file"><｜DSML｜ parameter name="path" string="true">/tmp/literal.txt</｜DSML｜ parameter><｜DSML｜ parameter name="content" string="true"><think></think>answer</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_a7861137bdb03589
     chunk_sizes:
     - 244
@@ -3930,6 +4083,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  728e935c72963c8f59aaf82da8b323f0e82405ecb766ceb45dd98fb28d1a3903:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">007</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_9df3142224567b2c
   73073133dc6fea38df15fb9c67c63defa8cbc30985a0187105c03e55a9d8590a:
     input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_686a0bb91b79903e
@@ -3942,6 +4098,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  73a411c1b38601e46979711ef38a400952f729af20a0c7e82f2562fba9363822:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_f9e3493f1e9b0ddf
   73fb7a9059ad1d3c2059f3e40440f78cc4395487c7cc31e009e745be8ecc0837:
     init:
       starting_state: Reasoning
@@ -4228,11 +4387,11 @@ requests:
     - 3
     finish_step: true
   86932f70a0a02c3a6c5d04ff7076c1ffb9f8926818718ff5137894d25e86a7bc:
-    input: Let me think, the reference is 80s' music</think>'Yes'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the reference is 80s' music</think>'Yes'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 54
@@ -4279,11 +4438,11 @@ requests:
     - 15
     finish_step: true
   8af32ebdcd8fcaa9851bcb19b027fe59ac8f4c0f7fc810f60428acc402ff3dde:
-    input: The special "</think>" marker is used to delineate parser paths
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: The special "</think>" marker is used to delineate parser paths
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 63
@@ -4642,11 +4801,11 @@ requests:
     - 15
     finish_step: true
   a25cd2bb559cf7a4d92b15cdb0b7b7073f3ff9e8ec9e16468544b29c88628089:
-    input: 27"</think>"Answer"
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: 27"</think>"Answer"
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 19
@@ -4694,11 +4853,11 @@ requests:
     - 15
     finish_step: true
   a4876338bfda7cc3a1dc239ac7bef87b76ef163a0241cba1334fa070f674b926:
-    input: '''</think>''</think>Answer'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '''</think>''</think>Answer'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 24
@@ -4791,11 +4950,11 @@ requests:
     - 15
     finish_step: true
   a9e8f53fa894d198aa56725ba3bc7dba4d004295b613d7ad03c4fe47faadc37e:
-    input: Let me think, the year is 80s'</think>Yes
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the year is 80s'</think>Yes
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 41
@@ -5056,11 +5215,11 @@ requests:
     - 15
     finish_step: true
   bdbdb00044984e69ca1938a3947fb32d2a84e2196c1d9793920a7d68edee8de5:
-    input: Let me think, I should run this command "grep -v '</think>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should run this command "grep -v '</think>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 58
@@ -5076,11 +5235,11 @@ requests:
     - 38
     finish_step: true
   bfcf9f083c45a75f02a94dc1e43463076c567c631516c3155bf2e1a8edf076b1:
-    input: Let me think, "The marker </think> is a special marker"
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, "The marker </think> is a special marker"
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 55
@@ -5124,6 +5283,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  c5e119c899e5184a419edd8e1072e78c75c6dda4c6cec9db144a7622473ffde3:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">True</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_75c228684e14e834
   c6e90b826a67ceda7f58f632d4c48ccd476063f9dacd493585dd3ce0bf1336ba:
     init:
       starting_state: None
@@ -5454,6 +5616,9 @@ requests:
     - 16
     - 15
     finish_step: true
+  d4be46db343e4fcbbf501df8bc6996360bb3c0284714d88527e38e0e5395cd75:
+    input: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">9007199254740993</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    tools: tools_afb443bdf3323900
   d5733330030cd194595aed86b64593d79441ccbef41795c20f8bd508d9f11ed2:
     init:
       starting_state: Reasoning
@@ -5913,11 +6078,11 @@ requests:
     - 57
     finish_step: true
   ee88504e2b3706b037e1a3dadc61de93d550a84dd1f1436a20fea4c12af23dcf:
-    input: The literal "<｜DSML｜ calls>" marker is part of the explanation. <｜DSML｜ calls><｜DSML｜ invoke name="run"><｜DSML｜ parameter name="cmd" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal "<｜DSML｜ calls>" marker is part of the explanation. <｜DSML｜ calls><｜DSML｜ invoke name="run"><｜DSML｜ parameter name="cmd" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
     tools: tools_ac03f4607c61c9ce
     chunk_sizes:
     - 64
@@ -6216,11 +6381,11 @@ requests:
     - 15
     finish_step: true
   fd453812decf50ed7d49af92561485893e355cfa666b8ae05699d4856decf9ec:
-    input: Let me think, the TV size is 40"</think>Yes
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the TV size is 40"</think>Yes
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 43
@@ -11016,3 +11181,113 @@ cases:
       name: run
       arguments:
         cmd: Paris
+  schema_enum_integer_union_string_nonmember:
+    description: 'Schema probe enum_integer_union_string_nonmember: independently authored value "3" under {"anyOf": [{"enum": [1, 2]}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_integer_union_string_nonmember
+    request: 2ac18a0dd6dcea9c2e602977f4350c107640c4e03d7b8a27ae61fa1cbfc039e3
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '3'
+  schema_enum_string_literal_boolean_union:
+    description: 'Schema probe enum_string_literal_boolean_union: independently authored value "True" under {"anyOf": [{"enum": ["True", "False"]}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-declared-types-enum_string_literal_boolean_union
+    request: c5e119c899e5184a419edd8e1072e78c75c6dda4c6cec9db144a7622473ffde3
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 'True'
+  schema_float_const_integer_precision:
+    description: 'Schema probe float_const_integer_precision: independently authored value "9007199254740993" under {"anyOf": [{"const": 9007199254740992.0}, {"type": "string"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-float_const_integer_precision
+    request: d4be46db343e4fcbbf501df8bc6996360bb3c0284714d88527e38e0e5395cd75
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '9007199254740993'
+  schema_overlapping_oneOf_union:
+    description: 'Schema probe overlapping_oneOf_union: independently authored value "42" under {"oneOf": [{"type": ["string", "integer"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-overlapping_oneOf_union
+    request: 647b9ed302b11f628b7c8eaa90315a03f76821a8e7372b7c6dce85ef052c120f
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_ref_nested_id_scope:
+    description: 'Schema probe ref_nested_id_scope: independently authored value "42" under {"$ref": "#/$defs/Scoped"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-schema-references-ref_nested_id_scope
+    request: 0c47076af74ceba0c013c0c920067ca86e78f6beaafc8b0d1a4359f26ed7558e
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_string_integer_leading_zero:
+    description: 'Schema probe type_array_string_integer_leading_zero: independently authored value "007" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_leading_zero
+    request: 728e935c72963c8f59aaf82da8b323f0e82405ecb766ceb45dd98fb28d1a3903
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '007'
+  schema_type_array_string_integer_minimum:
+    description: 'Schema probe type_array_string_integer_minimum: independently authored value "42" under {"type": ["string", "integer"], "minimum": 100}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_minimum
+    request: 2b63c671381e3ecb1676e54ba01f9b8ed3bca659eebdd4e70d08f3e4fc6e3f54
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_string_integer_not_const:
+    description: 'Schema probe type_array_string_integer_not_const: independently authored value "42" under {"type": ["string", "integer"], "not": {"const": 42}}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_integer_not_const
+    request: 2aa9dc5ff018ef5894c5eb5934a91cbe8fcfb123e2b745d315050de6df6d03cd
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '42'
+  schema_type_array_string_number_decimal:
+    description: 'Schema probe type_array_string_number_decimal: independently authored value "1.5" under {"type": ["string", "number"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-nullability-type_array_string_number_decimal
+    request: 38cfa7c6ed905f3b6a692ac5d99be62e8017c96dbd66546ed2787e1aac7075ad
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: '1.5'
+  schema_typed_enum_union:
+    description: 'Schema probe typed_enum_union: independently authored value 42 under {"anyOf": [{"type": "string", "enum": ["auto"]}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-tool-argument-unions-and-intersections-typed_enum_union
+    request: 73a411c1b38601e46979711ef38a400952f729af20a0c7e82f2562fba9363822
+    golden:
+    - kind: tool_call
+      name: schema_probe
+      arguments:
+        value: 42

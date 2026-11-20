@@ -4,6 +4,9 @@
 #[path = "../../tests/glm47_schema_matrix.rs"]
 mod matrix;
 
+// v1 keeps its legacy string preference.
+const JSON_FIRST: bool = false;
+
 use dynamo_parsers::tool_calling::{
     StructuralTagSchemaMode, ToolCallConfig, ToolCallFormatBuildContext, ToolChoice,
     ToolDefinition, try_tool_call_parse_aggregate,
@@ -34,11 +37,15 @@ fn build(tools: &[ToolDefinition], mode: StructuralTagSchemaMode) -> anyhow::Res
 
 // Preserve these parser-positive inputs while asserting that v1 never emits a
 // grammar which silently discards their constraining $ref siblings.
-fn expects_builder_error(case: &matrix::Case) -> bool {
-    matches!(
-        case.name.as_str(),
-        "ref_sibling_integer" | "unresolved_ref_with_type" | "cyclic_ref_with_type"
-    )
+// The $ref sibling the v1 builder cannot prove redundant, where it must refuse.
+fn expected_builder_error(case: &matrix::Case) -> Option<&'static str> {
+    match case.name.as_str() {
+        "ref_sibling_integer" | "unresolved_ref_with_type" | "cyclic_ref_with_type" => {
+            Some("$ref sibling `type`")
+        }
+        "ref_nested_id_scope" => Some("$ref sibling `$defs`"),
+        _ => None,
+    }
 }
 
 async fn arguments(case: &matrix::Case) -> Value {
@@ -57,27 +64,23 @@ async fn authored_schema_matrix_preserves_types_and_literals() {
     for case in matrix::cases() {
         let actual = arguments(&case).await;
         let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
-        let (tag, builder_error) = if expects_builder_error(&case) {
+        let (tag, builder_error) = if let Some(sibling) = expected_builder_error(&case) {
             let error = format!("{:#}", built.unwrap_err());
-            assert!(
-                error.contains("$ref sibling `type`"),
-                "{}: {error}",
-                case.name
-            );
+            assert!(error.contains(sibling), "{}: {error}", case.name);
             (None, Some(error))
         } else {
             (Some(built.unwrap()), None)
         };
         results.push(
             json!({"name":case.name, "schema":case.parameters(), "wire":case.wire(),
-            "expected":case.expected(), "actual":actual,
+            "expected":case.expected(JSON_FIRST), "actual":actual,
             "tag":tag, "builder_error":builder_error}),
         );
-        if actual != case.expected() {
+        if actual != case.expected(JSON_FIRST) {
             failures.push(format!(
                 "{}: expected {}, got {}",
                 case.name,
-                case.expected(),
+                case.expected(JSON_FIRST),
                 actual
             ));
         }
@@ -92,15 +95,11 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
     let mut probes = Vec::new();
     for case in matrix::cases().into_iter().filter(|case| case.grammar) {
         let actual = arguments(&case).await;
-        assert_eq!(actual, case.expected(), "{}", case.name);
+        assert_eq!(actual, case.expected(JSON_FIRST), "{}", case.name);
         let built = build(&[tool(&case)], StructuralTagSchemaMode::Auto);
-        if expects_builder_error(&case) {
+        if let Some(sibling) = expected_builder_error(&case) {
             let error = format!("{:#}", built.unwrap_err());
-            assert!(
-                error.contains("$ref sibling `type`"),
-                "{}: {error}",
-                case.name
-            );
+            assert!(error.contains(sibling), "{}: {error}", case.name);
         } else {
             probes.push(case.probe(built.unwrap(), actual));
         }
@@ -117,7 +116,7 @@ async fn authored_schemas_accept_valid_and_reject_invalid_wires() {
             let mut tool = tool(&case);
             tool.strict = strict;
             let enforce = mode == StructuralTagSchemaMode::Strict || strict != Some(false);
-            let mut probe = case.probe(build(&[tool], mode).unwrap(), case.expected());
+            let mut probe = case.probe(build(&[tool], mode).unwrap(), case.expected(JSON_FIRST));
             probe["name"] = json!(format!("strict_{strict:?}_{mode:?}"));
             if !enforce {
                 probe["accept"] = probe["reject"].take();

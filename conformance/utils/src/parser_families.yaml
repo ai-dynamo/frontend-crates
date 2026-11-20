@@ -428,7 +428,9 @@ unified:
       schema_null_union_ambiguous: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_null.
       schema_nullable_string: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_null.
       schema_object_const_union: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_object_bare.
+      schema_overlapping_oneOf_union: Native Harmony does not consume tool schemas; this request and oracle duplicate the active schema_const_number_bare.
       schema_percent_ref_const: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_number_bare.
+      schema_ref_nested_id_scope: Native Harmony does not consume tool schemas; this request and oracle duplicate the active schema_const_number_bare.
       schema_ref_sibling_integer: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_integer.
       schema_ref_union_anyOf_string: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_plain_bare.
       schema_ref_union_oneOf_integer: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_ref_union_anyof_integer.
@@ -436,6 +438,9 @@ unified:
       schema_type_array_integer_null: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_integer.
       schema_type_array_integer_null_null: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_null.
       schema_type_array_string_integer: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_number_bare.
+      schema_type_array_string_integer_minimum: Native Harmony does not consume tool schemas; this request and oracle duplicate the active schema_const_number_bare.
+      schema_type_array_string_integer_not_const: Native Harmony does not consume tool schemas; this request and oracle duplicate the active schema_const_number_bare.
+      schema_typed_enum_union: Native Harmony does not consume tool schemas; this request and oracle duplicate the active schema_declared_integer.
       schema_union_anyOf_array_reverse_string: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_plain_bare.
       schema_union_anyOf_array_reverse_typed: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_array.
       schema_union_anyOf_array_string: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_plain_bare.

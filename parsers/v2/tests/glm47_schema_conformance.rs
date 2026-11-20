@@ -4,6 +4,9 @@
 #[path = "../../tests/glm47_schema_matrix.rs"]
 mod matrix;
 
+// v2 types native text with the shared JSON-first policy.
+const JSON_FIRST: bool = true;
+
 use dynamo_parsers_v2::structural_tag::{
     StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,
 };
@@ -112,11 +115,11 @@ fn authored_schema_matrix_matches_legacy_and_unified_at_chunk_boundaries() {
                 ("legacy", legacy_arguments(&case, &chunks)),
                 ("unified", unified_arguments(&case, &chunks)),
             ] {
-                if actual != case.expected() {
+                if actual != case.expected(JSON_FIRST) {
                     failures.push(format!(
                         "{} {mode} schedule{index}: expected {}, got {}",
                         case.name,
-                        case.expected(),
+                        case.expected(JSON_FIRST),
                         actual
                     ));
                 }
@@ -126,13 +129,13 @@ fn authored_schema_matrix_matches_legacy_and_unified_at_chunk_boundaries() {
         let result = parser.parse_complete(&input).unwrap();
         let actual = serde_json::from_str::<Value>(&result.calls[0].arguments).unwrap();
         results.push(json!({"name":case.name,"schema":case.parameters(),"wire":case.wire(),
-            "expected":case.expected(),"actual":actual,"unified":unified_arguments(&case, &[&input]),
+            "expected":case.expected(JSON_FIRST),"actual":actual,"unified":unified_arguments(&case, &[&input]),
             "tag":build(&[tool(&case)], StructuralTagSchemaMode::Auto)}));
-        if actual != case.expected() {
+        if actual != case.expected(JSON_FIRST) {
             failures.push(format!(
                 "{} batch-on-stream: expected {}, got {}",
                 case.name,
-                case.expected(),
+                case.expected(JSON_FIRST),
                 actual
             ));
         }
@@ -148,7 +151,7 @@ fn authored_schemas_accept_valid_and_reject_invalid_wires() {
     for case in matrix::cases().into_iter().filter(|case| case.grammar) {
         let input = case.wire();
         let actual = legacy_arguments(&case, &[&input]);
-        assert_eq!(actual, case.expected(), "{}", case.name);
+        assert_eq!(actual, case.expected(JSON_FIRST), "{}", case.name);
         assert_eq!(unified_arguments(&case, &[&input]), actual, "{}", case.name);
         probes.push(case.probe(build(&[tool(&case)], StructuralTagSchemaMode::Auto), actual));
     }
@@ -164,7 +167,7 @@ fn authored_schemas_accept_valid_and_reject_invalid_wires() {
             let mut tool = tool(&case);
             tool.strict = strict;
             let enforce = mode == StructuralTagSchemaMode::Strict || strict == Some(true);
-            let mut probe = case.probe(build(&[tool], mode), case.expected());
+            let mut probe = case.probe(build(&[tool], mode), case.expected(JSON_FIRST));
             probe["name"] = json!(format!("strict_{strict:?}_{mode:?}"));
             if !enforce {
                 probe["accept"] = probe["reject"].take();

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.9] - Unreleased
+
+### Features
+
+- *(parsers-v2)* Type GLM-4.7 and MiniMax-M3 native argument text JSON-first through the shared schema facts: text that is valid JSON and provably fits the parameter schema becomes that value, otherwise text the schema admits as a string stays verbatim.
+
 ## [0.10.8](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.10.7...dynamo-parsers-v2-v0.10.8) - 2026-11-19
 
 ### Bug fixes
