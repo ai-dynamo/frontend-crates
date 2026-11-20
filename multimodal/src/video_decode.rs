@@ -27,10 +27,11 @@
 //! Decoding runs in NVIDIA's driver when it can: `libcuda.so.1` and
 //! `libnvcuvid.so.1` are loaded at runtime (see `nvdec`) and GPU 0 is used.
 //! When NVDEC cannot decode a VP8 or VP9 stream (no driver, a GPU without the
-//! codec, or VP8, which NVDEC is not used for), it is decoded on the calling
-//! thread by libvpx, also loaded at runtime (see `vpx`). Nothing is linked at
-//! build time and no decoder ships in this crate. Without a decoder for the
-//! stream, decoding returns [`MmError::Unsupported`].
+//! codec, or VP8, which NVDEC is not used for), it is decoded by libvpx, also
+//! loaded at runtime (see `vpx`): on the calling thread, or with the crate's
+//! pool armed (`execution::init_pool`), one key-frame segment per pool thread.
+//! Nothing is linked at build time and no decoder ships in this crate. Without
+//! a decoder for the stream, decoding returns [`MmError::Unsupported`].
 //!
 //! 64-bit Linux only: the driver and libvpx structures are transcribed for
 //! the 64-bit (LP64) layout, and their layout checks fail the build on 32-bit
@@ -56,9 +57,11 @@
 //! decoded). Only the sampled frames are copied off the GPU and converted.
 //!
 //! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
-//! at a time, so only its index (sample tables) is held. WebM and Matroska
-//! packets are read into memory while the file is demuxed, so those hold the
-//! whole video next to the source. A VP8 or VP9 clip is also read once in full
+//! at a time, so only its index (sample tables) is held; a libvpx decode on
+//! an armed pool reads the packets of the segments in flight ahead, within the
+//! room `max_output_bytes` leaves. WebM and Matroska packets are read into
+//! memory while the file is demuxed, so those hold the whole video next to the
+//! source. A VP8 or VP9 clip is also read once in full
 //! before decoding, to find which packets display a frame and what colour VP9
 //! declares.
 
@@ -640,6 +643,7 @@ fn decode_demuxed(
         limits.max_output_bytes - out_width as usize * out_height as usize * 3 * targets.len();
     // A queued picture and its source-size RGB count against the room.
     let queued = (info.width as usize * info.height as usize).saturating_mul(9) / 2;
+
     let mut sampler = Sampler {
         targets,
         next: 0,
@@ -775,85 +779,75 @@ impl Sampler<'_> {
     /// Take shown frame `index`: convert it, and resize it if asked, if it is
     /// the next sampled one (kept again if the index repeats).
     fn push(&mut self, picture: &Nv12<'_>, pts: f64, index: u64) -> Result<()> {
-        let copies = self.take(picture.width, picture.height, pts, index)?;
-        if copies > 0 && self.batch == 1 {
-            self.append(picture, copies);
-        } else if copies > 0 {
-            self.send(QueuedPicture::new(picture), copies);
-        }
-        Ok(())
-    }
-
-    /// Take shown frame `index` already converted to `rgb`, if it is the next
-    /// sampled one.
-    fn push_rgb(&mut self, rgb: Vec<u8>, pts: f64, index: u64) -> Result<()> {
-        let copies = self.take(self.width, self.height, pts, index)?;
-        if copies > 0 {
-            self.sent.push((copies, Some(rgb)));
-            self.drain();
-        }
-        Ok(())
-    }
-
-    /// The times shown frame `index` is sampled from here on, 0 if it is not
-    /// the next sampled one, with their timestamps recorded.
-    fn take(&mut self, width: u32, height: u32, pts: f64, index: u64) -> Result<usize> {
-        if (width, height) != (self.width, self.height) {
+        if (picture.width, picture.height) != (self.width, self.height) {
             return Err(MmError::invalid_input(format!(
-                "frame size changed mid-stream from {}x{} to {width}x{height}",
-                self.width, self.height
+                "frame size changed mid-stream from {}x{} to {}x{}",
+                self.width, self.height, picture.width, picture.height
             )));
         }
+        if !self.wants(index) {
+            return Ok(());
+        }
+        let copies = self.take(pts, index);
+        if self.batch == 1 {
+            let start = self.rgb.len();
+            convert_frame(
+                picture,
+                self.resize,
+                self.conversion,
+                &mut self.full,
+                &mut self.rgb,
+            );
+            let end = self.rgb.len();
+            for _ in 1..copies {
+                self.rgb.extend_from_within(start..end);
+            }
+        } else {
+            let slot = self.sent.len();
+            self.sent.push((copies, None));
+            let (picture, resize, conversion) =
+                (QueuedPicture::new(picture), self.resize, self.conversion);
+            let done = self.results.0.clone();
+            execution::spawn(move || {
+                let rgb = std::panic::catch_unwind(move || {
+                    let mut rgb = Vec::new();
+                    convert_frame(
+                        &picture.view(),
+                        resize,
+                        conversion,
+                        &mut Vec::new(),
+                        &mut rgb,
+                    );
+                    rgb
+                });
+                let _ = done.send((slot, rgb));
+            });
+            self.in_flight += 1;
+            if self.in_flight == self.batch {
+                self.receive();
+            }
+        }
+        Ok(())
+    }
+
+    /// Take shown frame `index`, already converted to `rgb`, if it is the
+    /// next sampled one.
+    fn push_rgb(&mut self, rgb: &[u8], pts: f64, index: u64) {
+        for _ in 0..self.take(pts, index) {
+            self.rgb.extend_from_slice(rgb);
+        }
+    }
+
+    /// The times shown frame `index` is sampled from here on, with their
+    /// timestamps recorded: 0 when it is not the next sampled one.
+    fn take(&mut self, pts: f64, index: u64) -> usize {
         let mut copies = 0;
         while self.targets.get(self.next) == Some(&index) {
             self.timestamps.push(pts);
             self.next += 1;
             copies += 1;
         }
-        Ok(copies)
-    }
-
-    /// Convert `picture` on the caller and append it `copies` times.
-    fn append(&mut self, picture: &Nv12<'_>, copies: usize) {
-        let start = self.rgb.len();
-        convert_frame(
-            picture,
-            self.resize,
-            self.conversion,
-            &mut self.full,
-            &mut self.rgb,
-        );
-        let end = self.rgb.len();
-        for _ in 1..copies {
-            self.rgb.extend_from_within(start..end);
-        }
-    }
-
-    /// Convert `picture` on the pool, waiting for one sent earlier first when
-    /// the batch is full.
-    fn send(&mut self, picture: QueuedPicture, copies: usize) {
-        let slot = self.sent.len();
-        self.sent.push((copies, None));
-        let (resize, conversion) = (self.resize, self.conversion);
-        let done = self.results.0.clone();
-        execution::spawn(move || {
-            let rgb = std::panic::catch_unwind(move || {
-                let mut rgb = Vec::new();
-                convert_frame(
-                    &picture.view(),
-                    resize,
-                    conversion,
-                    &mut Vec::new(),
-                    &mut rgb,
-                );
-                rgb
-            });
-            let _ = done.send((slot, rgb));
-        });
-        self.in_flight += 1;
-        if self.in_flight == self.batch {
-            self.receive();
-        }
+        copies
     }
 
     /// Wait for every frame sent to the pool.
@@ -870,11 +864,6 @@ impl Sampler<'_> {
         };
         self.in_flight -= 1;
         self.sent[slot].1 = Some(rgb.unwrap_or_else(|panic| std::panic::resume_unwind(panic)));
-        self.drain();
-    }
-
-    /// Append the frames of `sent` that are back, in order.
-    fn drain(&mut self) {
         while let Some((copies, Some(rgb))) = self.sent.get_mut(self.appended) {
             for _ in 0..*copies {
                 self.rgb.extend_from_slice(rgb);
@@ -3496,7 +3485,7 @@ mod tests {
             let order = seek::Order::new(track);
             let runs = seek::plan(track, &order, sampler.targets)?;
             let parts = seek::split_at_keys(track, &runs)?;
-            vpx::decode_parts(track, sampler, &order, &parts, 4, colour)
+            vpx::decode_parts(track, sampler, &order, &parts, colour)
         }
 
         #[test]
@@ -3541,6 +3530,40 @@ mod tests {
                     assert_eq!(in_parts.timestamps(), serial.timestamps(), "{name} {set:?}");
                 }
             }
+        }
+
+        /// A part decodes nothing after its last sampled frame: with seeking off,
+        /// a packet the serial decode never reaches fails neither decode.
+        #[test]
+        fn a_part_ends_at_its_last_sampled_frame() {
+            let mut bytes = fixture("gop_vp8.webm");
+            let at = {
+                let track = demux(&bytes).unwrap();
+                let last_key = track.packets.iter().rev().find(|p| p.sync).unwrap();
+                let Payload::Owned(key) = &last_key.payload else {
+                    unreachable!("Matroska packets are read")
+                };
+                bytes
+                    .windows(key.len())
+                    .position(|w| w == &key[..])
+                    .unwrap()
+            };
+            // The last key frame declares one more column than the container.
+            bytes[at + 6] += 1;
+            let decode = |backend: Backend| {
+                seek::DISABLED.set(true);
+                let frames = decode_frames_with(
+                    &bytes.as_slice(),
+                    &[1],
+                    None,
+                    &VideoDecodeLimits::default(),
+                    backend,
+                );
+                seek::DISABLED.set(false);
+                frames.unwrap()
+            };
+            let (serial, in_parts) = (decode(vpx::decode), decode(vpx_in_parts));
+            assert!(in_parts.frame(0) == serial.frame(0));
         }
 
         #[test]

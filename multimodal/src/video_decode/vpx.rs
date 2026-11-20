@@ -53,6 +53,7 @@
 
 use std::borrow::Cow;
 use std::ffi::{CStr, c_char, c_int, c_long, c_uint, c_void};
+use std::ops::Range;
 use std::sync::OnceLock;
 
 use super::nvdec::{open, symbol};
@@ -417,18 +418,10 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     // references it replaces, so the skipped packets need no reset.
     let order = Order::new(track);
     let runs = seek::plan(track, &order, sampler.targets)?;
-    let threads = execution::threads();
-    if threads > 1 {
+    if execution::threads() > 1 {
         let parts = seek::split_at_keys(track, &runs)?;
         if parts.len() > 1 {
-            return decode_parts(
-                track,
-                sampler,
-                &order,
-                &parts,
-                threads,
-                (matrix, full_range),
-            );
+            return decode_parts(track, sampler, &order, &parts, (matrix, full_range));
         }
     }
     let mut decoder = Decoder::new(api()?, track.codec)?;
@@ -462,52 +455,70 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
 }
 
 /// [`decode`] over `parts`, runs that each start at a key frame, on one
-/// decoder each in the CPU pool. A part converts its sampled frames as they
-/// decode; they reach `sampler` in order, and the parts in flight stay
-/// within the room the output limit leaves.
+/// decoder each in the CPU pool. Each part ends at its last sampled frame,
+/// and a part without one is not decoded. A part converts its sampled frames
+/// as they decode, and they reach `sampler` in order. The packets that the
+/// parts in flight read from the source and the frames they convert stay
+/// within the room the output limit leaves, else one part runs at a time;
+/// each part in flight also holds a libvpx decoder.
 pub(super) fn decode_parts(
     track: &Track<'_>,
     sampler: &mut Sampler<'_>,
     order: &Order,
     parts: &[Run],
-    threads: usize,
     (matrix, full_range): (Matrix, bool),
 ) -> Result<()> {
     let (codec, width, height) = (track.codec, sampler.width, sampler.height);
     let (targets, resize, conversion) = (sampler.targets, sampler.resize, sampler.conversion);
     let sampled =
         |index: usize| order.shown[index].filter(|shown| targets.binary_search(shown).is_ok());
-    let most = parts
+    let parts: Vec<Range<usize>> = parts
+        .iter()
+        .filter_map(|part| {
+            let last = (part.start..part.end)
+                .rev()
+                .find(|&i| sampled(i).is_some())?;
+            Some(part.start..last + 1)
+        })
+        .collect();
+    // A part holds the packets it reads from the source, its converted frames,
+    // and the frame it converts as NV12 and as source-size RGB.
+    let (out_width, out_height) = resize.map_or((width, height), |r| (r.width, r.height));
+    let frame = out_width as usize * out_height as usize * 3;
+    let held = parts
         .iter()
         .map(|part| {
-            (part.start..part.end)
-                .filter(|&i| sampled(i).is_some())
-                .count()
+            let packet = |i: usize| {
+                let read = match track.packets[i].payload {
+                    Payload::Source { len, .. } => len,
+                    Payload::Owned(_) => 0,
+                };
+                read + if sampled(i).is_some() { frame } else { 0 }
+            };
+            part.clone().map(packet).sum::<usize>()
         })
         .max()
-        .unwrap_or(0);
-    // A part holds its converted frames, and the frame it converts as NV12
-    // and as source-size RGB.
-    let (out_width, out_height) = resize.map_or((width, height), |r| (r.width, r.height));
-    let held = most * out_width as usize * out_height as usize * 3
-        + width as usize * height as usize * 9 / 2;
-    let ahead = (sampler.room / held).clamp(1, threads);
-    let inputs = parts
-        .iter()
-        .map(|part| -> Result<Vec<(usize, Cow<'_, [u8]>)>> {
-            (part.start..part.end)
-                .map(|index| {
-                    let packet = &track.packets[index];
-                    let bytes = match &packet.payload {
-                        Payload::Owned(data) => Cow::Borrowed(&data[..]),
-                        Payload::Source { .. } => {
-                            Cow::Owned(track.packet_bytes(packet, &mut Vec::new())?.to_vec())
-                        }
-                    };
-                    Ok((index, bytes))
-                })
-                .collect()
-        });
+        .unwrap_or(0)
+        .saturating_add((width as usize * height as usize).saturating_mul(9) / 2);
+    let ahead = (sampler.room / held).clamp(1, execution::threads());
+    // `Track` is not `Sync`, so the caller reads the packets. A failed read
+    // is reported in decode order, after the packets before it decode.
+    let read = |index: usize| -> Result<Cow<'_, [u8]>> {
+        let packet = &track.packets[index];
+        Ok(match &packet.payload {
+            Payload::Owned(data) => Cow::Borrowed(&data[..]),
+            Payload::Source { .. } => {
+                let mut data = Vec::new();
+                track.packet_bytes(packet, &mut data)?;
+                Cow::Owned(data)
+            }
+        })
+    };
+    let inputs = parts.iter().map(|part| {
+        part.clone()
+            .map(|i| read(i).map(|bytes| (i, bytes)))
+            .collect::<Vec<_>>()
+    });
     let (api, packets) = (api()?, &track.packets);
     execution::try_for_each_ordered(
         inputs,
@@ -516,7 +527,8 @@ pub(super) fn decode_parts(
             let mut decoder = Decoder::new(api, codec)?;
             let (mut framed, mut uv, mut full, mut kept) =
                 (Vec::new(), Vec::new(), Vec::new(), Vec::new());
-            for (index, bytes) in part? {
+            for input in part {
+                let (index, bytes) = input?;
                 let packet = &packets[index];
                 let data = libvpx_input(codec, &bytes, width, height, &mut framed)?;
                 let Some(image) = decoder.frame(data, packet.displays, width, height)? else {
@@ -533,8 +545,10 @@ pub(super) fn decode_parts(
             Ok(kept)
         },
         |kept| {
-            kept.into_iter()
-                .try_for_each(|(rgb, pts, shown)| sampler.push_rgb(rgb, pts, shown))
+            for (rgb, pts, shown) in kept {
+                sampler.push_rgb(&rgb, pts, shown);
+            }
+            Ok(())
         },
     )
 }

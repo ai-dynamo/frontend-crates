@@ -218,10 +218,10 @@ pub(super) fn plan(track: &Track<'_>, order: &Order, targets: &[u64]) -> Result<
     Ok(runs)
 }
 
-/// `runs` split at each packet inside them that the container marks a
-/// keyframe and the bitstream confirms. For VP8 and VP9, where a key frame
-/// resets the decoder state: each part decodes on a fresh decoder to the frames
-/// the run gives there.
+/// `runs` cut at each packet inside them that the container marks a keyframe
+/// and the bitstream confirms. A VP8 or VP9 key frame resets the decoder
+/// state, so each part decodes on a fresh decoder to the frames the run
+/// decodes there.
 pub(super) fn split_at_keys(track: &Track<'_>, runs: &[Run]) -> Result<Vec<Run>> {
     let mut nal = NalReader::new(track);
     let mut parts = Vec::new();
