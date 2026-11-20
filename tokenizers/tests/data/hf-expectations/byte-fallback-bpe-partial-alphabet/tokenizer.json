@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "truncation": null,
+  "padding": null,
+  "added_tokens": [
+    {
+      "id": 6,
+      "content": "<eos>",
+      "special": true,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    }
+  ],
+  "normalizer": null,
+  "pre_tokenizer": null,
+  "post_processor": null,
+  "decoder": {
+    "type": "Sequence",
+    "decoders": [
+      {
+        "type": "ByteFallback"
+      },
+      {
+        "type": "Fuse"
+      }
+    ]
+  },
+  "model": {
+    "type": "BPE",
+    "vocab": {
+      "<0x61>": 0,
+      "<0xF5>": 1,
+      "<0xC3>": 2,
+      "<0xA9>": 3,
+      " hello": 4,
+      "!": 5,
+      "<eos>": 6
+    },
+    "merges": [],
+    "byte_fallback": true
+  }
+}

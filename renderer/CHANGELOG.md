@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [11.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.5.0...dynamo-renderer-v11.0.0) - 2026-11-16
+
+### Breaking changes
+
+- *(renderer)* Depend on and re-export `dynamo-tokenizers` 5.0.0, whose Hugging Face backend
+  runs on `tokenizers` 1.0.0-rc.5. The renderer's own API is unchanged.
+
 ## [10.5.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.4.5...dynamo-renderer-v10.5.0) - 2026-11-20
 
 ### Features

@@ -1,0 +1,64 @@
+{
+"model_dir": "hf-expectations/wordlevel",
+"vocab_size": 7,
+"token_id_bound": 7,
+"special_token_ids": [6],
+"special_tokens": ["<special>"],
+"num_special_tokens_added": 0,
+"validate_prefix_cache": true,
+"validate_segment_prefix_cache": true,
+"fast_loads": false,
+"token_to_id": {"":null," ":null,"<missing>":null,"<special>":6,"He":null,"hello":1,"world":2},
+"added_tokens": [
+{"id":6,"content":"<special>","special":true,"encode":{"ids":[6]},"decode":["<special>",""]}
+],
+"texts": [
+{"text":"","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""]},
+{"text":" ","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""]},
+{"text":"hello world","ids":[1,2],"decode":["hello world","hello world"],"stream":[{"steps":["hello"," world"],"finish":null},{"steps":["hello"," world"],"finish":null}],"special_ids":[1,2],"special_decode":["hello world","hello world"]},
+{"text":"hello worlds","ids":[1,0],"decode":["hello [UNK]","hello [UNK]"],"stream":[{"steps":["hello"," [UNK]"],"finish":null},{"steps":["hello"," [UNK]"],"finish":null}],"special_ids":[1,0],"special_decode":["hello [UNK]","hello [UNK]"]},
+{"text":"Hello, world!","ids":[0,0,2,0],"decode":["[UNK] [UNK] world [UNK]","[UNK] [UNK] world [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," world"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," world"," [UNK]"],"finish":null}],"special_ids":[0,0,2,0],"special_decode":["[UNK] [UNK] world [UNK]","[UNK] [UNK] world [UNK]"]},
+{"text":"  leading and trailing  ","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"café 北京 😀","ids":[3,4,5],"decode":["café 北京 😀","café 北京 😀"],"stream":[{"steps":["café"," 北京"," 😀"],"finish":null},{"steps":["café"," 北京"," 😀"],"finish":null}],"special_ids":[3,4,5],"special_decode":["café 北京 😀","café 北京 😀"]},
+{"text":"é\n\t","ids":[0],"decode":["[UNK]","[UNK]"],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":["[UNK]"],"finish":null}],"special_ids":[0],"special_decode":["[UNK]","[UNK]"]},
+{"text":"naïve façade — “quotes” …","ids":[0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"The quick brown fox jumps over the lazy dog.","ids":[0,0,0,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"1234567890 3.14159 -42","ids":[0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"fn main() {\n    println!(\"hi\");\n}\n","ids":[0,0,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"line1\nline2\r\nline3","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"tabs\tand nbsp","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"مرحبا بالعالم","ids":[0,0],"decode":["[UNK] [UNK]","[UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0],"special_decode":["[UNK] [UNK]","[UNK] [UNK]"]},
+{"text":"こんにちは世界","ids":[0],"decode":["[UNK]","[UNK]"],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":["[UNK]"],"finish":null}],"special_ids":[0],"special_decode":["[UNK]","[UNK]"]},
+{"text":"👩‍👩‍👧‍👦 family 🇺🇸","ids":[0,0,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"� replacement","ids":[0,0],"decode":["[UNK] [UNK]","[UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0],"special_decode":["[UNK] [UNK]","[UNK] [UNK]"]},
+{"text":"<special>hello<special>","ids":[6,1,6],"decode":["<special> hello <special>","hello"],"stream":[{"steps":["<special>"," hello"," <special>"],"finish":null},{"steps":[null,"hello",null],"finish":null}],"special_ids":[6,1,6],"special_decode":["<special> hello <special>","hello"]},
+{"text":"a<|x|>b","ids":[0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"UPPER lower MiXeD","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"hello 😀 北京!","ids":[1,5,4,0],"decode":["hello 😀 北京 [UNK]","hello 😀 北京 [UNK]"],"stream":[{"steps":["hello"," 😀"," 北京"," [UNK]"],"finish":null},{"steps":["hello"," 😀"," 北京"," [UNK]"],"finish":null}],"special_ids":[1,5,4,0],"special_decode":["hello 😀 北京 [UNK]","hello 😀 北京 [UNK]"]},
+{"text":"He said hello, world. The lot.","ids":[0,0,1,0,2,0,0,0,0],"decode":["[UNK] [UNK] hello [UNK] world [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] hello [UNK] world [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," hello"," [UNK]"," world"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," hello"," [UNK]"," world"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,1,0,2,0,0,0,0],"special_decode":["[UNK] [UNK] hello [UNK] world [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] hello [UNK] world [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"<special>","ids":[6],"decode":["<special>",""],"stream":[{"steps":["<special>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[6],"special_decode":["<special>",""]},
+{"text":"<special>","ids":[6],"decode":["<special>",""],"stream":[{"steps":["<special>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[6],"special_decode":["<special>",""]},
+{"text":"<special>hello world<special>","ids":[6,1,2,6],"decode":["<special> hello world <special>","hello world"],"stream":[{"steps":["<special>"," hello"," world"," <special>"],"finish":null},{"steps":[null,"hello"," world",null],"finish":null}],"special_ids":[6,1,2,6],"special_decode":["<special> hello world <special>","hello world"]},
+{"text":" <special> ","ids":[6],"decode":["<special>",""],"stream":[{"steps":["<special>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[6],"special_decode":["<special>",""]}
+],
+"prefixes": [
+{"text":"hello 😀 北京!","ids":[1,5,4,0],"prefixes":[{"decode":"hello","partial":false,"unstable":false},{"decode":"hello 😀","partial":false,"unstable":false},{"decode":"hello 😀 北京","partial":false,"unstable":false},{"decode":"hello 😀 北京 [UNK]","partial":false,"unstable":false}],"streams":[{"steps":["hello"," 😀"," 北京"," [UNK]"],"finish":null},{"steps":[" 😀"," 北京"," [UNK]"],"finish":null},{"steps":[" 北京"," [UNK]"],"finish":null},{"steps":[" [UNK]"],"finish":null}]},
+{"text":"café 北京 😀","ids":[3,4,5],"prefixes":[{"decode":"café","partial":false,"unstable":false},{"decode":"café 北京","partial":false,"unstable":false},{"decode":"café 北京 😀","partial":false,"unstable":false}],"streams":[{"steps":["café"," 北京"," 😀"],"finish":null},{"steps":[" 北京"," 😀"],"finish":null},{"steps":[" 😀"],"finish":null}]}
+],
+"segments": [
+{"segments":[],"plain":{"ids":[]},"special":{"ids":[]},"fast":null},
+{"segments":[["<special>hello",true],[" world<special>",true]],"plain":{"ids":[6,1,2,6]},"special":{"ids":[6,1,2,6]},"fast":null},
+{"segments":[["<special>hello",true],[" world<special>",false]],"plain":{"ids":[6,1,2,0,0,0]},"special":{"ids":[6,1,2,0,0,0]},"fast":null},
+{"segments":[["hello world",true]],"plain":{"ids":[1,2]},"special":{"ids":[1,2]},"fast":null},
+{"segments":[["hello world",false]],"plain":{"ids":[1,2]},"special":{"ids":[1,2]},"fast":null},
+{"segments":[["He said hello",false],[" world",true]],"plain":{"ids":[0,0,1,2]},"special":{"ids":[0,0,1,2]},"fast":null},
+{"segments":[["<special>",true]],"plain":{"ids":[6]},"special":{"ids":[6]},"fast":null},
+{"segments":[["<special>",false]],"plain":{"ids":[0,0,0]},"special":{"ids":[0,0,0]},"fast":null},
+{"segments":[["café 北京 😀",false],["",true],["!",false]],"plain":{"ids":[3,4,5,0]},"special":{"ids":[3,4,5,0]},"fast":null}
+],
+"sequences": [
+{"ids":[0,1,2,3,4,5,6],"decode":["[UNK] hello world café 北京 😀 <special>","[UNK] hello world café 北京 😀"],"unstable":[false,false],"stream":[{"steps":["[UNK]"," hello"," world"," café"," 北京"," 😀"," <special>"],"finish":null},{"steps":["[UNK]"," hello"," world"," café"," 北京"," 😀",null],"finish":null}]},
+{"ids":[6,5,4,3,2,1,0],"decode":["<special> 😀 北京 café world hello [UNK]","😀 北京 café world hello [UNK]"],"unstable":[false,false],"stream":[{"steps":["<special>"," 😀"," 北京"," café"," world"," hello"," [UNK]"],"finish":null},{"steps":[null,"😀"," 北京"," café"," world"," hello"," [UNK]"],"finish":null}]}
+],
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}

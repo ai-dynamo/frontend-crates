@@ -531,11 +531,7 @@ mod tests {
         assert!(tokenizer.special_tokens().is_empty());
         let encoding = tokenizer.encode("hello").unwrap();
 
-        // Verify it produces the Sp variant
-        match &encoding {
-            Encoding::Sp(_) => {}
-            other => panic!("Expected Encoding::Sp, got {:?}", other),
-        }
+        assert!(!encoding.token_ids().is_empty());
     }
 
     #[test]

@@ -88,19 +88,17 @@ pub enum TokenizerType {
 /// character offsets in the original text
 pub type Offsets = (usize, usize);
 
-/// Contains the results of tokenizing text: token IDs, string tokens, and their spans
+/// The result of tokenizing text: its token ids.
 #[derive(Debug, Clone)]
 pub enum Encoding {
-    /// Hugging Face
-    Hf(Box<tokenizers::tokenizer::Encoding>),
-    /// Sentence Piece
+    /// Token ids, from any backend. The variant name is historical: until 5.0 it marked
+    /// SentencePiece-style output beside a Hugging Face variant that also carried offsets.
     Sp(Vec<TokenIdType>),
 }
 
 impl Encoding {
     pub fn token_ids(&self) -> &[u32] {
         match self {
-            Encoding::Hf(inner) => inner.get_ids(),
             Encoding::Sp(inner) => inner,
         }
     }

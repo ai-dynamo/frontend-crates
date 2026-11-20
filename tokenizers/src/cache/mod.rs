@@ -35,13 +35,11 @@
 //!
 //! # Storage normalization
 //!
-//! When L1 is enabled, **every** `encode` returns [`Encoding::Sp`] (token-ids only) —
+//! When L1 is enabled, **every** `encode` returns token ids only ([`Encoding::Sp`]) —
 //! hits merge cached prefix ids with a fresh suffix encode, and misses assemble the ids
-//! from the per-boundary segment encodes (see [`L1Cache::populate_and_encode`]) — even
-//! when the inner tokenizer would have produced [`Encoding::Hf`] (rich offsets/attention/
-//! etc). All current downstream consumers in Dynamo only call [`Encoding::token_ids`], so
-//! this lossy normalization is safe; revisit if a caller starts reading offsets or
-//! attention masks from encodings produced through the cache.
+//! from the per-boundary segment encodes (see [`L1Cache::populate_and_encode`]). No backend
+//! returns more than ids, so nothing is lost; revisit if an encoding ever carries offsets or
+//! attention masks.
 //!
 //! # Configuration
 //!
@@ -445,7 +443,6 @@ mod tests {
     use super::*;
     use crate::HuggingFaceTokenizer;
     use std::sync::{Mutex, atomic::AtomicU64, atomic::Ordering};
-    use tokenizers::Tokenizer as HfTokenizer;
 
     struct FailingTokenizer;
 
@@ -604,8 +601,9 @@ mod tests {
             }
         }"#;
 
-        let hf = HfTokenizer::from_bytes(TOKENIZER_JSON).expect("load test tokenizer");
-        let tok: Arc<dyn Tokenizer> = Arc::new(HuggingFaceTokenizer::from_tokenizer(hf));
+        let config = serde_json::from_str(TOKENIZER_JSON).expect("parse test tokenizer");
+        let tok: Arc<dyn Tokenizer> =
+            Arc::new(HuggingFaceTokenizer::from_json(config).expect("load test tokenizer"));
         let overlapping = vec!["〈|EOS|〉".into(), "〈|".into(), "|〉".into()];
         let (cached, events) = collect_token_usage(
             CachedTokenizer::new(tok.clone(), overlapping, 4096)

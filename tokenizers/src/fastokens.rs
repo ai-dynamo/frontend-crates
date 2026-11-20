@@ -4,8 +4,8 @@
 //! Fastokens backend using the `fastokens` crate for high-performance BPE encoding.
 //!
 //! This module preserves the existing hybrid behavior: `fastokens` handles encoding and
-//! `HuggingFaceTokenizer` handles decoding. Both are loaded from the same `tokenizer.json`
-//! file.
+//! [`HuggingFaceTokenizer`] (the `tokenizers` 1.x pipeline) handles decoding. Both are loaded
+//! from the same `tokenizer.json` file.
 //!
 //! [`FastTikTokenTokenizer`] instead loads a bare `tiktoken.model` and decodes its ranks
 //! directly.
@@ -73,11 +73,22 @@ impl FastTokenizer {
             .map_err(|e| Error::msg(format!("Error loading fastokens tokenizer: {e}")))?;
         fast_encoder.set_truncation(None);
         fast_encoder.set_padding(None);
-        let hf_decoder = HuggingFaceTokenizer::from_file(path)?;
+        let hf_decoder = HuggingFaceTokenizer::decoder_from_file(Path::new(path))?;
         Ok(Self {
             fast_encoder,
             hf_decoder,
         })
+    }
+
+    /// The contents of the added tokens marked `special`, sorted; see
+    /// [`HuggingFaceTokenizer::special_tokens`].
+    pub fn special_tokens(&self) -> &[String] {
+        self.hf_decoder.special_tokens()
+    }
+
+    /// One more than the largest token id; see [`HuggingFaceTokenizer::token_id_bound`].
+    pub fn token_id_bound(&self) -> Option<usize> {
+        self.hf_decoder.token_id_bound()
     }
 }
 

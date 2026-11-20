@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "truncation": null,
+  "padding": null,
+  "added_tokens": [
+    {
+      "id": 0,
+      "content": "<unk>",
+      "special": true,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    },
+    {
+      "id": 2,
+      "content": "〈|EOS|〉",
+      "special": true,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    },
+    {
+      "id": 14,
+      "content": "〈|",
+      "special": true,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    },
+    {
+      "id": 15,
+      "content": "|〉",
+      "special": true,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    }
+  ],
+  "normalizer": null,
+  "pre_tokenizer": null,
+  "post_processor": null,
+  "decoder": null,
+  "model": {
+    "type": "WordLevel",
+    "unk_token": "<unk>",
+    "vocab": {
+      "<unk>": 0,
+      "〈|EOS|〉": 2,
+      "〈|": 14,
+      "|〉": 15,
+      "tail": 16
+    }
+  }
+}

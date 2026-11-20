@@ -1,0 +1,20 @@
+{
+  "added_tokens_decoder": {
+    "3": {
+      "content": "<|special_kept|>",
+      "special": true,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    },
+    "4": {
+      "content": "<|special_dropped|>",
+      "special": false,
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false
+    }
+  }
+}

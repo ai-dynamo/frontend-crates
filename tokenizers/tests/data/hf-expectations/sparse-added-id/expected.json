@@ -1,0 +1,65 @@
+{
+"model_dir": "hf-expectations/sparse-added-id",
+"vocab_size": 4,
+"token_id_bound": 101,
+"special_token_ids": [3,100],
+"special_tokens": ["<new>","<s>"],
+"num_special_tokens_added": 0,
+"validate_prefix_cache": true,
+"validate_segment_prefix_cache": true,
+"fast_loads": false,
+"token_to_id": {"":null," ":null,"<missing>":null,"<new>":3,"<s>":100,"<special>":null,"He":null,"hello":1,"world":null},
+"added_tokens": [
+{"id":3,"content":"<new>","special":true,"encode":{"ids":[3]},"decode":["<new>",""]},
+{"id":100,"content":"<s>","special":true,"encode":{"ids":[100]},"decode":["<s>",""]}
+],
+"texts": [
+{"text":"","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""]},
+{"text":" ","ids":[],"decode":["",""],"stream":[{"steps":[],"finish":null},{"steps":[],"finish":null}],"special_ids":[],"special_decode":["",""]},
+{"text":"hello world","ids":[1,0],"decode":["hello [UNK]","hello [UNK]"],"stream":[{"steps":["hello"," [UNK]"],"finish":null},{"steps":["hello"," [UNK]"],"finish":null}],"special_ids":[1,0],"special_decode":["hello [UNK]","hello [UNK]"]},
+{"text":"hello worlds","ids":[1,0],"decode":["hello [UNK]","hello [UNK]"],"stream":[{"steps":["hello"," [UNK]"],"finish":null},{"steps":["hello"," [UNK]"],"finish":null}],"special_ids":[1,0],"special_decode":["hello [UNK]","hello [UNK]"]},
+{"text":"Hello, world!","ids":[0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK]"]},
+{"text":"  leading and trailing  ","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"café 北京 😀","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"é\n\t","ids":[0],"decode":["[UNK]","[UNK]"],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":["[UNK]"],"finish":null}],"special_ids":[0],"special_decode":["[UNK]","[UNK]"]},
+{"text":"naïve façade — “quotes” …","ids":[0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"The quick brown fox jumps over the lazy dog.","ids":[0,0,0,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"1234567890 3.14159 -42","ids":[0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"fn main() {\n    println!(\"hi\");\n}\n","ids":[0,0,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"line1\nline2\r\nline3","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"tabs\tand nbsp","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"مرحبا بالعالم","ids":[0,0],"decode":["[UNK] [UNK]","[UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0],"special_decode":["[UNK] [UNK]","[UNK] [UNK]"]},
+{"text":"こんにちは世界","ids":[0],"decode":["[UNK]","[UNK]"],"stream":[{"steps":["[UNK]"],"finish":null},{"steps":["[UNK]"],"finish":null}],"special_ids":[0],"special_decode":["[UNK]","[UNK]"]},
+{"text":"👩‍👩‍👧‍👦 family 🇺🇸","ids":[0,0,0,0,0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"� replacement","ids":[0,0],"decode":["[UNK] [UNK]","[UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0],"special_decode":["[UNK] [UNK]","[UNK] [UNK]"]},
+{"text":"<special>hello<special>","ids":[0,0,0,1,0,0,0],"decode":["[UNK] [UNK] [UNK] hello [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] hello [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," hello"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," hello"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,1,0,0,0],"special_decode":["[UNK] [UNK] [UNK] hello [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] hello [UNK] [UNK] [UNK]"]},
+{"text":"a<|x|>b","ids":[0,0,0,0,0],"decode":["[UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0,0,0],"special_decode":["[UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"UPPER lower MiXeD","ids":[0,0,0],"decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,0],"special_decode":["[UNK] [UNK] [UNK]","[UNK] [UNK] [UNK]"]},
+{"text":"hello 😀 北京!","ids":[1,0,0,0],"decode":["hello [UNK] [UNK] [UNK]","hello [UNK] [UNK] [UNK]"],"stream":[{"steps":["hello"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["hello"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[1,0,0,0],"special_decode":["hello [UNK] [UNK] [UNK]","hello [UNK] [UNK] [UNK]"]},
+{"text":"He said hello, world. The lot.","ids":[0,0,1,0,0,0,0,0,0],"decode":["[UNK] [UNK] hello [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] hello [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"],"stream":[{"steps":["[UNK]"," [UNK]"," hello"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":["[UNK]"," [UNK]"," hello"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"," [UNK]"],"finish":null}],"special_ids":[0,0,1,0,0,0,0,0,0],"special_decode":["[UNK] [UNK] hello [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]","[UNK] [UNK] hello [UNK] [UNK] [UNK] [UNK] [UNK] [UNK]"]},
+{"text":"<new><s>","ids":[3,100],"decode":["<new> <s>",""],"stream":[{"steps":["<new>"," <s>"],"finish":null},{"steps":[null,null],"finish":null}],"special_ids":[3,100],"special_decode":["<new> <s>",""]},
+{"text":"<new> hello <s>","ids":[3,1,100],"decode":["<new> hello <s>","hello"],"stream":[{"steps":["<new>"," hello"," <s>"],"finish":null},{"steps":[null,"hello",null],"finish":null}],"special_ids":[3,1,100],"special_decode":["<new> hello <s>","hello"]},
+{"text":"<new>hello world<new>","ids":[3,1,0,3],"decode":["<new> hello [UNK] <new>","hello [UNK]"],"stream":[{"steps":["<new>"," hello"," [UNK]"," <new>"],"finish":null},{"steps":[null,"hello"," [UNK]",null],"finish":null}],"special_ids":[3,1,0,3],"special_decode":["<new> hello [UNK] <new>","hello [UNK]"]},
+{"text":" <new> ","ids":[3],"decode":["<new>",""],"stream":[{"steps":["<new>"],"finish":null},{"steps":[null],"finish":null}],"special_ids":[3],"special_decode":["<new>",""]}
+],
+"prefixes": [
+{"text":"hello 😀 北京!","ids":[1,0,0,0],"prefixes":[{"decode":"hello","partial":false,"unstable":false},{"decode":"hello [UNK]","partial":false,"unstable":false},{"decode":"hello [UNK] [UNK]","partial":false,"unstable":false},{"decode":"hello [UNK] [UNK] [UNK]","partial":false,"unstable":false}],"streams":[{"steps":["hello"," [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[" [UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[" [UNK]"," [UNK]"],"finish":null},{"steps":[" [UNK]"],"finish":null}]},
+{"text":"café 北京 😀","ids":[0,0,0],"prefixes":[{"decode":"[UNK]","partial":false,"unstable":false},{"decode":"[UNK] [UNK]","partial":false,"unstable":false},{"decode":"[UNK] [UNK] [UNK]","partial":false,"unstable":false}],"streams":[{"steps":["[UNK]"," [UNK]"," [UNK]"],"finish":null},{"steps":[" [UNK]"," [UNK]"],"finish":null},{"steps":[" [UNK]"],"finish":null}]}
+],
+"segments": [
+{"segments":[],"plain":{"ids":[]},"special":{"ids":[]},"fast":null},
+{"segments":[["<new>hello",true],[" world<new>",true]],"plain":{"ids":[3,1,0,3]},"special":{"ids":[3,1,0,3]},"fast":null},
+{"segments":[["<new>hello",true],[" world<new>",false]],"plain":{"ids":[3,1,0,0,0,0]},"special":{"ids":[3,1,0,0,0,0]},"fast":null},
+{"segments":[["hello world",true]],"plain":{"ids":[1,0]},"special":{"ids":[1,0]},"fast":null},
+{"segments":[["hello world",false]],"plain":{"ids":[1,0]},"special":{"ids":[1,0]},"fast":null},
+{"segments":[["He said hello",false],[" world",true]],"plain":{"ids":[0,0,1,0]},"special":{"ids":[0,0,1,0]},"fast":null},
+{"segments":[["<new><s>",true]],"plain":{"ids":[3,100]},"special":{"ids":[3,100]},"fast":null},
+{"segments":[["<new><s>",false]],"plain":{"ids":[0,0,0,0,0]},"special":{"ids":[0,0,0,0,0]},"fast":null},
+{"segments":[["café 北京 😀",false],["",true],["!",false]],"plain":{"ids":[0,0,0,0]},"special":{"ids":[0,0,0,0]},"fast":null}
+],
+"sequences": [
+{"ids":[0,1,2,3,4,5,6,7,8,9,10,11],"decode":["[UNK] hello <new>","[UNK] hello"],"unstable":[false,false],"stream":[{"steps":["[UNK]"," hello",null," <new>",null,null,null,null,null,null,null,null],"finish":null},{"steps":["[UNK]"," hello",null,null,null,null,null,null,null,null,null,null],"finish":null}]},
+{"ids":[11,10,9,8,7,6,5,4,3,2,1,0],"decode":["<new> hello [UNK]","hello [UNK]"],"unstable":[false,false],"stream":[{"steps":[null,null,null,null,null,null,null,null,"<new>",null," hello"," [UNK]"],"finish":null},{"steps":[null,null,null,null,null,null,null,null,null,null,"hello"," [UNK]"],"finish":null}]}
+],
+"provenance": {"dynamo_tokenizers":"4.3.1","tokenizers":"0.23.2","commit":"ba656192"}
+}
