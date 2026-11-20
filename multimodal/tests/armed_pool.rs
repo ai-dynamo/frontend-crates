@@ -125,7 +125,7 @@ fn armed_decode_matches_the_inline_decode() {
                     decode_frames(&bytes, &set, fit, &limits).unwrap()
                 };
                 let armed = decode();
-                // On a pool thread the decode sends no frame to the pool.
+                // On a pool thread the decode sends no frame or part to the pool.
                 let inline = execution::in_pool(decode);
                 for k in 0..set.len() {
                     assert!(
