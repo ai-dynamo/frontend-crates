@@ -14,6 +14,7 @@ import capture_peer_unified_versions as peers
 from capture_stimulus import execution_outcome
 from capture_stimulus import request_for_case
 from capture_stimulus import batch_final_events
+from capture_stimulus import validate_dynamo_sglang_runtime
 
 
 def source_archive(path, members):
@@ -142,16 +143,17 @@ def test_dynamo_sglang_rejects_an_override_with_a_different_image(tmp_path, monk
 
 
 @pytest.mark.parametrize("mutation", ["version", "missing_version", "image", "missing_runtime"])
-def test_dynamo_sglang_runtime_receipt_rejects_unbound_metadata(mutation):
+@pytest.mark.parametrize("sglang_version", ["0.5.21", "0.4.6.post1"], ids=["release", "post-release"])
+def test_dynamo_sglang_runtime_receipt_rejects_unbound_metadata(mutation, sglang_version):
     job = {"cases": []}
     job_bytes = peers.json_bytes(job)
     receipt = {
         "implementation": "dynamo_sglang_python", "version": "1.6.2",
-        "runtime": {"image_id": "sha256:" + "1" * 64, "sglang_version": "0.5.21"},
+        "runtime": {"image_id": "sha256:" + "1" * 64, "sglang_version": sglang_version},
         "source_sha256": "0" * 64, "adapter_sha256": "1" * 64,
         "job_sha256": peers.sha256(job_bytes), "results_sha256": peers.sha256(b"{}"),
     }
-    capture = {"dynamo_sglang_version": "1.6.2", "sglang_version": "0.5.21",
+    capture = {"dynamo_sglang_version": "1.6.2", "sglang_version": sglang_version,
                "results": {}, "provenance": receipt}
     peers.validate_execution(capture, job, job_bytes, "dynamo_sglang_python", "1.6.2")
     if mutation == "version":
@@ -164,6 +166,18 @@ def test_dynamo_sglang_runtime_receipt_rejects_unbound_metadata(mutation):
         del receipt["runtime"]
     with pytest.raises(ValueError, match="differs from the runtime receipt"):
         peers.validate_execution(capture, job, job_bytes, "dynamo_sglang_python", "1.6.2")
+
+
+@pytest.mark.parametrize("sglang_version", ["0.4.6.post", "0.4.6.post1junk", "0.4.6+local"])
+def test_dynamo_sglang_runtime_receipt_rejects_malformed_sglang_versions(sglang_version):
+    document = {"sglang_version": sglang_version}
+    receipt = {"runtime": {
+        "image_id": "sha256:" + "1" * 64,
+        "sglang_version": sglang_version,
+    }}
+
+    with pytest.raises(ValueError, match="differs from the runtime receipt"):
+        validate_dynamo_sglang_runtime(document, receipt)
 
 
 @pytest.mark.parametrize("present_apis", [False, True])

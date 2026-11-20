@@ -80,7 +80,7 @@ def paths(root: Path) -> list[Path]:
     result = sorted(directory.iterdir())
     for path in result:
         if (path.is_symlink() or not path.is_file()
-                or re.fullmatch(r"(?:dynamo|vllm|sglang)-[0-9][a-zA-Z0-9.-]*\.tar\.gz", path.name) is None
+                or re.fullmatch(r"(?:dynamo(?:_sglang)?|vllm|sglang)-[0-9][a-zA-Z0-9.-]*\.tar\.gz", path.name) is None
                 or path.stat().st_size > MAX_COMPRESSED):
             raise ValueError(f"invalid Unified version archive: {path}")
     return result

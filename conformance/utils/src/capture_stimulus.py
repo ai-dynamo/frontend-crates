@@ -573,7 +573,7 @@ def validate_dynamo_sglang_runtime(document: dict, receipt: dict) -> None:
             or not isinstance(runtime["image_id"], str)
             or re.fullmatch(r"sha256:[0-9a-f]{64}", runtime["image_id"]) is None
             or not isinstance(runtime["sglang_version"], str)
-            or re.fullmatch(r"[0-9]+(?:\.[0-9]+){2}", runtime["sglang_version"]) is None
+            or UNIFIED_VERSION_RE.fullmatch(runtime["sglang_version"]) is None
             or document.get("sglang_version") != runtime["sglang_version"]):
         raise ValueError("Dynamo SGLang capture differs from the runtime receipt")
 
