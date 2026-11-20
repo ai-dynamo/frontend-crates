@@ -4208,6 +4208,30 @@ for _suffix, _marker in (("eom", "<|eom|>"), ("eot", "<|eot|>"), ("start", "<|st
     ))
 
 
+# A thought that ends inside an unmatched backtick, then a later message that closes
+# a backtick pair. The quote cannot pair across the `<|eom|>` message boundary
+# (frontend-crates#605): the thought ends there and the later messages stay content.
+# Prose quotes are inert by default, so the default mode reads it the same way.
+# Muse Glimmer routes `to=commentary` as a tool channel; its native framing for
+# visible text is `to=user`.
+_MUSE_QUOTE_BOUNDARY = (
+    "<|start|>assistant to=self<|message|>x `<|eom|>"
+    "<|start|>assistant to={recipient}<|message|>a `b`<|eom|>"
+    "<|start|>assistant to=user<|message|>Done.<|eot|>"
+)
+EDGE.append((
+    "muse_unmatched_quote_message_boundary",
+    "A Muse thought ends inside an unmatched backtick and a later message holds a balanced backtick pair. The quote cannot span the `<|eom|>` message boundary: the thought ends at it, and the following messages are visible content.",
+    ["I7", "P2"],
+    [{"kind": "reasoning", "text": "x `"}, {"kind": "text", "text": "a `b`Done."}],
+    {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+    OnlyFamilies({
+        "muse_spark": (_MUSE_QUOTE_BOUNDARY.format(recipient="commentary"), V_MUSE_SPARK, M),
+        "muse_glimmer": (_MUSE_QUOTE_BOUNDARY.format(recipient="user"), V_MUSE, M),
+    }),
+))
+
+
 
 def _beam_header(name="get_weather"):
     return f"<|start|>assistant to={name}<|channel|>analysis <|constrain|>xml<|message|>"
