@@ -23,12 +23,18 @@
 //! arithmetic exactly, so an engine can swap this crate in without output
 //! drift.
 //!
+//! The opt-in `audio` building blocks are experimental. Their generic
+//! FFT/resampling backends are not qualified as bit-exact model processors;
+//! no audio family is automatically selected by the registry.
+//!
 //! [`MmError`] preserves a small failure taxonomy so each consumer can choose
 //! its own fallback or rejection policy without matching display strings.
 //!
 //! The crate reads no environment variables and owns no threads until a
 //! consumer arms the rayon pool; see [`execution`].
 
+#[cfg(feature = "audio")]
+pub mod audio;
 pub mod execution;
 #[cfg(feature = "fetch")]
 pub mod fetch;

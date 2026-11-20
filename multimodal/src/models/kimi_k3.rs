@@ -409,7 +409,7 @@ impl MmFamilyProcessor for KimiK3Processor {
                 height,
                 width,
             } => (rgba, 4, *height, *width),
-            DecodedMedia::Video { .. } => {
+            DecodedMedia::Video { .. } | DecodedMedia::Audio { .. } => {
                 return Err(MmError::unsupported("kimi_k3 supports only images"));
             }
         };
