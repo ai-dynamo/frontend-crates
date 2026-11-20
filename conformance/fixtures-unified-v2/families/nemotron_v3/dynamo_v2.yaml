@@ -1,15 +1,15 @@
-capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"65f4e91eeb7f6f80e02122f9617fad34b19ef30a11cb54cb59817d7b007811b6","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"a3cc876c7b25bec14c40a95a317a8be029f72fcb73947aea8fc0da57a64ee202","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_055a7c6bd89bda32
 origins:
-  origin_b8732c711a8808fa:
+  origin_055a7c6bd89bda32:
     crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+    source_sha256: bac781101217979eb652495e8716a027f0507b385739608bc689c2ac54bcd3c8
+    git_commit: f11a5b209d85cfa11692facdab34d27198d83e28
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_e0710276dc3b0b64:
+  context_8205aa846a333dba:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -105,8 +105,8 @@ contexts:
                 </tool_call>'
         provenance:
           crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          source_sha256: bac781101217979eb652495e8716a027f0507b385739608bc689c2ac54bcd3c8
+          git_commit: f11a5b209d85cfa11692facdab34d27198d83e28
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
@@ -1805,7 +1805,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    context: context_e0710276dc3b0b64
+    context: context_8205aa846a333dba
     request: 8b5319fa3a29cf21fa7159d65d9842746c512441301a736a99a63f9d1e47efba
     output:
       assembled:

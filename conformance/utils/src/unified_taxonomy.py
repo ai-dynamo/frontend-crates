@@ -165,6 +165,7 @@ UNIFIED_TAX = {
     "muse_quoted_reserved_eom_argument": ("muse", "2"),
     "muse_quoted_reserved_eot_argument": ("muse", "3"),
     "muse_quoted_reserved_start_argument": ("muse", "4"),
+    "muse_unmatched_quote_message_boundary": ("muse", "9"),
     # Group 10 — Reasoning span (REASONING.*), reasoning-only
     "reason_only": (10, "1"), "reason_then_content": (10, "2"),
     "two_reason_spans": (10, "3"), "reason_unterminated": (10, "4"),

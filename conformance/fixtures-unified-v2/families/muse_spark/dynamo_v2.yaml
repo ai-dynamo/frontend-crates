@@ -1,15 +1,15 @@
-capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"eff73e9a17827e7ff01976c5340874b5c3f12a8370e3b2a05b1d0a7b667a5453","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"2231e722e7321f42804a561c2f85c8ee004fc408d757b66903ab1822ac4a0a26","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_055a7c6bd89bda32
 origins:
-  origin_b8732c711a8808fa:
+  origin_055a7c6bd89bda32:
     crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+    source_sha256: bac781101217979eb652495e8716a027f0507b385739608bc689c2ac54bcd3c8
+    git_commit: f11a5b209d85cfa11692facdab34d27198d83e28
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -19,6 +19,10 @@ producers:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_883f78c28b7d2088
+  producer_6c756f41e1196cc5:
+    captured_with:
+      dynamo_v2: 0.10.9
+    capture_origin: origin_055a7c6bd89bda32
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
@@ -3703,6 +3707,23 @@ records:
           arguments: '{"x":"done","y":"broken</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"}'
           complete: true
       - expected: []
+      - expected: []
+  muse_unmatched_quote_message_boundary:
+    case_key: UNIFIED.muse-unmatched_quote_message_boundary
+    producer: producer_6c756f41e1196cc5
+    request: 5fcb05660ee980f939c877889d86487501c19c8f4cc1348d6d77cc59852176e4
+    output:
+      assembled:
+      - kind: reasoning
+        text: x `
+      - kind: text
+        text: a `b`Done.
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: x `
+        - kind: text
+          text: a `b`Done.
       - expected: []
   muse_unterminated_parameter_then_call:
     case_key: UNIFIED.5-invoke_close_inside_open_parameter_then_call
