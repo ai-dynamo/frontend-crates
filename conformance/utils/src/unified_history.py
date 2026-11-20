@@ -2340,6 +2340,21 @@ def materialize_store(
                 )
                 state = history.resolve(source_id, view_capture_id=target_id)
                 if target_id == current_capture_id:
+                    if implementation == "dynamo_v2":
+                        # Strict replay may reuse a real earlier execution without changing public views.
+                        for case_id, original in history.resolve(source_id).items():
+                            receipt = original["document"].get("record_metadata", {}).get("verified_recapture")
+                            if not receipt or receipt.get("resolution") != "fresh_execution":
+                                continue
+                            provenance = receipt["provenance"]
+                            producer = provenance_release_version(provenance["version"])
+                            if (provenance.get("implementation") != implementation
+                                    or producer != history.captures[source_id]["runtime_version"]
+                                    or _capture_release_sort_key(producer) >= target_release):
+                                continue
+                            metadata = state[case_id]["document"].setdefault("record_metadata", {})
+                            archive = metadata.get("verified_recaptures", [])
+                            metadata["verified_recaptures"] = [previous for previous in archive if not typed_equal(receipt, previous)] + [receipt]
                     state = {case_id: change for case_id, change in state.items()
                              if history.family.cases[case_id]["lifecycle"] == "active"}
                 add_capture_state(target_id, history, state)
