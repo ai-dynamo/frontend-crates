@@ -140,7 +140,7 @@ fn take_utf8_prefix(pending: &mut Vec<u8>, incoming: &[u8]) -> (String, Option<u
 enum Route {
     Reasoning,
     Text,
-    Tool(String),
+    Tool { name: String, raw_python: bool },
     Suppress,
 }
 
@@ -181,6 +181,7 @@ struct HarmonyRuntime {
     encoding: HarmonyEncoding,
     allow_implicit_channel_header: bool,
     legacy_tool_compatibility: bool,
+    raw_python: bool,
     parser: DeltaReader,
     marker_ids: HashMap<u32, &'static str>,
     start_id: u32,
@@ -214,6 +215,7 @@ impl HarmonyRuntime {
             encoding: self.encoding.clone(),
             allow_implicit_channel_header: self.allow_implicit_channel_header,
             legacy_tool_compatibility: self.legacy_tool_compatibility,
+            raw_python: self.raw_python,
             parser: self.parser.fork_continuation(),
             marker_ids: self.marker_ids.clone(),
             start_id: self.start_id,
@@ -246,6 +248,7 @@ impl HarmonyRuntime {
             parser: DeltaReader::new(encoding.clone())?,
             allow_implicit_channel_header,
             legacy_tool_compatibility,
+            raw_python: false,
             start_id: token_id(START)?,
             message_id: token_id(MESSAGE)?,
             handoff_id: token_id(HANDOFF)?,
@@ -277,7 +280,10 @@ impl HarmonyRuntime {
                     return Route::Suppress;
                 }
                 if recipient != "all" {
-                    return Route::Tool(name.to_string());
+                    return Route::Tool {
+                        name: name.to_string(),
+                        raw_python: self.raw_python && recipient == "python",
+                    };
                 }
             }
             if let Some(name) = recipient.strip_prefix("functions.")
@@ -293,7 +299,10 @@ impl HarmonyRuntime {
                 {
                     Route::Suppress
                 } else {
-                    Route::Tool(name.to_string())
+                    Route::Tool {
+                        name: name.to_string(),
+                        raw_python: false,
+                    }
                 };
             }
             // openai-harmony 0.0.8 reports a lone content-type field as a
@@ -522,8 +531,15 @@ impl HarmonyRuntime {
         }
         if !self.legacy_tool_compatibility
             && self.in_body
-            && matches!(self.route, Some(Route::Tool(_)))
+            && matches!(self.route, Some(Route::Tool { .. }))
             && marker_text == Some(CHANNEL)
+            && !matches!(
+                &self.route,
+                Some(Route::Tool {
+                    raw_python: true,
+                    ..
+                })
+            )
             && !self.call_json.inside_string()
         {
             let content = self.call_content.view();
@@ -562,7 +578,7 @@ impl HarmonyRuntime {
         }
         if !self.legacy_tool_compatibility
             && self.in_body
-            && matches!(self.route, Some(Route::Tool(_)))
+            && matches!(self.route, Some(Route::Tool { .. }))
             && self.call_json.inside_string()
             && matches!(marker_text, Some(START | MESSAGE_END | TURN_END | HANDOFF))
         {
@@ -575,7 +591,7 @@ impl HarmonyRuntime {
         // The legacy API treated a real handoff token as the call boundary even
         // when malformed JSON left its string unterminated.
         if self.in_body
-            && matches!(self.route, Some(Route::Tool(_)))
+            && matches!(self.route, Some(Route::Tool { .. }))
             && self.call_json.inside_string()
             && !(self.legacy_tool_compatibility && id == self.handoff_id)
             && let Some(marker) = marker_text
@@ -610,9 +626,9 @@ impl HarmonyRuntime {
         if let Err(error) = self.parser.process(id) {
             if self.legacy_tool_compatibility
                 && id == self.handoff_id
-                && let Some(Route::Tool(name)) = self.route.clone()
+                && let Some(Route::Tool { name, raw_python }) = self.route.clone()
             {
-                self.finish_tool_call(&name, output);
+                self.finish_tool_call(&name, raw_python, output);
             }
             tracing::warn!(why = "malformed_harmony_message", skipped_tokens = 1, error = %error, "discarded malformed Harmony input and resumed at the next message");
             self.parser = DeltaReader::new(self.encoding.clone())?;
@@ -635,11 +651,13 @@ impl HarmonyRuntime {
             self.route = Some(self.route_current_message());
             self.call_cursor = None;
             if !self.legacy_tool_compatibility
-                && let Some(Route::Tool(name)) = &self.route
+                && let Some(Route::Tool { name, raw_python }) = &self.route
             {
                 self.active_call_index = self.next_call_index;
                 self.next_call_index += 1;
-                self.call_cursor = Some(super::GuidedJsonCursor::named(name));
+                if !raw_python {
+                    self.call_cursor = Some(super::GuidedJsonCursor::named(name));
+                }
             }
             self.call_content.clear();
             self.call_json = Default::default();
@@ -663,7 +681,7 @@ impl HarmonyRuntime {
                     self.call_content.append(&delta);
                     output.push_text(delta);
                 }
-                Route::Tool(_) => {
+                Route::Tool { .. } => {
                     self.advance_call_json(&delta);
                     self.call_content.append(&delta);
                     if let Some(cursor) = &mut self.call_cursor {
@@ -681,7 +699,7 @@ impl HarmonyRuntime {
 
         let messages = self.parser.message_count();
         if messages > prior_messages {
-            if let Some(Route::Tool(name)) = self.route.clone() {
+            if let Some(Route::Tool { name, raw_python }) = self.route.clone() {
                 if id == self.handoff_id
                     || (!self.legacy_tool_compatibility
                         && matches!(
@@ -689,7 +707,7 @@ impl HarmonyRuntime {
                             Some(MESSAGE_END | TURN_END)
                         ))
                 {
-                    self.finish_tool_call(&name, output);
+                    self.finish_tool_call(&name, raw_python, output);
                 } else {
                     tracing::warn!(
                         why = "tool_message_without_handoff",
@@ -708,6 +726,15 @@ impl HarmonyRuntime {
     }
 
     fn advance_call_json(&mut self, text: &str) {
+        if matches!(
+            &self.route,
+            Some(Route::Tool {
+                raw_python: true,
+                ..
+            })
+        ) {
+            return;
+        }
         for character in text.chars() {
             self.call_json.advance(character);
         }
@@ -929,8 +956,18 @@ impl HarmonyRuntime {
         Ok(())
     }
 
-    fn finish_tool_call(&mut self, name: &str, output: &mut UnifiedParserOutput) {
+    fn finish_tool_call(&mut self, name: &str, raw_python: bool, output: &mut UnifiedParserOutput) {
         let content = self.call_content.view();
+        if raw_python {
+            output.push_call(ToolCallDelta {
+                tool_index: self.active_call_index,
+                name: Some(name.to_string()),
+                arguments: serde_json::to_string(&content.slice(0..content.len()))
+                    .expect("string JSON encoding"),
+                complete: true,
+            });
+            return;
+        }
         let empty = content.is_whitespace();
         if !empty && !valid_json_reader(content.reader()) && !self.legacy_tool_compatibility {
             tracing::warn!(
@@ -999,7 +1036,7 @@ impl HarmonyRuntime {
             self.recover_quoted_control(output)?;
         }
         self.flush_outside_pending(output);
-        if self.in_body && matches!(self.route, Some(Route::Tool(_))) {
+        if self.in_body && matches!(self.route, Some(Route::Tool { .. })) {
             tracing::warn!(
                 why = "truncated_harmony_tool_call",
                 skipped_bytes = self.call_content.len(),
@@ -1075,6 +1112,7 @@ struct HarmonyNative {
     pending_token_bytes: Vec<u8>,
     allow_implicit_channel_header: bool,
     legacy_tool_compatibility: bool,
+    raw_python: bool,
 }
 
 impl HarmonyNative {
@@ -1092,6 +1130,7 @@ impl HarmonyNative {
             pending_token_bytes: Vec::new(),
             allow_implicit_channel_header,
             legacy_tool_compatibility,
+            raw_python: false,
         }
     }
 
@@ -1107,6 +1146,7 @@ impl HarmonyNative {
             self.allow_implicit_channel_header,
             self.legacy_tool_compatibility,
         )?;
+        runtime.raw_python = self.raw_python;
         if init.prompt_token_ids.is_empty() {
             runtime.begin_prefilled_message(init.starting_state)?;
         } else {
@@ -1114,7 +1154,13 @@ impl HarmonyNative {
             for id in &init.prompt_token_ids {
                 runtime.process_token(*id, &mut ignored)?;
             }
-            runtime.next_call_index = 0;
+            // Prompt calls were discarded. Reserve index zero only when generation
+            // will continue an open native call.
+            runtime.active_call_index = 0;
+            runtime.next_call_index = usize::from(
+                !runtime.legacy_tool_compatibility
+                    && matches!(runtime.route, Some(Route::Tool { .. })),
+            );
         }
         Ok(runtime)
     }
@@ -1223,6 +1269,7 @@ impl NativeUnified for HarmonyNative {
             pending_token_bytes: self.pending_token_bytes.clone(),
             allow_implicit_channel_header: self.allow_implicit_channel_header,
             legacy_tool_compatibility: self.legacy_tool_compatibility,
+            raw_python: self.raw_python,
         }))
     }
 
@@ -1396,9 +1443,18 @@ impl NativeUnified for HarmonyNative {
     }
 }
 
-pub(crate) fn gpt_oss_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
+pub(crate) fn gpt_oss_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     // Published GPT-OSS fixtures use channel-first headers without an explicit role.
-    Box::new(GuidedRouted::new(HarmonyNative::new(true, false)))
+    let mut native = HarmonyNative::new(true, false);
+    native.raw_python = tools.iter().any(|tool| {
+        tool.name == "python"
+            && tool
+                .parameters
+                .get("type")
+                .and_then(serde_json::Value::as_str)
+                == Some("string")
+    });
+    Box::new(GuidedRouted::new(native))
 }
 
 // Native-only lifecycle keeps unrelated guided state out of the legacy auto-trait contract.
@@ -3913,6 +3969,184 @@ mod tests {
                 crate::unified::assemble(&events),
                 expected,
                 "token split={split}"
+            );
+        }
+    }
+
+    #[test]
+    fn string_schema_functions_keep_json_argument_semantics() {
+        for name in ["foo", "python"] {
+            let tools = [Tool {
+                name: name.into(),
+                description: None,
+                parameters: serde_json::json!({"type":"string"}),
+                strict: None,
+            }];
+            let input = format!(
+                "{START}assistant to=functions.{name}{CHANNEL}commentary{MESSAGE}\"hello\"{HANDOFF}"
+            );
+            assert_parser_splits(
+                gpt_oss_unified(&tools),
+                &input,
+                &[UnifiedEvent::ToolCall {
+                    name: name.into(),
+                    arguments: serde_json::json!("hello"),
+                }],
+            );
+        }
+    }
+
+    #[test]
+    fn prompt_prefilled_native_calls_keep_distinct_generated_indices() {
+        let tools = [Tool {
+            name: "python".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"string"}),
+            strict: None,
+        }];
+        let history = format!(
+            "{START}assistant to=functions.history{CHANNEL}commentary{MESSAGE}{{}}{HANDOFF}"
+        );
+        let next = format!(
+            "{START}assistant to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"q\":1}}{HANDOFF}"
+        );
+        for (recipient, channel, body, name, arguments) in [
+            (
+                "python",
+                "analysis",
+                "print('雪')",
+                "python",
+                serde_json::json!("print('雪')"),
+            ),
+            (
+                "functions.first",
+                "commentary",
+                "{\"q\":0}",
+                "first",
+                serde_json::json!({"q":0}),
+            ),
+        ] {
+            let header = format!("{START}assistant to={recipient}{CHANNEL}{channel}");
+            let expected = [
+                UnifiedEvent::ToolCall {
+                    name: name.into(),
+                    arguments,
+                },
+                UnifiedEvent::ToolCall {
+                    name: "lookup".into(),
+                    arguments: serde_json::json!({"q":1}),
+                },
+            ];
+            for prior in ["", history.as_str()] {
+                for (prefill, opening) in [("", MESSAGE), (MESSAGE, "")] {
+                    let seed = format!("{prior}{header}{prefill}");
+                    let suffix = format!("{opening}{body}{HANDOFF}{next}");
+                    let mut parser = gpt_oss_unified(&tools);
+                    parser.initialize(&encode_harmony(&seed).unwrap()).unwrap();
+                    let assert_calls = |mut events: Vec<UnifiedParserEvent>| {
+                        assert_eq!(crate::unified::assemble(&events), expected, "seed={seed:?}");
+                        events.retain(|event| matches!(event, UnifiedParserEvent::ToolCall(call) if call.complete));
+                        let indices: Vec<_> = events
+                            .iter()
+                            .filter_map(|event| match event {
+                                UnifiedParserEvent::ToolCall(call) => Some(call.tool_index),
+                                _ => None,
+                            })
+                            .collect();
+                        assert_eq!(indices, [0, 1], "seed={seed:?}");
+                    };
+                    for (split, _) in suffix.char_indices().chain([(suffix.len(), '\0')]) {
+                        let mut events = parser.push(&suffix[..split]).unwrap();
+                        events.extend(parser.push(&suffix[split..]).unwrap());
+                        events.extend(parser.finish().unwrap().events);
+                        assert_calls(events);
+                        assert!(parser.reset().is_empty());
+                    }
+                    let tokens = encode_harmony(&suffix).unwrap();
+                    for split in 0..=tokens.len() {
+                        let mut events = parser.push_tokens(&tokens[..split]).unwrap();
+                        events.extend(parser.push_tokens(&tokens[split..]).unwrap());
+                        events.extend(parser.finish().unwrap().events);
+                        assert_calls(events);
+                        assert!(parser.reset().is_empty());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn string_schema_raw_bodies_preserve_bytes_and_message_lifecycle() {
+        let tools = [Tool {
+            name: "python".into(),
+            description: None,
+            parameters: serde_json::json!({"type":"string"}),
+            strict: None,
+        }];
+        for body in [
+            "",
+            " \n\t",
+            "print(1)",
+            "雪 = 'é'\n",
+            "\"unterminated",
+            "{\"key\":",
+            "[1, 2]",
+            "\"json string\"",
+        ] {
+            for ending in [HANDOFF, MESSAGE_END, TURN_END] {
+                let input = format!(
+                    "{START}assistant to=python{CHANNEL}analysis{MESSAGE}{body}{ending}{START}assistant to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"q\":1}}{HANDOFF}{START}assistant{CHANNEL}final{MESSAGE}done{TURN_END}"
+                );
+                let expected = [
+                    UnifiedEvent::ToolCall {
+                        name: "python".into(),
+                        arguments: serde_json::json!(body),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments: serde_json::json!({"q":1}),
+                    },
+                    UnifiedEvent::Text {
+                        text: "done".into(),
+                    },
+                ];
+                assert_parser_splits(gpt_oss_unified(&tools), &input, &expected);
+                let mut parser = gpt_oss_unified(&tools);
+                parser.initialize(&[]).unwrap();
+                let mut events = Vec::new();
+                for ch in input.chars() {
+                    events.extend(parser.push(&ch.to_string()).unwrap());
+                }
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(crate::unified::assemble(&events), expected);
+            }
+            let prefix = format!("{START}assistant to=python{CHANNEL}analysis{MESSAGE}{body}");
+            let mut parser = gpt_oss_unified(&tools);
+            parser.initialize(&[]).unwrap();
+            assert!(parser.push(&prefix).unwrap().is_empty());
+            assert!(parser.finish().unwrap().events.is_empty());
+        }
+        let mut native = HarmonyNative::new(true, false);
+        native.raw_python = true;
+        let mut runtime = native.make_runtime(&UnifiedParserInit::default()).unwrap();
+        let mut ignored = UnifiedParserOutput::default();
+        runtime
+            .feed_text(
+                &format!("{START}assistant to=python{CHANNEL}analysis{MESSAGE}\"雪"),
+                &mut ignored,
+            )
+            .unwrap();
+        runtime.checkpoint();
+        let mut fork = runtime.fork_continuation();
+        for runtime in [&mut runtime, &mut fork] {
+            let mut output = UnifiedParserOutput::default();
+            runtime.feed_text(HANDOFF, &mut output).unwrap();
+            assert_eq!(
+                output.assembled(),
+                [UnifiedEvent::ToolCall {
+                    name: "python".into(),
+                    arguments: serde_json::json!("\"雪")
+                }]
             );
         }
     }

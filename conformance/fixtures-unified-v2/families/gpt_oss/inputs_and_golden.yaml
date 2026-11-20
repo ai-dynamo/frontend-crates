@@ -10429,7 +10429,7 @@ cases:
     - I3
     - I5
     - I7
-    description: 'A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony''s documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.'
+    description: 'A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony''s documented Python-tool convention. The offered string schema preserves the raw Python body as a JSON string argument value.'
     display_id: UNIFIED.gpt_oss-native_builtin_python_raw
     request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     golden:

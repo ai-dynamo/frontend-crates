@@ -4914,7 +4914,7 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_visible_scalar_string_quoted_controls", "A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.",
      '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
      [{"kind":"text", "text":'"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}]),
-    ("gpt_oss_native_builtin_python_raw", "A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony's documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.",
+    ("gpt_oss_native_builtin_python_raw", "A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony's documented Python-tool convention. The offered string schema preserves the raw Python body as a JSON string argument value.",
      '<|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>',
      [{"kind":"tool_call", "name":"python", "arguments":'"print(1)"'}]),
     ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.",

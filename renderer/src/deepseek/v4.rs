@@ -7,6 +7,7 @@
 //!
 //! Reference: DeepSeek-V4-Pro/encoding/encoding_dsv4.py
 
+use crate::{GenerationState, RenderedPrompt};
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
 use std::fmt::Write;
@@ -70,13 +71,15 @@ fn render_message(
     drop_thinking: bool,
     encoding: Encoding,
     last_user_idx: Option<usize>,
-) -> Result<()> {
+) -> Result<GenerationState> {
     let msg = &messages[index];
 
     let role = msg
         .get("role")
         .and_then(|r| r.as_str())
         .context("Missing 'role' field")?;
+
+    let mut state = GenerationState::Unknown;
 
     if encoding.is_v41()
         && (role == "system" || (index == 0 && thinking_mode == ThinkingMode::Thinking))
@@ -260,14 +263,14 @@ fn render_message(
             }
         )
     {
-        return Ok(());
+        return Ok(GenerationState::Unknown);
     }
 
     // Early return if the next message is not assistant/latest_reminder — no transition appended.
     if index + 1 < messages.len() {
         let next_role = messages[index + 1].get("role").and_then(|r| r.as_str());
         if !matches!(next_role, Some("assistant") | Some("latest_reminder")) {
-            return Ok(());
+            return Ok(GenerationState::Unknown);
         }
     }
 
@@ -284,6 +287,11 @@ fn render_message(
             } else {
                 tokens::THINKING_START
             });
+            state = if thinking_mode == ThinkingMode::Thinking {
+                GenerationState::Reasoning
+            } else {
+                GenerationState::Response
+            };
             prompt.push_str(sp);
         }
     } else if matches!(role, "user" | "developer")
@@ -292,6 +300,11 @@ fn render_message(
         prompt.push_str(tokens::ASSISTANT_START);
         let seed_thinking = thinking_mode == ThinkingMode::Thinking
             && (!drop_thinking || last_user_idx.is_none_or(|u| index >= u));
+        state = if seed_thinking {
+            GenerationState::Reasoning
+        } else {
+            GenerationState::Response
+        };
         prompt.push_str(if seed_thinking {
             tokens::THINKING_START
         } else {
@@ -299,7 +312,7 @@ fn render_message(
         });
     }
 
-    Ok(())
+    Ok(state)
 }
 
 /// Render a tool_result `content` payload (string or content-block list).
@@ -358,6 +371,7 @@ pub fn encode_messages_with_options(
         drop_thinking,
         Encoding::V4(reasoning_effort),
     )
+    .map(RenderedPrompt::into_text)
 }
 
 pub(super) fn encode_owned_messages(
@@ -366,7 +380,7 @@ pub(super) fn encode_owned_messages(
     add_bos_token: bool,
     drop_thinking: bool,
     encoding: Encoding,
-) -> Result<String> {
+) -> Result<RenderedPrompt> {
     let merged = merge_tool_messages(messages);
     // V4.1 orders source messages before merging, using the same routine as its media hook.
     let mut full = if encoding.is_v41() {
@@ -376,6 +390,7 @@ pub(super) fn encode_owned_messages(
     };
 
     let mut prompt = String::new();
+    let mut state = GenerationState::Unknown;
     if add_bos_token {
         prompt.push_str(tokens::BOS);
     }
@@ -406,7 +421,7 @@ pub(super) fn encode_owned_messages(
         find_last_user_index(&full)
     };
     for idx in 0..full.len() {
-        render_message(
+        state = render_message(
             &mut prompt,
             idx,
             &full,
@@ -417,7 +432,7 @@ pub(super) fn encode_owned_messages(
         )?;
     }
 
-    Ok(prompt)
+    Ok(RenderedPrompt::text(prompt).with_generation_state(state))
 }
 
 /// DeepSeek V4 Prompt Formatter
@@ -482,6 +497,10 @@ impl crate::OAIPromptFormatter for DeepSeekV4Formatter {
     }
 
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
+        Ok(self.render_prompt(req)?.into_text())
+    }
+
+    fn render_prompt(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<RenderedPrompt> {
         let args = req.chat_template_args();
         let effort_value = req
             .reasoning_effort()

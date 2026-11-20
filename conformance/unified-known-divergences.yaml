@@ -7,11 +7,7 @@
 # Schema: family -> case ID -> check -> note and exact observed output.
 
 beam: {}
-gpt_oss:
-  UNIFIED.gpt_oss-native_builtin_python_raw:
-    golden:
-      note: 'FIXME (v2 defect): the built-in Python tool call is dropped instead of being emitted as a structured tool call.'
-      actual: (no events)
+gpt_oss: {}
 kimi_k3: {}
 muse_glimmer: {}
 gemma4: {}
@@ -19,18 +15,6 @@ deepseek_v41: {}
 glm47: {}
 deepseek_v4: {}
 kimi_k2: {}
-nemotron_v3:
-  UNIFIED.enum_contradicting_declared_type.nemotron_v3:
-    golden:
-      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
-      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
-qwen3:
-  UNIFIED.enum_contradicting_declared_type.qwen3:
-    golden:
-      note: 'TODO (later, #527): fix the Qwen-family XML resolver to honor the declared type when all enum literals contradict it. Until then, array and integer arguments remain strings.'
-      actual: tool_call capture_payload {"metrics":"[\"temperature\",\"humidity\"]","count":"5"}
-minimax_m3:
-  UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call:
-    golden:
-      note: 'FIXME (v2 defect): the malformed get_weather parameter is emitted as a raw string containing marker text before the later empty f call.'
-      actual: 'tool_call(get_weather, {"city":"bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[</invoke>]<]minimax[>[</tool_call>})  |  tool_call(f, {})'
+nemotron_v3: {}
+qwen3: {}
+minimax_m3: {}

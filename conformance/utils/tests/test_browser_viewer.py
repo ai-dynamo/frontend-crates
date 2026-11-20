@@ -247,9 +247,8 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
 @pytest.mark.parametrize("implementation,scenario,has_origin", [
     ("dynamo_v1", "tool_only", True),
     ("dynamo_v1_jail", "tool_only", True),
-    # The latest native snapshot is a full fresh capture, without a verified
-    # recapture overlay. Historical v1 observations retain their overlay origin.
     ("dynamo_v2", "tool_only", False),
+    ("dynamo_v2", "gpt_oss_native_builtin_python_raw", True),
     *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
       for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
 ])
