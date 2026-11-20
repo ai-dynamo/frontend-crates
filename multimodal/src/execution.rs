@@ -101,8 +101,10 @@ pub fn threads() -> usize {
     1
 }
 
-/// Run `f` on the pool without waiting for it, or inline while unarmed.
-pub fn spawn(f: impl FnOnce() + Send + 'static) {
+/// Run `f` on the pool without waiting for it, or inline while unarmed. A
+/// panic in `f` aborts the process while the pool is armed.
+#[cfg(feature = "video-decode")]
+pub(crate) fn spawn(f: impl FnOnce() + Send + 'static) {
     #[cfg(feature = "parallel")]
     if let Some(pool) = armed() {
         return pool.spawn(f);
