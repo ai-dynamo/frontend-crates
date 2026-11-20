@@ -109,7 +109,7 @@ struct Rect32 {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 struct Rect16 {
     left: i16,
     top: i16,
@@ -436,8 +436,8 @@ fn codec_type(codec: VideoCodec) -> Result<c_uint> {
     }
 }
 
-/// What this GPU's NVDEC can decode for `codec` in 8-bit 4:2:0, asked of the
-/// driver once per codec (a query takes milliseconds).
+/// What this GPU's NVDEC can decode for `codec` in 8-bit 4:2:0. Cached per
+/// codec: a query takes milliseconds.
 fn caps(api: &Api, codec: c_uint) -> Result<DecodeCaps> {
     static KNOWN: Mutex<Vec<DecodeCaps>> = Mutex::new(Vec::new());
     let mut known = KNOWN.lock().unwrap_or_else(PoisonError::into_inner);
@@ -498,21 +498,12 @@ fn h273_matrix(codec: VideoCodec, code: u8) -> Result<Matrix> {
     }
 }
 
-/// What a decoder is created with: codec, decoder size, decode surfaces,
-/// display area and target size. A decoder decodes any stream of its key.
-type DecoderKey = (
-    c_uint,
-    TcuUlong,
-    TcuUlong,
-    TcuUlong,
-    [i16; 4],
-    TcuUlong,
-    TcuUlong,
-);
+/// What a decoder is created with, besides constants: codec, decoder size,
+/// decode surfaces and display area. A decoder decodes any stream of its key.
+type DecoderKey = (c_uint, (u32, u32), c_uint, Rect16);
 
-/// Decoders of finished decodes, kept for the next video of the same key
-/// (creating one takes tens of milliseconds); at most `IDLE_DECODERS`, the
-/// oldest destroyed first. Addresses, so the list is `Send`.
+/// Decoders of finished decodes, kept for the next video of the same key:
+/// destroying a decoder takes about 200 ms. Addresses, so the list is `Send`.
 static IDLE: Mutex<Vec<(DecoderKey, usize)>> = Mutex::new(Vec::new());
 const IDLE_DECODERS: usize = 8;
 
@@ -522,8 +513,7 @@ fn take_idle(key: &DecoderKey) -> Option<CuVideoDecoder> {
     Some(idle.remove(at).1 as CuVideoDecoder)
 }
 
-/// Keep `decoder` for reuse. A context must be current: the oldest idle
-/// decoder may be destroyed.
+/// A context must be current: the oldest idle decoder may be destroyed.
 fn keep_idle(api: &Api, key: DecoderKey, decoder: CuVideoDecoder) {
     let evicted = {
         let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
@@ -541,6 +531,8 @@ fn keep_idle(api: &Api, key: DecoderKey, decoder: CuVideoDecoder) {
 
 /// What the sequence header said, once the decoder exists.
 struct Surface {
+    /// The decoder's key, under which a successful decode keeps it.
+    key: DecoderKey,
     coded: (u32, u32),
     /// The display area: left, top, right, bottom.
     crop: (c_int, c_int, c_int, c_int),
@@ -572,9 +564,6 @@ struct State<'s, 'sp, 't, 'p> {
     codec_type: c_uint,
     sampler: &'s mut Sampler<'sp>,
     decoder: CuVideoDecoder,
-    /// The decoder's key; it is kept for reuse when the decode succeeds.
-    key: Option<DecoderKey>,
-    succeeded: bool,
     surface: Option<Surface>,
     host_y: Vec<u8>,
     host_uv: Vec<u8>,
@@ -583,16 +572,12 @@ struct State<'s, 'sp, 't, 'p> {
 
 impl Drop for State<'_, '_, '_, '_> {
     fn drop(&mut self) {
-        if self.decoder.is_null() {
-            return;
-        }
-        match self.key {
-            Some(key) if self.succeeded => keep_idle(self.api, key, self.decoder),
+        if !self.decoder.is_null() {
             // SAFETY: created by cuvidCreateDecoder, destroyed once; the
             // parser that used it is gone (it is dropped first).
-            _ => unsafe {
+            unsafe {
                 (self.api.destroy_decoder)(self.decoder);
-            },
+            }
         }
     }
 }
@@ -797,6 +782,7 @@ impl State<'_, '_, '_, '_> {
             right: edge(i64::from(area.left) + i64::from(target_width))?,
             bottom: edge(i64::from(area.top) + i64::from(target_height))?,
         };
+        let key = (self.codec_type, decoder_size, surfaces, display_area);
         let mut info = DecodeCreateInfo {
             width: TcuUlong::from(decoder_size.0),
             height: TcuUlong::from(decoder_size.1),
@@ -821,20 +807,6 @@ impl State<'_, '_, '_, '_> {
             enable_decode_features: 0,
             reserved2: [0; 3],
         };
-        let key = (
-            self.codec_type,
-            info.width,
-            info.height,
-            info.num_decode_surfaces,
-            [
-                info.display_area.left,
-                info.display_area.top,
-                info.display_area.right,
-                info.display_area.bottom,
-            ],
-            info.target_width,
-            info.target_height,
-        );
         match take_idle(&key) {
             Some(decoder) => self.decoder = decoder,
             // SAFETY: valid out-pointer and create info; a context is current.
@@ -843,8 +815,8 @@ impl State<'_, '_, '_, '_> {
                 "cuvidCreateDecoder",
             )?,
         }
-        self.key = Some(key);
         self.surface = Some(Surface {
+            key,
             coded,
             crop,
             width,
@@ -1003,8 +975,6 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
         codec_type,
         sampler,
         decoder: std::ptr::null_mut(),
-        key: None,
-        succeeded: false,
         surface: None,
         host_y: Vec::new(),
         host_uv: Vec::new(),
@@ -1032,8 +1002,14 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
             &mut buffer,
         )?;
     }
-    // SAFETY: as above.
-    unsafe { (*state.0).succeeded = true };
+    // SAFETY: as above. The parsers are gone, so the decoder is idle.
+    unsafe {
+        let state = &mut *state.0;
+        if let Some(surface) = &state.surface {
+            let decoder = std::mem::replace(&mut state.decoder, std::ptr::null_mut());
+            keep_idle(api, surface.key, decoder);
+        }
+    }
     Ok(())
 }
 
