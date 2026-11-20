@@ -92,8 +92,9 @@ use crate::{
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
 };
 
-/// Smallest segment (in bytes) that [`CachedTokenizer::encode_segments`] caches.
-/// Shorter segments, such as control markers, encode faster than an entry pays off.
+/// Smallest segment (in bytes) that [`CachedTokenizer::encode_segments`] caches, and the
+/// smallest trailing segment an extending hit caches the start of. Shorter segments, such
+/// as control markers, encode faster than an entry pays off.
 const MIN_CACHED_SEGMENT_BYTES: usize = 128;
 
 /// Token-level cache usage for one successful encode.
@@ -994,6 +995,136 @@ mod tests {
 
         let stats = cached.cache_stats();
         assert!(stats.hits >= 1, "expected L1 hit on second request");
+    }
+
+    /// Interleaved chats whose client optionally rewrites the previous trailing user
+    /// message (as some trace replayers do). Returns the uncached tokens of each request
+    /// after every conversation's first, asserting every encode is byte-exact.
+    fn multi_turn_uncached(
+        trim_trailing: bool,
+        conversations: usize,
+        budget_bytes: usize,
+        trailing_views: bool,
+    ) -> Vec<usize> {
+        let tok = inner();
+        let mut cached = CachedTokenizer::new(tok.clone(), specials(), budget_bytes)
+            .expect("TinyLlama must support prefix caching")
+            .with_extend(true);
+        cached.l1.trailing_views = trailing_views;
+        let (cached, events) = collect_token_usage(cached);
+        let text = |conv: usize, turn: usize, role: &str| {
+            (0..60)
+                .map(|i| format!("{role} {conv} {turn} word {i}"))
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        let mut messages: Vec<Vec<String>> = (0..conversations)
+            .map(|_| vec![format!("<s>system\n{}</s>", text(0, 0, "system"))])
+            .collect();
+        let mut users: Vec<String> = (0..conversations).map(|c| text(c, 0, "user")).collect();
+        let mut per_request = Vec::new();
+        for turn in 0..8 {
+            for c in 0..conversations {
+                if turn > 0 {
+                    if trim_trailing {
+                        let len = users[c].len();
+                        users[c].truncate(len - 40);
+                    }
+                    messages[c].push(format!("<s>user\n{}</s>", users[c]));
+                    messages[c].push(format!("<s>assistant\n{}</s>", text(c, turn, "assistant")));
+                    users[c] = text(c, turn, "user");
+                }
+                let prompt = format!(
+                    "{}<s>user\n{}</s><s>assistant\n",
+                    messages[c].concat(),
+                    users[c]
+                );
+                let ids = cached.encode(&prompt).unwrap();
+                assert_eq!(ids.token_ids(), tok.encode(&prompt).unwrap().token_ids());
+                if turn > 0 {
+                    per_request.push(events.lock().unwrap().last().unwrap().uncached_tokens);
+                }
+            }
+        }
+        per_request
+    }
+
+    #[test]
+    fn extension_keeps_reuse_when_the_trailing_message_is_rewritten() {
+        let budget = 64 * 1024 * 1024;
+        let trimmed = multi_turn_uncached(true, 1, budget, true);
+        let appended = multi_turn_uncached(false, 1, budget, true);
+        // Each turn re-encodes only the rewritten message plus the new exchange, so
+        // per-turn work stays flat instead of growing with the conversation.
+        let (min, max) = (trimmed.iter().min().unwrap(), trimmed.iter().max().unwrap());
+        assert!(
+            max - min <= 2,
+            "trimmed per-turn uncached tokens grew: {trimmed:?}"
+        );
+        assert!(
+            trimmed.iter().zip(&appended).all(|(t, a)| t <= &(2 * a)),
+            "trimmed {trimmed:?} vs appended {appended:?}"
+        );
+        // Append-only still resumes at the deepest boundary.
+        assert!(
+            appended.windows(2).all(|w| w[0].abs_diff(w[1]) <= 2),
+            "{appended:?}"
+        );
+    }
+
+    #[test]
+    fn trailing_views_never_cost_reuse_under_eviction() {
+        // Against deepest-only extension: rewritten traffic must gain, and append-only
+        // traffic, which never uses the view, must not lose reuse to it under eviction.
+        for budget in [64 * 1024, 512 * 1024] {
+            let total = |trim, views| multi_turn_uncached(trim, 6, budget, views).iter().sum();
+            let (appended, appended_old): (usize, usize) =
+                (total(false, true), total(false, false));
+            assert!(
+                appended <= appended_old,
+                "budget {budget}: {appended} > {appended_old}"
+            );
+            let (trimmed, trimmed_old): (usize, usize) = (total(true, true), total(true, false));
+            assert!(
+                trimmed < trimmed_old,
+                "budget {budget}: {trimmed} >= {trimmed_old}"
+            );
+        }
+    }
+
+    #[test]
+    fn views_never_outlive_their_owner() {
+        // Owners rejected or evicted by a tight budget must take their views along, even
+        // when maintenance runs on another thread in the middle of an extending hit.
+        let tok = inner();
+        let cached = CachedTokenizer::new(tok, specials(), 64 * 1024)
+            .expect("TinyLlama must support prefix caching")
+            .with_extend(true);
+        let words = |c: usize, t: usize| format!("{c} {t} ").repeat(60);
+        let done = std::sync::atomic::AtomicBool::new(false);
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                while !done.load(Ordering::Relaxed) {
+                    cached.l1.run_pending_tasks();
+                }
+            });
+            let mut history = vec![String::new(); 40];
+            for turn in 0..10 {
+                for (c, past) in history.iter_mut().enumerate() {
+                    let user = words(c, turn);
+                    let system = words(99, 0);
+                    let prompt =
+                        format!("<s>system\n{system}</s>{past}<s>user\n{user}</s><s>assistant\n");
+                    cached.encode(&prompt).unwrap();
+                    // The next turn rewrites this user message before appending to it.
+                    let kept = &user[..user.len() - 20];
+                    let answer = words(c, turn + 100);
+                    past.push_str(&format!("<s>user\n{kept}</s><s>assistant\n{answer}</s>"));
+                }
+            }
+            done.store(true, Ordering::Relaxed);
+        });
+        assert_eq!(cached.l1.orphaned_views(), 0);
     }
 
     #[test]
