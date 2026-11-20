@@ -503,13 +503,14 @@ fn h273_matrix(codec: VideoCodec, code: u8) -> Result<Matrix> {
 type DecoderKey = (c_uint, (u32, u32), c_uint, Rect16);
 
 /// Decoders of finished decodes, kept for the next video of the same key:
-/// destroying a decoder takes about 200 ms. Addresses, so the list is `Send`.
+/// destroying a decoder can take 200 ms. Addresses, so the list is `Send`.
 static IDLE: Mutex<Vec<(DecoderKey, usize)>> = Mutex::new(Vec::new());
 /// Most idle decoders, and most bytes of decode surfaces they hold on the GPU.
 const IDLE_DECODERS: usize = 8;
 const IDLE_BYTES: u64 = 1 << 30;
 
-/// The NV12 decode surfaces of a decoder of `key`, most of its GPU memory.
+/// The NV12 decode surfaces of a decoder of `key`: most of its GPU memory,
+/// which also holds the driver's alignment and other buffers.
 fn surface_bytes(&(_, (width, height), surfaces, _): &DecoderKey) -> u64 {
     u64::from(width) * u64::from(height) * 3 / 2 * u64::from(surfaces)
 }
