@@ -41,7 +41,7 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
-    has_recoverable_tool_call_boundaries_gemma4, is_call_prefix_boundary,
+    argument_key_end, has_recoverable_tool_call_boundaries_gemma4, is_call_prefix_boundary,
     parse_one_tool_call_gemma4,
 };
 
@@ -267,7 +267,11 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
                 .expect("recognized Gemma call has a body");
         // An extra body opener before guided JSON is a recoverable wrapper;
         // only a native parameter key transfers ownership of nested values.
-        native_key_end(text[body + 1..].trim_ascii_start().as_bytes(), 0)?;
+        let body_text = text[body + 1..].trim_start();
+        let key_end = argument_key_end(body_text)?;
+        if body_text[..key_end].contains(['{', '[', '"']) {
+            return None;
+        }
         Some(body)
     }
 
@@ -527,10 +531,10 @@ impl Gemma4InvokeBoundary {
         };
         match *context {
             Context::ObjectKey => {
-                if is_call_name_char(ch) {
-                    *context = Context::ObjectKeyName;
-                } else if ch == '}' {
+                if ch == '}' {
                     self.resync_candidate_context.pop();
+                } else if !ch.is_whitespace() && ch != ':' {
+                    *context = Context::ObjectKeyName;
                 }
             }
             Context::ObjectKeyName => {
@@ -934,8 +938,8 @@ fn partial_bare_opener_suffix_len(
 /// `call:NAME{ key:value, key2:value2, ... }`. Walks the body once, tracking
 /// brace/bracket depth and `<|"|>` string state so only depth-1 keys (the ones
 /// immediately after the opening `{`) are collected; nested-object/array keys are
-/// skipped. A key is the run of `[\w\-.]` characters that precedes a `:` at the
-/// top level.
+/// skipped. Keys follow the native argument-key grammar and precede a `:` at
+/// the top level.
 fn source_key_order(block: &str) -> Vec<String> {
     // Locate the call body: after `call:NAME` to the matching outer `{`.
     let Some(prefix_at) = block.find(CALL_PREFIX) else {
@@ -955,6 +959,19 @@ fn source_key_order(block: &str) -> Vec<String> {
     let mut expect_key = true; // at the start, and right after a top-level `,`
 
     while i < bytes.len() {
+        if depth == 0 && expect_key && !in_string {
+            let ch = body[i..].chars().next().expect("nonempty UTF-8 suffix");
+            if ch.is_whitespace() {
+                i += ch.len_utf8();
+                continue;
+            }
+            expect_key = false;
+            if let Some(end) = argument_key_end(&body[i..]) {
+                names.push(body[i..i + end].trim().to_owned());
+                i += end + 1;
+                continue;
+            }
+        }
         // `<|"|>` toggles string state; skip its bytes wholesale so structural
         // chars inside a string value are ignored. `<|"|>` is ASCII and `i` is
         // always on a char boundary here (the in-string/fallback arms advance by
@@ -986,16 +1003,6 @@ fn source_key_order(block: &str) -> Vec<String> {
                 expect_key = true;
                 i += 1;
             }
-            _ if depth == 0 && expect_key && is_key_byte(b) => {
-                let start = i;
-                while i < bytes.len() && is_key_byte(bytes[i]) {
-                    i += 1;
-                }
-                if let Some(end) = native_key_end(bytes, start) {
-                    names.push(body[start..end].to_string());
-                }
-                expect_key = false;
-            }
             _ => {
                 // Advance by a full UTF-8 char so a non-ASCII byte never lands
                 // `i` mid-code-point (keeps the `<|"|>` slice check boundary-safe).
@@ -1004,24 +1011,6 @@ fn source_key_order(block: &str) -> Vec<String> {
         }
     }
     names
-}
-
-fn is_key_byte(b: u8) -> bool {
-    is_call_name_char(char::from(b))
-}
-
-fn native_key_end(bytes: &[u8], start: usize) -> Option<usize> {
-    let end = start
-        + bytes[start..]
-            .iter()
-            .take_while(|b| is_key_byte(**b))
-            .count();
-    let colon = end
-        + bytes[end..]
-            .iter()
-            .take_while(|b| b.is_ascii_whitespace())
-            .count();
-    (end > start && bytes.get(colon) == Some(&b':')).then_some(end)
 }
 
 /// Byte width of a UTF-8 code point from its leading byte.
