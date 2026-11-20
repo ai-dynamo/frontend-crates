@@ -10,15 +10,14 @@ use crate::MmError;
 use crate::image::decode::{DecodeLimits, decode_rgb_smart};
 use crate::image::resize::resize_rgb;
 use crate::models::glm5_next::{Glm5NextProcessor, Glm5NextSpec};
-use crate::models::qwen_vl::{MropeItem, Resampler, mrope_image_only};
+use crate::models::qwen_vl::{MropeItem, Resampler, mrope_image_only, normalize_lut};
 use crate::processor::{
-    DecodedMedia, Geometry, MediaMetadata, MmFamilyProcessor, Modality, PositionOutput,
-    ProcessedItem, Tensor, TensorData, TokenLayout,
+    Capabilities, DecodedMedia, ExpansionPart, Geometry, MediaMetadata, MmFamilyProcessor,
+    Modality, PositionOutput, ProcessedItem, Segment, Tensor, TensorData, TextEncoder, TokenLayout,
 };
-use crate::token_layout::layout_by_placeholder;
 
 /// Full image pipeline parameters, including the shared metadata planner.
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
 pub struct Glm5NextImageSpec {
     #[serde(flatten)]
     pub planner: Glm5NextSpec,
@@ -31,9 +30,25 @@ pub struct Glm5NextImageSpec {
 
 pub struct Glm5NextImageProcessor {
     planner: Glm5NextProcessor,
-    spec: Glm5NextImageSpec,
+    pub(super) spec: Glm5NextImageSpec,
     /// Per-channel u8 to normalized f32, as Dynamo's Qwen-VL `normalize_lut`.
     lut: [[f32; 256]; 3],
+    /// The video processor's lookup; HF's video processor is torchvision-backed.
+    pub(super) video_lut: Option<[[f32; 256]; 3]>,
+}
+
+fn check_mean_std(mean: &[f32; 3], std: &[f32; 3]) -> Result<(), MmError> {
+    if std.iter().any(|std| !std.is_finite() || *std <= 0.0) {
+        return Err(MmError::invalid_input(
+            "glm5_next: image_std must be positive",
+        ));
+    }
+    if mean.iter().any(|mean| !mean.is_finite()) {
+        return Err(MmError::invalid_input(
+            "glm5_next: image_mean must be finite",
+        ));
+    }
+    Ok(())
 }
 
 impl Glm5NextImageProcessor {
@@ -47,20 +62,16 @@ impl Glm5NextImageProcessor {
                 "glm5_next: PIL preprocessing requires patch_expand_factor = 1 to match the shared planner",
             ));
         }
-        if spec
-            .image_std
-            .iter()
-            .any(|std| !std.is_finite() || *std <= 0.0)
-        {
-            return Err(MmError::invalid_input(
-                "glm5_next: image_std must be positive",
-            ));
-        }
-        if spec.image_mean.iter().any(|mean| !mean.is_finite()) {
-            return Err(MmError::invalid_input(
-                "glm5_next: image_mean must be finite",
-            ));
-        }
+        check_mean_std(&spec.image_mean, &spec.image_std)?;
+        let video_lut = match &spec.planner.video {
+            Some(video) => {
+                check_mean_std(&video.image_mean, &video.image_std)?;
+                Some(core::array::from_fn(|c| {
+                    normalize_lut(Resampler::AtenU8, video.image_mean[c], video.image_std[c])
+                }))
+            }
+            None => None,
+        };
         let lut = core::array::from_fn(|c| {
             let (mean, std) = (spec.image_mean[c], spec.image_std[c]);
             match spec.resample {
@@ -71,7 +82,12 @@ impl Glm5NextImageProcessor {
                 }
             }
         });
-        Ok(Self { planner, spec, lut })
+        Ok(Self {
+            planner,
+            spec,
+            lut,
+            video_lut,
+        })
     }
 
     /// `[grid_h * grid_w, 3 * tps * ps * ps]` in merged-block order, each still
@@ -114,6 +130,10 @@ impl Glm5NextImageProcessor {
 }
 
 impl MmFamilyProcessor for Glm5NextImageProcessor {
+    fn capabilities(&self) -> Capabilities {
+        Capabilities::new(true, self.spec.planner.video.is_some(), false)
+    }
+
     fn decode_image(&self, data: &[u8], limits: &DecodeLimits) -> crate::Result<DecodedMedia> {
         let (rgb, height, width) = decode_rgb_smart(data, limits)?;
         Ok(DecodedMedia::Image { rgb, height, width })
@@ -131,9 +151,188 @@ impl MmFamilyProcessor for Glm5NextImageProcessor {
         self.planner.layout_from_metadata(input_ids, media)
     }
 
+    fn process_items(
+        &self,
+        _input_ids: &[i32],
+        media: &[DecodedMedia],
+    ) -> Result<Vec<ProcessedItem>, MmError> {
+        let videos = media
+            .iter()
+            .filter(|item| item.modality() == Modality::Video)
+            .count();
+        media
+            .iter()
+            .map(|item| self.process_media(item, videos))
+            .collect()
+    }
+
     fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem, MmError> {
+        if media.modality() == Modality::Video {
+            return Err(MmError::unsupported(
+                "glm5_next sizes a video by its request; call process_items",
+            ));
+        }
+        self.process_media(media, 1)
+    }
+
+    fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout, MmError> {
+        self.layout_with_text(input_ids, items, &NoTextEncoder)
+    }
+
+    fn placeholder_modalities(&self, input_ids: &[i32]) -> Result<Vec<Modality>, MmError> {
+        Ok(input_ids
+            .iter()
+            .filter_map(|&id| self.placeholder_modality(id))
+            .collect())
+    }
+
+    fn layout_with_text(
+        &self,
+        input_ids: &[i32],
+        items: &[ProcessedItem],
+        text: &dyn TextEncoder,
+    ) -> Result<TokenLayout, MmError> {
+        let planner = &self.spec.planner;
+        if planner.video.is_none()
+            && planner
+                .video_token_id
+                .is_some_and(|id| input_ids.contains(&id))
+        {
+            return Err(MmError::unsupported("glm5_next supports only images"));
+        }
+        let found = input_ids
+            .iter()
+            .filter(|&&id| self.placeholder_modality(id).is_some())
+            .count();
+        if found != items.len() {
+            return Err(MmError::invalid_input(format!(
+                "glm5_next: prompt has {found} media placeholder(s) but {} media item(s)",
+                items.len()
+            )));
+        }
+        let mut segments = Vec::new();
+        let (mut text_start, mut next) = (0, 0);
+        for (pos, &id) in input_ids.iter().enumerate() {
+            let Some(modality) = self.placeholder_modality(id) else {
+                continue;
+            };
+            let item = &items[next];
+            if item.modality != modality {
+                return Err(MmError::invalid_input(format!(
+                    "glm5_next: media placeholder {next} is {modality:?} but its item is {:?}",
+                    item.modality
+                )));
+            }
+            if text_start < pos {
+                segments.push(Segment::Text(text_start..pos));
+            }
+            let expansion = match &item.geometry {
+                Some(Geometry::TimedGrid { grid, timestamps }) => {
+                    self.video_expansion(grid, timestamps, text)?
+                }
+                _ => vec![ExpansionPart::Feature {
+                    id,
+                    n: item.feature_token_count,
+                }],
+            };
+            segments.push(Segment::Media {
+                item: next,
+                src: pos..pos + 1,
+                expansion,
+            });
+            next += 1;
+            text_start = pos + 1;
+        }
+        if text_start < input_ids.len() {
+            segments.push(Segment::Text(text_start..input_ids.len()));
+        }
+        Ok(TokenLayout { segments })
+    }
+
+    /// `get_rope_index_glm4v`: an image is one grid, and each temporal group
+    /// of a video is a `t = 1` grid with its timestamp text between groups.
+    fn positions_with_features(
+        &self,
+        input_len: usize,
+        _offsets: &[(u32, u32)],
+        feature_ranges: &[Vec<std::ops::Range<u32>>],
+        items: &[ProcessedItem],
+    ) -> Result<PositionOutput, MmError> {
+        if feature_ranges.len() != items.len() {
+            return Err(MmError::invalid_input(
+                "glm5_next: feature range and item counts differ",
+            ));
+        }
+        let mut mrope_items = Vec::new();
+        for (ranges, item) in feature_ranges.iter().zip(items) {
+            let (grid, runs) = match &item.geometry {
+                Some(Geometry::Grid(grid)) => (*grid, 1),
+                Some(Geometry::TimedGrid { grid, .. }) => ([1, grid[1], grid[2]], grid[0] as usize),
+                _ => return Err(MmError::invalid_input("glm5_next: item without its grid")),
+            };
+            if ranges.len() != runs || ranges.iter().any(|range| range.is_empty()) {
+                return Err(MmError::invalid_input(format!(
+                    "glm5_next: an item needs {runs} nonempty feature range(s), got {ranges:?}"
+                )));
+            }
+            mrope_items.extend(ranges.iter().map(|range| MropeItem {
+                start: range.start,
+                end: range.end - 1,
+                grid,
+            }));
+        }
+        let merge_size = self.spec.planner.geometry.merge_size as usize;
+        let (positions, delta) = mrope_image_only(input_len, &mrope_items, merge_size)?;
+        Ok(PositionOutput::MRope { positions, delta })
+    }
+
+    fn positions(
+        &self,
+        input_len: usize,
+        offsets: &[(u32, u32)],
+        items: &[ProcessedItem],
+    ) -> Result<PositionOutput, MmError> {
+        if offsets.len() != items.len() {
+            return Err(MmError::invalid_input(
+                "glm5_next: offsets and items differ in length",
+            ));
+        }
+        let ranges: Vec<_> = offsets
+            .iter()
+            .map(|&(start, end)| std::iter::once(start..end.saturating_add(1)).collect())
+            .collect();
+        self.positions_with_features(input_len, offsets, &ranges, items)
+    }
+}
+
+impl Glm5NextImageProcessor {
+    fn placeholder_modality(&self, id: i32) -> Option<Modality> {
+        let planner = &self.spec.planner;
+        if id == planner.image_token_id {
+            Some(Modality::Image)
+        } else if planner.video_token_id == Some(id) {
+            Some(Modality::Video)
+        } else {
+            None
+        }
+    }
+
+    /// `videos` counts the request's videos, which split the video budget.
+    fn process_media(&self, media: &DecodedMedia, videos: usize) -> Result<ProcessedItem, MmError> {
+        if let DecodedMedia::Video {
+            rgb,
+            height,
+            width,
+            frame_indices,
+            fps,
+        } = media
+        {
+            return self.process_video(rgb, (*height, *width), frame_indices, *fps, videos);
+        }
         let DecodedMedia::Image { rgb, height, width } = media else {
-            return Err(MmError::unsupported("glm5_next: expects an RGB image"));
+            return Err(MmError::unsupported(
+                "glm5_next: expects an RGB image or video",
+            ));
         };
         let (h, w) = (*height, *width);
         let geometry = &self.spec.planner.geometry;
@@ -205,40 +404,16 @@ impl MmFamilyProcessor for Glm5NextImageProcessor {
             geometry: Some(Geometry::Grid(grid)),
         })
     }
+}
 
-    fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout, MmError> {
-        let counts: Vec<usize> = items.iter().map(|item| item.feature_token_count).collect();
-        if self
-            .spec
-            .planner
-            .video_token_id
-            .is_some_and(|id| input_ids.contains(&id))
-        {
-            return Err(MmError::unsupported("glm5_next supports only images"));
-        }
-        layout_by_placeholder(input_ids, self.spec.planner.image_token_id, &counts)
-    }
+/// The encoder behind [`Glm5NextImageProcessor`]'s `layout`: only a video's
+/// expansion needs one.
+struct NoTextEncoder;
 
-    /// `MRotaryEmbedding.get_rope_index_glm4v` on an image-only prompt.
-    fn positions(
-        &self,
-        input_len: usize,
-        offsets: &[(u32, u32)],
-        items: &[ProcessedItem],
-    ) -> Result<PositionOutput, MmError> {
-        if offsets.len() != items.len() {
-            return Err(MmError::invalid_input(
-                "glm5_next: offsets and items differ in length",
-            ));
-        }
-        let items: Vec<MropeItem> = (offsets.iter().zip(items))
-            .map(|(&(start, end), item)| match item.geometry {
-                Some(Geometry::Grid(grid)) => Ok(MropeItem { start, end, grid }),
-                _ => Err(MmError::invalid_input("glm5_next: item without its grid")),
-            })
-            .collect::<Result<_, _>>()?;
-        let merge_size = self.spec.planner.geometry.merge_size as usize;
-        let (positions, delta) = mrope_image_only(input_len, &items, merge_size)?;
-        Ok(PositionOutput::MRope { positions, delta })
+impl TextEncoder for NoTextEncoder {
+    fn encode(&self, _text: &str) -> crate::Result<Vec<i32>> {
+        Err(MmError::invalid_input(
+            "glm5_next: video layout needs a text encoder (layout_with_text)",
+        ))
     }
 }
