@@ -128,6 +128,13 @@ pub enum Geometry {
         grid: [u32; 3],
         timestamps: Vec<f64>,
     },
+    /// A video whose prompt labels each group of frames: the feature count
+    /// of each group, and the timestamp, in seconds, of each frame, or
+    /// `None` for each when the source frame rate is unknown.
+    FrameGroups {
+        tokens: Vec<u32>,
+        timestamps: Vec<Option<f64>>,
+    },
 }
 
 /// One processed media item and the metadata needed for prompt preparation.
