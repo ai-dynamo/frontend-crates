@@ -1296,6 +1296,7 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "chrono",
+ "dynamo-parsers-v2",
  "dynamo-protocols",
  "dynamo-tokenizers",
  "either",
