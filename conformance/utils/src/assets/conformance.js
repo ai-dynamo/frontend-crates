@@ -1534,6 +1534,11 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     return 0;
   };
   const compareCaptures = (left, right, engine) => {
+    if (engine === 'dynamo') {
+      // The Rust parsers stay the default Dynamo column; the Python processor is opt-in.
+      const processorDifference = (left.language === 'python') - (right.language === 'python');
+      if (processorDifference) return processorDifference;
+    }
     const languageDifference = languageRank(left) - languageRank(right);
     if (languageDifference) return languageDifference;
     if (engine === 'dynamo') {

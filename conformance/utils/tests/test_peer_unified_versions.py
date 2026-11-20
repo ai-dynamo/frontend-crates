@@ -14,6 +14,7 @@ import capture_peer_unified_versions as peers
 from capture_stimulus import execution_outcome
 from capture_stimulus import request_for_case
 from capture_stimulus import batch_final_events
+from capture_stimulus import validate_dynamo_sglang_runtime
 
 
 def source_archive(path, members):
@@ -35,6 +36,23 @@ def test_published_metadata_and_source_survive_extraction_without_building(tmp_p
     assert (target / "sglang/__init__.py").read_bytes() == b"__version__='1.0.0'\n"
     assert (target / "sglang-frozen.dist-info/METADATA").read_bytes() == metadata
     assert not (target / "setup.py").exists()
+
+
+def test_namespace_package_is_extracted_under_its_import_name(tmp_path):
+    # ai-dynamo installs the `dynamo` namespace package, which has no __init__.py.
+    archive = tmp_path / "ai_dynamo-1.0.0-py3-none-any.whl"
+    with zipfile.ZipFile(archive, "w") as wheel:
+        wheel.writestr("ai_dynamo-1.0.0.dist-info/METADATA", "Metadata-Version: 2.1\nName: ai-dynamo\nVersion: 1.0.0\n")
+        wheel.writestr("dynamo/frontend/sglang_prepost.py", "# processor\n")
+    target = tmp_path / "package"
+    peers.extract_package(archive, target, "dynamo_sglang")
+    assert (target / "dynamo/frontend/sglang_prepost.py").read_text() == "# processor\n"
+    assert peers.published_module_paths(target / "dynamo", "dynamo_sglang") == {"processor": "frontend.sglang_prepost"}
+    empty = tmp_path / "empty.whl"
+    with zipfile.ZipFile(empty, "w") as wheel:
+        wheel.writestr("ai_dynamo-1.0.0.dist-info/METADATA", "Name: ai-dynamo\n")
+    with pytest.raises(ValueError, match="lacks its Python package"):
+        peers.extract_package(empty, tmp_path / "empty", "dynamo_sglang")
 
 
 def test_package_traversal_is_rejected_before_writing_outside_target(tmp_path):
@@ -82,9 +100,89 @@ def test_dependency_image_overrides_retain_resolved_immutable_ids(monkeypatch):
         return "sha256:" + str(len(calls)) + "\n"
 
     monkeypatch.setattr(peers.subprocess, "check_output", inspect)
-    images = peers.resolve_images({"vllm": "vllm/vllm-openai:v0.23.0"})
-    assert calls == ["vllm/vllm-openai:v0.23.0" if engine == "vllm" else image for engine, image in peers.IMAGE_NAMES.items()]
-    assert list(images.values()) == ["sha256:1", "sha256:2"]
+    images = peers.resolve_images({"vllm": "vllm/vllm-openai:v0.23.0"}, {"vllm", "sglang"})
+    # Only the engines being run are inspected; other images stay optional.
+    assert calls == ["vllm/vllm-openai:v0.23.0", peers.IMAGE_NAMES["sglang"]]
+    assert images == {"vllm": "sha256:1", "sglang": "sha256:2"}
+
+
+def test_dynamo_sglang_batch_only_fails_before_launch(tmp_path):
+    inventory = tmp_path / "inventory.yaml"
+    inventory.write_text("targets: [{implementation: dynamo_sglang, version: 1.6.2}]")
+    work = tmp_path / "work"
+    with pytest.raises(ValueError, match="dynamo_sglang capture supports only stream"):
+        peers.run_inventory(inventory, work, 1, modes=["batch"])
+    assert not work.exists()
+
+    target = tmp_path / "target.json"
+    target.write_text(json.dumps({"implementation": "dynamo_sglang", "version": "1.6.2"}))
+    for entry, selection in ((peers.worker, "batch"), (peers.worker_modes, ["batch"])):
+        with pytest.raises(ValueError, match="dynamo_sglang capture supports only stream"):
+            entry(target, work, work, selection)
+    assert not work.exists()
+
+
+def test_dynamo_sglang_rejects_an_override_with_a_different_image(tmp_path, monkeypatch):
+    inventory = tmp_path / "inventory.yaml"
+    inventory.write_text(yaml.safe_dump({"targets": [{
+        "implementation": "dynamo_sglang", "version": "1.6.2",
+        "runtime": {"image": "release", "identity": {"image_id": "sha256:" + "1" * 64}},
+    }]}))
+    inspected = []
+
+    def image_id(command, *, text):
+        inspected.append(command[3])
+        return "sha256:" + "2" * 64
+
+    monkeypatch.setattr(peers.subprocess, "check_output", image_id)
+    work = tmp_path / "work"
+    with pytest.raises(ValueError, match="image differs from the pinned release pairing"):
+        peers.run_inventory(inventory, work, 1, image_overrides={"dynamo_sglang": "override"})
+    assert inspected == ["override"]
+    assert not work.exists()
+
+
+@pytest.mark.parametrize(("mutation", "sglang_version"), [
+    ("version", "0.5.21"),
+    ("missing_version", "0.5.21"),
+    ("image", "0.5.21"),
+    ("missing_runtime", "0.5.21"),
+    ("version", "0.4.6.post1"),
+])
+def test_dynamo_sglang_runtime_receipt_rejects_unbound_metadata(mutation, sglang_version):
+    job = {"cases": []}
+    job_bytes = peers.json_bytes(job)
+    receipt = {
+        "implementation": "dynamo_sglang_python", "version": "1.6.2",
+        "runtime": {"image_id": "sha256:" + "1" * 64, "sglang_version": sglang_version},
+        "source_sha256": "0" * 64, "adapter_sha256": "1" * 64,
+        "job_sha256": peers.sha256(job_bytes), "results_sha256": peers.sha256(b"{}"),
+    }
+    capture = {"dynamo_sglang_version": "1.6.2", "sglang_version": sglang_version,
+               "results": {}, "provenance": receipt}
+    peers.validate_execution(capture, job, job_bytes, "dynamo_sglang_python", "1.6.2")
+    if mutation == "version":
+        capture["sglang_version"] = "0.5.23"
+    elif mutation == "missing_version":
+        del capture["sglang_version"]
+    elif mutation == "image":
+        receipt["runtime"]["image_id"] = "latest"
+    else:
+        del receipt["runtime"]
+    with pytest.raises(ValueError, match="differs from the runtime receipt"):
+        peers.validate_execution(capture, job, job_bytes, "dynamo_sglang_python", "1.6.2")
+
+
+@pytest.mark.parametrize("sglang_version", ["0.4.6.post", "0.4.6.post1junk", "0.4.6+local"])
+def test_dynamo_sglang_runtime_receipt_rejects_malformed_sglang_versions(sglang_version):
+    document = {"sglang_version": sglang_version}
+    receipt = {"runtime": {
+        "image_id": "sha256:" + "1" * 64,
+        "sglang_version": sglang_version,
+    }}
+
+    with pytest.raises(ValueError, match="differs from the runtime receipt"):
+        validate_dynamo_sglang_runtime(document, receipt)
 
 
 @pytest.mark.parametrize("present_apis", [False, True])

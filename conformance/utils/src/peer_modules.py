@@ -10,7 +10,19 @@ import ast
 import json
 
 
+# Distribution and import package of each peer engine whose name differs.
+# ai-dynamo installs a namespace package: it has no top-level __init__.py.
+PEER_PACKAGES = {"dynamo_sglang": ("ai-dynamo", "dynamo")}
+NAMESPACE_PACKAGES = {"dynamo"}
+
+
+def peer_package(engine):
+    """Return the (distribution, import package) pair for a peer engine."""
+    return PEER_PACKAGES.get(engine, (engine, engine))
+
+
 MODULE_PATHS = {
+    "dynamo_sglang": {"processor": ("frontend.sglang_prepost",)},
     "sglang": {
         "protocol": ("srt.entrypoints.openai.protocol", "srt.openai_api.protocol"),
         "reasoning": ("srt.parser.reasoning_parser", "srt.reasoning_parser"),
@@ -65,11 +77,18 @@ def published_module_paths(root, engine):
 
 
 def resolve_peer_module(engine, capability):
-    package = importlib.import_module(engine)
-    root = Path(package.__file__).resolve().parent if package.__dict__.get("__file__") else None
+    package_name = peer_package(engine)[1]
+    package = importlib.import_module(package_name)
+    if package.__dict__.get("__file__"):
+        root = Path(package.__file__).resolve().parent
+    elif package_name in NAMESPACE_PACKAGES and package.__dict__.get("__path__"):
+        # The first portion is the frozen package placed ahead of the image.
+        root = Path(next(iter(package.__path__))).resolve()
+    else:
+        root = None
     if root is None:
         for relative in MODULE_PATHS[engine][capability]:
-            name = engine + "." + relative
+            name = package_name + "." + relative
             if name in sys.modules:
                 return importlib.import_module(name)
     else:
@@ -77,7 +96,7 @@ def resolve_peer_module(engine, capability):
         if relative is not None:
             # A present module's missing dependency is a source/build blocker;
             # switching layouts on ImportError would hide that failure.
-            return importlib.import_module(engine + "." + relative)
+            return importlib.import_module(package_name + "." + relative)
     raise ModuleNotFoundError(f"Published {engine} package has no {capability} parser API")
 
 

@@ -5,6 +5,7 @@
 import argparse
 import hashlib
 import importlib
+import importlib.metadata
 import inspect
 import json
 import sys
@@ -108,8 +109,13 @@ def source_identity_root(engine, root, version):
 
 
 def source_identity(engine):
-    module = importlib.import_module(engine)
-    return source_identity_root(engine, Path(module.__file__).resolve().parent, module.__version__)
+    distribution, package_name = peer_modules.peer_package(engine)
+    module = importlib.import_module(package_name)
+    if module.__dict__.get("__file__"):
+        return source_identity_root(engine, Path(module.__file__).resolve().parent, module.__version__)
+    # Namespace package: hash the frozen portion placed first on the path.
+    root = Path(next(iter(module.__path__))).resolve()
+    return source_identity_root(engine, root, importlib.metadata.version(distribution))
 
 
 def main():
