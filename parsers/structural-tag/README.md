@@ -1,6 +1,6 @@
-# Shared Kimi structural tags
+# Shared structural tags
 
-`dynamo-structural-tag` owns the native Kimi K2 and K3 call grammars and channel envelopes used by both Dynamo parser generations. It uses `serde` and `serde_json` for grammar serialization, `regex` for schema patterns, and `anyhow` for validation errors.
+`dynamo-structural-tag` owns native model call grammars and their envelopes. Both Dynamo parser generations use its Kimi K2 and K3 grammars; v2 also uses its MiniMax M2 grammar. It uses `serde` and `serde_json` for grammar serialization, `regex` for schema patterns, and `anyhow` for validation errors.
 
 Each parser adapter selects tools, resolves schema enforcement, and decides call cardinality before invoking the shared grammar. V1 re-exports the shared format types at its existing public paths. V2 translates the grammar nodes into its private wire types to apply argument-order options and compose reasoning or structured-response branches.
 
@@ -11,6 +11,8 @@ K2 supports Instruct and prompt-opened K2.5/K2.6 reasoning. Original K2-Thinking
 K3 shares the upstream grammar for typed arguments, required-property order, schema references, unions, and positive call indices. Unsupported schema shapes retain the upstream fallback behavior. Native calls allow omitted response markers and EOS directly after the tools channel. K3 structured final responses retain their native response-channel envelope.
 
 The workspace release configuration includes this publishable crate through its defaults. Both consumers declare a path and a registry version, so the shared crate must be published before either consumer release.
+
+MiniMax M2 uses the `minimax_xml` schema style inside its tool-call block. Its v2 adapter applies request policy and reasoning boundaries through the common v2 builder.
 
 ## Backend compatibility
 
