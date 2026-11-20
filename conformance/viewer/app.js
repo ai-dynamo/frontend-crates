@@ -262,7 +262,7 @@ function fixtureLinks(tab, historyAvailable) {
 
 function captureControls(catalog, spec) {
   return tabCandidates(catalog, spec, { golden: true }).map(item => ({ ...item.control, source_id: item.source.id,
-    identity: `${item.source.implementation}@${item.source.version}`, language: item.source.language }));
+    identity: `${item.source.implementation}@${item.source.release_choice || item.source.version}`, language: item.source.language }));
 }
 
 async function initialize() {
@@ -423,10 +423,12 @@ async function initialize() {
   window.__conformanceController = controller;
   const panel = document.getElementById('tab-unified');
   panel.querySelector('.cmpctl')?.replaceChildren();
+  const embeddedChoices = embeddedIdentities && new Set([...embeddedIdentities,
+    ...page.tabs.flatMap(tab => tab.candidates.filter(item => item.release_choice === 'Latest').map(item => item.identity))]);
   slotOwner = window.mountConformanceCaptureSlots(page, panel, () => {
     if (!slotOwner) return;
     load(panel);
-  }, { availableIdentities: historyAvailable ? null : embeddedIdentities, beforeUpdate: () => reserveCaptureSize(panel, true) });
+  }, { availableIdentities: historyAvailable ? null : embeddedChoices, beforeUpdate: () => reserveCaptureSize(panel, true) });
   comparison = mountComparison(panel, controller, () => catalog.sources.unified.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
   const firstLoad = load(controller.activePanel());
   async function discoverOlderResults() {

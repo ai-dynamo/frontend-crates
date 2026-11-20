@@ -1,9 +1,108 @@
 schema_version: 1
 policy:
   corpus: UNIFIED
-  v2: every published stable release plus retained source-only labels
-  v1: latest two stable releases, separate batch and jail-buffer paths
+  v1: archive the latest captured stable release for each represented major from 3.x through 10.x with parent sources; use versionless YAML as the only current v1 capture source; select each family's newest measured stable release within a historical major
+  v2: retain every captured stable release and retained source labels; deduplicate unchanged observations
 targets:
+- implementation: dynamo_v1
+  version: 11.0.0
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: d3c531dbe6fc192bb128e1db455d80f903d7f21fd72e577b74ae37c44b39553e
+  yanked: false
+  published_at: '2026-11-02T01:29:07.715754Z'
+- implementation: dynamo_v1
+  version: 11.0.1
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 125356acaf2496888c647d0afda1826f436b7b072e5895573e2d66cea2887b56
+  yanked: false
+  published_at: '2026-11-02T22:23:17.318268Z'
+- implementation: dynamo_v1
+  version: 11.0.2
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: aec88bb3a3672bb07b59b1f92b4afe1f4ee59c89c9e065df9bb1ff340787156b
+  yanked: false
+  published_at: '2026-11-03T18:06:39.791997Z'
+- implementation: dynamo_v1
+  version: 11.0.3
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: ed28837decd99e95bbae5c9b9de4178ee6f9491cee6363029e01c9c6aed9c5e1
+  yanked: false
+  published_at: '2026-11-03T19:42:55.665899Z'
+- implementation: dynamo_v1
+  version: 11.0.4
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 6e0b192e8e93a3bbafd57d809a3d0e1b39abda7046356c0e74348f7e6ddc2e52
+  yanked: false
+  published_at: '2026-11-03T20:31:40.898893Z'
+- implementation: dynamo_v1
+  version: 11.0.5
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 2e53ec4efa5e8d7cf722c972d8323a2714aa0d15a3270d0381b3f7e015667eb6
+  yanked: false
+  published_at: '2026-11-03T22:06:59.350405Z'
+- implementation: dynamo_v1
+  version: 11.0.6
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: e27b464b046df2d12113909aa37da66d6ee7b72e8d0d54ead6b160b944621641
+  yanked: false
+  published_at: '2026-11-04T00:20:55.456419Z'
+- implementation: dynamo_v1
+  version: 11.0.7
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 2a50ae4b35f326153132ec675a34be9d2500de346364f0ea8af0d880be118f34
+  git_commit: a1fc6e7e7957a75df4fbe300b0e683f230727cb5
+  yanked: false
+  published_at: '2026-11-04T05:52:48.657207Z'
+- implementation: dynamo_v1
+  version: 11.0.8
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 40547684eb78101af46e2d9bc704596f7d4d6ef4ee0a87e456a9c0c576d9c9b8
+  yanked: false
+  published_at: '2026-11-06T21:53:33.729710Z'
+- implementation: dynamo_v1
+  version: 11.0.9
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 31bf33a97a70c514fe8c897598ca4433339c03e75db11165f9f61750464f25ef
+  yanked: false
+  published_at: '2026-11-07T22:45:41.542169Z'
+- implementation: dynamo_v1
+  version: 11.0.10
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: bf6ee0c5f84da47243c53161f3b033d83a1e4ad8fc8960969efbf1e23684eb67
+  yanked: false
+  published_at: '2026-11-09T17:27:25.106019Z'
+- implementation: dynamo_v1
+  version: 11.0.11
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: f8816a88cab33166978daa5090cea8f50e23519ddcdfd01bfd8463ee32e1032f
+  yanked: false
+  published_at: '2026-11-09T22:14:43.714307Z'
+- implementation: dynamo_v1
+  version: 11.0.12
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 6111f8c6afba5802aa88578d11dd7dd11ec13faff45b13f8f6631780a82cdd2a
+  yanked: false
+  published_at: '2026-11-13T19:00:40.594695Z'
+- implementation: dynamo_v1
+  version: 11.0.13
+  source_kind: crate
+  crate: dynamo-parsers
+  checksum: 5d539ebe2b7528a53e0b18cc833c7c51dac474172566c1249c82aa0f41705a90
+  yanked: false
+  published_at: '2026-11-14T00:00:41.824842Z'
 - implementation: dynamo_v2
   version: 0.1.0
   source_kind: crate
@@ -383,6 +482,12 @@ targets:
   git_commit: 13d1c33ecba86be227afe0612aecb248c3baae86
   reasoning_version: 9.2.6
 - implementation: dynamo_v2
+  version: 0.7.9
+  source_kind: git
+  git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+  source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+  reasoning_version: 9.2.7
+- implementation: dynamo_v2
   version: 0.7.10
   source_kind: crate
   crate: dynamo-parsers-v2
@@ -416,6 +521,12 @@ targets:
   crate: dynamo-parsers-v2
   checksum: 9d2dbefe4f50089ad0c44eb433c720dea34791689488a39e9ca9f2f888aa019a
   git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+  reasoning_version: 9.2.8
+- implementation: dynamo_v2
+  version: 0.7.16
+  source_kind: git
+  git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+  source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
   reasoning_version: 9.2.8
 - implementation: dynamo_v2
   version: 0.7.17
@@ -473,27 +584,3 @@ targets:
   checksum: 8a62c4aea442890712dcdb64e493fac636edad8c9b25f793948800507c41bedc
   git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
   reasoning_version: 10.0.7
-- implementation: dynamo_v1
-  version: 10.0.6
-  source_kind: crate
-  crate: dynamo-parsers
-  checksum: d3d22c36e7881d61cc540d733e434d752d7ff77b1578309d68b38ebe7bf004cf
-  git_commit: 547deacf32632f159ab6f1a8d398c947871be842
-- implementation: dynamo_v1
-  version: 10.0.7
-  source_kind: crate
-  crate: dynamo-parsers
-  checksum: 9d16648322cc1b4feb6fd722cb0b3cc23f6a545b7d37e167543a1675fa1c3d4a
-  git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
-- implementation: dynamo_v2
-  version: 0.7.9
-  source_kind: git
-  git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
-  source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
-  reasoning_version: 9.2.7
-- implementation: dynamo_v2
-  version: 0.7.16
-  source_kind: git
-  git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-  source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-  reasoning_version: 9.2.8

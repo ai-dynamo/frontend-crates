@@ -3,7 +3,7 @@
 import { expandFamily, expandSnapshot } from './normalization.js';
 import { sha256, createWorkerParser, validateResource, resourceMetrics } from './data.js';
 import { canonicalJson, sameValue, getField, hasField, setField, deleteField, mergeMappings, mappingEntries, isMapping } from './values.js';
-import { compareVersions, provenanceReleaseVersion, unifiedCaptureVersionPattern, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, selectedUnifiedSnapshot } from './model.js';
+import { familyCaptureSource, compareVersions, provenanceReleaseVersion, unifiedCaptureVersionPattern, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, selectedUnifiedSnapshot } from './model.js';
 
 export function sourceReference(value, directory) {
   if (typeof value !== 'string' || !new RegExp(`^${directory}/[A-Za-z0-9][A-Za-z0-9_.+-]*\\.yaml$`).test(value)) throw new Error(`invalid ${directory} filename reference`);
@@ -564,6 +564,14 @@ export class FixtureResources {
   }
 
   unifiedDependencies(descriptors) {
+    if (descriptors.some(item => item.source.family_versions)) {
+      const families = selectedUnifiedFamilies(this.catalog, descriptors);
+      const inputs = this.catalog.sources.unified.filter(resource => resource.kind === 'inputs-and-golden' && families.has(resource.family));
+      const captures = this.unifiedDependencies(descriptors.flatMap(item => item.source.family_versions
+        ? Object.keys(item.source.family_versions).map(family => ({ ...item, source: familyCaptureSource(item.source, family) }))
+        : [item]));
+      return [...new Map([...inputs, ...captures].map(resource => [resource.path, resource])).values()];
+    }
     if (this.embedded) {
       const latest = descriptors.filter(item => this.isEmbedded(item.source.implementation, item.source.version));
       const historical = descriptors.flatMap(item => {

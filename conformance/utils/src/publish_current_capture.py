@@ -294,7 +294,7 @@ def publish_loose(root: Path, history: Path, loose: Path) -> list[dict]:
         updated = unified_history._update_from_loose(store, loose, complete_snapshot=False)
         if updated is None:
             return []
-        for path, document in unified_history._store_documents(store).items():
+        for path, document in unified_history._store_documents(store, complete_snapshots=True).items():
             identity = unified_history.source_identity(path.relative_to(view).as_posix())
             if identity["kind"] != "history":
                 continue

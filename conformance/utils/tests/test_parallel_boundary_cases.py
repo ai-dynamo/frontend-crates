@@ -13,6 +13,14 @@ import gen_unified_golden as unified  # noqa: E402
 
 
 def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
+    # These earlier publications split the same bytes at different boundaries.
+    retained_lengths = {
+        ("adjacent_calls_partial_header", "muse_spark"): (159, 95, 0),
+        ("three_calls_partial_header", "beam"): (0, 144, 219, 0),
+        ("three_calls_partial_header", "gpt_oss"): (0, 155, 148, 0),
+        ("three_calls_partial_header", "minimax_m3"): (0, 187, 218, 0),
+        ("three_calls_partial_header", "muse_spark"): (0, 159, 176, 0),
+    }
     for scenario, families in unified.PARALLEL_BOUNDARY_CASES.items():
         expected_names = ["f", "g"] if scenario == "adjacent_calls_partial_header" else ["f", "g", "h"]
         assert set(families) == unified.UNIFIED_PARALLEL_BOUNDARY_FAMILIES
@@ -30,5 +38,10 @@ def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
             expected_chunks = list(source["input_chunks"])
             if family == "nemotron_v3":
                 expected_chunks[0] = "</think>" + expected_chunks[0]
-            assert case["input_chunks"] == expected_chunks
+            lengths = retained_lengths.get((scenario, family))
+            if lengths is not None:
+                assert tuple(map(len, case["input_chunks"])) == lengths
+                assert case["input"] == "".join(expected_chunks)
+            else:
+                assert case["input_chunks"] == expected_chunks
             assert case["input_chunks"][-1] == ""

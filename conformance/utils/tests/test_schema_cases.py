@@ -32,5 +32,10 @@ def test_custom_quote_display_is_family_specific_and_preserves_aliases(quotes):
         assert unified_taxonomy.scenario_for_label(f"UNIFIED.7-{custom}", family=family) == custom
     assert unified_taxonomy.numbered_id(string) == f"UNIFIED.7-tool-argument-declared-types-{string}"
     assert unified_taxonomy.display_tax(string)[0] == 7
-    assert unified.scenario_families(custom) == {"qwen3", "nemotron_v3"}
-    assert unified.scenario_families(string) == set(unified.NATIVE_INPUT_FAMILIES)
+    assert unified.scenario_families(custom) == {"minimax_m2", "nemotron_nano", "nemotron_v3", "qwen3", "qwen3_coder"}
+    assert unified.scenario_families(string) == set(unified._MANIFEST)
+
+
+@pytest.mark.parametrize("scenario", ["arg_json_null_ref", "arg_string_null_ref"])
+def test_reference_null_controls_cover_every_schema_aware_request(scenario):
+    assert unified.scenario_families(scenario) == set(unified._MANIFEST) - {"gpt_oss"}

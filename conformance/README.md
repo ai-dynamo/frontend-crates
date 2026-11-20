@@ -29,6 +29,22 @@ Keep GOLDEN independently authored and justified; do not copy an incorrect parse
 
 ## Latest captures and retained history
 
+### Legacy family history
+
+History generation includes the registered v1 families that have no latest native v2 capture, including Hermes, Llama 3 JSON, Qwen 2.5, Mistral, Phi-4, Jamba, and Pythonic. Their existing spec-derived Unified scenarios use the published `dynamo-parsers` API in separate direct-batch and jail-buffer histories. Release reconciliation captures the newest stable, non-yanked v1 release from 11.0.0 onward. Only that release remains selectable in the modern v1 range; a newer capture replaces the previous selection. The v1 release picker defaults to Latest and offers one choice per captured historical major: 10.x, 9.x, 5.x, and 3.x. Latest reads only the complete versionless YAML. Each historical choice uses each family’s newest measured stable release for the selected direct or jail mode, so 10.x can show GPT-OSS at 10.0.1 alongside Qwen3 at 10.2.2; result details show the exact source version. Every v1 selection retains all applicable authored inputs and GOLDEN, including families without a capture for that major. Missing captures display “No capture for this major”, separately from recorded unsupported requests and cases that do not apply to a family. Latest native v2 selections retain their existing family scope. Unsupported initialization and missing parser registrations remain explicit unavailable observations. These captures do not convert a family to UnifiedParser or change the deprecated TOOLCALLING corpus.
+
+### Latest v1 replay
+
+Latest v1 uses the same authored Unified requests and independent GOLDEN as native v2. Applicability follows the native grammar and request, including families with no v2 parser. The direct-batch and jail-buffer modes retain separate final fields, raw arguments, parser errors, and unsupported outcomes; batch observations have no synthetic chunk deltas. Missing records and producer build failures fail verification. GOLDEN disagreements remain visible.
+
+The fixture check runs `test_latest_v1_replay_matches_committed_yaml` once. To run it directly against the checksum-pinned published release selected by the versionless YAML:
+
+```bash
+python3 conformance/utils/src/replay_latest.py --root . --work /path/to/new-replay-directory
+```
+
+The runner builds one published producer per mode, freezes every family request, and compares the measured results with that mode's sealed Latest YAML. It validates the complete case set, request binding, producer identity, final output, errors, and support status. Raw arguments stay unchanged in captures; replay compares JSON argument values through the shared exact-number comparator, ignoring object key order and JSON formatting while preserving string whitespace, types, call order, and text. Stream deltas remain exact. It reads no historical capture YAML or archives. The workspace v1 crate is a separate source and does not stand in for the selected published package. Native v2 continues using the strict replay command above.
+
 ### Normalized current YAML
 
 Current authored cases and latest captures use `schema_version: 3`. This number identifies the storage format. Parser release versions belong to captured observations. Authored files have one `family` header and no GOLDEN producer/version label.
@@ -39,7 +55,7 @@ A request stores its input once. `chunk_sizes` records Unicode scalar counts in 
 
 Latest capture files share immutable request definitions with their family file. They store origins, producers and record contexts once, select common references through `record_defaults`, and retain explicit exceptions. Record contexts are complete replacements. Observations retain final output, every chunk delta, completion metadata, errors and unavailable results. Repeated recaptures keep previous evidence in `verified_recaptures`; each archive entry retains its own result, request, producer receipt and resolution. Python selection, history validation and execution-manifest conversion validate this archive even when no active recapture is present. Archived requests and producer versions may differ from the current selection. Selection versions remain separate from the actual producer identity. Native unpublished refreshes preserve prior observations, requests, and producer identities while selecting fresh execution through verified recapture metadata. When replay matches the original observation, the new producer is recorded in the snapshot provenance and the original record is retained as-is. Changed observations carry a supplemental result. Repeated refreshes archive the previous supplemental capture when replacing it. A changed request, missing case, stale producer, concurrent store mutation, or unsupported root execution proof is rejected before publication. This latest-only path does not consult retained history to authorize replacement.
 
-Python, native Rust and browser readers expand the format into the existing validated case/observation model. Historical capture files and archives retain their original bytes and compatibility readers. To normalize current files or check that their representation is canonical, run:
+Python, native Rust and browser readers expand the format into the existing validated case/observation model. Historical captures retain their resolved requests, observations, source identities, and execution receipts through the shared delta writer; compatibility readers continue accepting complete snapshots and existing archives. To normalize current files or check that their representation is canonical, run:
 
 ```bash
 python3 conformance/utils/src/normalize_current.py --root .
@@ -48,12 +64,12 @@ python3 conformance/utils/src/normalize_current.py --root . --check
 
 ### Historical back-captures
 
-Back-capture is useful, but not absolutely needed. There is no need to back-capture everything or rerun every historical version when adding a case. Capture the current candidate; use a relevant baseline when needed to demonstrate a before/after change. State which versions actually ran and leave uncaptured results explicitly unmeasured. Preserve existing historical inputs, observations, and provenance; never label current output as an older parser result.
+Routine parser changes do not require rerunning every historical version. Release reconciliation keeps only the newest stable v1 release from 11.0.0 onward, archives the newest captured stable v1 release for each represented major from 3.x through 10.x, and retains every captured v2 release. Retained v1 requests, observations, and producer receipts remain in their archives; superseded 11.x selections are retired. Capture the current candidate; use a relevant baseline when needed to demonstrate a before/after change. State which versions actually ran and leave uncaptured results explicitly unmeasured. Preserve existing historical inputs, observations, and provenance; never label current output as an older parser result.
 
 
 The earlier implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Versionless latest observations live beside retained captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`. Batch and jail variants remain separate implementations. Authored cases and their frozen request library stay in each family's `inputs_and_golden.yaml`.
 
-No backfill is needed. Historical versioned captures and legacy archives retain their original bytes and paths. Current authored requests and GOLDEN retain their values through storage normalization. Versioned capture removal, historical moves, and archive expansion remain separate work.
+Historical release files remain selectable at their original paths. The initial checkpoint stores complete historical records; subsequent checkpoints store changes in requests, observations, membership, provenance, and source lineage. Separate sealed execution receipts establish which release actually ran even when no observation payload changed. Versionless current snapshots remain complete and load without reading history. Current authored requests and GOLDEN retain their values through migration.
 
 Each latest capture contains complete observation records and resolves sealed request references through its current family file. These files require no historical parent. All selectable conformance versions and capture filenames use plain version numbers, including local candidates and published latest/history reports. Source hashes and Git revisions belong only in provenance metadata; they must never appear as version suffixes or selectable versions. The writer, source readers, native publisher, browser model, and publication qualification reject such selections. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
 
@@ -150,7 +166,7 @@ Before adding a conformance case, inspect every registered family. Always evalua
 
 ## Ownership
 
-New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy conformance suites and renderers are retired. Existing v1 captures remain available as historical comparisons in Unified.
+New conformance cases use the Unified request and GOLDEN schema. V1 historical comparisons replay those authored requests through the shared direct-batch and jail-buffer capture adapters. Do not add cases or restore executors in the deprecated TOOLCALLING corpus. The default report displays only Unified; selecting a retained v1 capture can include registered legacy families that have no native v2 implementation.
 
 Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, browser resources, and test commands.
 
@@ -355,20 +371,21 @@ Known v2 defects remain documented in `unified-known-divergences.yaml`; GOLDEN c
 
 Native tests consume immutable latest snapshots. Historical readers preserve source identities independently of publication. Full historical packaging pins archive descriptors; Unified-only packaging preserves those pins. No historical rewrite is required for a contributor parser change.
 
-## Safe pruning of Unified history
+## Retaining Unified history
 
-**Deleting a capture that appears in another snapshot's `member` breaks source identity. Keep the original capture available for every retained member reference.**
+Archive the newest captured stable v1 release for each represented major from 3.x through 10.x in `fixtures-unified-v2/versions/dynamo-<version>.tar.gz`. Each archive includes parent capture sources and their execution and receipt dependencies, preserving original YAML bytes. The viewer selects the newest measured stable release separately for each family and mode within a major. Versionless YAML is the only physical current v1 source; release reconciliation removes duplicate versioned backing snapshots after verifying their complete evidence against the refreshed current capture. Versioned source names in current metadata are logical publication identities reconstructed from the complete versionless snapshot. Direct and jail modes remain separate. V2 and peer retention is unchanged.
 
-Prune only from an immutable copy of the original store and its manifest. The original remains the comparison oracle throughout the operation. Choose retained versions separately for each implementation and mode: keep the newest Dynamo v1 release in each major for both direct-batch and jail-buffer histories, and keep the newest Dynamo v2 release in each major.minor line. For example, if v2 has 0.5.1, 0.5.6, and 0.5.99, keep 0.5.99 for the 0.5 minor line. Complete snapshots keep their resolved results without parent loads, but each retained record's `member` must still name an available original capture.
+Before migrating an existing store, preserve a recovery archive and validate a private candidate with `python3 conformance/utils/src/migrate_v1_retention.py --root . --work /path/to/new-work-directory`. Add `--publish` to install the validated candidate transactionally. Migration checks every retained resolved request, observation, producer receipt, and archived source member; latest raw-source references point to the retained complete snapshot. The recovery archive preserves superseded selections outside the active store. Current and authored YAML remain byte-identical.
 
-1. Preserve an immutable original store and manifest.
-2. Choose retained versions separately for each implementation.
-3. Enumerate every retained snapshot's `records.*.member` value and keep each named source capture.
-4. Preserve observations, source provenance, request bindings, and inline receipt bodies.
-5. Remove only captures outside the retention policy and outside every retained `member` reference.
-6. Reload the pruned store and compare every retained record, provenance field, and member reference with the original.
-7. Regenerate packaging and catalogs; verify published data and raw-source links.
+`migrate_history_deltas.py` preserves an immutable original store archive and file manifest in its required work directory, converts both generations through the same delta writer, and compares every resolved record, source member, projection flag, checkpoint provenance, and execution receipt before publishing. Before replacing a current v1 snapshot, migration and release reconciliation retain its original selected release, request/result pairs, record documents, source members, and execution receipts. A current selection missing from versioned history becomes a normal older checkpoint without changing later results. When an existing checkpoint differs, its historical evidence stores the current view as a delta against that checkpoint, with original file and semantic hashes; both readers reconstruct and validate the complete view. Migration audits these displaced current snapshots as well as existing versioned checkpoints. Its default is a private candidate; `--publish` installs it transactionally after parity. Keep this work directory outside Git.
 
-Do not rewrite complete snapshots into parent deltas as part of pruning.
+```bash
+python3 conformance/utils/src/migrate_history_deltas.py --root . --work /path/to/new-migration-directory --publish
+python3 conformance/utils/src/reconcile_dynamo_captures.py --root . --work /path/to/new-capture-directory
+```
+
+The reconciliation command discovers missing releases, freezes requests and adapter identities, uses bounded build slots, and builds each exact producer once per required mode. It skips only previously qualified executions with matching frozen requests and adapter identities. Changed requests or adapters retain earlier evidence. A source/build failure names the release, family, and mode and prevents publication of the partial run. Explicit unsupported outcomes remain recorded. Successful v1 captures refresh complete versionless current snapshots for every measured family.
+
+The successful release workflow calls the same reconciliation implementation in a separate job, and the `reconcile-captures` workflow supports manual dispatch for missed releases and recovery. It prepares or updates one bot pull request; normal review and CI are required before merge. A capture failure does not undo a published crate. Build artifacts remain outside Git.
 
 Latest publication reuses validated family JSON fragments before assembling final envelopes and transport packs. The local cache is `build/conformance-cache`; `--cache-dir <directory>` selects another location. Source and output hashes detect missing or corrupt entries, which are rebuilt. Viewer-only changes rebuild presentation and reuse converted data. CI restores family caches within each branch namespace and always qualifies history. Only `main` can deploy. The deployment job retains its Pages concurrency lock while an HTTP/browser smoke check compares every delivered file with the qualified artifact and exercises the published matrix and an available comparison.

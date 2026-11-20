@@ -44,13 +44,17 @@ def test_retained_possessive_captures_keep_their_published_request():
     scenario = "quoted_name_backtick_possessive_reasoning"
     case = unified_history.load_yaml(directory / "inputs_and_golden.yaml")["cases"][scenario]
     for implementation in ("dynamo_v1", "dynamo_v1_jail"):
-        path = directory / f"{implementation}-11.0.6.yaml"
-        stimulus = unified_history.load_yaml(path)["changes"][scenario]["stimulus"]
+        path = directory / f"{implementation}.yaml"
+        snapshot = unified_history.load_yaml(path)
+        stimulus = snapshot["records"][scenario]["value"]["stimulus"]
         unified_history._validate_stimulus(stimulus, case, str(path))
-        changed = copy.deepcopy(case)
-        changed["request"]["chunks"] = [{"delta_text": changed["request"]["input"]}]
-        with pytest.raises(ValueError, match="digest differs from the canonical request"):
-            unified_history._validate_stimulus(stimulus, changed, str(path))
+        request = stimulus["inline"]
+        assert typed_equal(request, case["request"])
+        assert len(request["chunks"]) > 1
+        changed = copy.deepcopy(stimulus)
+        changed["inline"]["chunks"] = [{"delta_text": request["input"]}]
+        with pytest.raises(ValueError, match="digest differs from its inline request"):
+            unified_history._validate_stimulus(changed, case, str(path))
 
 
 def _assert_authored_additions_preserve_existing(previous, current, where):

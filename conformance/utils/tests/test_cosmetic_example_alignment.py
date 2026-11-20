@@ -86,9 +86,9 @@ def test_examples_change_only_incidental_tokens(authored, family, original, acti
 def test_replacements_keep_existing_family_coverage(authored):
     # Newly applicable families have no retired original from the cosmetic replacement.
     assert generator.scenario_families("tool_body_whitespace") == set(MODEL_CONTRACTS["nativeReviewFamilies"]["whitespace"])
-    assert generator.scenario_families("interrupted_reasoning_then_response") == set(RESPONSE_FAMILIES)
+    assert generator.scenario_families("interrupted_reasoning_then_response") == {*RESPONSE_FAMILIES, "harmony", "harmony_text", "inkling"}
     for scenario in ("reason_markup_in_arg", "reason_markup_in_arg_with_text"):
-        assert generator.scenario_families(scenario + "_consistent") == {"gpt_oss"}
+        assert generator.scenario_families(scenario + "_consistent") == {"gpt_oss", "harmony", "harmony_text"}
         assert "gpt_oss" not in generator.scenario_families(scenario)
     for family, old, active in EXAMPLES:
         assert old not in {case["scenario"] for case in authored.families[family].cases.values()
