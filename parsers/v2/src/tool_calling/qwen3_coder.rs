@@ -60,6 +60,9 @@ fn spec() -> WrappedBlockSpec {
         // The template always wraps a call in `<tool_call>`; a bare
         // `<function=NAME>` inside an open thought is narration.
         narrated_invoke_header_end: Some('>'),
+        // Qwen3.6 sometimes makes a wrapped call inside the thought and repeats
+        // it after `</think>`; the repeat is dropped (ai-dynamo/dynamo#17732).
+        dedupe_calls_repeated_after_thought: true,
     }
 }
 
