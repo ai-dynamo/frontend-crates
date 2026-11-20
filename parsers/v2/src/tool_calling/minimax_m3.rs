@@ -101,6 +101,32 @@ mod tests {
     }
 
     #[test]
+    fn top_level_one_of_parameters_keep_declared_types() {
+        let tools = vec![Tool {
+            name: "pick".to_string(),
+            description: None,
+            parameters: serde_json::json!({"type": "object", "oneOf": [
+                {"properties": {"number": {"type": "integer"}}, "required": ["number"]},
+                {"properties": {"name": {"type": "string"}}, "required": ["name"]}
+            ]}),
+            strict: None,
+        }];
+        let output = parse_chunks(
+            &tools,
+            &[
+                "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"pick\">",
+                "]<]minimax[>[<number>4",
+                "2]<]minimax[>[</number>",
+                "]<]minimax[>[</invoke>]<]minimax[>[</tool_call>",
+            ],
+        )
+        .coalesce_calls();
+        assert_eq!(output.calls.len(), 1);
+        assert_eq!(output.calls[0].arguments, "{\"number\":42}");
+        assert!(output.calls[0].complete);
+    }
+
+    #[test]
     fn array_items_preserve_schema_directed_null_at_every_split() {
         use serde_json::json;
 
