@@ -466,8 +466,8 @@ fn resolve_glm5_next_video(
             .and_then(|id| i32::try_from(id).ok())
             .ok_or_else(|| MmError::invalid_input(format!("config.json needs an i32 {field}")))
     };
-    // `save_pretrained` omits knobs at their class value, as GLM-5.3-Flash
-    // omits `max_frames`.
+    // GLM-5.3-Flash's block omits `max_frames`, so the class value applies, as
+    // SGLang reads it from the processor.
     let max_frames = match knobs.get("max_frames") {
         None | Some(Value::Null) => 2048,
         Some(value) => (value.as_u64())
