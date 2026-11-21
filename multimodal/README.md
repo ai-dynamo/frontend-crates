@@ -603,6 +603,10 @@ processor, the engine that consumes it:
   per temporal group into `pixel_values_videos` and `video_grid_thw`.
   `process_items` gives each of a request's videos `max_image_tokens / count`;
   `process_item` refuses a video, because its size depends on the request.
+  A cache of processed video items must therefore key on that count too.
+  SGLang's per-request `fps`, `max_frames`, `max_tokens_per_frame` and
+  `max_image_tokens` are not inputs here: the spec values apply, so a host
+  refuses a request that sets them.
 - `layout_with_text` replaces `<|video|>` with, per group,
   `<|begin_of_image|>`, `<|image|>` × `grid_h * grid_w / merge²`,
   `<|end_of_image|>` and the host-encoded `"{t:.1f} seconds"`, where `t` is
