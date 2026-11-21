@@ -37,6 +37,14 @@ const THINK_OPEN: Marker = Marker::pair("<|open|>think<|sep|>", "<|open|> think 
 const THINK_CLOSE: Marker = Marker::pair("<|close|>think<|sep|>", "<|close|> think <|sep|>");
 const THINK_CLOSE_HEAD: Marker = Marker::pair("<|close|>think", "<|close|> think");
 const RESPONSE_OPEN: Marker = Marker::pair("<|open|>response<|sep|>", "<|open|> response <|sep|>");
+const REPEATED_RESPONSE_HANDOFF: Marker = Marker::pair(
+    "<|close|>think<|sep|><|open|>response<|sep|>",
+    "<|close|> think <|sep|><|open|> response <|sep|>",
+);
+const MIXED_RESPONSE_HANDOFF: Marker = Marker::pair(
+    "<|close|>think<|sep|><|open|> response <|sep|>",
+    "<|close|> think <|sep|><|open|>response<|sep|>",
+);
 const RESPONSE_CLOSE: Marker =
     Marker::pair("<|close|>response<|sep|>", "<|close|> response <|sep|>");
 const TOOLS_OPEN: Marker = Marker::pair("<|open|>tools<|sep|>", "<|open|> tools <|sep|>");
@@ -92,6 +100,8 @@ const REASONING_MARKERS: &[Marker] = &[
     Marker::single(END_OF_MSG),
 ];
 const RESPONSE_MARKERS: &[Marker] = &[
+    REPEATED_RESPONSE_HANDOFF,
+    MIXED_RESPONSE_HANDOFF,
     RESPONSE_CLOSE,
     TOOLS_OPEN,
     CALL_OPEN,
@@ -1669,6 +1679,10 @@ impl KimiK3Native {
     }
 
     fn drain_response(&mut self, flush: bool, output: &mut UnifiedParserOutput) -> bool {
+        // In an open response, recover only a complete repeated handoff.
+        if self.consume(REPEATED_RESPONSE_HANDOFF) || self.consume(MIXED_RESPONSE_HANDOFF) {
+            return true;
+        }
         if self.consume(RESPONSE_CLOSE) {
             self.mode = Mode::Idle;
             return true;
@@ -2997,6 +3011,29 @@ mod tests {
             &[UnifiedEvent::Text {
                 text: literal.clone(),
             }],
+        );
+    }
+
+    #[test]
+    fn native_response_strips_repeated_think_to_response_handoffs() {
+        let literal = format!(
+            "literal {} or {}",
+            THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        let mut input = String::from("Answer: 天气。");
+        for close in THINK_CLOSE.variants() {
+            for open in RESPONSE_OPEN.variants() {
+                input.push_str(&format!(" .{close}{open}."));
+            }
+        }
+        input.push_str(&literal);
+        let expected = [UnifiedEvent::Text {
+            text: format!("Answer: 天气。 .. .. .. ..{literal}"),
+        }];
+        assert_native_fragmentations_from_state(
+            &input,
+            UnifiedParserStartingState::Response,
+            &expected,
         );
     }
 
