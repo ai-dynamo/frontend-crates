@@ -398,7 +398,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::nemotron_vl::NemotronVlProcessor` with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` → `[1, 3, H, W]` bfloat16 features, expanded ids, item offsets (`feature_ranges`) | **bitwise** for a prompt given as token ids, including the request budget |
 | `models::nemotron_vl::NemotronVlProcessor` with `sizing = hf` | the checkpoint's `image_processing_nemotron_h_omni.py` `_preprocess` sizes and `num_tokens` | exact tile sizes and token counts; no pixel path |
-| `NemotronVlProcessor` video with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` with `video_data`, on the frames it sampled → `[frames, 3, H, W]` bfloat16, expanded ids, item offsets | **bitwise**, including EVS's pruned token counts (SGLang 25c1c439 goldens in `tests/fixtures/nemotron_vl_video`) |
+| `NemotronVlProcessor` video with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` with `video_data`, on the frames it sampled → `[frames, 3, H, W]` bfloat16, expanded ids, item offsets | **bitwise**, including the processor's EVS split of the `<image>` counts, which the engine changes after pruning (§8; SGLang 25c1c439 goldens in `tests/fixtures/nemotron_vl_video`) |
 | `NemotronVlProcessor` video with `sizing = hf` | the checkpoint's `processing_nemotron_h_omni.py` with `videos=` and `video_metadata` | exact frame size, token counts and expanded ids; no pixel path |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 | `image::resize::resize_rgba` | `PIL.Image.resize` on an RGBA or LA image (BICUBIC, u8) | **bitwise** against Pillow 12.3 (Pillow resizes premultiplied `RGBa` and divides back with truncation) |
@@ -810,6 +810,13 @@ The two references differ for videos too:
 With `sizing = sglang`, set `video.target_num_patches` to the value SGLang
 resolves (0 for these checkpoints). `process_items` returns
 `[frames, 3, H, W]` bfloat16 per video, with `Geometry::FrameGroups`.
+With EVS (`pruning_rate` above 0), the `<image>` count of each group is
+SGLang's provisional split of the kept total, and the expanded ids equal
+its processor's. Its engine then prunes the features and moves the
+`<image>` runs between groups (`redistribute_pruned_frames_placeholders`).
+For that step it needs the expanded ids and, for each video, the number of
+groups and the frame height and width in feature tokens
+(`H / patch_size / 2`, `W / patch_size / 2`).
 `NemotronVlProcessor::video_layout` gives the same layout from the frame
 size, indices and fps alone, for both sizings, and `plan_video` gives the
 frame size and the count of each group. `num_media_tokens` and
