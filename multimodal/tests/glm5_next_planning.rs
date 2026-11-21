@@ -3,9 +3,11 @@
 
 use dynamo_multimodal::MmError;
 use dynamo_multimodal::models::glm5_next::Glm5NextSpec;
-use dynamo_multimodal::processor::{DecodedMedia, MediaMetadata};
+use dynamo_multimodal::models::qwen_vl::Resampler;
+use dynamo_multimodal::processor::{DecodedMedia, MediaMetadata, Modality};
 use dynamo_multimodal::registry::{
-    ProcessorSpec, build_processor, processor_from_spec, spec_from_hf_configs, spec_from_model_dir,
+    ProcessorSpec, build_processor, glm5_next_pixel_spec, processor_from_spec,
+    spec_from_hf_configs, spec_from_model_dir,
 };
 use dynamo_multimodal::token_layout::apply_layout;
 
@@ -216,6 +218,32 @@ fn serialized_spec_keeps_pixel_execution_and_other_modalities_unsupported() {
 }
 
 #[test]
+fn serialized_spec_refuses_a_video_expand_factor() {
+    let spec = |factor: u32| {
+        format!(
+            r#"{{
+                "family": "glm5_next", "image_token_id": 154854, "video_token_id": 154855,
+                "patch_size": 14, "merge_size": 2, "temporal_patch_size": 2,
+                "patch_expand_factor": 1, "min_image_tokens": 16, "max_image_tokens": 8000,
+                "video": {{
+                    "image_start_token_id": 154830, "image_end_token_id": 154831,
+                    "fps": 2.0, "max_frames": 2048,
+                    "patch_size": 14, "merge_size": 2, "temporal_patch_size": 2,
+                    "patch_expand_factor": {factor}, "min_image_tokens": 16,
+                    "max_image_tokens": 240000,
+                    "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5]
+                }}
+            }}"#
+        )
+    };
+    assert!(processor_from_spec(&spec(1)).is_ok());
+    assert!(matches!(
+        processor_from_spec(&spec(2)),
+        Err(MmError::Unsupported { .. })
+    ));
+}
+
+#[test]
 fn refuses_knobs_that_change_or_hide_the_canvas() {
     let unsupported = |pre: &serde_json::Value| {
         assert!(
@@ -319,4 +347,81 @@ fn model_dir_resolution_falls_back_to_processor_config() {
         Ok(ProcessorSpec::Glm5Next(_))
     ));
     std::fs::remove_dir_all(&dir).unwrap();
+}
+#[test]
+fn the_checkpoint_resolves_to_the_planner_with_its_video_part() {
+    let spec = glm_spec(GLM53_CONFIG, GLM53_PROCESSOR_CONFIG).unwrap();
+    let video = spec.video.clone().unwrap();
+    assert_eq!(
+        (video.image_start_token_id, video.image_end_token_id),
+        (BEGIN_OF_IMAGE, END_OF_IMAGE)
+    );
+    assert_eq!((video.fps, video.max_frames), (2.0, 2048));
+    assert_eq!(
+        (
+            video.geometry.min_image_tokens,
+            video.geometry.max_image_tokens
+        ),
+        (16, 240000)
+    );
+    assert_eq!(video.image_mean, [0.48145466, 0.4578275, 0.40821073]);
+    assert_eq!(video.image_std, [0.26862954, 0.261_302_6, 0.275_777_1]);
+    let planner = build_processor(ProcessorSpec::Glm5Next(spec.clone())).unwrap();
+    assert!(!planner.capabilities().supports(Modality::Video));
+
+    let pixels = glm5_next_pixel_spec(GLM53_CONFIG, GLM53_PROCESSOR_CONFIG).unwrap();
+    assert_eq!(pixels.planner, spec);
+    assert_eq!(pixels.resample, Resampler::AtenU8);
+    assert_eq!(pixels.image_mean, [0.48145466, 0.4578275, 0.40821073]);
+    let family = build_processor(ProcessorSpec::Glm5NextImage(pixels)).unwrap();
+    assert!(family.capabilities().supports(Modality::Video));
+}
+
+#[test]
+fn pixel_knobs_gate_only_the_pixel_spec() {
+    let mut bilinear = image_processor_object();
+    bilinear["resample"] = 2.into();
+    let planner = glm_spec(GLM53_CONFIG, &bilinear.to_string()).unwrap();
+    assert_eq!(planner.geometry.max_image_tokens, 8000);
+    assert!(matches!(
+        glm5_next_pixel_spec(GLM53_CONFIG, &bilinear.to_string()),
+        Err(MmError::Unsupported { .. })
+    ));
+    let mut no_mean = image_processor_object();
+    no_mean.as_object_mut().unwrap().remove("image_mean");
+    assert!(glm_spec(GLM53_CONFIG, &no_mean.to_string()).is_ok());
+    assert!(matches!(
+        glm5_next_pixel_spec(GLM53_CONFIG, &no_mean.to_string()),
+        Err(MmError::InvalidInput { .. })
+    ));
+}
+
+#[test]
+fn an_unhonored_video_block_leaves_video_off() {
+    let with = |key: &str, value: serde_json::Value| {
+        let mut pre: serde_json::Value = serde_json::from_str(GLM53_PROCESSOR_CONFIG).unwrap();
+        pre["video_processor"][key] = value;
+        pre.to_string()
+    };
+    for pre in [
+        with("video_processor_type", "Qwen3VLVideoProcessor".into()),
+        with("max_duration", 30.into()),
+        with("do_normalize", false.into()),
+        with("resize_mode", "pad".into()),
+        with("fps", serde_json::Value::Null),
+        with("merge_size", 1.into()),
+        with("patch_expand_factor", 2.into()),
+    ] {
+        let planner = glm_spec(GLM53_CONFIG, &pre).unwrap();
+        assert_eq!(planner.video, None, "{pre}");
+        assert!(glm5_next_pixel_spec(GLM53_CONFIG, &pre).is_err(), "{pre}");
+    }
+    let mut not_object: serde_json::Value = serde_json::from_str(GLM53_PROCESSOR_CONFIG).unwrap();
+    not_object["video_processor"] = 7.into();
+    assert_eq!(
+        glm_spec(GLM53_CONFIG, &not_object.to_string())
+            .unwrap()
+            .video,
+        None
+    );
 }

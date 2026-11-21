@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Regenerate `smart_resize.json`, the video resize golden cases.
+"""Regenerate the video golden cases: `smart_resize.json` and
+`glm_frame_indices.txt`.
 
 The expected sizes come from HF's own `smart_resize` in
 `Qwen3VLVideoProcessor`, executed verbatim: the function is cut out of the
@@ -12,6 +13,11 @@ The per-frame cap lines are copied from `Qwen3VLVideoProcessor.resize`
     python multimodal/tests/fixtures/video/generate.py [path-to-video_processing_qwen3_vl.py]
 
 With no argument the pinned file is downloaded.
+
+`glm_frame_indices.txt` holds, per line, `frames fps target_fps max_frames:`
+and the source frames SGLang's `glm_sample_frame_indices` (25c1c439) keeps,
+with `duration = frames / fps` as SGLang's caller passes it. SGLang must be
+importable.
 """
 
 import ast
@@ -44,6 +50,37 @@ def capped_max_pixels(longest_edge, shortest_edge, num_frames, frame_cap):
         min(frame_cap, longest_edge // num_frames), int(shortest_edge * 1.05)
     )
     return pixels_per_frame * num_frames
+
+
+def write_glm_frame_indices() -> None:
+    from sglang.srt.multimodal.processors.glm4v import glm_sample_frame_indices
+
+    cases = []
+    # Fixture rates, NTSC, below the 2 fps target; under 0.5 s, odd counts.
+    for fps in [0.5, 1.0, 1.5, 2.0, 2.5, 10.0, 23.976, 24000 / 1001, 25.0, 29.97,
+                30000 / 1001, 30.0, 59.94]:
+        for frames in [1, 2, 3, 6, 7, 15, 16, 25, 31, 61, 91]:
+            cases.append((frames, fps, 2.0, 2048))
+    # Counts around max_frames: the boundary picks, then the whole-clip linspace.
+    for fps, base in [(30.0, 960), (29.97, 959), (2.0, 64), (1.0, 32), (23.976, 768)]:
+        for delta in [-31, -1, 0, 1, 31]:
+            cases.append((base + delta, fps, 2.0, 64))
+    for max_frames in [1, 2, 3, 4, 16]:
+        for frames, fps in [(300, 30.0), (25, 10.0), (7, 1.0), (6, 30.0)]:
+            cases.append((frames, fps, 2.0, max_frames))
+    for target in [1.0, 0.7, 3.0]:
+        for frames, fps in [(300, 30.0), (25, 10.0), (91, 29.97)]:
+            cases.append((frames, fps, target, 2048))
+
+    lines = []
+    for frames, fps, target, max_frames in cases:
+        picked = glm_sample_frame_indices(
+            frames, fps, frames / fps, target_fps=target, max_frame_count=max_frames
+        )
+        lines.append(f"{frames} {fps!r} {target!r} {max_frames}: {' '.join(map(str, picked))}")
+    out = Path(__file__).with_name("glm_frame_indices.txt")
+    out.write_text("\n".join(lines) + "\n")
+    print(f"wrote {out} ({len(cases)} cases)")
 
 
 def main() -> None:
@@ -117,6 +154,7 @@ def main() -> None:
              budget=budget_cases),
         indent=1) + "\n")
     print(f"wrote {out}")
+    write_glm_frame_indices()
 
 
 if __name__ == "__main__":
