@@ -993,8 +993,22 @@ impl HfTokenizerConfigJsonFormatter {
             }
         }
 
-        if system_normalization.fallback_developer {
-            normalize_developer_messages(&mut messages_for_template)?;
+        match system_normalization.fallback_developer {
+            DeveloperFallback::Preserve => {}
+            DeveloperFallback::RewriteInPlace => {
+                if let Some(messages) = messages_for_template.as_array_mut() {
+                    for message in messages {
+                        if message.get("role").and_then(serde_json::Value::as_str)
+                            == Some("developer")
+                        {
+                            message["role"] = json!("system");
+                        }
+                    }
+                }
+            }
+            DeveloperFallback::Consolidate => {
+                normalize_developer_messages(&mut messages_for_template)?;
+            }
         }
         let mut normalized_turns = if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization)
@@ -2666,6 +2680,28 @@ mod tests {
     }
 
     #[test]
+    fn developer_fallback_keeps_silently_omitted_instructions_in_place() {
+        let omit_developer = "{% for m in messages %}{% if m.role != 'developer' %}{{ m.role }}[{{ m.content }}]{% endif %}{% endfor %}";
+        let preserve_developer = "{% for m in messages %}{{ m.role }}[{{ m.content }}]{% endfor %}";
+        let formatter = formatter_for_templates(omit_developer, preserve_developer);
+        let messages = json!([
+            {"role": "user", "content": "question"},
+            {"role": "assistant", "content": "answer"},
+            {"role": "developer", "content": "instruction"},
+            {"role": "user", "content": "followup"}
+        ]);
+
+        assert_eq!(
+            render_shape(&formatter, messages.clone()).unwrap(),
+            "user[question]assistant[answer]system[instruction]user[followup]"
+        );
+        assert_eq!(
+            render_shape_with_tools(&formatter, messages).unwrap(),
+            "user[question]assistant[answer]developer[instruction]user[followup]"
+        );
+    }
+
+    #[test]
     fn developer_fallback_uses_selected_template_capability() {
         let messages = json!([
             {"role": "developer", "content": "d"},
@@ -2810,7 +2846,7 @@ mod tests {
 
     fn all_restrictions() -> SystemNormalization {
         SystemNormalization {
-            fallback_developer: false,
+            fallback_developer: DeveloperFallback::Preserve,
             demote_nonleading_system: true,
             coalesce_consecutive_users: true,
         }
@@ -3010,7 +3046,7 @@ mod tests {
         normalize_system_messages(
             &mut demote_only,
             SystemNormalization {
-                fallback_developer: false,
+                fallback_developer: DeveloperFallback::Preserve,
                 demote_nonleading_system: true,
                 coalesce_consecutive_users: false,
             },
@@ -3028,7 +3064,7 @@ mod tests {
         normalize_system_messages(
             &mut coalesce_only,
             SystemNormalization {
-                fallback_developer: false,
+                fallback_developer: DeveloperFallback::Preserve,
                 demote_nonleading_system: false,
                 coalesce_consecutive_users: true,
             },
