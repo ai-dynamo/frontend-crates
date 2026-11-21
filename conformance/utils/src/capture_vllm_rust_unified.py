@@ -48,6 +48,24 @@ FAMILY_PARSERS = {
 }
 
 
+RELEASE_034_PARSERS = {
+    **FAMILY_PARSERS,
+    "beam": ("unified", None, None),
+    "gpt_oss": ("harmony", None, None),
+    "hermes": ("combined", None, "HermesToolParser"),
+    "kimi_k3": ("unified", None, None),
+    "minimax_m3": ("combined", "MiniMaxM3ReasoningParser", "MinimaxM3ToolParser"),
+    "muse_glimmer": ("unified", None, None),
+    "muse_spark": ("unified", None, None),
+}
+BEAM_TEMPLATE = Path(__file__).with_name("beam_response_template.json")
+HARMONY_HARNESS = Path(__file__).with_name("vllm_rust_harmony_capture.rs")
+
+
+def release_034(version: str) -> bool:
+    return version.startswith("0.34.")
+
+
 def _unsupported_request(case: dict) -> tuple[str, str] | None:
     """Classify request state the Rust parser API cannot receive."""
     init = case.get("init") or {}
@@ -301,6 +319,98 @@ fn main() {
 '''
 
 
+RELEASE_034_SETUP = r'''
+fn tokenizer(family: &str) -> DynTokenizer {
+    let tokens: &[&str] = match family {
+        "gemma4" => &["<|channel>", "<channel|>", "<|tool_call>", "<tool_call|>", "<|turn>", "<|tool_response>"],
+        "kimi_k3" => &["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"],
+        "muse_glimmer" | "muse_spark" => &["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"],
+        "beam" => &["<|start|>", "<|channel|>", "<|message|>", "<|end|>", "<|call|>", "<|return|>", "<|constrain|>"],
+        "minimax_m3" => &["<mm:think>", "</mm:think>", "]<]minimax[>["],
+        "hermes" => &["<tool_call>", "</tool_call>"],
+        _ => &["<think>", "</think>"],
+    };
+    let mut tok = TestTokenizer::new();
+    for (index, marker) in tokens.iter().enumerate() {
+        tok = tok.with_special_token(*marker, 256 + index as u32);
+    }
+    Arc::new(tok)
+}
+
+fn decoded_input(tokenizer: &DynTokenizer, input: &str) -> DecodedText {
+    let mut decoder = tokenizer.create_decode_stream(&[], false, 0);
+    for id in tokenizer.encode(input, false).expect("encode authored text") {
+        decoder.push_token(id).expect("feed authored token");
+    }
+    let decoded = decoder.flush(None).expect("flush authored tokens").1;
+    assert_eq!(decoded.text, input);
+    decoded
+}
+
+fn make_parser(family: &str, tools: &[Tool], tok: DynTokenizer) -> (Box<dyn UnifiedParser>, String) {
+    use vllm_parser::reasoning::{
+        DeepSeekV4ReasoningParser, DeepSeekV41ReasoningParser, Glm47ReasoningParser,
+        KimiK2ReasoningParser, MiniMaxM3ReasoningParser, NemotronV3ReasoningParser,
+    };
+    use vllm_parser::tool::{DeepSeekV41ToolParser, HermesToolParser, MinimaxM3ToolParser};
+    use vllm_parser::unified::{BeamUnifiedParser, KimiK3UnifiedParser, MuseUnifiedParser, ResponseTemplate};
+
+    let unified = match family {
+        "beam" => {
+            let json = serde_json::from_str(include_str!("beam_response_template.json")).expect("decode upstream Beam template");
+            let template = ResponseTemplate::from_json(&json).expect("validate upstream Beam template");
+            Some(Box::new(BeamUnifiedParser::new(Arc::new(template), tools, tok.clone())) as Box<dyn UnifiedParser>)
+        }
+        "gemma4" => Some(Gemma4UnifiedParser::create(tools, tok.clone()).expect("Gemma4 constructor")),
+        "kimi_k3" => Some(KimiK3UnifiedParser::create(tools, tok.clone()).expect("Kimi K3 constructor")),
+        "muse_glimmer" | "muse_spark" => Some(MuseUnifiedParser::create(tools, tok.clone()).expect("Muse constructor")),
+        _ => None,
+    };
+    if let Some(parser) = unified {
+        return (parser, "vLLM Rust (UnifiedParser)".to_string());
+    }
+    let reasoning = match family {
+        "deepseek_v4" => Some(DeepSeekV4ReasoningParser::create(tok.clone())),
+        "deepseek_v41" => Some(DeepSeekV41ReasoningParser::create(tok.clone())),
+        "glm47" => Some(Glm47ReasoningParser::create(tok.clone())),
+        "kimi_k2" => Some(KimiK2ReasoningParser::create(tok.clone())),
+        "minimax_m3" => Some(MiniMaxM3ReasoningParser::create(tok.clone())),
+        "nemotron_v3" => Some(NemotronV3ReasoningParser::create(tok.clone())),
+        "qwen3" => Some(Qwen3ReasoningParser::create(tok.clone())),
+        "hermes" => None,
+        other => panic!("no released reasoning parser mapping for {other}"),
+    }.transpose().expect("registered reasoning constructor");
+    let tool = match family {
+        "deepseek_v4" => DeepSeekV4ToolParser::create(tools, tok),
+        "deepseek_v41" => DeepSeekV41ToolParser::create(tools, tok),
+        "glm47" => Glm47MoeToolParser::create(tools, tok),
+        "hermes" => HermesToolParser::create(tools, tok),
+        "kimi_k2" => KimiK2ToolParser::create(tools, tok),
+        "minimax_m3" => MinimaxM3ToolParser::create(tools, tok),
+        "qwen3" | "nemotron_v3" => Qwen3CoderToolParser::create(tools, tok),
+        other => panic!("no released tool parser mapping for {other}"),
+    }.expect("registered tool constructor");
+    (Box::new(CombinedParser::new(reasoning, Some(tool))), "vLLM Rust (CombinedParser)".to_string())
+}
+
+fn prompt_token_ids(case: &Case, tok: &DynTokenizer) -> Vec<u32> {
+    let prompt = match (case.family.as_str(), case.init.starting_state.as_str()) {
+        ("beam", "Reasoning") => "<|start|>assistant<|channel|>redacted<|message|>",
+        ("beam", "Response") => "<|start|>assistant<|channel|>final<|message|>",
+        ("beam", _) => "<|start|>assistant",
+        ("kimi_k3", "Reasoning") => "<|open|>think<|sep|>",
+        ("kimi_k3", "Response") => "<|open|>response<|sep|>",
+        ("gemma4", "Reasoning") => "<|channel>",
+        ("minimax_m3", "Reasoning") => "<mm:think>",
+        (_, "Reasoning") => "<think>",
+        _ => "",
+    };
+    tok.encode(prompt, false).expect("encode authored prompt state")
+}
+
+'''
+
+
 def _vllm_rust_version(vllm_rust_source: Path, parser_crate: Path) -> str:
     """Read the version from the checked-out vLLM Rust workspace, never a literal."""
     root = vllm_rust_source.parent.resolve()
@@ -340,10 +450,27 @@ def rust_main(version: str, unified_api: str) -> str:
         source = source.replace('"kind":"reasoning","text":t', '"kind":"reasoning","text":t.text')
         source = source.replace("p.parse_into(&case.input, &mut out)", "p.parse_into(DecodedText::unattributed(case.input.clone()), &mut out)")
         source = source.replace("ps.parse_into(ch, &mut co)", "ps.parse_into(DecodedText::unattributed(ch.clone()), &mut co)")
+    if release_034(version):
+        start = source.index("fn make_parser(")
+        end = source.index("/// Coalesce", start)
+        source = source[:start] + RELEASE_034_SETUP + source[end:]
+        source = source.replace(
+            "let (mut p, parser) = make_parser(&case.family, &case.tools);",
+            "let tokenizer = tokenizer(&case.family);\n"
+            "        let (mut p, parser) = make_parser(&case.family, &case.tools, tokenizer.clone());",
+        )
+        source = source.replace("prompt_token_ids(case)", "prompt_token_ids(case, &tokenizer)")
+        source = source.replace(
+            "let (mut ps, _) = make_parser(&case.family, &case.tools);",
+            "let (mut ps, _) = make_parser(&case.family, &case.tools, tokenizer.clone());\n"
+            "        let mut attributed = decoded_input(&tokenizer, &case.input);",
+        )
+        source = source.replace("DecodedText::unattributed(case.input.clone())", "decoded_input(&tokenizer, &case.input)")
+        source = source.replace("DecodedText::unattributed(ch.clone())", "attributed.drain_prefix(ch.len())")
     return source
 
 
-def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
+def build_and_run(vllm_rust_source: Path, job_json: str, *, harmony=False) -> str:
     """Create a temp crate depending on the vLLM rust parser/tokenizer crates, build,
     and run it with the job on stdin. Returns the captured stdout JSON."""
     parser_crate = vllm_rust_source / "src/parser"
@@ -360,6 +487,16 @@ def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
         # binary even when concurrent jobs share the dependency target directory.
         package_name = f"vllm-rust-unified-capture-{crate.name}"
         (crate / "src").mkdir()
+        harmony_dependencies = ""
+        if harmony:
+            harmony_dependencies = f'''
+anyhow = "1"
+futures = "0.3"
+openai-harmony = {{ package = "oss-harmony", git = "https://github.com/oss-harmony/harmony", tag = "v0.0.11", default-features = false }}
+vllm-chat = {{ path = "{vllm_rust_source / 'src/chat'}" }}
+vllm-llm = {{ path = "{vllm_rust_source / 'src/llm'}" }}
+vllm-text = {{ path = "{vllm_rust_source / 'src/text'}" }}
+'''
         (crate / "Cargo.toml").write_text(f'''[package]
 name = "{package_name}"
 version = "0.0.0"
@@ -370,10 +507,14 @@ vllm-parser = {{ path = "{parser_crate}" }}
 vllm-tokenizer = {{ path = "{tok_crate}", features = ["test-utils"] }}
 serde = {{ version = "1", features = ["derive"] }}
 serde_json = "1"
+{harmony_dependencies}
 
 [workspace]
 ''')
-        (crate / "src/main.rs").write_text(rust_main(version, unified_api))
+        harness = HARMONY_HARNESS.read_text() if harmony else rust_main(version, unified_api)
+        (crate / "src/main.rs").write_text(harness)
+        if release_034(version) and not harmony:
+            (crate / "src/beam_response_template.json").write_bytes(BEAM_TEMPLATE.read_bytes())
         subprocess.run(["cargo", "fmt"], cwd=crate, check=True, capture_output=True, text=True)
         build = subprocess.run(
             ["cargo", "build", "--quiet"],
@@ -397,9 +538,25 @@ def capture_job(vllm_rust_source, job):
     schema_bytes = SCHEMA_PATH.read_bytes()
     version = _vllm_rust_version(vllm_rust_source, vllm_rust_source / "src/parser")
 
+    family_parsers = RELEASE_034_PARSERS if release_034(version) else FAMILY_PARSERS
+
+    def unsupported_reason(case):
+        if release_034(version):
+            init = case.get("init") or {}
+            family = case["family"]
+            state = init.get("starting_state", "None")
+            if case.get("finish_reason", "stop") not in {"stop", "length"}:
+                return "peer_termination_unsupported", "Parser-only replay supports serving stop or length termination."
+            if state == "Reasoning" and family in {"gpt_oss", "hermes", "muse_glimmer", "muse_spark"}:
+                return "vllm_rust_starting_state_unsupported", "The released parser cannot apply reasoning prefill for this family."
+            if state == "Response" and family in {"beam", "kimi_k3"}:
+                # These released parsers select the response state from prompt IDs.
+                case = {**case, "init": {**init, "starting_state": "None"}}
+        return _unsupported_request(case)
+
     unsupported = {}
     for case in job.get("cases", []):
-        if case["family"] in FAMILY_PARSERS:
+        if case["family"] in family_parsers:
             continue
         request = capture_input({**case, "chunks": [{"delta_text": chunk} for chunk in case.get("chunks", [])]})
         detail = f"No vLLM Rust Unified parser is registered for {case['family']} at {version}."
@@ -410,30 +567,30 @@ def capture_job(vllm_rust_source, job):
             observation=True,
         )
 
-    if unsupported and all(case["family"] not in FAMILY_PARSERS for case in job.get("cases", [])):
+    if unsupported and all(case["family"] not in family_parsers for case in job.get("cases", [])):
         return {
             "vllm_rust_version": version,
             "results": unsupported,
         }
 
     def capture(cases):
-        feed.update(json.loads(build_and_run(vllm_rust_source, json.dumps({"cases": cases}))))
+        harmony = release_034(version) and cases[0]["family"] == "gpt_oss"
+        feed.update(json.loads(build_and_run(vllm_rust_source, json.dumps({"cases": cases}), harmony=harmony)))
         return feed["results"]
 
     results = capture_peer_results(
         job.get("cases", []),
-        FAMILY_PARSERS,
+        family_parsers,
         capture,
         tools=json.loads(schema_bytes),
         supports_finish=True,
         supports_init=True,
         supports_tools=True,
-        unsupported_reason=_unsupported_request,
+        unsupported_reason=unsupported_reason,
     )
     if SCHEMA_PATH.read_bytes() != schema_bytes:
         raise ValueError("tool schema changed during peer capture")
-    if not feed:
-        feed["vllm_rust_version"] = _vllm_rust_version(vllm_rust_source, vllm_rust_source / "src/parser")
+    feed["vllm_rust_version"] = version
     return {**feed, "results": {**unsupported, **results}}
 
 

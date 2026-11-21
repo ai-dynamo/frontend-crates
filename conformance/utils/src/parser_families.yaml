@@ -224,8 +224,10 @@ markers:
 #                     already contain `<|`/`|>` (kimi) need nothing here.
 unified:
   beam:
+    vllm_034_tokenizer_markers: ["<|start|>", "<|channel|>", "<|message|>", "<|end|>", "<|call|>", "<|return|>", "<|constrain|>"]
     # SGLang registers no Beam detectors; the harness reports the pair as unavailable.
     capture_pipelines:
+      vllm_python_034: ["beam", "beam"]
       sglang_python: ["beam", "beam"]
     registry: beam
     native: true
@@ -332,7 +334,9 @@ unified:
   # Mistral 4's native UnifiedParser. The `mistral` row below is the v1 parser
   # measured against Unified requests.
   mistral_4:
+    vllm_034_tokenizer_markers: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]", "[THINK]", "[/THINK]"]
     capture_pipelines:
+      vllm_python_034: ["mistral", "mistral"]
       sglang_python: ["mistral", "mistral"]
     registry: mistral_4
     native: true
@@ -344,7 +348,9 @@ unified:
     golden_spec: mistral_4.yaml
     leak_markers: ["[TOOL_CALLS]", "[ARGS]", "[CALL_ID]", "[THINK]", "[/THINK]"]
   muse_glimmer:
+    vllm_034_tokenizer_markers: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
     capture_pipelines:
+      vllm_python_034: ["muse_glimmer", "muse_glimmer"]
       sglang_python: ["muse", "muse"]
       dynamo_v1_jail: ["muse", "muse"]
     native: true
@@ -372,6 +378,7 @@ unified:
     golden_spec: muse_glimmer.yaml
     leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
   gpt_oss:
+    vllm_034_tokenizer_markers: []
     scenario_exclusions:
       arg_json_null_anyof: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_json_null.
       arg_json_null_const: Native Harmony does not consume tool schemas; identical request and oracle retained as arg_json_null.
@@ -485,6 +492,7 @@ unified:
       schema_union_oneOf_object_string: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_const_plain_bare.
       schema_union_oneOf_object_typed: Native Harmony does not consume tool schemas; identical request and oracle retained as schema_declared_object.
     capture_pipelines:
+      vllm_python_034: ["openai_gptoss", "openai"]
       dynamo_v1: ["gpt_oss", "harmony"]
     registry: harmony
     native: true
@@ -497,7 +505,9 @@ unified:
     golden_spec: gpt_oss.yaml
     leak_markers: []
   muse_spark:
+    vllm_034_tokenizer_markers: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
     capture_pipelines:
+      vllm_python_034: ["musespark", "musespark"]
       sglang_python: ["muse", "muse"]
     native: true
     guided_tool_output: true
@@ -578,6 +588,7 @@ unified:
       - deepseek_v3_2
     reasoning_grammar: think
   hermes:
+    vllm_034_tokenizer_markers: ["<tool_call>", "</tool_call>"]
     registry: hermes
     native: true
     scenario_profile: native
@@ -593,6 +604,7 @@ unified:
     golden_spec: hermes.yaml
     leak_markers: []
     capture_pipelines:
+      vllm_python_034: [null, "hermes"]
       dynamo_v1:
       - basic
       - hermes

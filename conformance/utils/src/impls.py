@@ -141,6 +141,18 @@ VLLM_TOKENIZER_MARKERS = {family: row["vllm_tokenizer_markers"]
                           for family, row in _REGISTRY["unified"].items()
                           if "vllm_tokenizer_markers" in row}
 
+def vllm_unified_pipelines(version: str):
+    if version.startswith("0.34."):
+        return {**VLLM_UNIFIED_PIPELINES, **_unified_pipelines("vllm_python_034"),
+                "deepseek_v41": ("deepseek_v41", "deepseek_v41")}
+    return VLLM_UNIFIED_PIPELINES
+
+
+def vllm_tokenizer_markers(family: str):
+    row = _REGISTRY["unified"][family]
+    return row.get("vllm_034_tokenizer_markers", ()) if "vllm_tokenizer_markers" not in row else row["vllm_tokenizer_markers"]
+
+
 def batch_capture_label(implementation: str, version: str) -> str:
     source = next(spec for spec in IMPL_SPECS if spec.key == BATCH_SOURCE_IMPL[implementation])
     mode = "batch + jail-buffer" if implementation == "dynamo_v1_jail" else "batch"
