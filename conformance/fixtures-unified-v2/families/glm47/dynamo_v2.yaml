@@ -1,15 +1,15 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"f92e15b7bd3a526f62f67fc7ecc12bccb4018358c6107433bfff897b858db328","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"85f75037798c5b3deb810b93974d11619732841c5e5c5a682e0a68d692078562","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","surface":"unified","version":"0.10.11"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_369a55db5a4e4dd9
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_369a55db5a4e4dd9:
+    crate_version: 0.10.11
+    source_sha256: ac1d9ae3fd455c9f2597226aa874469a5ae48beb8263d1f711610de4398c14ae
+    git_commit: 009932f1466984f9b9425ad7b27330b7f081856a
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -27,13 +27,17 @@ producers:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_f457b65d31427dcd
+  producer_81dce86a6a6f21c6:
+    captured_with:
+      dynamo_v2: 0.10.11
+    capture_origin: origin_369a55db5a4e4dd9
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml
   producer: producer_aad5f6f536370a6c
   context: context_cdf0b3c0134ec96f
 records:
@@ -2008,6 +2012,88 @@ records:
         - kind: tool_call
           name: capture_payload
           arguments: '{"metrics":["temperature","humidity"],"count":5}'
+          complete: true
+      - expected: []
+  glm47_ambiguous_outer_close_holdback:
+    case_key: UNIFIED.glm5-ambiguous_outer_close_holdback
+    producer: producer_81dce86a6a6f21c6
+    request: 54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"prefix</tool_call> first second"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"prefix'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: </tool_call> first second"
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
+          complete: true
+      - expected: []
+  glm47_duplicate_argument_key_progress:
+    case_key: UNIFIED.glm5-duplicate_argument_key_progress
+    producer: producer_81dce86a6a6f21c6
+    request: 57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_time
+        arguments: '{}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"first"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ''
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: get_time
+          arguments: '{}'
+          complete: true
+      - expected: []
+  glm47_missing_middle_argument_value_progress:
+    case_key: UNIFIED.glm5-missing_middle_argument_value_progress
+    producer: producer_81dce86a6a6f21c6
+    request: d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"Paris"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"}'
           complete: true
       - expected: []
   glm47_parameterless_call_shape_inside_argument:
