@@ -23,14 +23,18 @@ pub fn glm_frame_indices(
     if total_frames == 0 {
         return Err(MmError::invalid_input("video has no frames"));
     }
-    if !(fps.is_finite() && fps > 0.0 && target_fps.is_finite() && target_fps > 0.0)
+    let duration = total_frames as f64 / fps;
+    if !(fps.is_finite()
+        && fps > 0.0
+        && duration.is_finite()
+        && target_fps.is_finite()
+        && target_fps > 0.0)
         || max_frames == 0
     {
         return Err(MmError::invalid_input(
-            "video fps, target fps and max_frames must be positive and finite",
+            "video fps, duration, target fps and max_frames must be positive and finite",
         ));
     }
-    let duration = total_frames as f64 / fps;
     let extract = ((duration * target_fps) as u64)
         .min(u64::from(max_frames))
         .max(1);
@@ -153,6 +157,8 @@ mod tests {
         assert!(glm_frame_indices(0, 30.0, 2.0, 2048).is_err());
         assert!(glm_frame_indices(10, 0.0, 2.0, 2048).is_err());
         assert!(glm_frame_indices(10, f64::NAN, 2.0, 2048).is_err());
+        // A subnormal fps gives an infinite duration.
+        assert!(glm_frame_indices(1, 1e-309, 2.0, 2048).is_err());
         assert!(glm_frame_indices(10, 30.0, 0.0, 2048).is_err());
         assert!(glm_frame_indices(10, 30.0, 2.0, 0).is_err());
     }
