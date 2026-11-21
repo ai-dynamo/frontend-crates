@@ -1408,6 +1408,43 @@ def test_latest_refresh_archives_new_execution_and_rejects_invalid_requests(spli
     assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
 
 
+def test_latest_refresh_retains_prior_release_execution_for_identical_output(split_evidence, monkeypatch):
+    root, _history, source, latest = split_evidence
+    origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
+    _seed_unpublished_latest(root, source, latest, origin)
+    monkeypatch.setattr(publish_current_capture.dynamo_version, "validate_capture_provenance", lambda *_: origin)
+    loose = root / "loose"
+    with sources.unified_view(root) as view:
+        store, _ = unified_history.selected_materialization_store(view, ["latest:dynamo_v2"])
+        unified_history.materialize_store(view, loose, store=store)
+    path = next((loose / "dynamo_v2-0.5.3/gemma4").glob("*.yaml"))
+    document = unified_history.load_yaml(path)
+    record = next(iter(document["cases"].values()))
+    corrected = [{"kind": "text", "text": "corrected execution"}]
+    record["assembled"] = corrected
+    record["chunks"][0]["expected"] = corrected
+    path.write_text(unified_history.dump_yaml(document))
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    before = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]
+    receipt = copy.deepcopy(before["document"]["record_metadata"]["verified_recapture"])
+    origin.update(crate_version="0.5.4", source_sha256="c" * 64, git_commit="d" * 40)
+    (loose / "dynamo_v2-0.5.3").rename(loose / "dynamo_v2-0.5.4")
+    path = loose / "dynamo_v2-0.5.4/gemma4" / path.name
+    document.update(capture_origin=copy.deepcopy(origin), captured_with={"dynamo_v2": "0.5.4"})
+    path.write_text(unified_history.dump_yaml(document))
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    after = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]
+    assert after["observation"] == before["observation"]
+    assert after["stimulus"] == before["stimulus"]
+    metadata = after["document"]["record_metadata"]
+    assert metadata["verified_recaptures"] == [receipt]
+    assert metadata["verified_recapture"]["result"] == receipt["result"]
+    assert metadata["verified_recapture"]["provenance"]["version"] == "0.5.4"
+    stable = (root / latest).read_bytes()
+    publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
+    assert (root / latest).read_bytes() == stable
+
+
 def test_latest_refresh_preservation_uses_the_fingerprinted_snapshot_bytes(split_evidence, monkeypatch):
     root, _history, source, latest = split_evidence
     origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64}
