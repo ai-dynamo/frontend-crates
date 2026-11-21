@@ -660,7 +660,7 @@ impl NemotronVlProcessor {
             aux: Vec::new(),
             geometry: Some(Geometry::FrameGroups {
                 tokens: plan.group_tokens,
-                timestamps,
+                timestamps: timestamps.into_iter().flatten().collect(),
             }),
         })
     }
@@ -890,7 +890,8 @@ impl MmFamilyProcessor for NemotronVlProcessor {
             .iter()
             .map(|item| match &item.geometry {
                 Some(Geometry::FrameGroups { tokens, timestamps }) => {
-                    self.video_expansion(tokens, timestamps, text).map(Some)
+                    let timestamps: Vec<_> = timestamps.iter().copied().map(Some).collect();
+                    self.video_expansion(tokens, &timestamps, text).map(Some)
                 }
                 _ if item.modality == Modality::Video => Err(MmError::invalid_input(
                     "nemotron_vl: a video item needs its frame groups",
