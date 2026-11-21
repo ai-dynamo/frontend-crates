@@ -784,7 +784,10 @@ groups of 1 frame), or a `vision_config.video_temporal_patch_size` that
 is missing (SGLang then groups 1 frame) or differs from HF's, leaves `video`
 unset; images still resolve. The host samples the frames (the
 model card: 2 fps, up to 256 frames; SGLang: 2 fps, up to 128) and passes
-their source indices and the source fps. In the prompt ids, a video's
+their source indices and the source fps. For `sizing = sglang`, pass the fps
+that SGLang reads, torchcodec's `average_fps`
+(`video_decode::VideoInfo::average_fps`): a small difference can change
+`int(1000 / fps)` and so every timestamp. In the prompt ids, a video's
 placeholder is `<image>`, one id per video, in place of the template's
 `<video>` text, for which the tokenizer has no token. A request holds images
 or videos, not both. With `sizing = hf` it holds at most one video, because

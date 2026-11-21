@@ -141,7 +141,8 @@ pub struct NemotronVlVideo<'a> {
     pub height: u32,
     /// Each sampled frame's index in the source video.
     pub frame_indices: &'a [u64],
-    /// The source frame rate; 0 when unknown.
+    /// The source frame rate; 0 when unknown. SGLang reads torchcodec's
+    /// `average_fps`.
     pub fps: f64,
 }
 
