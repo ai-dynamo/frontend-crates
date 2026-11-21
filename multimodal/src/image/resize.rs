@@ -34,8 +34,9 @@ pub enum Resample {
     /// tensor. Bitwise against torch's x86 DEFAULT CPU dispatch, which has no
     /// FMA, for outputs at least 2 pixels wide and downscales below
     /// 1,000,000x. Builds that fuse multiply-adds (x86 AVX2, and ARM even under
-    /// DEFAULT) can move a pixel by one. torchvision v2 keeps uint8 on AVX2,
-    /// AVX-512 and aarch64, so it reaches this kernel only under x86 DEFAULT.
+    /// DEFAULT) can move a pixel by one; `AtenF32BilinearAvx2` mirrors x86 AVX2
+    /// and AVX-512. torchvision v2 keeps uint8 on AVX2, AVX-512 and aarch64, so
+    /// it reaches this kernel only under x86 DEFAULT.
     AtenF32Bilinear,
     /// `AtenF32Bilinear` summed like torch's AVX2 and AVX-512 dispatch (taps
     /// in fours, the tail fused): bitwise against torch 2.14.1 on either for
