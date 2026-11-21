@@ -34,9 +34,16 @@ pub enum Resample {
     /// tensor. Bitwise against torch's x86 DEFAULT CPU dispatch, which has no
     /// FMA, for outputs at least 2 pixels wide and downscales below
     /// 1,000,000x. Builds that fuse multiply-adds (x86 AVX2, and ARM even under
-    /// DEFAULT) can move a pixel by one. torchvision v2 keeps uint8 on AVX2,
-    /// AVX-512 and aarch64, so it reaches this kernel only under x86 DEFAULT.
+    /// DEFAULT) can move a pixel by one; `AtenF32BilinearAvx2` mirrors x86 AVX2
+    /// and AVX-512. torchvision v2 keeps uint8 on AVX2, AVX-512 and aarch64, so
+    /// it reaches this kernel only under x86 DEFAULT.
     AtenF32Bilinear,
+    /// `AtenF32Bilinear` summed like torch's AVX2 and AVX-512 dispatch (taps
+    /// in fours, the tail fused): bitwise against torch 2.14.1 on either for
+    /// outputs at least 2 pixels wide and downscales below 1,000,000x.
+    /// torchvision v1 only; v2 keeps uint8 there. The DEFAULT dispatch can
+    /// move a pixel by one.
+    AtenF32BilinearAvx2,
     /// ATen's float32 antialias bicubic: torchvision v1 `resize` on a uint8
     /// tensor, clamped and rounded back to u8. Bitwise against torch's AVX2
     /// and AVX-512 CPU dispatch for outputs at least 2 pixels wide; the
@@ -265,10 +272,13 @@ pub fn resize_rgb(
             Resample::Pil(filter) => FixedPoint::Pil(filter),
             Resample::AtenU8 => FixedPoint::AtenU8,
             Resample::AtenF32Bilinear => {
-                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bilinear);
+                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bilinear, false);
+            }
+            Resample::AtenF32BilinearAvx2 => {
+                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bilinear, true);
             }
             Resample::AtenF32Bicubic => {
-                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bicubic);
+                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bicubic, true);
             }
         };
         resize_passes::<3>(src, h, w, out_h, out_w, fixed)
@@ -348,12 +358,6 @@ impl F32Filter {
         }
     }
 
-    /// Bicubic mirrors torch's AVX2 and AVX-512 CPU kernels, which fuse
-    /// multiply-adds in the filter and in the tail of each sum.
-    fn fused(self) -> bool {
-        matches!(self, Self::Bicubic)
-    }
-
     /// ATen's `aa_filter`; bicubic is Keys' kernel with `a = -0.5` in f32.
     fn weight(self, x: f32) -> f32 {
         let x = x.abs();
@@ -384,9 +388,9 @@ fn f32_resize(
     out_h: usize,
     out_w: usize,
     filter: F32Filter,
+    fused: bool,
 ) -> Vec<u8> {
     let mut plane: Vec<f32> = src.iter().map(|&v| f32::from(v)).collect();
-    let fused = filter.fused();
     if out_w != w {
         plane = f32_horizontal(&plane, (h, w, out_w), &f32_taps(w, out_w, filter), fused);
     }
@@ -732,6 +736,48 @@ mod tests {
             blake3::hash(&out).to_hex().as_str(),
             "b044e906d89f8ee9693bd06549867a391e5b7463cbb2fa71906910935e3a9b64"
         );
+    }
+
+    /// Noise (seed 7) at sizes where torch's AVX2 and AVX-512 dispatch
+    /// differ from DEFAULT: BLAKE3 of torchvision v1 `resize(BILINEAR)` on
+    /// the CHW uint8 tensor, torch 2.14.1 on AVX-512 (AVX2 gives the same).
+    /// The 3x downscale also fails if the taps group by other than four.
+    #[test]
+    fn f32_bilinear_avx2_matches_torchs_vector_dispatch() {
+        let cases = [
+            (
+                90,
+                90,
+                30,
+                30,
+                "4766af4a51e40b1af547f609545f0b578cbc4270dd7ba10b4f13c43885e0fbfd",
+            ),
+            (
+                1080,
+                1920,
+                576,
+                1024,
+                "00c22a470e2d109ceae160b4169dcb459b719f72f0f4d956fed81fccc29c35e3",
+            ),
+            (
+                40,
+                40,
+                84,
+                84,
+                "af9157e5f324eee556c889ee070b1c87959e20e0c95b38d8970f51590ef4b0be",
+            ),
+        ];
+        for (h, w, out_h, out_w, digest) in cases {
+            let src: Vec<u8> = (0..(h * w * 3) as u64)
+                .map(|i| ((i + 7).wrapping_mul(2_654_435_761) >> 20) as u8)
+                .collect();
+            let out = resize_rgb(&src, h, w, out_h, out_w, Resample::AtenF32BilinearAvx2);
+            assert_eq!(
+                blake3::hash(&out).to_hex().as_str(),
+                digest,
+                "{h}x{w} to {out_h}x{out_w}"
+            );
+        }
     }
 
     #[test]
