@@ -3829,6 +3829,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         break;
                     }
                     if let Some(next_block) = self.resync_block_start(flush) {
+                        self.dropped_incomplete_call = true;
                         tracing::warn!(
                             why = %format!("{}_resynchronized_after_incomplete_invoke", self.spec.family),
                             skipped_bytes = next_block,
@@ -3931,6 +3932,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     )
                     && be_pos < end
                 {
+                    self.dropped_incomplete_call = true;
                     tracing::warn!(
                         why = %format!("{}_incomplete_invoke", self.spec.family),
                         "stream dropped invoke missing its close before the block end"
