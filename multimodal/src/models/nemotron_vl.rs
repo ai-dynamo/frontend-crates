@@ -813,34 +813,31 @@ impl MmFamilyProcessor for NemotronVlProcessor {
                 media.len()
             )));
         }
-        let videos = media
-            .iter()
-            .filter(|item| item.modality() == Modality::Video)
-            .count();
-        if videos > 0 && videos < media.len() {
-            return Err(MmError::unsupported(
-                "nemotron_vl: a request with both images and videos is not supported",
-            ));
-        }
-        if videos > 0 {
-            let sizes: Vec<_> = (media.iter())
-                .map(|item| match item {
-                    DecodedMedia::Video { height, width, .. } => (*width as u32, *height as u32),
-                    _ => unreachable!("every item is a video"),
-                })
+        let videos: Vec<_> = (media.iter())
+            .filter_map(|item| match item {
+                DecodedMedia::Video {
+                    rgb,
+                    height,
+                    width,
+                    frame_indices,
+                    fps,
+                } => Some((rgb, (*height, *width), frame_indices, *fps)),
+                _ => None,
+            })
+            .collect();
+        if !videos.is_empty() {
+            if videos.len() < media.len() {
+                return Err(MmError::unsupported(
+                    "nemotron_vl: a request with both images and videos is not supported",
+                ));
+            }
+            let sizes: Vec<_> = (videos.iter())
+                .map(|&(_, (height, width), ..)| (width as u32, height as u32))
                 .collect();
             self.check_video_sizes(&sizes)?;
-            return media
-                .iter()
-                .map(|item| match item {
-                    DecodedMedia::Video {
-                        rgb,
-                        height,
-                        width,
-                        frame_indices,
-                        fps,
-                    } => self.process_video(rgb, (*height, *width), frame_indices, *fps),
-                    _ => unreachable!("every item is a video"),
+            return (videos.into_iter())
+                .map(|(rgb, size, frame_indices, fps)| {
+                    self.process_video(rgb, size, frame_indices, fps)
                 })
                 .collect();
         }
