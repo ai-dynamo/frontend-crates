@@ -69,6 +69,7 @@ mod tests {
         let mut out = UnifiedParserOutput::default();
         parser.parse_into("<tool_call>get_time</tool_call><tool_call>run<arg_key>cmd</arg_key><arg_value>work", &mut out).unwrap();
         assert_eq!(parser.native_tool_completion(), None);
+        assert!(parser.has_pending_native_tool_call());
         parser.finish().unwrap();
         assert_eq!(
             parser.native_tool_completion(),
@@ -79,11 +80,21 @@ mod tests {
         parser
             .parse_into("<tool_call>get_time</tool_call>", &mut out)
             .unwrap();
+        assert!(!parser.has_pending_native_tool_call());
         parser.finish().unwrap();
         assert_eq!(
             parser.native_tool_completion(),
             Some(NativeToolCompletion::NoIncompleteCall)
         );
+
+        parser.reset();
+        parser
+            .parse_into(
+                "<tool_call>run<arg_key>cmd</arg_key><arg_value>literal </tool_call> text",
+                &mut out,
+            )
+            .unwrap();
+        assert!(parser.has_pending_native_tool_call());
     }
 
     fn tools() -> Vec<Tool> {

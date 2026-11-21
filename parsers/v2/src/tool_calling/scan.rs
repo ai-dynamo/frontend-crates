@@ -2478,6 +2478,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.dropped_incomplete_call
     }
 
+    pub(crate) fn has_pending_native_tool_call(&self) -> bool {
+        self.in_block || self.anchored_invoke || self.provisional_invoke
+    }
+
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
         self.finish_at_eos = false;

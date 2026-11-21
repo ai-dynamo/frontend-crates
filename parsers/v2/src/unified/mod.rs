@@ -489,6 +489,11 @@ pub trait UnifiedParser: Send {
         None
     }
 
+    /// An open native call before EOF fallback may recover ambiguous input.
+    fn has_pending_native_tool_call(&self) -> bool {
+        false
+    }
+
     /// Return the parser to a FRESH-STREAM state and hand back any unconsumed text.
     ///
     /// This is not a mid-turn continuation hook. Everything restarts, including the
@@ -1050,6 +1055,10 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
         })
     }
 
+    fn has_pending_native_tool_call(&self) -> bool {
+        self.reports_native_tool_completion && self.scanner.has_pending_native_tool_call()
+    }
+
     fn allow_implicit_tool_terminator(&mut self) {
         self.scanner.allow_implicit_tool_terminator();
     }
@@ -1178,6 +1187,10 @@ pub(crate) trait NativeUnified {
 
     fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
         None
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        false
     }
 
     fn allow_implicit_tool_terminator(&mut self) {}
@@ -1628,6 +1641,12 @@ impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
         } else {
             None
         }
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        !self.finished
+            && (self.guided.is_none() || self.native_fallback_active)
+            && self.native.has_pending_native_tool_call()
     }
 
     fn reset(&mut self) -> String {
@@ -6829,6 +6848,10 @@ impl UnifiedParser for DebugUnifiedParser {
 
     fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
         self.inner.native_tool_completion()
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        self.inner.has_pending_native_tool_call()
     }
 
     fn preserve_message_phases(&mut self, enabled: bool) {
