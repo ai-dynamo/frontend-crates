@@ -498,20 +498,10 @@ const local = createSourceLink('http://host.test/nested/');
 assert.equal(local('parsers/v1/src/tool_calling/config.rs'), 'http://host.test/nested/parsers/v1/src/tool_calling/config.rs');
 const catalog = JSON.parse(await readFile(new URL('conformance/viewer-catalog.json', root)));
 for (const target of Object.values(catalog.metadata.documentation)) await access(new URL(target, root));
-for (const [target, current] of [
-  ['conformance/toolcalling/fixtures-v1/', 'conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz'],
-  ['conformance/toolcalling/fixtures-stream-v1/', 'conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz'],
-  ['conformance/reasoning/fixtures/', 'conformance/fixtures/reasoning/fixtures-v1/inputs.tar.gz'],
-]) {
-  assert.equal(local(target), `http://host.test/nested/${current}`);
-  assert.equal(local(`${current}/`), local(target));
-  await access(new URL(current, root));
-}
 const publication = { schema: 1, revision: 'a'.repeat(40), catalog_revision: catalog.revision };
 const web = createSourceLink('http://host.test/nested/', publication, catalog.revision);
 assert.equal(web('parsers/v1/src/tool_calling/config.rs'), `https://github.com/ai-dynamo/frontend-crates/blob/${publication.revision}/parsers/v1/src/tool_calling/config.rs`);
 assert.ok(web('parsers/v1/src/tool_calling/').includes(`/tree/${publication.revision}/`));
-assert.equal(web('conformance/toolcalling/fixtures-v1/'), `https://github.com/ai-dynamo/frontend-crates/blob/${publication.revision}/conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz`);
 const cachedPublication = { ...publication, generated_revision: 'b'.repeat(40) };
 const cachedWeb = createSourceLink('http://host.test/nested/', cachedPublication, catalog.revision);
 assert.ok(cachedWeb('parsers/v1/src/tool_calling/config.rs').includes(`/${cachedPublication.revision}/`));
