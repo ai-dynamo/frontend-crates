@@ -262,7 +262,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
 | per video, Qwen3-VL | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
-| per video, GLM-5.3-Flash | `video::sample::glm_frame_indices`, then `process_items` (several videos split the budget), `layout_with_text`, `positions_with_features` | source frame count and fps → the frames to decode; those frames → features, grid, expanded prompt and M-RoPE; needs a `Glm5NextSpec.video` (§6) |
+| per video, GLM-5.3-Flash | `video::sample::glm_frame_indices`, then `process_items` (several videos split the budget), `layout_with_text`, `positions_with_features` | source frame count and `VideoInfo::average_fps` → the frames to decode; those frames → features, grid, expanded prompt and M-RoPE; needs a `Glm5NextSpec.video` (§6) |
 
 `fit` is optional: `None` keeps the selected frames at the source size;
 `FrameResize` is a fixed size, `models::qwen_vl::Qwen3VlVideoFit` the
@@ -591,9 +591,12 @@ a budget for the whole clip, `image_mean`, `image_std`) and the
 processor, the engine that consumes it:
 
 - `video::sample::glm_frame_indices(total_frames, fps, spec.fps, max_frames)`
-  gives the source frames to decode: one per `1 / fps` of source time,
-  refilled by `np.linspace`, deduplicated, and the last repeated to an even
-  count.
+  gives the source frames to decode: one per `1 / spec.fps` seconds of source
+  time, refilled by `np.linspace`, deduplicated, and the last repeated to an
+  even count. SGLang takes `total_frames` and `fps` from torchcodec, so with
+  this crate's decoder pass `VideoInfo::frame_count` and
+  `VideoInfo::average_fps` (not `VideoInfo::fps`), and give
+  `DecodedMedia::Video` the same `fps`.
 - `plan_video_grid` gives one canvas for all frames from `smart_resize` with
   the frame count; each frame is stretched to it with torchvision v1's float
   bicubic (`Resample::AtenF32Bicubic`), normalized, and patchified two frames
