@@ -250,12 +250,9 @@ fn refuses_malformed_video_requests() {
 
     let huge = processor.plan_video(224, 224, usize::MAX);
     assert!(matches!(huge, Err(MmError::LimitExceeded { .. })));
-    let item = processor
-        .process_items(&ids, &[video(vec![0; 24], 30.0)])
-        .unwrap();
     let ungrouped = ProcessedItem {
         geometry: None,
-        ..item.into_iter().next().unwrap()
+        ..items.into_iter().next().unwrap()
     };
     assert!(matches!(
         processor.layout_with_text(&ids, &[ungrouped], &Recorded(case.label_ids)),
