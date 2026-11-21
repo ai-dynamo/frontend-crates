@@ -2171,6 +2171,7 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     header_slot: bool,
     policy: ToolCallPolicy,
     finish_at_eos: bool,
+    dropped_incomplete_call: bool,
     #[cfg(test)]
     block_end_searched_bytes: usize,
 }
@@ -2222,6 +2223,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             header_slot: true,
             policy: ToolCallPolicy::default(),
             finish_at_eos: false,
+            dropped_incomplete_call: false,
             #[cfg(test)]
             block_end_searched_bytes: 0,
             anchored_invoke: false,
@@ -2472,9 +2474,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Ok(())
     }
 
+    pub(crate) fn dropped_incomplete_call(&self) -> bool {
+        self.dropped_incomplete_call
+    }
+
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
         self.finish_at_eos = false;
+        self.dropped_incomplete_call = false;
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
         self.buffer_previous = None;
@@ -3770,6 +3777,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
                 let Some(start) = invoke_start else {
                     if flush {
+                        self.dropped_incomplete_call = true;
                         tracing::warn!(
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"
@@ -3850,6 +3858,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 self.spec.block_ends.iter().map(String::as_str),
                             )
                         {
+                            self.dropped_incomplete_call = true;
                             tracing::warn!(
                                 why = %format!("{}_incomplete_invoke", self.spec.family),
                                 "stream dropped invoke with no evidence it ever closed before the block end"
@@ -3873,6 +3882,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream closed an unterminated block at EOF"
                             );
                         } else {
+                            self.dropped_incomplete_call = true;
                             tracing::warn!(
                                 why = %format!("{}_incomplete_invoke", self.spec.family),
                                 "stream dropped incomplete invoke at EOF"
@@ -4076,6 +4086,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             break;
                         }
                         if flush {
+                            self.dropped_incomplete_call = true;
                             tracing::warn!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
                                 "stream dropped incomplete bare invoke at EOF"

@@ -349,6 +349,29 @@ pub trait UnifiedParserContinuation: Send {
     fn fork(&self) -> Result<Box<dyn UnifiedParser>>;
 }
 
+/// Whether the native grammar discarded an unfinished tool call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NativeToolCompletion {
+    NoIncompleteCall,
+    IncompleteCall,
+}
+
+/// Reasoning boundary observed in the rendered assistant prefill.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReasoningPrefillState {
+    Open,
+    Closed,
+    Unknown,
+}
+
+/// Inspect a rendered assistant prefill for families with a known boundary.
+pub fn inspect_reasoning_prefill(family: &str, rendered: &str) -> Option<ReasoningPrefillState> {
+    match canonical_unified_family(family)? {
+        "glm47" => Some(glm47::inspect_reasoning_prefill(rendered)),
+        _ => None,
+    }
+}
+
 /// A parser that owns reasoning + content + tool calls for one stream.
 ///
 /// Streaming-first, like [`crate::ToolParser`]: [`Self::parse_into`] per decoded
@@ -459,6 +482,11 @@ pub trait UnifiedParser: Send {
     /// this for token limits, cancellation, transport EOF, or arbitrary user stops.
     fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
         self.finish()
+    }
+
+    /// Native tool-call evidence from a finished stream, if the grammar reports it.
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        None
     }
 
     /// Return the parser to a FRESH-STREAM state and hand back any unconsumed text.
@@ -915,6 +943,7 @@ pub(crate) struct ScannerUnified<E: InvokeEmitter> {
     pub(crate) scanner: WrappedBlockScanner<E>,
     guided_prefix_policy: Option<GuidedPrefixPolicy>,
     guided_prefix_factory: Option<GuidedPrefixFactory>,
+    reports_native_tool_completion: bool,
 }
 
 impl<E: InvokeEmitter> ScannerUnified<E> {
@@ -923,7 +952,13 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
             scanner,
             guided_prefix_policy: None,
             guided_prefix_factory: None,
+            reports_native_tool_completion: false,
         }
+    }
+
+    pub(crate) fn with_native_tool_completion(mut self) -> Self {
+        self.reports_native_tool_completion = true;
+        self
     }
 
     pub(crate) fn with_guided_prefix_policy(
@@ -1003,6 +1038,16 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
 
     fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()> {
         self.scanner.finish_ordered_into(output)
+    }
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        self.reports_native_tool_completion.then(|| {
+            if self.scanner.dropped_incomplete_call() {
+                NativeToolCompletion::IncompleteCall
+            } else {
+                NativeToolCompletion::NoIncompleteCall
+            }
+        })
     }
 
     fn allow_implicit_tool_terminator(&mut self) {
@@ -1130,6 +1175,10 @@ pub(crate) trait NativeUnified {
 
     fn push_native(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()>;
     fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()>;
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        None
+    }
 
     fn allow_implicit_tool_terminator(&mut self) {}
 
@@ -1571,6 +1620,14 @@ impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
             self.native.allow_implicit_tool_terminator();
         }
         self.finish()
+    }
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        if self.finished && (self.guided.is_none() || self.native_fallback_active) {
+            self.native.native_tool_completion()
+        } else {
+            None
+        }
     }
 
     fn reset(&mut self) -> String {
@@ -6768,6 +6825,10 @@ impl UnifiedParser for DebugUnifiedParser {
                 inner,
             }) as Box<dyn UnifiedParserContinuation>
         }))
+    }
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        self.inner.native_tool_completion()
     }
 
     fn preserve_message_phases(&mut self, enabled: bool) {
