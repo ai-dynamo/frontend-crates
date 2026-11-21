@@ -4,8 +4,10 @@
 //! Qwen3-VL video golden replay: each stage must hash as the fixtures
 //! `tests/fixtures/qwen3_vl_video/generate.py` records from HF's
 //! `Qwen3VLProcessor` (with Qwen3-VL-2B-Instruct's tokenizer) and
-//! `Qwen3VLModel.get_rope_index`. A resized video's frames are pinned on
-//! their own, so a mismatch names the stage.
+//! `Qwen3VLModel.get_rope_index`. The Qwen3.5 and `qwen4_exp` cases resolve
+//! their spec with `spec_from_model_dir` and record that checkpoint's own
+//! processor and model class. A resized video's frames are pinned on their
+//! own, so a mismatch names the stage.
 
 use std::collections::HashMap;
 
@@ -15,10 +17,19 @@ use dynamo_multimodal::models::qwen_vl::QwenVlSpec;
 use dynamo_multimodal::processor::{
     DecodedMedia, Modality, PositionOutput, ProcessedItem, TensorData, TextEncoder,
 };
-use dynamo_multimodal::registry::processor_from_spec;
+use dynamo_multimodal::registry::{ProcessorSpec, build_processor, spec_from_model_dir};
 use dynamo_multimodal::token_layout;
 
-const CASES: [&str; 4] = ["downscale_6f", "odd_3f", "tps3", "video_image_video"];
+const CASES: [&str; 8] = [
+    "downscale_6f",
+    "odd_3f",
+    "tps3",
+    "video_image_video",
+    "qwen3_5_video",
+    "qwen3_5_image_video",
+    "qwen4_exp_video",
+    "qwen4_exp_image_video",
+];
 
 #[derive(serde::Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
@@ -38,7 +49,8 @@ enum Media {
 
 #[derive(serde::Deserialize)]
 struct Case {
-    spec: serde_json::Value,
+    spec: Option<QwenVlSpec>,
+    model_dir: Option<String>,
     media: Vec<Media>,
     prompt_ids: Vec<i32>,
     timestamp_ids: HashMap<String, Vec<i32>>,
@@ -91,8 +103,15 @@ fn video_pipeline_matches_golden_fixtures() {
     for name in CASES {
         let json = std::fs::read(root.join(name).join("case.json")).unwrap();
         let case: Case = serde_json::from_slice(&json).unwrap();
-        let family = processor_from_spec(&case.spec.to_string()).unwrap();
-        let spec: QwenVlSpec = serde_json::from_value(case.spec.clone()).unwrap();
+        let spec = match (case.spec, &case.model_dir) {
+            (Some(spec), None) => spec,
+            (None, Some(dir)) => match spec_from_model_dir(&root.join(dir)).unwrap() {
+                ProcessorSpec::QwenVl(spec) => spec,
+                _ => panic!("{name}: expected a Qwen spec"),
+            },
+            _ => panic!("{name}: needs one of spec and model_dir"),
+        };
+        let family = build_processor(ProcessorSpec::QwenVl(spec.clone())).unwrap();
         let sizing = &spec.video.as_ref().unwrap().processor;
 
         let mut items = Vec::new();
