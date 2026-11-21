@@ -1060,7 +1060,8 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
+    assert numbered_id("kimi_k3_abandoned_argument_then_retry") == "UNIFIED.kimi-abandoned_argument_then_retry"
+    assert len(UNIFIED_TAX) == 275 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }

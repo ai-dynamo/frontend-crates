@@ -507,6 +507,10 @@ impl KimiK3CallBoundary {
             return CallBoundary::SkipMalformed { consumed };
         }
 
+        if let Some(boundary) = self.response_boundary(text, header_len, flush) {
+            return boundary;
+        }
+
         let restart_fence = self
             .restart_calls
             .first()
@@ -541,10 +545,6 @@ impl KimiK3CallBoundary {
             {
                 return boundary;
             }
-        }
-
-        if let Some(boundary) = self.response_boundary(text, header_len, flush) {
-            return boundary;
         }
 
         // A channel fence settles balanced candidates without waiting for EOF.
@@ -5114,6 +5114,36 @@ mod tests {
             }
             assert_native_fragmentations(&input, &expected);
         }
+    }
+
+    #[test]
+    fn complete_typed_value_before_response_and_new_tools_keeps_all_events() {
+        let input = format!(
+            "{}{OPEN}call tool=\"echo\" index=\"1\"{SEP}{}{}Visible text{}{}{}{}",
+            TOOLS_OPEN.canonical,
+            arg("value", "string", "first"),
+            RESPONSE_OPEN.canonical,
+            RESPONSE_CLOSE.canonical,
+            TOOLS_OPEN.canonical,
+            call("echo", "2", &arg("value", "string", "second")),
+            TOOLS_CLOSE.canonical,
+        );
+        assert_native_fragmentations(
+            &input,
+            &[
+                UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value":"first"}),
+                },
+                UnifiedEvent::Text {
+                    text: "Visible text".into(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value":"second"}),
+                },
+            ],
+        );
     }
 
     #[test]
