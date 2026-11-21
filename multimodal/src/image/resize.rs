@@ -739,15 +739,16 @@ mod tests {
     /// Noise (seed 7) at sizes where torch's AVX2 and AVX-512 dispatch
     /// differ from DEFAULT: BLAKE3 of torchvision v1 `resize(BILINEAR)` on
     /// the CHW uint8 tensor, torch 2.14.1 on AVX-512 (AVX2 gives the same).
+    /// The 3x downscale also fails if the taps group by other than four.
     #[test]
     fn f32_bilinear_avx2_matches_torchs_vector_dispatch() {
         let cases = [
             (
-                200,
-                300,
-                100,
-                150,
-                "7e71424f39db3e25fd867d36620f7977456dd5f5a2539b0c58e245bf5fe84c17",
+                90,
+                90,
+                30,
+                30,
+                "4766af4a51e40b1af547f609545f0b578cbc4270dd7ba10b4f13c43885e0fbfd",
             ),
             (
                 1080,
