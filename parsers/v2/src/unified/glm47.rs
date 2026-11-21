@@ -6,33 +6,21 @@
 use crate::tool_calling::glm47::glm47_scanner;
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{GuidedRouted, ReasoningPrefillState, ScannerUnified, UnifiedParser};
+use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
-pub(super) fn inspect_reasoning_prefill(rendered: &str) -> ReasoningPrefillState {
-    let prefill = rendered.trim_end();
-    if prefill.ends_with(REASONING_END) {
-        ReasoningPrefillState::Closed
-    } else if prefill.ends_with(REASONING_START) {
-        ReasoningPrefillState::Open
-    } else {
-        ReasoningPrefillState::Unknown
-    }
-}
-
 pub(crate) fn glm47_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    Box::new(GuidedRouted::new(
-        ScannerUnified::new(glm47_scanner(tools).with_reasoning(ReasoningSpec {
+    Box::new(GuidedRouted::new(ScannerUnified::new(
+        glm47_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
             forced_start: false,
             preserve_special_tokens: false,
             ..Default::default()
-        }))
-        .with_native_tool_completion(),
-    ))
+        }),
+    )))
 }
 
 #[cfg(test)]
@@ -43,24 +31,6 @@ mod tests {
         UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
         create_unified_parser_for_family,
     };
-
-    #[test]
-    fn rendered_prefill_exposes_known_reasoning_boundaries() {
-        let inspect = crate::unified::inspect_reasoning_prefill;
-        assert_eq!(
-            inspect("glm47", "assistant<think>"),
-            Some(ReasoningPrefillState::Open)
-        );
-        assert_eq!(
-            inspect("glm47", "assistant<think></think> "),
-            Some(ReasoningPrefillState::Closed)
-        );
-        assert_eq!(
-            inspect("glm47", "assistant"),
-            Some(ReasoningPrefillState::Unknown)
-        );
-        assert_eq!(inspect("qwen3", "assistant<think>"), None);
-    }
 
     #[test]
     fn native_completion_reports_a_call_discarded_at_eof() {

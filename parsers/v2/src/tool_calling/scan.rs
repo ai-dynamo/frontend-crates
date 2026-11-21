@@ -2479,7 +2479,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     }
 
     pub(crate) fn has_pending_native_tool_call(&self) -> bool {
-        self.in_block || self.anchored_invoke || self.provisional_invoke
+        // A wrapper can be open after its last call completed. The boundary
+        // also knows when an EOF-delimited block is waiting for its next call.
+        self.provisional_invoke
+            || (self.anchored_invoke
+                && !self
+                    .invoke_boundary
+                    .as_ref()
+                    .is_some_and(|boundary| boundary.block_ends_at_eof()))
     }
 
     /// Clear one stream's scan state and return bytes not yet emitted.
@@ -3781,7 +3788,6 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
                 let Some(start) = invoke_start else {
                     if flush {
-                        self.dropped_incomplete_call = true;
                         tracing::warn!(
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"

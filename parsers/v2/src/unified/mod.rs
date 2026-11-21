@@ -364,12 +364,14 @@ pub enum ReasoningPrefillState {
     Unknown,
 }
 
-/// Inspect a rendered assistant prefill for families with a known boundary.
+/// Inspect a rendered assistant prefill using the selected parser's grammar.
+///
+/// Prefer [`UnifiedParser::inspect_reasoning_prefill`] when a parser has already
+/// been created for the request.
 pub fn inspect_reasoning_prefill(family: &str, rendered: &str) -> Option<ReasoningPrefillState> {
-    match canonical_unified_family(family)? {
-        "glm47" => Some(glm47::inspect_reasoning_prefill(rendered)),
-        _ => None,
-    }
+    create_unified_parser_for_family(family, &[])
+        .ok()?
+        .inspect_reasoning_prefill(rendered)
 }
 
 /// A parser that owns reasoning + content + tool calls for one stream.
@@ -482,6 +484,12 @@ pub trait UnifiedParser: Send {
     /// this for token limits, cancellation, transport EOF, or arbitrary user stops.
     fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
         self.finish()
+    }
+
+    /// Inspect the suffix of a rendered assistant generation prefill. `None`
+    /// means the parser cannot inspect it. `Unknown` means no boundary was found.
+    fn inspect_reasoning_prefill(&self, _rendered: &str) -> Option<ReasoningPrefillState> {
+        None
     }
 
     /// Native tool-call evidence from a finished stream, if the grammar reports it.
@@ -948,7 +956,6 @@ pub(crate) struct ScannerUnified<E: InvokeEmitter> {
     pub(crate) scanner: WrappedBlockScanner<E>,
     guided_prefix_policy: Option<GuidedPrefixPolicy>,
     guided_prefix_factory: Option<GuidedPrefixFactory>,
-    reports_native_tool_completion: bool,
 }
 
 impl<E: InvokeEmitter> ScannerUnified<E> {
@@ -957,13 +964,7 @@ impl<E: InvokeEmitter> ScannerUnified<E> {
             scanner,
             guided_prefix_policy: None,
             guided_prefix_factory: None,
-            reports_native_tool_completion: false,
         }
-    }
-
-    pub(crate) fn with_native_tool_completion(mut self) -> Self {
-        self.reports_native_tool_completion = true;
-        self
     }
 
     pub(crate) fn with_guided_prefix_policy(
@@ -1046,7 +1047,7 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
     }
 
     fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
-        self.reports_native_tool_completion.then(|| {
+        (!self.scanner.has_envelope()).then(|| {
             if self.scanner.dropped_incomplete_call() {
                 NativeToolCompletion::IncompleteCall
             } else {
@@ -1056,7 +1057,7 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
     }
 
     fn has_pending_native_tool_call(&self) -> bool {
-        self.reports_native_tool_completion && self.scanner.has_pending_native_tool_call()
+        self.scanner.has_pending_native_tool_call()
     }
 
     fn allow_implicit_tool_terminator(&mut self) {
@@ -1633,6 +1634,25 @@ impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
             self.native.allow_implicit_tool_terminator();
         }
         self.finish()
+    }
+
+    fn inspect_reasoning_prefill(&self, rendered: &str) -> Option<ReasoningPrefillState> {
+        let GuidedReasoning::Pair(spec) = self.native.guided_reasoning()? else {
+            return None;
+        };
+        let tail = rendered.trim_end();
+        Some(if tail.ends_with(spec.end) {
+            ReasoningPrefillState::Closed
+        } else if tail.ends_with(spec.start)
+            || spec.start_label.is_some_and(|label| {
+                tail.strip_suffix(label.trim_end())
+                    .is_some_and(|prefix| prefix.ends_with(spec.start))
+            })
+        {
+            ReasoningPrefillState::Open
+        } else {
+            ReasoningPrefillState::Unknown
+        })
     }
 
     fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
@@ -6846,6 +6866,10 @@ impl UnifiedParser for DebugUnifiedParser {
         }))
     }
 
+    fn inspect_reasoning_prefill(&self, rendered: &str) -> Option<ReasoningPrefillState> {
+        self.inner.inspect_reasoning_prefill(rendered)
+    }
+
     fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
         self.inner.native_tool_completion()
     }
@@ -6948,6 +6972,37 @@ impl UnifiedParser for DebugUnifiedParser {
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[test]
+    fn rendered_prefill_uses_the_selected_parser_reasoning_markers() {
+        use ReasoningPrefillState::{Closed, Open, Unknown};
+
+        for (family, open, close) in [
+            ("glm47", "<think>", "</think>"),
+            ("qwen3_coder", "<think>", "</think>"),
+            ("nemotron3", "<think>", "</think>"),
+            ("mistral_4", "[THINK]", "[/THINK]"),
+            ("gemma4", "<|channel>thought\n", "<channel|>"),
+        ] {
+            let parser = create_unified_parser_for_family(family, &[]).unwrap();
+            assert_eq!(
+                parser.inspect_reasoning_prefill(open),
+                Some(Open),
+                "{family}"
+            );
+            assert_eq!(
+                parser.inspect_reasoning_prefill(&format!("{open}{close} ")),
+                Some(Closed),
+                "{family}",
+            );
+            assert_eq!(
+                parser.inspect_reasoning_prefill("assistant"),
+                Some(Unknown),
+                "{family}"
+            );
+        }
+        assert_eq!(inspect_reasoning_prefill("beam", "<think>"), None);
+    }
 
     // Corpus requests carry decoded text; capability admission and wrapper
     // forwarding require calls to the token-ID API itself.
