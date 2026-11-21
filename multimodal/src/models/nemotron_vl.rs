@@ -757,9 +757,8 @@ impl MmFamilyProcessor for NemotronVlProcessor {
                 let plan = self.plan_images(&[], &[(*width, *height)])?[0];
                 Ok(plan.num_image_tokens as usize + 2)
             }
-            MediaMetadata::Video { .. } => Err(video_needs_labels()),
             _ => Err(MmError::unsupported(
-                "nemotron_vl supports only images and videos",
+                "nemotron_vl: metadata covers images only; for a video call video_layout",
             )),
         }
     }
@@ -773,9 +772,8 @@ impl MmFamilyProcessor for NemotronVlProcessor {
             .iter()
             .map(|item| match item {
                 MediaMetadata::Image { width, height } => Ok((*width, *height)),
-                MediaMetadata::Video { .. } => Err(video_needs_labels()),
                 _ => Err(MmError::unsupported(
-                    "nemotron_vl supports only images and videos",
+                    "nemotron_vl: metadata covers images only; for a video call video_layout",
                 )),
             })
             .collect::<Result<Vec<_>>>()?;
@@ -899,12 +897,6 @@ impl MmFamilyProcessor for NemotronVlProcessor {
         let counts: Vec<usize> = items.iter().map(|item| item.feature_token_count).collect();
         self.expand(input_ids, &counts, videos)
     }
-}
-
-fn video_needs_labels() -> MmError {
-    MmError::unsupported(
-        "nemotron_vl: a video's span holds its frame labels; use NemotronVlProcessor::video_layout",
-    )
 }
 
 /// `_compute_target_patches_video`: `(w, h)` in patches.
