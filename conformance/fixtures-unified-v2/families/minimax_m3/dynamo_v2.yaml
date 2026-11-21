@@ -1,15 +1,15 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"23b732d93239c754604c14ba29a3fd7ed49da275323050a961488c94841752ae","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"1956b853421d7a4c9fc5bc3a25bebd083573852e124a079df1b6c06cd1c3813e","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_b7265cbc89e63fd1
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_b7265cbc89e63fd1:
+    crate_version: 0.10.10
+    source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+    git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_9cbbe2e159113195:
+  context_db3481322a5507d0:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -153,15 +153,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: cb6c6c68b24bd6d5e8ac2f6c513f42572cca9d158f7d7ef026fac83f5647c71a
         resolution: fresh_execution
-  context_6e108175c0a744c7:
+  context_9861b25fb61697e1:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -246,15 +246,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 36b707e5cd5550bb52fdab33ae707f8daa01d8b3703413bf1b02fe14e273fc4c
         resolution: fresh_execution
-  context_ca40c9ffda8d6967:
+  context_75b3a4c8f89c4c00:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -342,15 +342,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: b4ecd1a24153ee99b75006b8b7985d41052e88ef5e8d05b1c5836420284afd69
         resolution: fresh_execution
-  context_041da97369a552d8:
+  context_1d666b69b4303110:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -438,15 +438,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: a7c2b5f278e977ed2b73c9a0c9a721b4da8b88c4c210dd83e56fce181865c6a7
         resolution: fresh_execution
-  context_9ce7024741aa3fcd:
+  context_37151fb0ab4c031f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -536,15 +536,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: b88a24fe7065a39985064b95a5ff41d0d949dad5cfabd34bbb084058d3b5a7d3
         resolution: fresh_execution
-  context_68fb2e804fdbe738:
+  context_739b761f89b1e6e7:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -632,15 +632,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: d75dd11f04d3d4125262297f9f527491d059f810d7aed139cab820cd92d8f3f7
         resolution: fresh_execution
-  context_27208697a67d9de7:
+  context_8ecbe6f23f415ba7:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -761,15 +761,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: e50dcd2f3c0e7bf3cce925e7e772af99fd935d9238af67993a08a2d3ca892a5a
         resolution: fresh_execution
-  context_2d0cad0252096470:
+  context_b416a281b47da462:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -930,15 +930,15 @@ contexts:
                 '
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: feb1ea88d6323fb9e3acdf26efba39b8299b33c1c89606bc19b60afd4222e44e
         resolution: fresh_execution
-  context_df8fdd1574a0676d:
+  context_5da5216d6d00320c:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1085,15 +1085,15 @@ contexts:
                 Done.'
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 0970ca316f4601fffa25443d44d6e9593de31be76eb3b7b77425b378ecdd717c
         resolution: fresh_execution
-  context_054438ccbc4917f1:
+  context_8f5bfdcaacae1332:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1240,15 +1240,15 @@ contexts:
                 '
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 1b00b5a8d65c88c832875331d4a9b92be00029a45a9f3461b76892f5df6126f0
         resolution: fresh_execution
-  context_2471725c592e6d4f:
+  context_61eb66762ad27854:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1399,15 +1399,15 @@ contexts:
                 '
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 7f30c5cafd3667070daa9ce614e7e831c412b2fc9e6cf6ce9a3a0e51cd649df2
         resolution: fresh_execution
-  context_bf980d945b18e3b0:
+  context_1faf6d008d08c104:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1544,15 +1544,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: b18164c20db8c1ba7ff18b8b16409b8b8563f808779584262ebdab081dd7780b
         resolution: fresh_execution
-  context_5c8722ed44642747:
+  context_c3af4ceb398e2202:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1705,15 +1705,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: be7a6fa452ff96ab6cd519217c1f500a0bd8006c9cef9aaf6df1b4ef3d3f7087
         resolution: fresh_execution
-  context_a57705d639f9eea2:
+  context_29bbc3dd188a008f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1867,15 +1867,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 9ad2b4f560a238038c87558e3d3952a3e1462a63171a55c3da418f7a39a161de
         resolution: fresh_execution
-  context_f682ae41969aab38:
+  context_1f5868516684f9ab:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -1996,15 +1996,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: c5c74b61f4e28bf0cb9803d5c18c09ccaf6fb0cf348b45c52fd2ce1b08c231e4
         resolution: fresh_execution
-  context_a0584dee6ff7c5a8:
+  context_55088469417c1434:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2133,15 +2133,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 882530fa17161ea136e58cebba559378e538e1b3c0cc71f48b3bc460a129c158
         resolution: fresh_execution
-  context_cf277d64d02b683b:
+  context_6ca149176c2b5842:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2270,15 +2270,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 470a2d765907c72c25ce0c4eefee95dd248cb944370da7c531615ef2584670eb
         resolution: fresh_execution
-  context_c048e019c6c0a2da:
+  context_2bc9ee5b76641197:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2413,15 +2413,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: a7111a3ead064225cfe1abb28f34132cdce9007bfed93feb898bc4bba95d63cb
         resolution: fresh_execution
-  context_5ddf7196e4528195:
+  context_88574ee51efdbab1:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2498,15 +2498,15 @@ contexts:
             chunks:
             - delta_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>bad]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke name="f">]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 8e055c3b94a4e325296ece3fe304f920f3aa05fd51adb488653c49f9b1717d42
         resolution: fresh_execution
-  context_b824801b48fb948f:
+  context_95a2ed8949bca236:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2753,15 +2753,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 4fce89a8fb332538a558ffc6e5590fd911f4324dcc8f034642d654a09fc6494f
         resolution: fresh_execution
-  context_a45aefd3f888aa12:
+  context_555f5f9c1eb0fc7f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2894,15 +2894,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: e977f7526c50e53e92cbe07a12dae56f97d805fd1388a7792c77731d8f641c9a
         resolution: fresh_execution
-  context_65efa06d4e1b36b8:
+  context_83b1c9b47e697610:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -2947,15 +2947,15 @@ contexts:
             - delta_text: Paris]<]minimax[>[</cmd>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 672b863a8c34b2e0a37eef63c2e3091de8dbe242b17f56198c28fe7755cc409e
         resolution: fresh_execution
-  context_bd0dec1cbb9c4c7e:
+  context_d8a4af3f1998beca:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3047,15 +3047,15 @@ contexts:
             - delta_text: '` header is part of the explanation.'
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 51a2f5cdd464b44e61385668285ce1cca4ee57746f27bc2d786fa5281b2bc807
         resolution: fresh_execution
-  context_256d4eac207ba768:
+  context_cb30b028b246ae83:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3180,15 +3180,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: c738e68e576b557ed394e9bdd580f32761332897ed296d9d9c7be85da7b51fe3
         resolution: fresh_execution
-  context_516f7e7896288dc9:
+  context_b766f14f159b6895:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3309,15 +3309,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 284a8fffd6bbbdee6865e8adb56de11abc645db81b23458f4a3e1d3f2b55fa39
         resolution: fresh_execution
-  context_0fd558a258e17788:
+  context_2cc33e4bf804ab5d:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3448,15 +3448,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 036eb1525d4d16d679ea032e9e0ce1362e72a8ea9345ee931ae8e5664de0e87c
         resolution: fresh_execution
-  context_bf80d06cbb0bbc05:
+  context_3acfdb9c9233ade8:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3589,15 +3589,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 800eac9764f51939a4cafa9540d06e8f8e91917a77424338b8b5c3fbe1040ae0
         resolution: fresh_execution
-  context_28f50e87e71248cc:
+  context_bc133f9ec061fc54:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3693,15 +3693,15 @@ contexts:
             - delta_text: Par
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: fd1e53606e5501d3d8a8dcf48ea7180ec699188bf1aeea89ab4bfdd3cfcb1023
         resolution: fresh_execution
-  context_eede9bab50438700:
+  context_fdec09fa81e8c7e7:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3830,15 +3830,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: b735e0f32ee183938d4d5de7f632066c94f6a8c08627a1dca391fb7baea6d230
         resolution: fresh_execution
-  context_16722cd8c53770e8:
+  context_a506aa027b36af1a:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -3975,15 +3975,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 922654c13aba16c7e7a2c198447e0377195c04463427a90236eeefcfa77ac5ac
         resolution: fresh_execution
-  context_41ff717fed3c0187:
+  context_2fac70f1c2673cc5:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -4130,15 +4130,15 @@ contexts:
             - delta_text: It's 18C.
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 30e57e52f68dd216615b4b86383fd0f525a6ce748a781864696c0ef999bf25c0
         resolution: fresh_execution
-  context_991fe29fa0eb245d:
+  context_3e14df0b99e261f4:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -4328,15 +4328,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: eb01229abe0202632784b1e539cd18fdcbc3136be566bfc86dc62f9b874ff7cc
         resolution: fresh_execution
-  context_30d62bedbf065008:
+  context_8cb8e4af646d1381:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -4536,15 +4536,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: edd6f4a5ff630e96d8a7be9d11d66566c1f63025cbb8fd926030984cf2dcfbf4
         resolution: fresh_execution
-  context_754aaae71dc6cb09:
+  context_e926a43eb693df3f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -4671,15 +4671,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 0f87242f4c1943b16e7834c67a2b3e47d8803656c0b149efe2c78cb6d1a0204d
         resolution: fresh_execution
-  context_887ca61ce9c464e1:
+  context_e094832e65efb04f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -4816,15 +4816,15 @@ contexts:
             - delta_text: ' done.'
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 7da588ce1089d4a77743ba6305fbea1b9119b3d8bb5edce840d9cc2ac22ad641
         resolution: fresh_execution
-  context_faa6a5d2f67f6f43:
+  context_92956946824c91c6:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -4955,15 +4955,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: eafba34b57ca61d44bf8ad4c94ab84ddd259a1d9471f49cae23fe025cc28f067
         resolution: fresh_execution
-  context_5db2f83f2acedf65:
+  context_ef99c0639bd609ce:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5173,15 +5173,15 @@ contexts:
             - delta_text: </mm:think>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: ec256ad8344af5ebbb70da8289c996da44497caebdc243a35b02c8668af724e6
         resolution: fresh_execution
-  context_91671c27172d1144:
+  context_050b010508219e84:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5387,15 +5387,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 535f0baec1f6d85737299276c96cbc98c4a3a8e15794b959560ca6ec7637ed89
         resolution: fresh_execution
-  context_4b38f49633fc2311:
+  context_02264e9dd3acb046:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5486,15 +5486,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 212baa2b78f49aa0aa4a621eb3480d4fd0d42ceb7eb5a2c12fb14d13983e3ba1
         resolution: fresh_execution
-  context_33f7109c488df0be:
+  context_afcb44fad174da1a:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5583,15 +5583,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: e51ad08c01b2d20d6f76e59a11191ec0cab8f6b8891f4c7ddb677a791ee14222
         resolution: fresh_execution
-  context_0160946ee2835d27:
+  context_7298ba27143aba39:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5683,15 +5683,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: f8edaf2d8231883603125a3c71527f357f9bf6285ddb1db8a148c4b90c5c1d33
         resolution: fresh_execution
-  context_1a2442023b9dcc0e:
+  context_4e1656e27bb48047:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5781,15 +5781,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 6e3942090ae7c5e7dba2b169284c2da6eab5e4ebf09b37a2d5c33f20c652b138
         resolution: fresh_execution
-  context_d57bb64101bc32c2:
+  context_e522eede336d6884:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5880,15 +5880,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 41bedc0a084360ea4b92f521f32fae64f92114e1df6b577bd05d33143d35024c
         resolution: fresh_execution
-  context_f5bf1d47f825745a:
+  context_3a883372c3ba34b8:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -5977,15 +5977,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 2679fd3d6058b96c8b3f3c3baaf119b0052450b949d7458cd92459e21a1e4a50
         resolution: fresh_execution
-  context_5282b76f4b130a03:
+  context_07ffbd8f7a85ed2e:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6077,15 +6077,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 1b5bd4afbbb5e470e83fb116cf755b843fe2d0489a3e8aea6ff2ea3b14a01971
         resolution: fresh_execution
-  context_c3a182b26066c86b:
+  context_774e56f397d7854d:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6175,15 +6175,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 06fbf7d7b8f6b008e51fbb0875670a588dc67cc9cf1e5e9f155277ef5aec9c31
         resolution: fresh_execution
-  context_c654d2307629fce9:
+  context_d0d92301381b06ea:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6274,15 +6274,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 6afffbe0eec9188ee4983b091b44fc7d93c99c987f3e15801f2df89aea8abb0a
         resolution: fresh_execution
-  context_535fb800a52075b2:
+  context_c04d0b8c41188c07:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6371,15 +6371,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: f26e6e84115ad2e90d9877d6d840521d38d71998749af29c341c108cb3fe6929
         resolution: fresh_execution
-  context_a991a0a9f3d59f11:
+  context_bf47c66d1247b3fb:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6471,15 +6471,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 857b7541337b6e3552ef9ab183fe24abf43c5cd018bca980bd884ea4e3f76127
         resolution: fresh_execution
-  context_98196729a3a6d0b9:
+  context_efd70a57c250e81f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6569,15 +6569,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 127d73f50a55fe9b6cf097fd1c66847fd3f337d12ace15228754f450026c71fd
         resolution: fresh_execution
-  context_0fa292b4a0cf56a5:
+  context_97548b8938f3dd4e:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6668,15 +6668,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 4a343b682c85e7e908f16ae91e136e259cc3df2874ce2d780d86954af0c3ebab
         resolution: fresh_execution
-  context_141c0cf1129a572e:
+  context_240c0f277401a207:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6765,15 +6765,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: f78393a345396cf5815fb6608b8b2bd1648fd2b6dd76ee73c1f602c7ba819c25
         resolution: fresh_execution
-  context_3a4b3656e0136a21:
+  context_0a96e8bb945ea363:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6865,15 +6865,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 0048c5cae159d65039bf0959776dd31b1c62b0be2ecac8e988c4189fa6712179
         resolution: fresh_execution
-  context_2d1f52abe70e347a:
+  context_85bcc72ba12d78e5:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -6963,15 +6963,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: f6a559d8b932bff9ec2ad2954319d8baa909feae91f22866e4fb069cdfd86618
         resolution: fresh_execution
-  context_50f6e2c5778206b0:
+  context_8d598246ccfe398c:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7062,15 +7062,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: ef772a6f5c959378bbea4c19f449408214d2458d2dc0a692eb31d2336d6e5ac5
         resolution: fresh_execution
-  context_62b7c7272ceb976b:
+  context_f1d542e03a47b670:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7159,15 +7159,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 4d477d65281014b68bc0f269a6fbb5c51bc5fdd8c37e3c5025edf96995bdfcc2
         resolution: fresh_execution
-  context_01c0ff37947dc5d5:
+  context_dd7a7f4a4a75f796:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7259,15 +7259,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: d726fbea31f167a3ee3e59f9a7ffab233b97875550417dbe2eee00459437e568
         resolution: fresh_execution
-  context_b2d5408036ca0562:
+  context_c1786aeb948068dd:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7357,15 +7357,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 6381ebdb70f73f9b21cf97c0b57401beb27fa47cf1059c009541ae8528f60e6e
         resolution: fresh_execution
-  context_94bee4b1143b39b7:
+  context_d1747ac74ad2ffc8:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7456,15 +7456,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 25ac9555289b5bf522ad5e3573bf2e3c890777f7680125d57738a84c9450731e
         resolution: fresh_execution
-  context_d70579b6c1149314:
+  context_a5df3630d704b9c4:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7553,15 +7553,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 4b617cc1277b51db4bdeee071872ab50e4e610d219a8a889bdd08d44e25baa48
         resolution: fresh_execution
-  context_db8e4729681221ef:
+  context_51dea680dd3d5a13:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7653,15 +7653,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 286ccc52c6c98671ad30e9784dcc0f60c1cc6255b35c99bd6a3d4d95586b010b
         resolution: fresh_execution
-  context_12ff001e599b8b22:
+  context_5d30611f0b89f9d5:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7751,15 +7751,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 6d80934b56d5d21712f72f9ba05642686fb388030e53c9704c6b95147f4d8316
         resolution: fresh_execution
-  context_4d2ef1729f28ae39:
+  context_6990aaf33fa58c60:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7850,15 +7850,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 7b1a7cbbc5027833a67315f7e695a6647cab6f29b45c5717a75c9c3937b53e0d
         resolution: fresh_execution
-  context_2167f77356606ef5:
+  context_60aed4165415d6a6:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -7947,15 +7947,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 33dcb068316d8a66a490918b7f32b827b3b64f37075d9fc7d9b0ffaf26a92600
         resolution: fresh_execution
-  context_3ecc3930a3d60167:
+  context_0e8e193481566435:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8047,15 +8047,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 135d92afa48cc0e4033bfb36473bc88c781adf545a4ea33eb79a9833d27c4483
         resolution: fresh_execution
-  context_349dd9a185d7a917:
+  context_b3435f32da788097:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8145,15 +8145,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 45f8e5cd9e8fee2fc1886fc5f88c8c1a31d91baa6a4b3464bd83d57d14cd3d2f
         resolution: fresh_execution
-  context_c039e662d88c48b2:
+  context_635d3ebadd12062f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8244,15 +8244,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 03232f555fa2316d6e6c163d4b6604fe4323c74755fc91d9cb08d53885a86789
         resolution: fresh_execution
-  context_a3dc924ee49a334a:
+  context_8435366ed06d8572:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8341,15 +8341,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 8c20e99dd3b32fc54a683a4bbdc2db8609528ffe5e56cae7bf5b39e6f14ae663
         resolution: fresh_execution
-  context_d6cb9e05ba72dd1c:
+  context_940703ce4280753f:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8441,15 +8441,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 6ade279e9794b2a7d443f4c811a0bc3c481662fcd8f4a530038d0404bce70f24
         resolution: fresh_execution
-  context_82093c9793de951a:
+  context_b3d57c3208795514:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8539,15 +8539,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: e2a412a20a7ac830d48eeb80354c907d0fc57040f5aa59b084b0f47baf77c9fd
         resolution: fresh_execution
-  context_20a92ffc490d5cfe:
+  context_1789e56f68b0c9dd:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8638,15 +8638,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 16db6d0e0ffa18c1581b464474c3a5c0ee7d803d58f588cdd2c385aea53acf06
         resolution: fresh_execution
-  context_3eea42aa402a2783:
+  context_bbfd78778bf90b6d:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8735,15 +8735,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 6e9afc8ad52acd8ae81ef1e0d029da7076fc967ebea7c0cccf13b33236ecbd52
         resolution: fresh_execution
-  context_b0871620966adea2:
+  context_17af7965623919be:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8835,15 +8835,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: c891acf52dba463347cb6a82d950bd5c0314897c2abe97fead5c5cf04444a108
         resolution: fresh_execution
-  context_9a5a6f08245efa42:
+  context_b22494be0325a6cd:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -8933,15 +8933,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 3ebc7d787f9482a1b6d14378f7514929935a4b74d7e74ca68d2c88e982d79ce4
         resolution: fresh_execution
-  context_8ea62eda7697473a:
+  context_75acc509f9949a1e:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9032,15 +9032,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 4ec29f06281c79d1bce8fc04b02adb4621a2c8bb0b450a5a269911558d831d2f
         resolution: fresh_execution
-  context_2b391fc0f588b942:
+  context_2acd332c6d5aa413:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9129,15 +9129,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: e24021120c25ce9adce9abc46545b7fb3d3704192124b88bef72ed1d06dd5773
         resolution: fresh_execution
-  context_99fb9da952344bf1:
+  context_2f3270083da7ca10:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9229,15 +9229,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 847a41bd15041be434e084d8c37a46b5feaf1139272ca5a71980366061a4940c
         resolution: fresh_execution
-  context_6c248c874d81da88:
+  context_65b2f816dafb9ab1:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9327,15 +9327,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 2ab4e8eef84262f0d36d5a06f95f4074f22d65dcba9c4b4c65b14d10cfc577cb
         resolution: fresh_execution
-  context_8139f9c344c518a8:
+  context_4185bbf71f537504:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9424,15 +9424,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 65621438300fe5fb072685502d8f28043d320bcd3c1a40010ff3c26a75549c12
         resolution: fresh_execution
-  context_60a71585da00ddb4:
+  context_ad7fb73fb4acaa87:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9524,15 +9524,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: d7bab987c24a78b03197325db22203387de4c2ba1b07fff7aaef6ed6273b43ed
         resolution: fresh_execution
-  context_e0447b713bbb0450:
+  context_d6ba6c5ce1bdadaf:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9624,15 +9624,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: bea840a59a8a1e20ead20597ccabd1a7d67c5b26f538176ed409703e7b3c0a00
         resolution: fresh_execution
-  context_10ccc5f07bcbf320:
+  context_15f04be3460fcf87:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9724,15 +9724,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: d82754f26db99c451aa873fa749e26c20761f57997825d3fd692f93fbc93995c
         resolution: fresh_execution
-  context_a3e6e7311ce4c47c:
+  context_c7b1af8a08003b32:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -9857,15 +9857,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 737ee61022f5dd5d754f820fb8ff9b2d9f7f71491cd7b041d04e7b4af99f9057
         resolution: fresh_execution
-  context_ec6877abf7a48d2f:
+  context_f575914f190ed01d:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10049,15 +10049,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 7a7235db17cbe0399a1e61e05e7e38c691a0fc5fa0cd3ea63d826f10d7a9477a
         resolution: fresh_execution
-  context_30ed646f2bc4d7e9:
+  context_2b36053493ac7495:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10269,15 +10269,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 7cf3743fabeeb76a4264b26b63423512af47e935870ba8fa0cbfdcdea8f57e90
         resolution: fresh_execution
-  context_042014db06d9148c:
+  context_0a4185a7d9507ce0:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10408,15 +10408,15 @@ contexts:
             - delta_text: ' After.'
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 98e786fea561eb2faba4c7b30ecbc3aba8bcdd9343e25a38eef33df37b3e4bac
         resolution: fresh_execution
-  context_4fe620770f3b0193:
+  context_377cf37aea336b05:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10551,15 +10551,15 @@ contexts:
             - delta_text: </mm:think>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 42e88edfb8807d43125d3c78c4870d92920f547ff8a1fec7195b32f7c7fdd377
         resolution: fresh_execution
-  context_af277e6200edfaea:
+  context_a57b51b7ba1df090:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10706,15 +10706,15 @@ contexts:
             - delta_text: ' Here you go.'
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 2b43886f227a405d887b0bd8158f2340ac937c780aa71249dd1795f5a698cace
         resolution: fresh_execution
-  context_aca3e5762499ea79:
+  context_e1e439771ee8b346:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10827,15 +10827,15 @@ contexts:
             - delta_text: </invoke>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 3cc589400357b98e4aa661933ecbad5672ac9cba393b94d07b60f23677016c2c
         resolution: fresh_execution
-  context_9129bbafd32f330e:
+  context_c95e4ef1b69988c6:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -10956,15 +10956,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 4a793117c41feda012932060d3fb2e7fd46e5370439f4ccfa07d34c798463077
         resolution: fresh_execution
-  context_504765dc45d3fdd6:
+  context_1ac628cb2b4116b7:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -11091,15 +11091,15 @@ contexts:
             - delta_text: The forecast shows clear skies for the rest of the week.
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: c4040b0467bf4cfca20c7cec447b1a1036c1740a34e50394c47797fa7e482974
         resolution: fresh_execution
-  context_3ae7a8b2399d41a4:
+  context_a3021c7292c51826:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -11197,15 +11197,15 @@ contexts:
             - delta_text: Par
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 8b9e7951a0fbba309feeeabe0c72d049ac6f5c2aff29a7156146d0766bd239d1
         resolution: fresh_execution
-  context_1bea5f984330702f:
+  context_01ff1d43eca9ae7c:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -11385,15 +11385,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 3b5650deadf4df85f428db451c6713455840c24b7ee537e2468ef8f8d03d1793
         resolution: fresh_execution
-  context_8a2fe61aaa415e52:
+  context_f889a8eefb581c19:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -11573,15 +11573,15 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: e3b92156fb6fad29bc6192b4ec188d1ea67c34f7277b9402782aa1b6ca7a738a
         resolution: fresh_execution
-  context_52adc71b67ec5efd:
+  context_f6d55810b6e21898:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -11751,16 +11751,16 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 29ea666da16c3a350bd4eba8bc2a4d73e077d1347469d1a598ba9c8fa94d0a7e
         resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.10.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -12069,7 +12069,7 @@ records:
       - expected: []
   arg_marker_in_string:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_marker_in_string
-    context: context_9cbbe2e159113195
+    context: context_db3481322a5507d0
     request: 67005108dc7bdc4e93e8b89c8dd64421b3e8adf9a40df277a871058914a97a25
     output:
       assembled:
@@ -12507,7 +12507,7 @@ records:
       - expected: []
   arg_string_null:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null
-    context: context_6e108175c0a744c7
+    context: context_9861b25fb61697e1
     request: 31701baf001b9617f67c228e35a2709b4f050a70ac6f28b402bd8a1b5c4b1c50
     output:
       assembled:
@@ -12600,7 +12600,7 @@ records:
       - expected: []
   arg_string_null_enum:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_enum
-    context: context_ca40c9ffda8d6967
+    context: context_75b3a4c8f89c4c00
     request: 4b9da0d944bfcca1d1fd6d37b41fff6adfd6dd38e29ed65b64a873944e6c5e64
     output:
       assembled:
@@ -12666,7 +12666,7 @@ records:
       - expected: []
   arg_string_null_sibling_anyof:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_anyof
-    context: context_041da97369a552d8
+    context: context_1d666b69b4303110
     request: 5f0162b8b352d1c0e69eca4d4c6acf03fa07c7cf7fb7a40a67903b5177b301e1
     output:
       assembled:
@@ -12717,7 +12717,7 @@ records:
       - expected: []
   arg_string_null_sibling_oneof:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_sibling_oneof
-    context: context_9ce7024741aa3fcd
+    context: context_37151fb0ab4c031f
     request: 1e54fc615baeff400cbcddf5d7a192576eb767180c922009d6a6fa6bd8181092
     output:
       assembled:
@@ -12810,7 +12810,7 @@ records:
       - expected: []
   arg_string_null_untyped_branch:
     case_key: UNIFIED.7-tool-argument-nullability-arg_string_null_untyped_branch
-    context: context_68fb2e804fdbe738
+    context: context_739b761f89b1e6e7
     request: 14cf0cbb7bad71b0932a42823231071eee641e88c92a6ac67a49038b43a186e3
     output:
       assembled:
@@ -12861,7 +12861,7 @@ records:
       - expected: []
   arg_unicode:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_unicode
-    context: context_27208697a67d9de7
+    context: context_8ecbe6f23f415ba7
     request: 0c58e6181b7623c88f1befd92b65ef8a27f9beb90ac054835c11d63100317c0d
     output:
       assembled:
@@ -12912,7 +12912,7 @@ records:
       - expected: []
   blank_framing_after_reasoning:
     case_key: UNIFIED.11-blank_framing_after_reasoning
-    context: context_2d0cad0252096470
+    context: context_b416a281b47da462
     request: 8d40727d63ea4545d5594ed626afb71ce7bfb3958c42e4209ae62e0133c7ca21
     output:
       assembled:
@@ -13037,7 +13037,7 @@ records:
       - expected: []
   blank_framing_prose_after_call:
     case_key: UNIFIED.8-blank_framing_prose_after_call
-    context: context_df8fdd1574a0676d
+    context: context_5da5216d6d00320c
     request: 8cd3d2a2c23e905a5be2aa16178434a783d02a048b01dcb6b9db1517ac258c0e
     output:
       assembled:
@@ -13105,7 +13105,7 @@ records:
       - expected: []
   blank_framing_tool_only:
     case_key: UNIFIED.8-blank_framing_tool_only
-    context: context_054438ccbc4917f1
+    context: context_8f5bfdcaacae1332
     request: de4ff590d7de3dab82726506bc6a378c15780319a3044c191f9ff959b64053d7
     output:
       assembled:
@@ -13173,7 +13173,7 @@ records:
       - expected: []
   blank_framing_with_prose:
     case_key: UNIFIED.8-blank_framing_with_prose
-    context: context_2471725c592e6d4f
+    context: context_61eb66762ad27854
     request: 7415d2ba453f4a2cfc0583570aafccba6ebf7b8d2c3012e0e0c066de4e6150aa
     output:
       assembled:
@@ -13355,7 +13355,7 @@ records:
       - expected: []
   content_then_reason_then_tool:
     case_key: UNIFIED.11-content_then_reason_then_tool
-    context: context_bf980d945b18e3b0
+    context: context_1faf6d008d08c104
     request: 8d9bd33e33bfaebdb80bcb614f0546ba3aa167237c147862101602de3185a050
     output:
       assembled:
@@ -13470,7 +13470,7 @@ records:
           text: ''''
   deepseek_v41_mixed_control_text_in_string:
     case_key: UNIFIED.7-tool-argument-text-preservation-deepseek_v41_mixed_control_text_in_string
-    context: context_5c8722ed44642747
+    context: context_c3af4ceb398e2202
     request: d5fe67e27858fcf5d25ce172ed89c8e3cf08b693f0e952c730bd9de0b3bdb840
     output:
       assembled:
@@ -13755,7 +13755,7 @@ records:
       - expected: []
   glm_ref_json_looking_strings:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_json_looking_strings
-    context: context_a57705d639f9eea2
+    context: context_29bbc3dd188a008f
     request: d76ba184e9a32b1ff24b1b178e2ab64b4afb9a60a1b9b4d2a077a2351eab5548
     output:
       assembled:
@@ -14298,7 +14298,7 @@ records:
       - expected: []
   guided_json_native_markup_only:
     case_key: UNIFIED.32-guided_json_native_markup_only
-    context: context_f682ae41969aab38
+    context: context_1f5868516684f9ab
     request: 2a8298dc09a42a8b4d8c0cea8e9e84c44a3641a3009fede6e7132c1ce204ac56
     output:
       assembled:
@@ -14934,7 +14934,7 @@ records:
       - expected: []
   guided_native_after_prefilled_reasoning_named:
     case_key: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_named
-    context: context_a0584dee6ff7c5a8
+    context: context_55088469417c1434
     request: bc59a1ab32fe8a15f363f23a2ad689b7c4a973e6c9b72384522bb371592d1f93
     output:
       assembled:
@@ -14991,7 +14991,7 @@ records:
       - expected: []
   guided_native_after_prefilled_reasoning_required:
     case_key: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_required
-    context: context_cf277d64d02b683b
+    context: context_6ca149176c2b5842
     request: 486cfa4e49e477bdc7533a82663f13383fbb4c4d3a72b9a11921705c9aa16fa1
     output:
       assembled:
@@ -15203,7 +15203,7 @@ records:
       - expected: []
   interstitial_text:
     case_key: UNIFIED.11-interstitial_text
-    context: context_c048e019c6c0a2da
+    context: context_2bc9ee5b76641197
     request: e50913ba517c886ab3777a8e9830e2d2f8714d3c28ae546cf798299c8a7c6cfb
     output:
       assembled:
@@ -15280,7 +15280,7 @@ records:
       - expected: []
   invoke_close_inside_open_parameter_then_empty_call:
     case_key: UNIFIED.5-invoke_close_inside_open_parameter_then_empty_call
-    context: context_5ddf7196e4528195
+    context: context_88574ee51efdbab1
     request: eedaae0e32015f33744d19c0521c9c4503d70d78e0ecbe6db45322de8d677d67
     output:
       assembled:
@@ -15413,7 +15413,7 @@ records:
       - expected: []
   narrated_calls:
     case_key: UNIFIED.8-narrated_calls
-    context: context_b824801b48fb948f
+    context: context_95a2ed8949bca236
     request: d9d7767fc07ae24051347d41a18ebd1c878e52b618a53847dcd3f2487aed0428
     output:
       assembled:
@@ -15590,7 +15590,7 @@ records:
       - expected: []
   native_quoted_control_then_call:
     case_key: UNIFIED.8-native_quoted_control_then_call
-    context: context_a45aefd3f888aa12
+    context: context_555f5f9c1eb0fc7f
     request: 49025ecd3ebf6464c069fbfb5718758fb3344035fe3580c38464d9a46f0aac0c
     output:
       assembled:
@@ -15649,7 +15649,7 @@ records:
       - expected: []
   native_quoted_control_then_call_progress:
     case_key: UNIFIED.8-native_quoted_control_then_call_progress
-    context: context_65efa06d4e1b36b8
+    context: context_83b1c9b47e697610
     request: 9864170d31d3dfcb51eabe65b222c93d1241d0786b72d67072b32bc6d593d6b2
     output:
       assembled:
@@ -15675,7 +15675,7 @@ records:
       - expected: []
   native_quoted_incomplete_header:
     case_key: UNIFIED.8-native_quoted_incomplete_header
-    context: context_bd0dec1cbb9c4c7e
+    context: context_d8a4af3f1998beca
     request: 623d0cf9f0470c100de50c8f8b190470138e9a6ad7914a2699747a4505d568c9
     output:
       assembled:
@@ -15804,7 +15804,7 @@ records:
       - expected: []
   native_unmatched_quote_then_call:
     case_key: UNIFIED.8-native_unmatched_quote_then_call
-    context: context_256d4eac207ba768
+    context: context_cb30b028b246ae83
     request: b0af57df118d379db2b65b3fbd88525d516b548b9f6a07ebe5c4e9d39a1e96e8
     output:
       assembled:
@@ -15937,7 +15937,7 @@ records:
       - expected: []
   nullable_reference_alias_literals:
     case_key: UNIFIED.7-tool-argument-schema-references-nullable_reference_alias_literals
-    context: context_516f7e7896288dc9
+    context: context_b766f14f159b6895
     request: 5c4459471b314f52605d049fd05c4f206117a70c27552ecc43cacd9af5fef108
     output:
       assembled:
@@ -16023,7 +16023,7 @@ records:
       - expected: []
   prefilled_reasoning_redundant_opener:
     case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
-    context: context_0fd558a258e17788
+    context: context_2cc33e4bf804ab5d
     request: bb5cf0541028a843873efa0fd101119258f31de1c40eec14d74acc28e76d1864
     output:
       assembled:
@@ -16099,7 +16099,7 @@ records:
       - expected: []
   prefilled_reasoning_then_text_then_tool:
     case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
-    context: context_bf80d06cbb0bbc05
+    context: context_3acfdb9c9233ade8
     request: 02b8af9752051d19ccc2d0a76c059989f339b77b67c8e735d15453911fd5b8d3
     output:
       assembled:
@@ -16160,7 +16160,7 @@ records:
       - expected: []
   prefilled_reasoning_truncated:
     case_key: UNIFIED.41-prefilled_reasoning_truncated
-    context: context_28f50e87e71248cc
+    context: context_bc133f9ec061fc54
     request: 8061f261c0e7b55a61c9017d66d6224d36704686d5983f04961e89296312fec9
     output:
       assembled:
@@ -16216,7 +16216,7 @@ records:
       - expected: []
   prefilled_reasoning_with_tool:
     case_key: UNIFIED.40-prefilled_reasoning_with_tool
-    context: context_eede9bab50438700
+    context: context_fdec09fa81e8c7e7
     request: eb63ddc993a71227a9b1e7367d63239c35c30d22aac65dfb16b3c9780a410f3a
     output:
       assembled:
@@ -16273,7 +16273,7 @@ records:
       - expected: []
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
-    context: context_16722cd8c53770e8
+    context: context_a506aa027b36af1a
     request: 994a5cc49e2775f3609782ea14e61aa289b7c9904d3e7300dc7405038c6ac7bf
     output:
       assembled:
@@ -16713,7 +16713,7 @@ records:
           text: ''''
   reason_after_tool:
     case_key: UNIFIED.11-reason_after_tool
-    context: context_41ff717fed3c0187
+    context: context_2fac70f1c2673cc5
     request: dd10083d6aa7734d3299f87e6f2cf56b743fad3edb7ede2dcf10c2e3d62f0260
     output:
       assembled:
@@ -16783,7 +16783,7 @@ records:
       - expected: []
   reason_between_calls:
     case_key: UNIFIED.11-reason_between_calls
-    context: context_991fe29fa0eb245d
+    context: context_3e14df0b99e261f4
     request: 157d54840f78566d15795a442f70ea280182fc9dda581af7f1768410844542bb
     output:
       assembled:
@@ -16884,7 +16884,7 @@ records:
       - expected: []
   reason_interleaved:
     case_key: UNIFIED.11-reason_interleaved
-    context: context_30d62bedbf065008
+    context: context_8cb8e4af646d1381
     request: 14670b26b577b8e558c1fab4245ab715af20f834457d64d4108112fbdbd244a9
     output:
       assembled:
@@ -16992,7 +16992,7 @@ records:
       - expected: []
   reason_markup_in_arg:
     case_key: UNIFIED.12-reason_markup_in_arg
-    context: context_754aaae71dc6cb09
+    context: context_e926a43eb693df3f
     request: afc0233c34e044aafac1333d4fc5de4904f1a520e27260c637570153af591558
     output:
       assembled:
@@ -17084,7 +17084,7 @@ records:
       - expected: []
   reason_markup_in_arg_with_text:
     case_key: UNIFIED.12-reason_markup_in_arg_with_text
-    context: context_887ca61ce9c464e1
+    context: context_e094832e65efb04f
     request: 226ddfc213396c17c799598b32631a633ce289d2a62ea7da10ae21da8ee228d3
     output:
       assembled:
@@ -17188,7 +17188,7 @@ records:
       - expected: []
   reason_then_tool:
     case_key: UNIFIED.11-reason_then_tool
-    context: context_faa6a5d2f67f6f43
+    context: context_92956946824c91c6
     request: cbe6a2ffc7fc658a38192a8538f35a6c4fd77f04505aef6d8e6d61f578b86968
     output:
       assembled:
@@ -17246,7 +17246,7 @@ records:
       - expected: []
   reason_tool_reason_tool_reason:
     case_key: UNIFIED.11-reason_tool_reason_tool_reason
-    context: context_5db2f83f2acedf65
+    context: context_ef99c0639bd609ce
     request: 502c595073b9257f50530f11eea69ba82a8cf22bf136a4314f4bdc86bfe204c6
     output:
       assembled:
@@ -17361,7 +17361,7 @@ records:
       - expected: []
   reason_tool_text_reason_tool:
     case_key: UNIFIED.11-reason_tool_text_reason_tool
-    context: context_91671c27172d1144
+    context: context_050b010508219e84
     request: b4a5b2d77ee5976c14fdff06422c0d1eccf37ca01edef71d7b0971c42683aaf8
     output:
       assembled:
@@ -17565,7 +17565,7 @@ records:
       - expected: []
   schema_const_array_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_array_allof
-    context: context_4b38f49633fc2311
+    context: context_02264e9dd3acb046
     request: 28fa4cb603e92aef2d6cef01efed64e81963ac398ab276b5470caad081a9ec3c
     output:
       assembled:
@@ -17616,7 +17616,7 @@ records:
       - expected: []
   schema_const_array_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_array_bare
-    context: context_33f7109c488df0be
+    context: context_afcb44fad174da1a
     request: 94499a4c1ecfeae4c8c946b108d50b0d844ddef21337d56e9ce1134b61f45e50
     output:
       assembled:
@@ -17667,7 +17667,7 @@ records:
       - expected: []
   schema_const_array_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_array_ref
-    context: context_0160946ee2835d27
+    context: context_7298ba27143aba39
     request: 73c91eb6dbd95a391241eea03c44867c920120c4b109b7502c505c7609a39e62
     output:
       assembled:
@@ -17718,7 +17718,7 @@ records:
       - expected: []
   schema_const_array_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_array_typed
-    context: context_1a2442023b9dcc0e
+    context: context_4e1656e27bb48047
     request: ff91e7f543ba34b07fc9c698eef7a386705d1a520791001f71c9be8c05806d48
     output:
       assembled:
@@ -17769,7 +17769,7 @@ records:
       - expected: []
   schema_const_boolean_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_allof
-    context: context_d57bb64101bc32c2
+    context: context_e522eede336d6884
     request: 7201a66a97b89780d3f86463bfff8651663d360bc63db3534739beae05831018
     output:
       assembled:
@@ -17820,7 +17820,7 @@ records:
       - expected: []
   schema_const_boolean_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_bare
-    context: context_f5bf1d47f825745a
+    context: context_3a883372c3ba34b8
     request: ba1d43cf3c0ba270796c9b475341469650dd634d35c5fba8d2109c7e6167e2ce
     output:
       assembled:
@@ -17871,7 +17871,7 @@ records:
       - expected: []
   schema_const_boolean_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_ref
-    context: context_5282b76f4b130a03
+    context: context_07ffbd8f7a85ed2e
     request: b7167fb0c16729c94173658cd902c8569569e7ff33cbf0ef4b2bdbd7de4aae90
     output:
       assembled:
@@ -17922,7 +17922,7 @@ records:
       - expected: []
   schema_const_boolean_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_boolean_typed
-    context: context_c3a182b26066c86b
+    context: context_774e56f397d7854d
     request: 5aba49d982c1e8c71a3d7c7b0be33d88f97772ed5ecc1a16ddee5a5ecf5d158f
     output:
       assembled:
@@ -17973,7 +17973,7 @@ records:
       - expected: []
   schema_const_entity_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_allof
-    context: context_c654d2307629fce9
+    context: context_d0d92301381b06ea
     request: d2d61cb4ff877603531ceb1f1d1b24a0ec4be3b644aeb7ed1a451554d0fbf12e
     output:
       assembled:
@@ -18024,7 +18024,7 @@ records:
       - expected: []
   schema_const_entity_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_bare
-    context: context_535fb800a52075b2
+    context: context_c04d0b8c41188c07
     request: 2817e7ee5bdf4d8423fce17016f7f9e8c5ef921af257b02a998665623b6acb5d
     output:
       assembled:
@@ -18075,7 +18075,7 @@ records:
       - expected: []
   schema_const_entity_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_ref
-    context: context_a991a0a9f3d59f11
+    context: context_bf47c66d1247b3fb
     request: 00c4e87b9598a0a0604308e06c2c982b2855f75218ae3eb97509cfd1ef0c3f73
     output:
       assembled:
@@ -18126,7 +18126,7 @@ records:
       - expected: []
   schema_const_entity_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_entity_typed
-    context: context_98196729a3a6d0b9
+    context: context_efd70a57c250e81f
     request: 33444a8b0af2eb0cd37e60229351c8df611cb00fe90d0ac34485f9571df2ebb3
     output:
       assembled:
@@ -18177,7 +18177,7 @@ records:
       - expected: []
   schema_const_null_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_null_allof
-    context: context_0fa292b4a0cf56a5
+    context: context_97548b8938f3dd4e
     request: 096ed4c0c1d1b98f330f9fcd0c803af9a1ef313921a66e01270213b788453fdf
     output:
       assembled:
@@ -18228,7 +18228,7 @@ records:
       - expected: []
   schema_const_null_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_null_bare
-    context: context_141c0cf1129a572e
+    context: context_240c0f277401a207
     request: ae28885c3bcd6d106456c2535a8005f4bffdf459e72a5c25e6ef44ae2f63987b
     output:
       assembled:
@@ -18279,7 +18279,7 @@ records:
       - expected: []
   schema_const_null_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_null_ref
-    context: context_3a4b3656e0136a21
+    context: context_0a96e8bb945ea363
     request: 1a0185cd514e38e214181a04d8bac22da485b17a71a61f113644f18d45d8b3e9
     output:
       assembled:
@@ -18330,7 +18330,7 @@ records:
       - expected: []
   schema_const_null_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_null_typed
-    context: context_2d1f52abe70e347a
+    context: context_85bcc72ba12d78e5
     request: 4680a750d127c369afe455cbe1f8b804172ead95e4852ac199baccafd1596695
     output:
       assembled:
@@ -18381,7 +18381,7 @@ records:
       - expected: []
   schema_const_number_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_number_allof
-    context: context_50f6e2c5778206b0
+    context: context_8d598246ccfe398c
     request: 2ff79f0884de794d27cbbecf2dfc6352374cc7b86e4f0c7b6c10dcb9f2f7a23a
     output:
       assembled:
@@ -18432,7 +18432,7 @@ records:
       - expected: []
   schema_const_number_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_number_bare
-    context: context_62b7c7272ceb976b
+    context: context_f1d542e03a47b670
     request: cf93bc0b663905f408b1fe03210c7917097e8043ddd4b309476875cb9f220e19
     output:
       assembled:
@@ -18483,7 +18483,7 @@ records:
       - expected: []
   schema_const_number_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_number_ref
-    context: context_01c0ff37947dc5d5
+    context: context_dd7a7f4a4a75f796
     request: 01eef0d6f06d379dc6d83eec448672f933fc644bdc884b73337532105ed2cfe3
     output:
       assembled:
@@ -18534,7 +18534,7 @@ records:
       - expected: []
   schema_const_number_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_number_typed
-    context: context_b2d5408036ca0562
+    context: context_c1786aeb948068dd
     request: b0e962ce3af64b4e7e17fab1194d3f93b5b0a6a4fa7cbb319160132aaa514eca
     output:
       assembled:
@@ -18600,7 +18600,7 @@ records:
       - expected: []
   schema_const_object_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_object_allof
-    context: context_94bee4b1143b39b7
+    context: context_d1747ac74ad2ffc8
     request: deddbdbddcc2463cb3f79b238ba1fe89bdf76a038c0840057b1c73326ba70c3f
     output:
       assembled:
@@ -18651,7 +18651,7 @@ records:
       - expected: []
   schema_const_object_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_object_bare
-    context: context_d70579b6c1149314
+    context: context_a5df3630d704b9c4
     request: a10f2d04405732454de9699f32745cded9ca9ce25e1411d541ac3bbfc1df588f
     output:
       assembled:
@@ -18702,7 +18702,7 @@ records:
       - expected: []
   schema_const_object_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_object_ref
-    context: context_db8e4729681221ef
+    context: context_51dea680dd3d5a13
     request: 7542ea13553358ede816172a56388c4282bc5bb1e350792a3827b2546a21b490
     output:
       assembled:
@@ -18753,7 +18753,7 @@ records:
       - expected: []
   schema_const_object_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_object_typed
-    context: context_12ff001e599b8b22
+    context: context_5d30611f0b89f9d5
     request: b5df9bea39b9959db23dec0c2eb833534db7def2de8a681658f995f7c0028d0e
     output:
       assembled:
@@ -18804,7 +18804,7 @@ records:
       - expected: []
   schema_const_plain_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_allof
-    context: context_4d2ef1729f28ae39
+    context: context_6990aaf33fa58c60
     request: 79762e7a7f5c80c3f56ee351b87983f491febeba2d18c7296d94f5bfc1d1be36
     output:
       assembled:
@@ -18855,7 +18855,7 @@ records:
       - expected: []
   schema_const_plain_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_bare
-    context: context_2167f77356606ef5
+    context: context_60aed4165415d6a6
     request: 4e7067f4a325c32957f0dafb8b9172939ec5167ec2d3691fe9dca7f54747e7c7
     output:
       assembled:
@@ -18906,7 +18906,7 @@ records:
       - expected: []
   schema_const_plain_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_ref
-    context: context_3ecc3930a3d60167
+    context: context_0e8e193481566435
     request: 7b7b0d6638fa887c061eb00a83af0f60a6cdb0681be92383dab65add714f78d1
     output:
       assembled:
@@ -18957,7 +18957,7 @@ records:
       - expected: []
   schema_const_plain_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_plain_typed
-    context: context_349dd9a185d7a917
+    context: context_b3435f32da788097
     request: ac298bed4fbcd1ab48fd442e30a343eed003dc59c1b6ba675d2a62558d3644b5
     output:
       assembled:
@@ -19008,7 +19008,7 @@ records:
       - expected: []
   schema_const_quoted_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_allof
-    context: context_c039e662d88c48b2
+    context: context_635d3ebadd12062f
     request: f92ae2154ebce12c2819645596b28c48e3bf991bab0dcc917b815fbf72616c74
     output:
       assembled:
@@ -19059,7 +19059,7 @@ records:
       - expected: []
   schema_const_quoted_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_bare
-    context: context_a3dc924ee49a334a
+    context: context_8435366ed06d8572
     request: c95eb462efc55e08a00dd2fe2465520ef690103e507168cc6311f0f7fdaccb78
     output:
       assembled:
@@ -19110,7 +19110,7 @@ records:
       - expected: []
   schema_const_quoted_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_ref
-    context: context_d6cb9e05ba72dd1c
+    context: context_940703ce4280753f
     request: e368a54e968403bbe27a6759b1ba422af02cf5e35b7cd8bf52e0204abfad8ed6
     output:
       assembled:
@@ -19161,7 +19161,7 @@ records:
       - expected: []
   schema_const_quoted_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_quoted_typed
-    context: context_82093c9793de951a
+    context: context_b3d57c3208795514
     request: 7ed456e420f701ab58cea01c9586a17d2eb3d3ae3c4c2745b576281aad1ecfa4
     output:
       assembled:
@@ -19212,7 +19212,7 @@ records:
       - expected: []
   schema_const_space_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_space_allof
-    context: context_20a92ffc490d5cfe
+    context: context_1789e56f68b0c9dd
     request: 3f8ed854b0a5cc278391a262228223f5a8022a65ba03d43ff5fceed9978d221a
     output:
       assembled:
@@ -19263,7 +19263,7 @@ records:
       - expected: []
   schema_const_space_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_space_bare
-    context: context_3eea42aa402a2783
+    context: context_bbfd78778bf90b6d
     request: 4edac5e0af74315f622e261b58de95df6baf2bf47706ad4a76652a04ecfd8ff7
     output:
       assembled:
@@ -19314,7 +19314,7 @@ records:
       - expected: []
   schema_const_space_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_space_ref
-    context: context_b0871620966adea2
+    context: context_17af7965623919be
     request: 37670538b3f9f6b7334a424b77a3d1116987fe0de82c3ef565da621e934dcb9d
     output:
       assembled:
@@ -19365,7 +19365,7 @@ records:
       - expected: []
   schema_const_space_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_space_typed
-    context: context_9a5a6f08245efa42
+    context: context_b22494be0325a6cd
     request: 6c8cd9b17aa83f4429ea0fc290d26b8c8891df9ce480c17cd427a64a0aee020c
     output:
       assembled:
@@ -19416,7 +19416,7 @@ records:
       - expected: []
   schema_const_unicode_allof:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_allof
-    context: context_8ea62eda7697473a
+    context: context_75acc509f9949a1e
     request: 30f5f35e79062b2cbbf22e046ba6094a203b6d96aa2ef4c9bb8d6b44af4a5d7c
     output:
       assembled:
@@ -19467,7 +19467,7 @@ records:
       - expected: []
   schema_const_unicode_bare:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_bare
-    context: context_2b391fc0f588b942
+    context: context_2acd332c6d5aa413
     request: edfcaca717df56809300366b15f563e578b78b5f32c257e9eaecf532c4eda86d
     output:
       assembled:
@@ -19518,7 +19518,7 @@ records:
       - expected: []
   schema_const_unicode_ref:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_ref
-    context: context_99fb9da952344bf1
+    context: context_2f3270083da7ca10
     request: 506184b2793e01c4fb28296c0f45ad93a547f87cc0fa317599bca3e400592cbb
     output:
       assembled:
@@ -19569,7 +19569,7 @@ records:
       - expected: []
   schema_const_unicode_typed:
     case_key: UNIFIED.7-tool-argument-constants-const_unicode_typed
-    context: context_6c248c874d81da88
+    context: context_65b2f816dafb9ab1
     request: d4e4c628f16f44861e719b3dbb89c3a4586262f8db5d754f551f8c1436cbfb38
     output:
       assembled:
@@ -19879,7 +19879,7 @@ records:
       - expected: []
   schema_declared_string:
     case_key: UNIFIED.7-tool-argument-declared-types-declared_string
-    context: context_8139f9c344c518a8
+    context: context_4185bbf71f537504
     request: d97ccd91515af9cb2e8738900802977952f56157b00f1bee214f6b8f8122290f
     output:
       assembled:
@@ -20002,7 +20002,7 @@ records:
       - expected: []
   schema_enum_string:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_string
-    context: context_60a71585da00ddb4
+    context: context_ad7fb73fb4acaa87
     request: cd1c9e44cbc3a6afb8acec09018766ba0a424e7a18e6e8b0fea51c36be0ccd59
     output:
       assembled:
@@ -20053,7 +20053,7 @@ records:
       - expected: []
   schema_escaped_ref_const:
     case_key: UNIFIED.7-tool-argument-schema-references-escaped_ref_const
-    context: context_e0447b713bbb0450
+    context: context_d6ba6c5ce1bdadaf
     request: 94fe51b7c71127fd88da3abcaedc981228cb5412a6fc3412325057d17e736474
     output:
       assembled:
@@ -20398,7 +20398,7 @@ records:
       - expected: []
   schema_percent_ref_const:
     case_key: UNIFIED.7-tool-argument-schema-references-percent_ref_const
-    context: context_10ccc5f07bcbf320
+    context: context_15f04be3460fcf87
     request: 621252652938fd730a95077575929e2c03961f3ff9ff6214019dccd7069e7ae9
     output:
       assembled:
@@ -22803,7 +22803,7 @@ records:
       - expected: []
   text_before_tool:
     case_key: UNIFIED.8-text_before_tool
-    context: context_a3e6e7311ce4c47c
+    context: context_c7b1af8a08003b32
     request: 5c31ab80a76f8de08ff350d4d4ca0cf7ddb5273b5d464b19c9b78100271abb83
     output:
       assembled:
@@ -22858,7 +22858,7 @@ records:
       - expected: []
   text_between_calls:
     case_key: UNIFIED.8-text_between_calls
-    context: context_ec6877abf7a48d2f
+    context: context_f575914f190ed01d
     request: cfe8739bdf249255acc58033f89affbbd01696c816f5de8c5aa8ed0e1bc9bb77
     output:
       assembled:
@@ -22968,7 +22968,7 @@ records:
       - expected: []
   text_reason_tool_text_reason_tool:
     case_key: UNIFIED.11-text_reason_tool_text_reason_tool
-    context: context_30ed646f2bc4d7e9
+    context: context_2b36053493ac7495
     request: 9f513ca980e13d4d8d532fba0302e6bc40f4c39ef6d9b1339968c37e3a33de1e
     output:
       assembled:
@@ -23086,7 +23086,7 @@ records:
       - expected: []
   text_sandwich:
     case_key: UNIFIED.8-text_sandwich
-    context: context_042014db06d9148c
+    context: context_0a4185a7d9507ce0
     request: 7f7e7a893030d65c255ad8bcaaac2d402afad21a6c1443053b94d441e45b6cfd
     output:
       assembled:
@@ -23180,7 +23180,7 @@ records:
       - expected: []
   tool_in_reason:
     case_key: UNIFIED.12-tool_in_reason
-    context: context_4fe620770f3b0193
+    context: context_377cf37aea336b05
     request: 9dfd1ebf0343af74d0ff2f7f659b2b82309166cc40021849f22525d98d1d8087
     output:
       assembled:
@@ -23242,7 +23242,7 @@ records:
       - expected: []
   tool_in_reason_with_text:
     case_key: UNIFIED.12-tool_in_reason_with_text
-    context: context_af277e6200edfaea
+    context: context_a57b51b7ba1df090
     request: 19cfed0ccd84431e89bac1a7e95a95fb3e789ad1011ed4bc35f3260a32956977
     output:
       assembled:
@@ -23325,7 +23325,7 @@ records:
       - expected: []
   tool_no_close:
     case_key: UNIFIED.5-tool_no_close
-    context: context_aca3e5762499ea79
+    context: context_e1e439771ee8b346
     request: 53640b0bd4e7a96cb4c5f30f28a210cf7f46ea4359707de2bcfe77815c13772e
     output:
       assembled:
@@ -23372,7 +23372,7 @@ records:
       - expected: []
   tool_only:
     case_key: UNIFIED.1-tool_only
-    context: context_9129bbafd32f330e
+    context: context_c95e4ef1b69988c6
     request: 486e7227a2ba5a6bcbcc02f4805184f84d263f70eb2123193dd13780413d6803
     output:
       assembled:
@@ -23423,7 +23423,7 @@ records:
       - expected: []
   trailing_text_after_tool:
     case_key: UNIFIED.8-trailing_text_after_tool
-    context: context_504765dc45d3fdd6
+    context: context_1ac628cb2b4116b7
     request: 98f5f1866c4e5da685f131fee7aa9c881ccfbbade46fdd8a8f2fd88dcbc200c8
     output:
       assembled:
@@ -23479,7 +23479,7 @@ records:
       - expected: []
   truncated_tool_eof:
     case_key: UNIFIED.5-truncated_tool_eof
-    context: context_3ae7a8b2399d41a4
+    context: context_a3021c7292c51826
     request: 1bc6bae36ccb78d2df4d92437c145e89f5533193e5b5eb443b635522be722ca5
     output:
       assembled:
@@ -23543,7 +23543,7 @@ records:
       - expected: []
   two_calls:
     case_key: UNIFIED.2-two_calls
-    context: context_1bea5f984330702f
+    context: context_01ff1d43eca9ae7c
     request: cb92c12e844a1f3b5893a1789c3a5ceeeb6c4f2327cd875dd29eacbaed284005
     output:
       assembled:
@@ -23637,7 +23637,7 @@ records:
       - expected: []
   two_calls_same_name:
     case_key: UNIFIED.2-two_calls_same_name
-    context: context_8a2fe61aaa415e52
+    context: context_f889a8eefb581c19
     request: ec5b4b87a1a76f57f09f2327e21019238c0db736bfe06508933bb0f9c374b359
     output:
       assembled:
@@ -23822,7 +23822,7 @@ records:
       - expected: []
   unused_reference_graph_parameter_types:
     case_key: UNIFIED.7-tool-argument-schema-references-unused_reference_graph_parameter_types
-    context: context_52adc71b67ec5efd
+    context: context_f6d55810b6e21898
     request: c87d491342c9de4765f7d5bf28d2d45eb9c4cf9157c9ad20b814b14928b1dc44
     output:
       assembled:

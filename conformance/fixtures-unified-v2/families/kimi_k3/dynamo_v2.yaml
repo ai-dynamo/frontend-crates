@@ -1,15 +1,15 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"a9cd101ea5c0595a9bb51a11e5a9d8cef58a34621ec5aecb157897f1958f3d58","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"a765e0ef9d152269561677dc5f74a1c5bf608a5aa4ba0a8f17e9614bf5490b5d","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_b7265cbc89e63fd1
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_b7265cbc89e63fd1:
+    crate_version: 0.10.10
+    source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+    git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -19,13 +19,17 @@ producers:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_883f78c28b7d2088
+  producer_cd2cd982aee320bb:
+    captured_with:
+      dynamo_v2: 0.10.10
+    capture_origin: origin_b7265cbc89e63fd1
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.10.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -4175,6 +4179,36 @@ records:
           arguments: '{}'
           complete: true
       - expected: []
+  kimi_k3_abandoned_argument_then_retry:
+    case_key: UNIFIED.kimi-abandoned_argument_then_retry
+    producer: producer_cd2cd982aee320bb
+    request: faf047302df2e6ab6e7b3b77d488d01c84dce57cad840a9f993f58b1407cdb49
+    output:
+      assembled:
+      - kind: reasoning
+        text: Thinking
+      - kind: text
+        text: Visible text
+      - kind: tool_call
+        name: bash
+        arguments: '{"command":"echo retry"}'
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: Thinking
+        - kind: text
+          text: Visible text
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: bash
+          arguments: '{"command":"echo retry"}'
+          complete: true
   kimi_k3_direct_json_response_recovery:
     case_key: UNIFIED.kimi-direct_json_response_recovery
     request: 81178979a52de1908e65235bf9f6e495047d810e01e80157b864afd2edef6094
