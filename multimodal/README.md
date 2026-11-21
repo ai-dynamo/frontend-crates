@@ -613,7 +613,9 @@ processor, the engine that consumes it:
 - `plan_video_grid` gives one canvas for all frames from `smart_resize` with
   the frame count; each frame is stretched to it with torchvision v1's float
   bicubic (`Resample::AtenF32Bicubic`), normalized, and patchified two frames
-  per temporal group into `pixel_values_videos` and `video_grid_thw`.
+  per temporal group into `pixel_values_videos` and `video_grid_thw`. It
+  refuses a clip when HF's video processor, which SGLang runs on the resized
+  frames, plans a different canvas from them.
   `process_items` gives each of a request's videos `max_image_tokens / count`;
   `process_item` refuses a video, because its size depends on the request.
   A cache of processed video items must therefore key on that count too.
