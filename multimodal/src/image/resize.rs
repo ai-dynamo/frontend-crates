@@ -39,8 +39,9 @@ pub enum Resample {
     AtenF32Bilinear,
     /// `AtenF32Bilinear` summed like torch's AVX2 and AVX-512 dispatch (taps
     /// in fours, the tail fused): bitwise against torch 2.14.1 on either for
-    /// outputs at least 2 pixels wide. torchvision v1 only; v2 keeps uint8
-    /// there. The DEFAULT dispatch can move a pixel by one.
+    /// outputs at least 2 pixels wide and downscales below 1,000,000x.
+    /// torchvision v1 only; v2 keeps uint8 there. The DEFAULT dispatch can
+    /// move a pixel by one.
     AtenF32BilinearAvx2,
     /// ATen's float32 antialias bicubic: torchvision v1 `resize` on a uint8
     /// tensor, clamped and rounded back to u8. Bitwise against torch's AVX2
