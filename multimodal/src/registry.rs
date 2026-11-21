@@ -471,8 +471,10 @@ fn resolve_kimi_k3(config: &Value, pre: &Value) -> Result<KimiK3Spec> {
 /// checkpoint ships only the nested transformers v5 file (GLM-5.3-Flash).
 /// `nemotron_h_omni` also needs `tokenizer.json`, reads both processor files
 /// when both exist, and resolves to the HF processor's sizing.
-/// A Qwen3-VL, Qwen3.5 or `qwen4_exp` directory with
-/// `video_preprocessor_config.json` also resolves [`QwenVlSpec::video`].
+/// A Qwen3-VL, Qwen3.5 or `qwen4_exp` directory also resolves
+/// [`QwenVlSpec::video`] from the `video_processor` entry of
+/// `processor_config.json` or, without one, `video_preprocessor_config.json`;
+/// a video config the crate cannot honor leaves it `None`.
 /// A directory without `config.json`, or with one that says `mistral_large4`,
 /// resolves from `params.json` (`vision_encoder`) and `processor_config.json`
 /// when it holds them. That spec mirrors the HF `PixtralProcessor`, not an
@@ -532,7 +534,10 @@ pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
     if let ProcessorSpec::QwenVl(qwen) = &mut spec
         && let Some(config) = &parsed
         && (config["model_type"].as_str()).is_some_and(|t| QWEN3_VIDEO_MODEL_TYPES.contains(&t))
-        && let Ok(Some(video)) = read_optional_json(dir, "video_preprocessor_config.json")
+        // HF's order: the nested transformers v5 entry, then the flat file.
+        && let Some(video) = (read_optional_json(dir, "processor_config.json").ok().flatten())
+            .and_then(|mut nested| nested.get_mut("video_processor").map(Value::take))
+            .or_else(|| read_optional_json(dir, "video_preprocessor_config.json").ok().flatten())
     {
         // A video config the crate cannot honor leaves video off; it must not
         // fail the image spec.
@@ -1446,6 +1451,25 @@ mod tests {
         for video in [qwen2.as_str(), "{"] {
             assert!(resolve(QWEN25_CONFIG, video).unwrap().is_none());
         }
+        std::fs::write(dir.join("config.json"), &qwen35).unwrap();
+        std::fs::write(
+            dir.join("video_preprocessor_config.json"),
+            QWEN35_VIDEO_PREPROCESSOR,
+        )
+        .unwrap();
+        let with_processor_config = |json: &str| {
+            std::fs::write(dir.join("processor_config.json"), json).unwrap();
+            match spec_from_model_dir(&dir).unwrap() {
+                ProcessorSpec::QwenVl(spec) => spec.video,
+                _ => panic!("expected Qwen spec"),
+            }
+        };
+        let nested = |video: &str| format!(r#"{{"video_processor": {video}}}"#);
+        let fps1 = QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""fps": 2"#, r#""fps": 1"#);
+        assert!(with_processor_config(r#"{"processor_class": "Qwen3VLProcessor"}"#).is_some());
+        assert!(with_processor_config(&nested(&fps1)).is_none());
+        std::fs::remove_file(dir.join("video_preprocessor_config.json")).unwrap();
+        assert!(with_processor_config(&nested(QWEN35_SAVED_VIDEO_PREPROCESSOR)).is_some());
         std::fs::remove_dir_all(&dir).unwrap();
     }
 

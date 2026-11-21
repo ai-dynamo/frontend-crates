@@ -374,7 +374,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 
 | this crate | on-par Python API | parity |
 | --- | --- | --- |
-| `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation. For Qwen3-VL, Qwen3.5 and `qwen4_exp`, only `spec_from_model_dir` reads `video_preprocessor_config.json`, and a video config it cannot honor leaves `video` off (`capabilities()` reports no video) instead of failing the image spec |
+| `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation. For Qwen3-VL, Qwen3.5 and `qwen4_exp`, only `spec_from_model_dir` reads the video processor config (in HF's order: the `video_processor` entry of `processor_config.json`, then `video_preprocessor_config.json`), and a video config it cannot honor leaves `video` off (`capabilities()` reports no video) instead of failing the image spec |
 | `registry::processor_from_spec` | building the processor from already-resolved kwargs | selection semantics |
 | `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work; for a family that sizes media by the whole request, the span of the item alone (§8) |
 | `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels, and Pillow 12.3's pass order: images taller than 100× their width shrink vertically first) |
