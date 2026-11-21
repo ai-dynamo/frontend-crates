@@ -1,15 +1,15 @@
-capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"b1adfba9197c631f15e547202636fdfad181bff6e6e8be017486254de03bbd30","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"mistral_4","implementation":"dynamo_v2","lineage":[{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"mistral_4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"0a2cfb589b1fb1899e7dbcc6ac4250c3caf829245a6386a9766bd392651c89ff","source":"conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_b7265cbc89e63fd1
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_b7265cbc89e63fd1:
+    crate_version: 0.10.10
+    source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+    git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -25,7 +25,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/mistral_4/dynamo_v2-0.10.10.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
