@@ -9,8 +9,8 @@ use super::tokcfg::{
     raise_exception, strftime_now, tojson,
 };
 use super::{
-    ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
-    SystemNormalization,
+    ChatTemplateContentFormat, ContextMixins, DeveloperFallback, HfTokenizerConfigJsonFormatter,
+    JinjaEnvironment, SystemNormalization,
 };
 use either::Either;
 use minijinja::{Environment, Value, context};
@@ -47,6 +47,17 @@ fn probe_template_raises(
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
 ) -> bool {
+    render_template_probe(env, template_name, messages, tools, tok)
+        .is_some_and(|result| result.is_err())
+}
+
+fn render_template_probe(
+    env: &Environment,
+    template_name: &str,
+    messages: serde_json::Value,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> Option<Result<String, minijinja::Error>> {
     let ctx = context! {
         messages => messages,
         add_generation_prompt => false,
@@ -55,10 +66,9 @@ fn probe_template_raises(
         eos_token => tok.eos,
         unk_token => tok.unk,
     };
-    match env.get_template(template_name) {
-        Ok(t) => t.render(&ctx).is_err(),
-        Err(_) => false,
-    }
+    env.get_template(template_name)
+        .ok()
+        .map(|template| template.render(&ctx))
 }
 
 /// Detects which message shapes agent clients send that this template rejects,
@@ -105,7 +115,7 @@ fn detect_system_normalization(
         tok,
     );
     SystemNormalization {
-        fallback_developer: false,
+        fallback_developer: DeveloperFallback::Preserve,
         demote_nonleading_system: nonleading_system || mid_after_assistant,
         coalesce_consecutive_users: consecutive_users,
     }
@@ -119,22 +129,44 @@ fn detect_developer_fallback(
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
     requires_content_arrays: bool,
-) -> bool {
-    let content = |text: &str| {
-        if requires_content_arrays {
+) -> DeveloperFallback {
+    // Digits survive common case and escaping filters.
+    const PROBE: &str = "57296048310762";
+    let message = |role: &str, text: &str| {
+        let content = if requires_content_arrays {
             json!([{"type": "text", "text": text}])
         } else {
             json!(text)
+        };
+        json!({"role": role, "content": content})
+    };
+    let render = |messages| render_template_probe(env, template_name, messages, tools, tok);
+    let Some(Ok(system)) = render(json!([message("system", PROBE), message("user", "user")]))
+    else {
+        return DeveloperFallback::Preserve;
+    };
+    match render(json!([
+        message("developer", PROBE),
+        message("user", "user")
+    ])) {
+        Some(Err(_)) => DeveloperFallback::Consolidate,
+        Some(Ok(developer)) if system.contains(PROBE) && !developer.contains(PROBE) => {
+            // Keep the original position when the template actually renders a late system turn.
+            let late_system = render(json!([
+                message("system", "instructions"),
+                message("user", "first"),
+                message("assistant", "reply"),
+                message("system", PROBE),
+                message("user", "second")
+            ]));
+            if late_system.is_some_and(|result| result.is_ok_and(|text| text.contains(PROBE))) {
+                DeveloperFallback::RewriteInPlace
+            } else {
+                DeveloperFallback::Consolidate
+            }
         }
-    };
-    let messages = |role: &str| {
-        json!([
-            {"role": role, "content": content("s")},
-            {"role": "user", "content": content("u")}
-        ])
-    };
-    !probe_template_raises(env, template_name, messages("system"), tools, tok)
-        && probe_template_raises(env, template_name, messages("developer"), tools, tok)
+        _ => DeveloperFallback::Preserve,
+    }
 }
 
 /// Detects whether a template renders JSON-string `tool_calls[].function.arguments`

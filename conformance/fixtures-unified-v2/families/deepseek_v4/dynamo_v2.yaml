@@ -1,15 +1,15 @@
-capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"e69d61f61ee21af642e148a48d9e17aecdc42f68a3000cf46ec21b6372e0f211","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"deepseek_v4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"0f40e98b2e36a9bc792de6d9bfcf67da1cf256568e803b9917657ff4ea9b2ed5","source":"conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_3ec61a522034d71a
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_3ec61a522034d71a:
+    crate_version: 0.10.10
+    source_sha256: 4ece6848bc241625bd7bd0a047ae4d3d9d84f188eca232032ac81c284c83b445
+    git_commit: 8bcecd94495caf8db411cff748ac005aa33925f9
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -25,7 +25,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.10.10.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:

@@ -665,6 +665,30 @@ mod tests {
         }
     }
 
+    #[test]
+    fn dropping_an_invoke_that_crosses_the_section_end_records_incompletion() {
+        use crate::unified::NativeToolCompletion;
+
+        let mut parser = kimi_k2_unified(&tools());
+        let input = concat!(
+            "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0",
+            "<|tool_call_argument_begin|>{\"city\":\"Paris\"}",
+            "<|tool_calls_section_end|><|tool_call_end|>Done."
+        );
+        let mut deltas = parser.push(input).unwrap();
+        deltas.extend(parser.finish().unwrap().events);
+        assert_eq!(
+            assemble(&deltas),
+            vec![UnifiedEvent::Text {
+                text: "Done.".into()
+            }]
+        );
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::IncompleteCall)
+        );
+    }
+
     /// A first invoke that never closes (`call_end` missing) before a
     /// second invoke opens must not reach across the new opener and swallow
     /// the second call's bytes as if they belonged to the first -- that

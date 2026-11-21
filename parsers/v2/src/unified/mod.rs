@@ -349,6 +349,31 @@ pub trait UnifiedParserContinuation: Send {
     fn fork(&self) -> Result<Box<dyn UnifiedParser>>;
 }
 
+/// Whether the native grammar discarded an unfinished tool call.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NativeToolCompletion {
+    NoIncompleteCall,
+    IncompleteCall,
+}
+
+/// Reasoning boundary observed in the rendered assistant prefill.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReasoningPrefillState {
+    Open,
+    Closed,
+    Unknown,
+}
+
+/// Inspect a rendered assistant prefill using the selected parser's grammar.
+///
+/// Prefer [`UnifiedParser::inspect_reasoning_prefill`] when a parser has already
+/// been created for the request.
+pub fn inspect_reasoning_prefill(family: &str, rendered: &str) -> Option<ReasoningPrefillState> {
+    create_unified_parser_for_family(family, &[])
+        .ok()?
+        .inspect_reasoning_prefill(rendered)
+}
+
 /// A parser that owns reasoning + content + tool calls for one stream.
 ///
 /// Streaming-first, like [`crate::ToolParser`]: [`Self::parse_into`] per decoded
@@ -459,6 +484,22 @@ pub trait UnifiedParser: Send {
     /// this for token limits, cancellation, transport EOF, or arbitrary user stops.
     fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
         self.finish()
+    }
+
+    /// Inspect the suffix of a rendered assistant generation prefill. `None`
+    /// means the parser cannot inspect it. `Unknown` means no boundary was found.
+    fn inspect_reasoning_prefill(&self, _rendered: &str) -> Option<ReasoningPrefillState> {
+        None
+    }
+
+    /// Native tool-call evidence from a finished stream, if the grammar reports it.
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        None
+    }
+
+    /// An open native call before EOF fallback may recover ambiguous input.
+    fn has_pending_native_tool_call(&self) -> bool {
+        false
     }
 
     /// Return the parser to a FRESH-STREAM state and hand back any unconsumed text.
@@ -1005,6 +1046,20 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
         self.scanner.finish_ordered_into(output)
     }
 
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        (!self.scanner.has_envelope()).then(|| {
+            if self.scanner.dropped_incomplete_call() {
+                NativeToolCompletion::IncompleteCall
+            } else {
+                NativeToolCompletion::NoIncompleteCall
+            }
+        })
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        self.scanner.has_pending_native_tool_call()
+    }
+
     fn allow_implicit_tool_terminator(&mut self) {
         self.scanner.allow_implicit_tool_terminator();
     }
@@ -1130,6 +1185,14 @@ pub(crate) trait NativeUnified {
 
     fn push_native(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()>;
     fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()>;
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        None
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        false
+    }
 
     fn allow_implicit_tool_terminator(&mut self) {}
 
@@ -1571,6 +1634,39 @@ impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
             self.native.allow_implicit_tool_terminator();
         }
         self.finish()
+    }
+
+    fn inspect_reasoning_prefill(&self, rendered: &str) -> Option<ReasoningPrefillState> {
+        let GuidedReasoning::Pair(spec) = self.native.guided_reasoning()? else {
+            return None;
+        };
+        let tail = rendered.trim_end();
+        Some(if tail.ends_with(spec.end) {
+            ReasoningPrefillState::Closed
+        } else if tail.ends_with(spec.start)
+            || spec.start_label.is_some_and(|label| {
+                tail.strip_suffix(label.trim_end())
+                    .is_some_and(|prefix| prefix.ends_with(spec.start))
+            })
+        {
+            ReasoningPrefillState::Open
+        } else {
+            ReasoningPrefillState::Unknown
+        })
+    }
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        if self.finished && (self.guided.is_none() || self.native_fallback_active) {
+            self.native.native_tool_completion()
+        } else {
+            None
+        }
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        !self.finished
+            && (self.guided.is_none() || self.native_fallback_active)
+            && self.native.has_pending_native_tool_call()
     }
 
     fn reset(&mut self) -> String {
@@ -6770,6 +6866,18 @@ impl UnifiedParser for DebugUnifiedParser {
         }))
     }
 
+    fn inspect_reasoning_prefill(&self, rendered: &str) -> Option<ReasoningPrefillState> {
+        self.inner.inspect_reasoning_prefill(rendered)
+    }
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        self.inner.native_tool_completion()
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        self.inner.has_pending_native_tool_call()
+    }
+
     fn preserve_message_phases(&mut self, enabled: bool) {
         self.inner.preserve_message_phases(enabled);
     }
@@ -6864,6 +6972,37 @@ impl UnifiedParser for DebugUnifiedParser {
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[test]
+    fn rendered_prefill_uses_the_selected_parser_reasoning_markers() {
+        use ReasoningPrefillState::{Closed, Open, Unknown};
+
+        for (family, open, close) in [
+            ("glm47", "<think>", "</think>"),
+            ("qwen3_coder", "<think>", "</think>"),
+            ("nemotron3", "<think>", "</think>"),
+            ("mistral_4", "[THINK]", "[/THINK]"),
+            ("gemma4", "<|channel>thought\n", "<channel|>"),
+        ] {
+            let parser = create_unified_parser_for_family(family, &[]).unwrap();
+            assert_eq!(
+                parser.inspect_reasoning_prefill(open),
+                Some(Open),
+                "{family}"
+            );
+            assert_eq!(
+                parser.inspect_reasoning_prefill(&format!("{open}{close} ")),
+                Some(Closed),
+                "{family}",
+            );
+            assert_eq!(
+                parser.inspect_reasoning_prefill("assistant"),
+                Some(Unknown),
+                "{family}"
+            );
+        }
+        assert_eq!(inspect_reasoning_prefill("beam", "<think>"), None);
+    }
 
     // Corpus requests carry decoded text; capability admission and wrapper
     // forwarding require calls to the token-ID API itself.

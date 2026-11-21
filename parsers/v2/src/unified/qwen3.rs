@@ -252,6 +252,35 @@ mod tests {
         guided_prefix_examined_bytes, reset_guided_prefix_examined_bytes,
     };
 
+    #[test]
+    fn native_completion_distinguishes_truncated_calls_from_open_wrappers() {
+        use crate::unified::{NativeToolCompletion, UnifiedParserOutput};
+        let complete =
+            "<tool_call><function=get_weather><parameter=city>Paris</parameter></function>";
+        let partial = "<tool_call><function=get_weather><parameter=city>Paris";
+        let mut parser = qwen3_unified(&weather_tools());
+        let mut out = UnifiedParserOutput::default();
+
+        parser.parse_into(complete, &mut out).unwrap();
+        assert!(!parser.has_pending_native_tool_call());
+        parser.finish().unwrap();
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::NoIncompleteCall)
+        );
+
+        parser.reset();
+        parser.parse_into(complete, &mut out).unwrap();
+        parser.parse_into("</tool_call>", &mut out).unwrap();
+        parser.parse_into(partial, &mut out).unwrap();
+        assert!(parser.has_pending_native_tool_call());
+        parser.finish().unwrap();
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::IncompleteCall)
+        );
+    }
+
     fn weather_tools() -> Vec<Tool> {
         vec![Tool {
             name: "get_weather".to_string(),
