@@ -415,6 +415,8 @@ pub struct Glm5NextVideoPlan {
 /// The geometry SGLang gives `num_frames` sampled frames: one canvas from
 /// [`smart_resize`] under the budget for the whole clip, `temporal_patch_size`
 /// frames per group (the last frame repeats to fill the last group).
+/// Unsupported when HF's video processor, which SGLang runs on the frames it
+/// resized to that canvas, plans a different canvas from it.
 pub fn plan_video_grid(
     num_frames: u32,
     width: u32,
@@ -422,15 +424,24 @@ pub fn plan_video_grid(
     spec: &Glm5NextGeometrySpec,
 ) -> Result<Glm5NextVideoPlan> {
     spec.validate()?;
-    let (resized_height, resized_width) = smart_resize(
-        num_frames,
-        height,
-        width,
-        spec.temporal_patch_size,
-        spec.alignment_factor()?,
-        spec.min_image_tokens,
-        spec.max_image_tokens,
-    )?;
+    let factor = spec.alignment_factor()?;
+    let canvas = |height, width| {
+        smart_resize(
+            num_frames,
+            height,
+            width,
+            spec.temporal_patch_size,
+            factor,
+            spec.min_image_tokens,
+            spec.max_image_tokens,
+        )
+    };
+    let (resized_height, resized_width) = canvas(height, width)?;
+    if canvas(resized_height, resized_width)? != (resized_height, resized_width) {
+        return Err(MmError::unsupported(
+            "glm5_next: SGLang would resize this clip a second time",
+        ));
+    }
     let grid_h = resized_height / spec.patch_size;
     let grid_w = resized_width / spec.patch_size;
     let merge_length = u64::from(spec.merge_size) * u64::from(spec.merge_size);
@@ -596,6 +607,29 @@ mod tests {
         assert!(plan.grid_t * plan.tokens_per_group <= 240000);
         let step = u64::from(plan.resized_height + 28) * u64::from(plan.resized_width + 28);
         assert!(240 * step > 240000 * 2 * 28 * 28);
+    }
+
+    /// SGLang 25c1c439 plans 28x392 for four 1x16 frames in groups of three,
+    /// and transformers 5.19.0 plans 28x364 from that canvas.
+    #[test]
+    fn refuses_a_clip_that_sglang_resizes_twice() {
+        let spec = Glm5NextGeometrySpec {
+            temporal_patch_size: 3,
+            max_image_tokens: 240000,
+            ..glm53_flash()
+        };
+        assert_eq!(
+            smart_resize(4, 1, 16, 3, 28, 16, 240000).unwrap(),
+            (28, 392)
+        );
+        assert_eq!(
+            smart_resize(4, 28, 392, 3, 28, 16, 240000).unwrap(),
+            (28, 364)
+        );
+        assert!(matches!(
+            plan_video_grid(4, 16, 1, &spec),
+            Err(MmError::Unsupported { .. })
+        ));
     }
 
     #[test]
