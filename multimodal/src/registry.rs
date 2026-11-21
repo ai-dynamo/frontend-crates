@@ -537,6 +537,9 @@ pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
         // A video config the crate cannot honor leaves video off; it must not
         // fail the image spec.
         qwen.video = resolve_qwen_video(config, &video).ok();
+        if crate::models::qwen_vl::QwenVlProcessor::new(qwen.clone()).is_err() {
+            qwen.video = None;
+        }
     }
     Ok(spec)
 }
@@ -1413,6 +1416,20 @@ mod tests {
                 matches!(direct, Err(MmError::Unsupported { .. })),
                 "{video}"
             );
+            assert!(resolve(&qwen35, &video).unwrap().is_none(), "{video}");
+        }
+        for video in [
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""merge_size": 2"#, r#""merge_size": 1"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(
+                r#""image_std": [0.5, 0.5, 0.5]"#,
+                r#""image_std": [0, 0.5, 0.5]"#,
+            ),
+        ] {
+            let direct = resolve_qwen_video(
+                &serde_json::from_str(&qwen35).unwrap(),
+                &serde_json::from_str(&video).unwrap(),
+            );
+            assert!(direct.is_ok(), "{video}");
             assert!(resolve(&qwen35, &video).unwrap().is_none(), "{video}");
         }
         let direct = resolve_qwen_video(
