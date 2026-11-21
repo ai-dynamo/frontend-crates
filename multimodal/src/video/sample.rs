@@ -11,9 +11,11 @@ use crate::{MmError, Result};
 /// refilled by `np.linspace` when that gives too few or too many, duplicates
 /// removed, and the last frame repeated when the count is odd.
 ///
-/// It equals transformers' `Glm5NextVideoProcessor.sample_frames` except on
-/// clips shorter than `1 / target_fps`, where HF keeps no frame and this keeps
-/// the first frame twice.
+/// `total_frames` and `fps` are torchcodec's frame count and `average_fps`,
+/// which SGLang samples with. It equals transformers'
+/// `Glm5NextVideoProcessor.sample_frames` except on clips shorter than
+/// `1 / target_fps`, where HF keeps no frame and this keeps the first frame
+/// twice.
 pub fn glm_frame_indices(
     total_frames: u64,
     fps: f64,
