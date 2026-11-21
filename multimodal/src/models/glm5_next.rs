@@ -661,13 +661,16 @@ mod tests {
                 .supports(crate::processor::Modality::Video)
         );
         assert!(matches!(
-            processor.process_item(&DecodedMedia::Video {
-                rgb: vec![7u8; 2 * 28 * 28 * 3],
-                height: 28,
-                width: 28,
-                frame_indices: vec![0, 1],
-                fps: 2.0,
-            }),
+            processor.process_items(
+                &[],
+                &[DecodedMedia::Video {
+                    rgb: vec![7u8; 2 * 28 * 28 * 3],
+                    height: 28,
+                    width: 28,
+                    frame_indices: vec![0, 1],
+                    fps: 2.0,
+                }]
+            ),
             Err(MmError::Unsupported { .. })
         ));
     }
