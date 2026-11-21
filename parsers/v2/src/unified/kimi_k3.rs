@@ -408,6 +408,8 @@ struct KimiK3CallBoundary {
     json_closes: Vec<TokenHit>,
     outer_closes: Vec<TokenHit>,
     response_open: Option<(TokenHit, Option<usize>)>,
+    restart_prefix: Option<ToolsRestartPrefix>,
+    restart_calls: Vec<(usize, usize)>,
     completed_arguments: Option<String>,
     guided_prefix: GuidedBareCallPrefix,
     #[cfg(test)]
@@ -447,6 +449,8 @@ impl KimiK3CallBoundary {
             json_closes: Vec::new(),
             outer_closes: Vec::new(),
             response_open: None,
+            restart_prefix: None,
+            restart_calls: Vec::new(),
             completed_arguments: None,
             guided_prefix: GuidedBareCallPrefix::default(),
             #[cfg(test)]
@@ -501,6 +505,42 @@ impl KimiK3CallBoundary {
             && let Some(consumed) = self.guided_malformed_envelope_end(text, header_len)
         {
             return CallBoundary::SkipMalformed { consumed };
+        }
+
+        let restart_fence = self
+            .restart_calls
+            .first()
+            .map(|(fence, _)| *fence)
+            .or_else(|| self.restart_prefix.map(ToolsRestartPrefix::fence));
+        if let Some(fence) = restart_fence {
+            if let Some(next_call) = self
+                .complete_call_opens
+                .iter()
+                .copied()
+                .find(|at| *at < fence)
+                && let Some((close, arguments)) =
+                    self.structural_call_close(text, header_len, false, next_call)
+            {
+                self.completed_arguments = Some(arguments);
+                return CallBoundary::Complete {
+                    body_end: close.at,
+                    consumed: close.end(),
+                };
+            }
+            // A nested tools section can still be literal string data. Wait for
+            // finish so an actual outer argument and call closer can settle ownership.
+            if !flush {
+                return CallBoundary::Pending;
+            }
+        }
+        for index in 0..self.restart_calls.len() {
+            let (_, call_at) = self.restart_calls[index];
+            let next_fence = self.restart_calls.get(index + 1).map(|(fence, _)| *fence);
+            if let Some(boundary) =
+                self.resolve_tools_restart(text, header_len, call_at, next_fence)
+            {
+                return boundary;
+            }
         }
 
         if let Some(boundary) = self.response_boundary(text, header_len, flush) {
@@ -620,6 +660,63 @@ impl KimiK3CallBoundary {
             return self.recover_at(text, header_len, body_end);
         }
         CallBoundary::Malformed
+    }
+
+    fn resolve_tools_restart(
+        &mut self,
+        text: &str,
+        header_len: usize,
+        at: usize,
+        next_fence: Option<usize>,
+    ) -> Option<CallBoundary> {
+        let (attrs, retry_header) = parse_call_header(&text[at..])?;
+        if attr_value(&attrs, "tool").is_none_or(str::is_empty) {
+            return None;
+        }
+        let retry_body = at + retry_header;
+        let tools_close = self.outer_closes.iter().copied().find(|hit| {
+            hit.at >= retry_body
+                && next_fence.is_none_or(|next| hit.end() <= next)
+                && TOOLS_CLOSE.prefix_len(&text[hit.at..]).is_some()
+        })?;
+
+        // A later argument close confirms that the inner tools section belongs
+        // to the original string. Its call close must precede the real tools close.
+        if next_fence.is_none()
+            && let Some(arg) = self
+                .arg_closes
+                .iter()
+                .find(|arg| arg.at >= tools_close.end())
+            && let Some(outer) = self.call_closes.iter().map(|close| close.hit).find(|hit| {
+                let tail = text[hit.end()..].trim_start();
+                arg.end() <= hit.at
+                    && (TOOLS_CLOSE.prefix_len(tail).is_some() || parse_call_header(tail).is_some())
+            })
+            && let Some(arguments) = self.parse_body(&text[header_len..outer.at])
+        {
+            self.completed_arguments = Some(arguments);
+            return Some(CallBoundary::Complete {
+                body_end: outer.at,
+                consumed: outer.end(),
+            });
+        }
+
+        let tail = text[tools_close.end()..].trim_start();
+        if !tail.is_empty()
+            && MESSAGE_CLOSE.prefix_len(tail).is_none()
+            && !tail.starts_with(END_OF_MSG)
+        {
+            return None;
+        }
+        let first_call_close = self.call_closes.iter().map(|close| close.hit).find(|hit| {
+            if hit.at < retry_body || hit.end() > tools_close.at {
+                return false;
+            }
+            let next = text[hit.end()..tools_close.at].trim_start();
+            next.is_empty() || CALL_OPEN.prefix_len(next).is_some()
+        })?;
+        self.parse_body(&text[retry_body..first_call_close.at])
+            .map(|_| CallBoundary::Resync { at })
     }
 
     fn response_boundary(
@@ -1007,10 +1104,25 @@ impl KimiK3CallBoundary {
                 }
                 continue;
             }
-            if !flush && scanner_marker_is_partial(suffix) {
+            let expects_tools_open =
+                matches!(self.restart_prefix, Some(ToolsRestartPrefix::Tools(_)));
+            if !flush
+                && (scanner_marker_is_partial(suffix)
+                    || expects_tools_open
+                        && TOOLS_OPEN
+                            .variants()
+                            .any(|marker| marker.starts_with(suffix)))
+            {
                 break;
             }
-            if let Some((kind, len)) = scanner_marker_at(suffix) {
+            let marker = if expects_tools_open {
+                TOOLS_OPEN
+                    .prefix_len(suffix)
+                    .map(|len| (ScannerToken::ToolsOpen, len))
+            } else {
+                None
+            };
+            if let Some((kind, len)) = marker.or_else(|| scanner_marker_at(suffix)) {
                 let hit = TokenHit {
                     at: self.scanned,
                     len,
@@ -1025,6 +1137,9 @@ impl KimiK3CallBoundary {
                 continue;
             }
 
+            if !character.is_whitespace() {
+                self.restart_prefix = None;
+            }
             if self
                 .header_len
                 .is_some_and(|header_len| self.scanned >= header_len)
@@ -1216,6 +1331,25 @@ impl KimiK3CallBoundary {
         if hit.at < header_len {
             return;
         }
+        self.restart_prefix = match (self.restart_prefix, kind) {
+            (_, ScannerToken::ResponseClose)
+                if self.context == CallBoundaryContext::Native
+                    && self.return_channel == Mode::Tools
+                    && self.string_argument
+                    && !self.argument_close_pending
+                    && !literal =>
+            {
+                Some(ToolsRestartPrefix::Tools(hit.at))
+            }
+            (Some(ToolsRestartPrefix::Tools(fence)), ScannerToken::ToolsOpen) => {
+                Some(ToolsRestartPrefix::Call(fence))
+            }
+            (Some(ToolsRestartPrefix::Call(fence)), ScannerToken::CallOpen) => {
+                self.restart_calls.push((fence, hit.at));
+                None
+            }
+            _ => None,
+        };
         if matches!(
             kind,
             ScannerToken::ToolsClose | ScannerToken::MessageClose | ScannerToken::EndOfMessage
@@ -1248,6 +1382,7 @@ impl KimiK3CallBoundary {
                 self.outer_closes.push(hit)
             }
             ScannerToken::CallOpen
+            | ScannerToken::ToolsOpen
             | ScannerToken::JsonOpen
             | ScannerToken::Sep
             | ScannerToken::ThinkClose
@@ -1284,8 +1419,23 @@ impl TokenHit {
     }
 }
 
+#[derive(Clone, Copy)]
+enum ToolsRestartPrefix {
+    Tools(usize),
+    Call(usize),
+}
+
+impl ToolsRestartPrefix {
+    fn fence(self) -> usize {
+        match self {
+            Self::Tools(at) | Self::Call(at) => at,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ScannerToken {
+    ToolsOpen,
     CallOpen,
     CallClose,
     ArgumentOpen,
@@ -1758,10 +1908,24 @@ impl KimiK3Native {
                 true
             }
             CallBoundary::Pending if !flush => {
+                let boundary = &self.call_boundary;
+                if boundary.restart_prefix.is_some() || !boundary.restart_calls.is_empty() {
+                    return false;
+                }
+                let progress_limit = if boundary.return_channel == Mode::Tools
+                    && boundary.string_argument
+                    && RESPONSE_CLOSE
+                        .variants()
+                        .any(|marker| marker.starts_with(&self.buffer[boundary.scanned..]))
+                {
+                    boundary.scanned
+                } else {
+                    self.buffer.len()
+                };
                 if let Some(call) = self.active_call.as_mut()
                     && !call.name.is_empty()
                     && let Some(delta) = call.arguments.advance(
-                        &self.buffer,
+                        &self.buffer[..progress_limit],
                         self.call_boundary
                             .json_closes
                             .iter()
@@ -1774,7 +1938,8 @@ impl KimiK3Native {
                             )
                             .map(|hit| hit.at)
                             .min()
-                            .unwrap_or(self.call_boundary.scanned),
+                            .unwrap_or(self.call_boundary.scanned)
+                            .min(progress_limit),
                         &mut call.progress,
                     )
                 {
@@ -4896,6 +5061,147 @@ mod tests {
             TOOLS_OPEN.canonical
         );
         assert!(run(&partial, UnifiedParserStartingState::None).0.is_empty());
+    }
+
+    #[test]
+    fn abandoned_typed_argument_does_not_borrow_retry_closers() {
+        let before_retry = format!(
+            "{}Visible text{}{}{OPEN}call tool=\"bash\" index=\"1\"{SEP}{OPEN}argument key=\"command\" type=\"string\"{SEP}echo first{}",
+            RESPONSE_OPEN.canonical,
+            RESPONSE_CLOSE.canonical,
+            TOOLS_OPEN.canonical,
+            RESPONSE_CLOSE.canonical,
+        );
+        let retry = call("bash", "1", &arg("command", "string", "echo retry"));
+        let second = call("bash", "2", &arg("command", "string", "echo again"));
+        let cases = [
+            (String::new(), retry.clone(), "echo retry", None),
+            (
+                String::new(),
+                format!("\n {retry} \n{second}\n"),
+                "echo retry",
+                Some("echo again"),
+            ),
+            (
+                format!(
+                    "{}{OPEN}call garbage{}",
+                    TOOLS_OPEN.canonical, RESPONSE_CLOSE.canonical
+                ),
+                retry,
+                "echo retry",
+                None,
+            ),
+        ];
+        for (false_restart, retry_calls, first, second) in cases {
+            let input = format!(
+                "{before_retry}{false_restart}{}{retry_calls}{}{}ignored epilogue",
+                TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical, MESSAGE_CLOSE.canonical,
+            );
+            let mut expected = vec![
+                UnifiedEvent::Text {
+                    text: "Visible text".into(),
+                },
+                UnifiedEvent::ToolCall {
+                    name: "bash".into(),
+                    arguments: serde_json::json!({"command":first}),
+                },
+            ];
+            if let Some(command) = second {
+                expected.push(UnifiedEvent::ToolCall {
+                    name: "bash".into(),
+                    arguments: serde_json::json!({"command":command}),
+                });
+            }
+            assert_native_fragmentations(&input, &expected);
+        }
+    }
+
+    #[test]
+    fn completed_call_before_abandoned_call_survives_resynchronization() {
+        let checkpoint = call("echo", "1", &arg("value", "string", "checkpoint"));
+        let input = format!(
+            "{}{checkpoint}{OPEN}call tool=\"echo\" index=\"2\"{SEP}{OPEN}argument key=\"value\" type=\"string\"{SEP}abandoned{}{}{}{}{}",
+            TOOLS_OPEN.canonical,
+            RESPONSE_CLOSE.canonical,
+            TOOLS_OPEN.canonical,
+            call("echo", "3", &arg("value", "string", "retry")),
+            TOOLS_CLOSE.canonical,
+            MESSAGE_CLOSE.canonical,
+        );
+        let expected = ["checkpoint", "retry"].map(|value| UnifiedEvent::ToolCall {
+            name: "echo".into(),
+            arguments: serde_json::json!({"value": value}),
+        });
+        assert_native_fragmentations(&input, &expected);
+    }
+
+    #[test]
+    fn abandoned_retry_keeps_provisional_and_completed_calls_separate() {
+        let prefix = format!(
+            "{}{OPEN}call tool=\"bash\" index=\"1\"{SEP}{OPEN}argument key=\"command\" type=\"string\"{SEP}echo first",
+            TOOLS_OPEN.canonical,
+        );
+        let rest = format!(
+            "{}{}{}{}{}",
+            RESPONSE_CLOSE.canonical,
+            TOOLS_OPEN.canonical,
+            call("bash", "1", &arg("command", "string", "echo retry")),
+            TOOLS_CLOSE.canonical,
+            MESSAGE_CLOSE.canonical,
+        );
+        let mut parser = kimi_k3_unified(&[]);
+        let before_restart = parser.push(&prefix).unwrap();
+        let [crate::UnifiedParserEvent::ToolCall(first)] = before_restart.as_slice() else {
+            panic!("expected a provisional call before the restart");
+        };
+        assert_eq!(first.arguments, r#"{"command":"echo first"#);
+        assert!(!first.complete);
+
+        for ch in rest.chars() {
+            let events = parser.push(ch.encode_utf8(&mut [0; 4])).unwrap();
+            assert!(events.is_empty(), "{events:?}");
+        }
+        let events = parser.finish().unwrap().events;
+        let [crate::UnifiedParserEvent::ToolCall(retry)] = events.as_slice() else {
+            panic!("expected the completed retry, got {events:?}");
+        };
+        assert!(retry.complete);
+        assert_ne!(retry.tool_index, first.tool_index);
+        assert_ne!(
+            parser.tool_call_id(retry.tool_index),
+            parser.tool_call_id(first.tool_index),
+        );
+        assert_eq!(retry.arguments, r#"{"command":"echo retry"}"#);
+    }
+
+    #[test]
+    fn complete_outer_argument_owns_literal_retry_envelope() {
+        let value = format!(
+            "before{}{}{}{}after",
+            RESPONSE_CLOSE.canonical,
+            TOOLS_OPEN.canonical,
+            call("sample", "2", &arg("example", "string", "literal")),
+            TOOLS_CLOSE.canonical,
+        );
+        let outer = call("echo", "1", &arg("value", "string", &value));
+        let sibling = call("echo", "3", &arg("value", "string", "sibling"));
+        for following in ["", &sibling] {
+            let input = format!(
+                "{}{outer}{following}{}{}",
+                TOOLS_OPEN.canonical, TOOLS_CLOSE.canonical, MESSAGE_CLOSE.canonical,
+            );
+            let mut expected = vec![UnifiedEvent::ToolCall {
+                name: "echo".into(),
+                arguments: serde_json::json!({"value": value}),
+            }];
+            if !following.is_empty() {
+                expected.push(UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "sibling"}),
+                });
+            }
+            assert_native_fragmentations(&input, &expected);
+        }
     }
 
     #[test]
