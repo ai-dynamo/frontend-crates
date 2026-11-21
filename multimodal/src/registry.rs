@@ -534,9 +534,10 @@ pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
     if let ProcessorSpec::QwenVl(qwen) = &mut spec
         && let Some(config) = &parsed
         && (config["model_type"].as_str()).is_some_and(|t| QWEN3_VIDEO_MODEL_TYPES.contains(&t))
-        // HF's order: the nested transformers v5 entry, then the flat file.
+        // transformers v5's order: the nested entry, then the flat file.
         && let Some(video) = (read_optional_json(dir, "processor_config.json").ok().flatten())
             .and_then(|mut nested| nested.get_mut("video_processor").map(Value::take))
+            .filter(|video| !video.is_null())
             .or_else(|| read_optional_json(dir, "video_preprocessor_config.json").ok().flatten())
     {
         // A video config the crate cannot honor leaves video off; it must not
@@ -1467,6 +1468,7 @@ mod tests {
         let nested = |video: &str| format!(r#"{{"video_processor": {video}}}"#);
         let fps1 = QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""fps": 2"#, r#""fps": 1"#);
         assert!(with_processor_config(r#"{"processor_class": "Qwen3VLProcessor"}"#).is_some());
+        assert!(with_processor_config(r#"{"video_processor": null}"#).is_some());
         assert!(with_processor_config(&nested(&fps1)).is_none());
         std::fs::remove_file(dir.join("video_preprocessor_config.json")).unwrap();
         assert!(with_processor_config(&nested(QWEN35_SAVED_VIDEO_PREPROCESSOR)).is_some());
