@@ -102,7 +102,7 @@ pub struct NemotronVlVideoSpec {
 }
 
 impl NemotronVlVideoSpec {
-    pub(crate) fn validate(&self, sizing: NemotronVlSizing, patch_size: u32) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         if self.temporal_patch_size < 2 {
             return Err(MmError::unsupported(
                 "nemotron_vl: video needs temporal_patch_size of at least 2",
@@ -111,14 +111,6 @@ impl NemotronVlVideoSpec {
         if !(0.0..1.0).contains(&self.pruning_rate) {
             return Err(MmError::invalid_input(
                 "nemotron_vl: pruning_rate must be in [0, 1)",
-            ));
-        }
-        if sizing == NemotronVlSizing::Sglang
-            && self.target_num_patches == 0
-            && self.image_size / patch_size < 2
-        {
-            return Err(MmError::invalid_input(
-                "nemotron_vl: image_size must hold at least 2 patches per side",
             ));
         }
         Ok(())
@@ -242,7 +234,15 @@ impl NemotronVlProcessor {
             ));
         }
         if let Some(video) = &spec.video {
-            video.validate(spec.sizing, spec.patch_size)?;
+            video.validate()?;
+            if spec.sizing == NemotronVlSizing::Sglang
+                && video.target_num_patches == 0
+                && video.image_size / spec.patch_size < 2
+            {
+                return Err(MmError::invalid_input(
+                    "nemotron_vl: image_size must hold at least 2 patches per side",
+                ));
+            }
         }
         // torchvision `ToTensor` then `Normalize`, in f32.
         let lut = core::array::from_fn(|c| {

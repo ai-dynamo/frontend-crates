@@ -846,7 +846,7 @@ fn resolve_nemotron_vl(
         image_mean: knobs.norm_mean,
         image_std: knobs.norm_std,
         sizing: NemotronVlSizing::Hf,
-        video: resolve_nemotron_vl_video(config, processor, pre, knobs.patch_size),
+        video: resolve_nemotron_vl_video(config, processor, pre),
     })
 }
 
@@ -856,7 +856,6 @@ fn resolve_nemotron_vl_video(
     config: &Value,
     processor: &Value,
     pre: &Value,
-    patch_size: u32,
 ) -> Option<NemotronVlVideoSpec> {
     let vision = &config["vision_config"];
     let count = |value: &Value| value.as_u64().and_then(|value| u32::try_from(value).ok());
@@ -889,7 +888,7 @@ fn resolve_nemotron_vl_video(
             Some(value) => value.as_f64()?,
         },
     })
-    .filter(|video| video.validate(NemotronVlSizing::Hf, patch_size).is_ok())
+    .filter(|video| video.validate().is_ok())
 }
 
 fn read_optional_json(dir: &std::path::Path, name: &str) -> Result<Option<Value>> {
