@@ -1,15 +1,15 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"a9cd101ea5c0595a9bb51a11e5a9d8cef58a34621ec5aecb157897f1958f3d58","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"5ccd5f249fb9eb982cb6b9e67270f3d658314bbabb10b3c2529e69e3e947b2da","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_3ec61a522034d71a
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_3ec61a522034d71a:
+    crate_version: 0.10.10
+    source_sha256: 4ece6848bc241625bd7bd0a047ae4d3d9d84f188eca232032ac81c284c83b445
+    git_commit: 8bcecd94495caf8db411cff748ac005aa33925f9
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,8 +24,157 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
+  context_22cdb668f0249621:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: text
+            text: <|open|>think<|sep|>literal<|close|>think<|sep|> then a call
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+          chunks:
+          - expected: []
+          - expected:
+            - kind: text
+              text: <|open|>think
+          - expected:
+            - kind: text
+              text: <|sep|>
+          - expected:
+            - kind: text
+              text: literal
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: <|close|>think<|sep|> then a call
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city":"'
+              complete: false
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: Paris
+              complete: false
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|open|>think<|sep|>literal<|close|>think<|sep|> then a call<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: ' then a call'
+            - delta_text: <|open|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: call tool="get_weather" index="1"
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: argument key="city" type="string"
+            - delta_text: <|sep|>
+            - delta_text: Paris
+            - delta_text: <|close|>
+            - delta_text: argument
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: call
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.10
+          source_sha256: 4ece6848bc241625bd7bd0a047ae4d3d9d84f188eca232032ac81c284c83b445
+          git_commit: 8bcecd94495caf8db411cff748ac005aa33925f9
+          implementation: dynamo_v2
+          version: 0.10.10
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: 48e313542088d0da56cfaa0d0ae8c886637efb948e44d1bfc4fcbf71372bf9d8
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.10.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -15188,6 +15337,7 @@ records:
       - expected: []
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
+    context: context_22cdb668f0249621
     request: ad73c06ef05bfabd5e7d23fe2bcca277b804f0b4f4e8200409fb70eb7f7f8ebe
     output:
       assembled:
