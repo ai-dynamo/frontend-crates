@@ -9,7 +9,7 @@ use chrono::{DateTime, Local};
 use either::Either;
 use std::borrow::Cow;
 
-use minijinja::value::{Kwargs, ObjectRepr, StringInput, ValueKind, from_args};
+use minijinja::value::{Kwargs, ObjectRepr, Rest, StringInput, ValueKind, from_args};
 use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
 use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
@@ -263,6 +263,23 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
         Some(text) => Ok(Value::from(text)),
         None => minijinja::filters::string(state, value),
     }
+}
+
+/// The `format` filter with Python `str` for list and dict arguments, matching
+/// [`python_formatter`]. Llama 4 replays tool-call arguments as `"%s" | format(value)`,
+/// so a list or dict argument must print as Python's `repr`. Other arguments go to the
+/// builtin unchanged, so numeric conversions keep working.
+pub fn python_format(state: &State, format_str: &Value, args: Rest<Value>) -> Result<Value, Error> {
+    let args = args
+        .iter()
+        .map(|arg| match arg.kind() {
+            ValueKind::Seq | ValueKind::Map => {
+                python_str(arg).map_or_else(|| arg.clone(), Value::from)
+            }
+            _ => arg.clone(),
+        })
+        .collect();
+    minijinja::filters::format(state, format_str, Rest(args))
 }
 
 /// minijinja-contrib's pycompat string methods, with Python's whitespace where

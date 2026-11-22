@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
-    ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
-    raise_exception, strftime_now, tojson,
+    ChatTemplate, fromjson, python_format, python_formatter, python_methods, python_string,
+    python_trim, raise_exception, strftime_now, tojson,
 };
 use super::{
     ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
@@ -748,6 +748,7 @@ impl HfTokenizerConfigJsonFormatter {
 
         env.add_filter("tojson", tojson);
         env.add_filter("string", python_string);
+        env.add_filter("format", python_format);
         env.set_formatter(python_formatter);
 
         // Templates that round-trip tool call `arguments` (a JSON string) back into an
@@ -1339,6 +1340,27 @@ mod tests {
             r#"[{'type': ['string', 'null']}, "it's", 'a"b\'\n\xa0', 1e-07, True, None]"#;
         assert_eq!(render_hf("{{ v }}", context! { v => v.clone() }), expected);
         assert_eq!(render_hf("{{ v | string }}", context! { v => v }), expected);
+    }
+
+    /// Llama 4 replays tool-call arguments with `"%s" | format(value)`, which prints a list
+    /// or dict argument as Python's `repr`; other arguments keep the builtin's conversions.
+    #[test]
+    fn test_format_filter_formats_containers_like_python() {
+        let args = json!({"paths": ["a.py", "it's"], "opts": {"k": [1.5, false, null]}});
+        assert_eq!(
+            render_hf(
+                r#"{% for k in args %}{{ k }}="{{ "%s" | format(args[k]) }}" {% endfor %}"#,
+                context! { args => args }
+            ),
+            r#"paths="['a.py', "it's"]" opts="{'k': [1.5, False, None]}" "#
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%s|%d|%.2f|%5s" | format(true, 3, 2.5, "a") }}"#,
+                context! {}
+            ),
+            "True|3|2.50|    a"
+        );
     }
 
     /// HF prints `{{ x }}` and `x | string` with Python `str`, which spells floats as `repr`.
