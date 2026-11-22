@@ -346,6 +346,46 @@ pub(crate) fn python_splitlines(s: &str, keepends: bool) -> Vec<&str> {
     lines
 }
 
+/// Python's `str.find` (or `str.rfind` with `reverse`): the character index of `sub`
+/// in `s[start:end]`, or -1. Rust's `str::find` returns a byte offset, but templates
+/// slice strings by character, so the two disagree on non-ASCII text.
+pub(crate) fn python_find(
+    s: &str,
+    sub: &str,
+    start: Option<i64>,
+    end: Option<i64>,
+    reverse: bool,
+) -> i64 {
+    let len = s.chars().count() as i64;
+    // CPython's ADJUST_INDICES: negative indices count from the end, `end` is capped
+    // at the length, and `start` past the end finds nothing, not even `''`.
+    let adjust = |index: i64| {
+        if index < 0 {
+            (index + len).max(0)
+        } else {
+            index
+        }
+    };
+    let start = start.map_or(0, adjust);
+    let end = end.map_or(len, adjust).min(len);
+    if end - start < sub.chars().count() as i64 {
+        return -1;
+    }
+    let byte_offset = |index: i64| {
+        s.char_indices()
+            .nth(index as usize)
+            .map_or(s.len(), |(offset, _)| offset)
+    };
+    let (byte_start, byte_end) = (byte_offset(start), byte_offset(end));
+    let window = &s[byte_start..byte_end];
+    let found = if reverse {
+        window.rfind(sub)
+    } else {
+        window.find(sub)
+    };
+    found.map_or(-1, |offset| start + window[..offset].chars().count() as i64)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,6 +453,28 @@ mod tests {
             (f64::NEG_INFINITY, "-inf"),
         ] {
             assert_eq!(python_float_repr(value), python, "{value:?}");
+        }
+    }
+
+    /// Expected values from CPython 3.12's `str.find()` and `str.rfind()`.
+    #[test]
+    fn find_matches_python() {
+        let s = "\u{e9}x\u{4f60}\u{597d}x<tool_call>";
+        for (sub, start, end, expected) in [
+            ("<tool_call>", None, None, (5, 5)),
+            ("x", None, None, (1, 4)),
+            ("x", Some(-2), None, (-1, -1)),
+            ("x", Some(1), Some(-1), (1, 4)),
+            ("x", Some(-100), Some(100), (1, 4)),
+            ("", None, None, (0, 16)),
+            ("", Some(17), None, (-1, -1)),
+            ("", Some(-3), Some(-5), (-1, -1)),
+        ] {
+            let found = (
+                python_find(s, sub, start, end, false),
+                python_find(s, sub, start, end, true),
+            );
+            assert_eq!(found, expected, "{sub:?} {start:?} {end:?}");
         }
     }
 

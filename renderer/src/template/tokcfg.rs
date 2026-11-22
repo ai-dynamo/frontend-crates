@@ -15,7 +15,8 @@ use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
 
 use crate::python::{
-    PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace, python_splitlines,
+    PyJsonFormatter, is_python_space, python_find, python_float_repr, python_split_whitespace,
+    python_splitlines,
 };
 
 #[allow(dead_code)]
@@ -233,8 +234,9 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
 /// minijinja-contrib's pycompat string methods, with Python's whitespace where
 /// Rust's differs: `strip`, `lstrip`, `rstrip` and `split()` also treat U+001C..U+001F
 /// as whitespace, `isspace` is false for `""`, and `splitlines` ends lines at every
-/// Python line break. HF renders templates through Python, so `m.content.strip()` must
-/// strip what Python strips.
+/// Python line break. `find` and `rfind` return character indices, as Python does,
+/// rather than byte offsets, and accept `start` and `end`. HF renders templates through
+/// Python, so `m.content.strip()` must strip what Python strips.
 pub fn python_methods(
     state: &State,
     value: &Value,
@@ -282,6 +284,16 @@ pub fn python_methods(
                         }
                     })
                     .collect());
+            }
+            "find" | "rfind" => {
+                let (sub, start, end): (&str, Option<i64>, Option<i64>) = from_args(args)?;
+                return Ok(Value::from(python_find(
+                    s,
+                    sub,
+                    start,
+                    end,
+                    method == "rfind",
+                )));
             }
             "isspace" => {
                 let () = from_args(args)?;
