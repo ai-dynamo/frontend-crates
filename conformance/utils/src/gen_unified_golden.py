@@ -3234,6 +3234,30 @@ for scenario, description, native, golden in K3_RESPONSE_CASES:
     ))
 
 
+K3_ABANDONED_RETRY = (
+    "Thinking" + k3_close("think") + r_text("kimi_k3", "Visible text")
+    + k3_tools(k3_call("bash", 1, k3_argument("command", "string", "echo first")
+                      .removesuffix(k3_close("argument")), close=False), close=False)
+    + k3_close("response")
+    + k3_tools(k3_call("bash", 1, k3_argument("command", "string", "echo retry")))
+    + k3_close("message")
+)
+EDGE.append((
+    "kimi_k3_abandoned_argument_then_retry",
+    "Native K3 starts in Reasoning and abandons an open typed string at a stray response close. A fresh tools section closes normally and only its call completes.",
+    ["I3", "I5", "I7"],
+    [{"kind": "reasoning", "text": "Thinking"}, {"kind": "text", "text": "Visible text"},
+     {"kind": "tool_call", "name": "bash", "arguments": {"command": "echo retry"}}],
+    {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "finish_step": True,
+     "input_chunks": {"kimi_k3": [K3_ABANDONED_RETRY[offset:offset + 64]
+                                 for offset in range(0, len(K3_ABANDONED_RETRY), 64)]}},
+    OnlyFamilies({"kimi_k3": (K3_ABANDONED_RETRY, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
+    [{"name": "bash", "parameters": {"type": "object", "properties": {
+        "command": {"type": "string"}}, "required": ["command"]}}],
+))
+
+
 DEEPSEEK_V41_SCENARIOS = {
     spec[0]
     for spec in (*CLEAN, *EDGE)

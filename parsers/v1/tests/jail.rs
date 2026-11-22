@@ -3581,6 +3581,66 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn test_kimi_k3_abandoned_call_keeps_only_the_retry() {
+        const PREFIX: &str = concat!(
+            "<|open|>response<|sep|>Visible text<|close|>response<|sep|>",
+            "<|open|>tools<|sep|><|open|>call tool=\"bash\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"command\" type=\"string\"<|sep|>echo first",
+            "<|close|>response<|sep|>"
+        );
+        const RETRY: &str = concat!(
+            "<|open|>call tool=\"bash\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"command\" type=\"string\"<|sep|>echo retry",
+            "<|close|>argument<|sep|><|close|>call<|sep|>"
+        );
+        let single_retry = format!("<|open|>tools<|sep|>{RETRY}<|close|>tools<|sep|>");
+        let second_call = RETRY.replace("echo retry", "echo again");
+        let two_retries =
+            format!("<|open|>tools<|sep|>\n {RETRY}\n{second_call}\n<|close|>tools<|sep|>");
+        let false_restart = format!(
+            "<|open|>tools<|sep|><|open|>call garbage<|close|>response<|sep|>{single_retry}"
+        );
+        for (retry, expected) in [
+            ("", &[][..]),
+            (false_restart.as_str(), &[r#"{"command":"echo retry"}"#][..]),
+            (single_retry.as_str(), &[r#"{"command":"echo retry"}"#][..]),
+            (
+                two_retries.as_str(),
+                &[r#"{"command":"echo retry"}"#, r#"{"command":"echo again"}"#][..],
+            ),
+        ] {
+            let input = format!("{PREFIX}{retry}<|close|>message<|sep|><|end_of_msg|>");
+            for split in 0..=input.len() {
+                let chunks = [
+                    create_mock_response_chunk(input[..split].into(), 0),
+                    create_mock_response_chunk(input[split..].into(), 0),
+                    create_final_response_chunk(0),
+                ];
+                let results: Vec<_> = JailedStream::builder()
+                    .tool_call_parser("kimi_k3")
+                    .build()
+                    .apply_with_finish_reason(stream::iter(chunks))
+                    .collect()
+                    .await;
+
+                assert_eq!(
+                    reconstruct_content(&results),
+                    "Visible text",
+                    "split {split}"
+                );
+                let arguments: Vec<_> = results
+                    .iter()
+                    .flat_map(|result| &result.data.as_ref().unwrap().choices)
+                    .filter_map(|choice| choice.delta.tool_calls.as_ref())
+                    .flatten()
+                    .filter_map(|call| call.function.as_ref()?.arguments.as_deref())
+                    .collect();
+                assert_eq!(arguments, expected, "split {split}");
+            }
+        }
+    }
+
     // Review finding: the Nemotron change must not touch any other parser's chunk
     // sequence. After a Kimi K3 call, a terminal prefix of the orphan suffix is held
     // by `hold_terminal_suffix`, which leaves an empty delta that main emits.

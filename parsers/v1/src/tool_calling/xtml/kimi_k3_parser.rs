@@ -161,7 +161,16 @@ pub fn find_tool_call_end_position_kimi_k3(
     let relative_end = match marker {
         RESPONSE_OPEN | RESPONSE_CLOSE | ARGUMENT_CLOSE | JSON_CLOSE | TOOLS_CLOSE | CALL_CLOSE
         | MESSAGE_CLOSE | THINK_CLOSE | END_OF_MSG => Some(wire_marker.len()),
-        TOOLS_OPEN => find_wire_marker_end(after_start, TOOLS_CLOSE),
+        TOOLS_OPEN => {
+            let end = find_wire_marker_end(after_start, TOOLS_CLOSE)?;
+            let span = normalize_spaced_markers(&after_start[..end]);
+            // The first tools closer may belong to a restart or to a literal
+            // example in the outer argument. Wait for the message boundary.
+            response_tools_restarts(&span)
+                .next()
+                .is_none()
+                .then_some(end)
+        }
         CALL_OPEN_PREFIX => find_wire_marker_end(after_start, CALL_CLOSE),
         ARGUMENT_OPEN_PREFIX => find_wire_marker_end(after_start, ARGUMENT_CLOSE),
         JSON_OPEN_PREFIX => find_wire_marker_end(after_start, JSON_CLOSE),
@@ -276,7 +285,19 @@ fn extract_response_text(message: &str) -> String {
 
     // The generation prompt consumes response-open when thinking is disabled.
     if let Some(close) = logical.find(RESPONSE_CLOSE) {
-        return strip_leading_message_open(&logical[..close]).to_string();
+        let text = &logical[..close];
+        let end = text.match_indices(CALL_OPEN_PREFIX).find_map(|(at, _)| {
+            let (_, header_len) = parse_call_header(&text[at..])?;
+            let body = text[at + header_len..].trim_start();
+            if body.contains(CALL_CLOSE)
+                || !body.starts_with(ARGUMENT_OPEN_PREFIX) && !body.starts_with(JSON_OPEN_PREFIX)
+            {
+                return None;
+            }
+            let before = text[..at].trim_end();
+            Some(before.strip_suffix(TOOLS_OPEN).map_or(at, str::len))
+        });
+        return strip_leading_message_open(&text[..end.unwrap_or(close)]).to_string();
     }
 
     if let Some(tools) = earliest_position(logical, &[TOOLS_OPEN, CALL_OPEN_PREFIX]) {
@@ -311,10 +332,34 @@ fn extract_calls(message: &str, config: &KimiK3ParserConfig) -> Vec<ToolCallResp
 
     if let Some(tools_start) = logical.find(TOOLS_OPEN) {
         let body_start = tools_start + TOOLS_OPEN.len();
-        if let Some(close) = logical[body_start..].find(TOOLS_CLOSE) {
-            parse_calls_region(&logical[body_start..body_start + close], false, &mut calls);
+        let region = &logical[body_start..];
+        if let Some(close) = region.find(TOOLS_CLOSE) {
+            let body = &region[..close];
+            if region[close + TOOLS_CLOSE.len()..].trim().is_empty()
+                && let Some((before, retry, first_retry, consumed)) = response_tools_restarts(body)
+                    .find_map(|(before, retry)| {
+                        let last_call = before.rfind(CALL_OPEN_PREFIX)?;
+                        if parse_call_at(&before[last_call..], false).is_some() {
+                            return None;
+                        }
+                        let (first_retry, consumed) = parse_call_at(retry, false)?;
+                        Some((before, retry, first_retry?, consumed))
+                    })
+            {
+                parse_calls_region(before, false, &mut calls);
+                calls.push(first_retry);
+                parse_calls_region(&retry[consumed..], false, &mut calls);
+                return calls;
+            }
+            parse_calls_region(body, false, &mut calls);
         } else if config.allow_eof_recovery {
             parse_calls_region(&logical[body_start..], true, &mut calls);
+        } else {
+            tracing::warn!(
+                why = "kimi_k3_incomplete_tools",
+                skipped_bytes = logical.len() - tools_start,
+                "dropping an unclosed Kimi K3 tools section"
+            );
         }
         return calls;
     }
@@ -358,11 +403,7 @@ fn parse_call_at(
     input: &str,
     allow_missing_call_close: bool,
 ) -> Option<(Option<ToolCallResponse>, usize)> {
-    let after_prefix = input.strip_prefix(CALL_OPEN_PREFIX)?;
-    let tag_end_relative = after_prefix.find(SEP)?;
-    let attrs_raw = &after_prefix[..tag_end_relative];
-    let attrs = parse_attrs(attrs_raw)?;
-    let body_start = CALL_OPEN_PREFIX.len() + tag_end_relative + SEP.len();
+    let (attrs, body_start) = parse_call_header(input)?;
 
     let (body_end, consumed, missing_close) =
         if let Some(close) = input[body_start..].find(CALL_CLOSE) {
@@ -419,6 +460,28 @@ fn parse_call_at(
         }),
         consumed,
     ))
+}
+
+fn parse_call_header(input: &str) -> Option<(Vec<(String, String)>, usize)> {
+    let after_prefix = input.strip_prefix(CALL_OPEN_PREFIX)?;
+    let (attrs, _) = after_prefix.split_once(SEP)?;
+    Some((
+        parse_attrs(attrs)?,
+        CALL_OPEN_PREFIX.len() + attrs.len() + SEP.len(),
+    ))
+}
+
+fn response_tools_restarts(text: &str) -> impl Iterator<Item = (&str, &str)> {
+    text.match_indices(RESPONSE_CLOSE)
+        .filter_map(|(at, marker)| {
+            let retry = text[at + marker.len()..]
+                .trim_start()
+                .strip_prefix(TOOLS_OPEN)?
+                .trim_start();
+            retry
+                .starts_with(CALL_OPEN_PREFIX)
+                .then_some((&text[..at], retry))
+        })
 }
 
 fn parse_call_body(body: &str) -> Option<String> {
@@ -593,6 +656,19 @@ mod tests {
         let (calls, _) = parse(&tools(&call("tool=\"run\" index=\"2\"", &json)));
 
         assert_eq!(calls[0].function.arguments, raw);
+    }
+
+    #[test]
+    fn prompt_consumed_response_open_preserves_literal_tools_marker() {
+        let sample = tools(&call(
+            "tool=\"example\" index=\"1\"",
+            &arg("name", Some("string"), "sample"),
+        ));
+        for marker in [TOOLS_OPEN, &sample] {
+            let text = format!("Mention the literal `{marker}` marker");
+            let input = format!("{text}{RESPONSE_CLOSE}{MESSAGE_CLOSE}");
+            assert_eq!(extract_response_text(&input), text);
+        }
     }
 
     #[test]

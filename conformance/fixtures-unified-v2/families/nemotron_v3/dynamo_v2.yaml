@@ -1,15 +1,15 @@
-capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"65f4e91eeb7f6f80e02122f9617fad34b19ef30a11cb54cb59817d7b007811b6","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"nemotron_v3","implementation":"dynamo_v2","lineage":[{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"nemotron_v3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"12fd8721921e308d79e12231b185edf86a6f1738a9146b8b9115a3a68a5b3592","source":"conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_b7265cbc89e63fd1
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_b7265cbc89e63fd1:
+    crate_version: 0.10.10
+    source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+    git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_e0710276dc3b0b64:
+  context_3b2e21a2bb9b054a:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -104,16 +104,16 @@ contexts:
 
                 </tool_call>'
         provenance:
-          crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          crate_version: 0.10.10
+          source_sha256: b4fc0b53543cb8952d9e407c86462567b60ebfbd5a7d753b9981509c54495976
+          git_commit: b6d6348c3640cba8e4da7e7757cf303b2f2a597b
           implementation: dynamo_v2
-          version: 0.10.9
+          version: 0.10.10
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: 61e83fe5cb43eeeb0d2427da64940549328597ba7c8bedc4bc6bdc4294edbb15
         resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/nemotron_v3/dynamo_v2-0.10.10.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -1805,7 +1805,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    context: context_e0710276dc3b0b64
+    context: context_3b2e21a2bb9b054a
     request: 8b5319fa3a29cf21fa7159d65d9842746c512441301a736a99a63f9d1e47efba
     output:
       assembled:
