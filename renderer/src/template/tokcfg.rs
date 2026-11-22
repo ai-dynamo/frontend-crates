@@ -8,8 +8,12 @@ use std::collections::HashMap;
 use chrono::{DateTime, Local};
 use either::Either;
 use std::borrow::Cow;
+use std::fmt;
+use std::sync::Arc;
 
-use minijinja::value::{Kwargs, ObjectRepr, Rest, StringInput, ValueKind, from_args};
+use minijinja::value::{
+    Enumerator, Kwargs, Object, ObjectRepr, Rest, StringInput, ValueKind, from_args,
+};
 use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
 use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
@@ -267,19 +271,54 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
 
 /// The `format` filter with Python `str` for list and dict arguments, matching
 /// [`python_formatter`]. Llama 4 replays tool-call arguments as `"%s" | format(value)`,
-/// so a list or dict argument must print as Python's `repr`. Other arguments go to the
-/// builtin unchanged, so numeric conversions keep working.
+/// so a list or dict argument must print as Python's `repr`. A mapping argument (a dict
+/// or keyword arguments) stays a mapping so `%(key)s` still looks keys up, and the value
+/// it selects prints the same way. Other arguments go to the builtin unchanged, so
+/// numeric conversions keep working.
 pub fn python_format(state: &State, format_str: &Value, args: Rest<Value>) -> Result<Value, Error> {
-    let args = args
-        .iter()
-        .map(|arg| match arg.kind() {
-            ValueKind::Seq | ValueKind::Map => {
-                python_str(arg).map_or_else(|| arg.clone(), Value::from)
-            }
-            _ => arg.clone(),
-        })
-        .collect();
+    let args = args.iter().map(python_format_arg).collect();
     minijinja::filters::format(state, format_str, Rest(args))
+}
+
+fn python_format_arg(arg: &Value) -> Value {
+    match arg.kind() {
+        ValueKind::Seq => python_str(arg).map_or_else(|| arg.clone(), Value::from),
+        ValueKind::Map => Value::from_object(PyFormatMapping(arg.clone())),
+        _ => arg.clone(),
+    }
+}
+
+/// A `format` mapping argument: `%(key)s` reads a key and gets its value with Python
+/// `str` for lists and dicts, and `%s` prints the whole mapping as Python's `repr`.
+#[derive(Debug)]
+struct PyFormatMapping(Value);
+
+impl Object for PyFormatMapping {
+    fn repr(self: &Arc<Self>) -> ObjectRepr {
+        ObjectRepr::Map
+    }
+
+    fn get_value(self: &Arc<Self>, key: &Value) -> Option<Value> {
+        let value = self.0.get_item(key).ok().filter(|v| !v.is_undefined())?;
+        Some(match value.kind() {
+            ValueKind::Seq | ValueKind::Map => python_str(&value).map_or(value, Value::from),
+            _ => value,
+        })
+    }
+
+    fn enumerate(self: &Arc<Self>) -> Enumerator {
+        match self.0.try_iter() {
+            Ok(keys) => Enumerator::Values(keys.collect()),
+            Err(_) => Enumerator::NonEnumerable,
+        }
+    }
+
+    fn render(self: &Arc<Self>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match python_str(&self.0) {
+            Some(text) => f.write_str(&text),
+            None => fmt::Display::fmt(&self.0, f),
+        }
+    }
 }
 
 /// minijinja-contrib's pycompat string methods, with Python's whitespace where

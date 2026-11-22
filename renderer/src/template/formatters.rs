@@ -1363,6 +1363,37 @@ mod tests {
         );
     }
 
+    /// Named `%(key)s` placeholders read from keyword arguments or a positional mapping,
+    /// and a list or dict value they select prints as Python's `repr`.
+    #[test]
+    fn test_format_filter_named_placeholders() {
+        assert_eq!(
+            render_hf(r#"{{ "%(name)s" | format(name="Alice") }}"#, context! {}),
+            "Alice"
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%(k)s|%(n)d" | format(m) }}"#,
+                context! { m => json!({"k": "v", "n": 3}) }
+            ),
+            "v|3"
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%(a)s %(b)s" | format(a=["x", none], b={"k": 1.5}) }}"#,
+                context! {}
+            ),
+            "['x', None] {'k': 1.5}"
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%(a)s" | format(m) }}"#,
+                context! { m => json!({"a": {"t": [true, null]}}) }
+            ),
+            "{'t': [True, None]}"
+        );
+    }
+
     /// HF prints `{{ x }}` and `x | string` with Python `str`, which spells floats as `repr`.
     #[test]
     fn test_output_formats_floats_like_python() {
