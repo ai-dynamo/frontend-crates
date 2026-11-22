@@ -346,6 +346,41 @@ pub(crate) fn python_splitlines(s: &str, keepends: bool) -> Vec<&str> {
     lines
 }
 
+/// Python's `repr` of a string: single quotes unless only `'` occurs, `\\`, the quote
+/// and `\t \n \r` escaped, and other unprintable characters as `\xNN`, `\uNNNN` or
+/// `\UNNNNNNNN`. Unprintable is control, separator (except space), format and
+/// private-use; other unassigned code points print as themselves.
+pub(crate) fn python_str_repr(s: &str, out: &mut String) {
+    let quote = ['\'', '"'][usize::from(s.contains('\'') && !s.contains('"'))];
+    out.push(quote);
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '\t' => out.push_str("\\t"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            c if c == quote => out.extend(['\\', c]),
+            ' ' => out.push(' '),
+            c if c.is_control()
+                || c.is_whitespace()
+                || matches!(c, '\u{ad}' | '\u{600}'..='\u{605}' | '\u{61c}' | '\u{6dd}' | '\u{70f}'
+                    | '\u{180e}' | '\u{200b}'..='\u{200f}' | '\u{202a}'..='\u{202e}'
+                    | '\u{2060}'..='\u{206f}' | '\u{feff}' | '\u{fff9}'..='\u{fffb}'
+                    | '\u{e000}'..='\u{f8ff}' | '\u{e0000}'..='\u{e007f}' | '\u{f0000}'..) =>
+            {
+                let code = u32::from(c);
+                out.push_str(&match code {
+                    ..0x100 => format!("\\x{code:02x}"),
+                    0x100..0x10000 => format!("\\u{code:04x}"),
+                    _ => format!("\\U{code:08x}"),
+                });
+            }
+            c => out.push(c),
+        }
+    }
+    out.push(quote);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1330,6 +1330,17 @@ mod tests {
         );
     }
 
+    /// Python `str` of a list or dict is its `repr`, which Seed-OSS tool-call arguments and
+    /// Qwen3-Coder `<type>` unions put in the prompt.
+    #[test]
+    fn test_output_formats_containers_like_python() {
+        let v = json!([{"type": ["string", "null"]}, "it's", "a\"b'\n\u{a0}", 1e-7, true, null]);
+        let expected =
+            r#"[{'type': ['string', 'null']}, "it's", 'a"b\'\n\xa0', 1e-07, True, None]"#;
+        assert_eq!(render_hf("{{ v }}", context! { v => v.clone() }), expected);
+        assert_eq!(render_hf("{{ v | string }}", context! { v => v }), expected);
+    }
+
     /// HF prints `{{ x }}` and `x | string` with Python `str`, which spells floats as `repr`.
     #[test]
     fn test_output_formats_floats_like_python() {

@@ -209,22 +209,57 @@ fn python_float_str(value: &Value) -> Option<String> {
     f64::try_from(value.clone()).ok().map(python_float_repr)
 }
 
-/// Output formatter for `{{ x }}`. HF renders through Python, which prints a float
-/// with `str`; see [`python_float_str`]. Other values are unchanged. `~` concatenation
+/// Python `str` of a list or dict, which is its `repr` (`['a', None]`, `{'k': 1e-06}`)
+/// where minijinja writes `["a", none]`; otherwise [`python_float_str`].
+fn python_str(value: &Value) -> Option<String> {
+    if !matches!(value.kind(), ValueKind::Seq | ValueKind::Map) {
+        return python_float_str(value);
+    }
+    let mut out = String::new();
+    python_repr(value, &mut out).map(|()| out)
+}
+
+/// Appends Python's `repr` of `value`; `None` for a kind Python has no spelling for.
+fn python_repr(value: &Value, out: &mut String) -> Option<()> {
+    let is_map = value.kind() == ValueKind::Map;
+    match value.kind() {
+        ValueKind::None => out.push_str("None"),
+        ValueKind::Bool => out.push_str(if value.is_true() { "True" } else { "False" }),
+        ValueKind::Number => out.push_str(&python_float_str(value).unwrap_or(value.to_string())),
+        ValueKind::String => crate::python::python_str_repr(value.as_str()?, out),
+        ValueKind::Seq | ValueKind::Map => {
+            out.push(if is_map { '{' } else { '[' });
+            for (i, item) in value.try_iter().ok()?.enumerate() {
+                out.push_str(if i == 0 { "" } else { ", " });
+                python_repr(&item, out)?;
+                if is_map {
+                    out.push_str(": ");
+                    python_repr(&value.get_item(&item).ok()?, out)?;
+                }
+            }
+            out.push(if is_map { '}' } else { ']' });
+        }
+        _ => return None,
+    }
+    Some(())
+}
+
+/// Output formatter for `{{ x }}`. HF renders through Python, which prints values
+/// with `str`; see [`python_str`]. Other values are unchanged. `~` concatenation
 /// is a VM op that can't be overridden, and filters that stringify values themselves
 /// (`join`, `replace`, ...) use minijinja's spelling, so `'x' ~ 1e-6` and
 /// `[1e-6] | join` still render `0.000001`.
 pub fn python_formatter(out: &mut Output, state: &State, value: &Value) -> Result<(), Error> {
-    match python_float_str(value) {
+    match python_str(value) {
         Some(text) => out.write_str(&text).map_err(Error::from),
         None => escape_formatter(out, state, value),
     }
 }
 
-/// The `string` filter with Python `str` floats, matching [`python_formatter`];
-/// other values go to the builtin.
+/// The `string` filter with Python `str` floats, lists and dicts, matching
+/// [`python_formatter`]; other values go to the builtin.
 pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
-    match python_float_str(value) {
+    match python_str(value) {
         Some(text) => Ok(Value::from(text)),
         None => minijinja::filters::string(state, value),
     }
