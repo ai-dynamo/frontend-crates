@@ -252,10 +252,11 @@ fn python_repr(value: &Value, out: &mut String) -> Option<()> {
 /// with `str`; see [`python_str`]. Other values are unchanged. `~` concatenation
 /// is a VM op that can't be overridden, and filters that stringify values themselves
 /// (`join`, `replace`, ...) use minijinja's spelling, so `'x' ~ 1e-6` and
-/// `[1e-6] | join` still render `0.000001`.
+/// `[1e-6] | join` still render `0.000001`. The Python spelling is written as a plain
+/// string through [`escape_formatter`], so an active autoescape still applies to it.
 pub fn python_formatter(out: &mut Output, state: &State, value: &Value) -> Result<(), Error> {
     match python_str(value) {
-        Some(text) => out.write_str(&text).map_err(Error::from),
+        Some(text) => escape_formatter(out, state, &Value::from(text)),
         None => escape_formatter(out, state, value),
     }
 }

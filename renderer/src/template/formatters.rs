@@ -1342,6 +1342,30 @@ mod tests {
         assert_eq!(render_hf("{{ v | string }}", context! { v => v }), expected);
     }
 
+    /// The Python spelling of a list or dict still goes through autoescape when it is on.
+    #[test]
+    fn test_output_containers_respect_autoescape() {
+        let v = json!(["<tag>", {"k": "a&b"}]);
+        assert_eq!(
+            render_hf(
+                "{% autoescape true %}{{ v }}{% endautoescape %}",
+                context! { v => v.clone() }
+            ),
+            "[&#x27;&lt;tag&gt;&#x27;, {&#x27;k&#x27;: &#x27;a&amp;b&#x27;}]"
+        );
+        assert_eq!(
+            render_hf(
+                "{% autoescape true %}{{ ['<tag>'] }}{% endautoescape %}",
+                context! {}
+            ),
+            "[&#x27;&lt;tag&gt;&#x27;]"
+        );
+        assert_eq!(
+            render_hf("{{ v }}", context! { v => v }),
+            "['<tag>', {'k': 'a&b'}]"
+        );
+    }
+
     /// Llama 4 replays tool-call arguments with `"%s" | format(value)`, which prints a list
     /// or dict argument as Python's `repr`; other arguments keep the builtin's conversions.
     #[test]
