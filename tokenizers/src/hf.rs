@@ -3,6 +3,7 @@
 
 use std::{collections::HashSet, path::Path, sync::OnceLock};
 
+use tokenizers::normalizers::NormalizerWrapper;
 use tokenizers::pre_tokenizers::{PreTokenizerWrapper, metaspace::PrependScheme};
 use tokenizers::tokenizer::{
     AddedToken, AddedVocabulary, PostProcessor as _, Tokenizer as HfTokenizer,
@@ -307,6 +308,14 @@ fn first_word_marker(pre_tokenizer: &PreTokenizerWrapper) -> Option<char> {
     }
 }
 
+/// Whether the normalizer leaves every text as it is (an empty `Sequence`, as in DeepSeek V3).
+fn is_identity(normalizer: &NormalizerWrapper) -> bool {
+    match normalizer {
+        NormalizerWrapper::Sequence(sequence) => sequence.as_ref().iter().all(is_identity),
+        _ => false,
+    }
+}
+
 impl Tokenizer for HuggingFaceTokenizer {
     fn validate_prefix_cache(&self) -> Result<()> {
         if self.options.add_special_tokens {
@@ -326,9 +335,16 @@ impl Tokenizer for HuggingFaceTokenizer {
 
     fn prefix_split_rules(&self) -> PrefixSplitRules {
         let mut rules = PrefixSplitRules::default();
+        let rewrites = self
+            .tokenizer
+            .get_normalizer()
+            .is_some_and(|normalizer| !is_identity(normalizer));
         for token in self.tokenizer.get_added_tokens_decoder().into_values() {
             if token.rstrip {
                 rules.rstrip.push(token.content.clone());
+            }
+            if token.normalized && rewrites {
+                rules.normalized.push(token.content.clone());
             }
             if token.single_word {
                 rules.single_word.push(token.content);

@@ -228,6 +228,10 @@ pub mod traits {
         pub rstrip: Vec<String>,
         /// Special tokens matched only between non-word characters (`single_word`).
         pub single_word: Vec<String>,
+        /// Special tokens matched on normalized text (`normalized: true`) by a tokenizer
+        /// whose normalizer can rewrite it, such as Llama-2's `Prepend("▁")`. Each side
+        /// of a split would be normalized on its own, so no split may follow them.
+        pub normalized: Vec<String>,
         /// The marker prepended to text at the very start of the input, when the
         /// tokenizer prepends one only there (Metaspace `prepend_scheme: "first"`).
         /// Text after a split would wrongly get it unless it starts with a space,

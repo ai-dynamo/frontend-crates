@@ -55,6 +55,14 @@ fn fast_encode_segments(
     Ok(Encoding::Sp(ids))
 }
 
+/// Whether the normalizer leaves every text as it is (an empty `Sequence`).
+fn is_identity(normalizer: &fastokens::normalizers::Normalizer) -> bool {
+    match normalizer {
+        fastokens::normalizers::Normalizer::Sequence(steps) => steps.iter().all(is_identity),
+        _ => false,
+    }
+}
+
 /// Hybrid tokenizer: fast BPE encoding via `fastokens`, decoding via HuggingFace.
 ///
 /// Both backends are loaded from the same `tokenizer.json` file.
@@ -115,9 +123,16 @@ impl Tokenizer for FastTokenizer {
     // flags than the HF decoder's.
     fn prefix_split_rules(&self) -> PrefixSplitRules {
         let mut rules = PrefixSplitRules::default();
+        let rewrites = self
+            .fast_encoder
+            .normalizer()
+            .is_some_and(|normalizer| !is_identity(normalizer));
         for token in self.fast_encoder.added_token_configs() {
             if token.rstrip {
                 rules.rstrip.push(token.content.clone());
+            }
+            if token.normalized && rewrites {
+                rules.normalized.push(token.content.clone());
             }
             if token.single_word {
                 rules.single_word.push(token.content.clone());
