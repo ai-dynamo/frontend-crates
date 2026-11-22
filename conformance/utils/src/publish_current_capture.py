@@ -248,6 +248,7 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
                 if active is not None and (
                     not unified_history.typed_equal(active["result"], measured)
                     or provenance_release_version(active["provenance"]["version"]) != version
+                    or active["provenance"]["source_sha256"] != origin["source_sha256"]
                 ):
                     archive = metadata.setdefault("verified_recaptures", [])
                     if not any(unified_history.typed_equal(active, item) for item in archive):

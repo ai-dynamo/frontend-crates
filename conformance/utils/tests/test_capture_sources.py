@@ -1408,7 +1408,8 @@ def test_latest_refresh_archives_new_execution_and_rejects_invalid_requests(spli
     assert {p.relative_to(history): p.read_bytes() for p in history.rglob("*") if p.is_file()} == before_history
 
 
-def test_latest_refresh_retains_prior_release_execution_for_identical_output(split_evidence, monkeypatch):
+@pytest.mark.parametrize("advance_release", [False, True])
+def test_latest_refresh_retains_execution_for_new_source_or_release(split_evidence, monkeypatch, advance_release):
     root, _history, source, latest = split_evidence
     origin = {"crate_version": "0.5.3", "source_sha256": "a" * 64, "git_commit": "b" * 40}
     _seed_unpublished_latest(root, source, latest, origin)
@@ -1427,10 +1428,12 @@ def test_latest_refresh_retains_prior_release_execution_for_identical_output(spl
     publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
     before = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]
     receipt = copy.deepcopy(before["document"]["record_metadata"]["verified_recapture"])
-    origin.update(crate_version="0.5.4", source_sha256="c" * 64, git_commit="d" * 40)
-    (loose / "dynamo_v2-0.5.3").rename(loose / "dynamo_v2-0.5.4")
-    path = loose / "dynamo_v2-0.5.4/gemma4" / path.name
-    document.update(capture_origin=copy.deepcopy(origin), captured_with={"dynamo_v2": "0.5.4"})
+    version = "0.5.4" if advance_release else "0.5.3"
+    origin.update(crate_version=version, source_sha256="c" * 64, git_commit="d" * 40)
+    if advance_release:
+        (loose / "dynamo_v2-0.5.3").rename(loose / f"dynamo_v2-{version}")
+    path = loose / f"dynamo_v2-{version}/gemma4" / path.name
+    document.update(capture_origin=copy.deepcopy(origin), captured_with={"dynamo_v2": version})
     path.write_text(unified_history.dump_yaml(document))
     publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
     after = unified_history.load_yaml(root / latest)["records"]["text_only"]["value"]
@@ -1439,7 +1442,8 @@ def test_latest_refresh_retains_prior_release_execution_for_identical_output(spl
     metadata = after["document"]["record_metadata"]
     assert metadata["verified_recaptures"] == [receipt]
     assert metadata["verified_recapture"]["result"] == receipt["result"]
-    assert metadata["verified_recapture"]["provenance"]["version"] == "0.5.4"
+    assert metadata["verified_recapture"]["provenance"]["version"] == version
+    assert metadata["verified_recapture"]["provenance"]["source_sha256"] == origin["source_sha256"]
     stable = (root / latest).read_bytes()
     publish_current_capture.refresh_unpublished_latest(root, loose, {"kind": "unpublished"})
     assert (root / latest).read_bytes() == stable
