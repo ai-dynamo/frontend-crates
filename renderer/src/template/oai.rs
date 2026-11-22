@@ -1698,6 +1698,68 @@ mod tests {
         SysFormatter::new(ct, SysMixins::new(&[])).unwrap()
     }
 
+    /// LFM2's template prints a tool argument with `tojson` when it `is mapping or
+    /// is iterable`, otherwise with `| string`. Jinja2 does not call `None` iterable,
+    /// so transformers and vLLM render a null argument as `None`, not `null`.
+    #[test]
+    fn none_tool_argument_is_not_iterable() {
+        let formatter = formatter_for(
+            "{%- macro arg(v) -%}{%- if v is string -%}'{{ v }}'\
+             {%- elif v is mapping or v is iterable -%}{{ v | tojson }}\
+             {%- else -%}{{ v | string }}{%- endif -%}{%- endmacro -%}\
+             {%- for m in messages -%}{%- for tc in m.tool_calls or [] -%}{{ tc.function.name }}(\
+             {%- for k, v in tc.function.arguments.items() -%}{{ k }}={{ arg(v) }}\
+             {%- if not loop.last %}, {% endif -%}{%- endfor -%}){%- endfor -%}{%- endfor -%}",
+        );
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [
+                {"role": "user", "content": "Weather?"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "call00001", "type": "function",
+                    "function": {"name": "get_weather",
+                                 "arguments": "{\"location\": \"Paris\", \"days\": null, \"hours\": [6, 12]}"}
+                }]}
+            ]
+        }))
+        .unwrap();
+        assert_eq!(
+            formatter.render(&request).unwrap(),
+            "get_weather(location='Paris', days=None, hours=[6, 12])"
+        );
+    }
+
+    /// Every type test on none, a boolean, an integer, a float, a string, a list, a dict
+    /// and an undefined name. The expected string is Jinja2's output for the template.
+    #[test]
+    fn type_tests_match_jinja2() {
+        let row = [
+            "iterable", "sequence", "mapping", "string", "number", "integer", "float", "boolean",
+            "none", "defined",
+        ]
+        .map(|test| format!("{{{{ v is {test} }}}}"))
+        .join(",");
+        let formatter = formatter_for(&format!(
+            "{{%- for v in [none, true, 1, 1.5, 's', [1], {{'a': 1}}] -%}}{row};{{%- endfor -%}}{}",
+            row.replace("v is", "missing is")
+        ));
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test", "messages": [{"role": "user", "content": "hi"}]
+        }))
+        .unwrap();
+        assert_eq!(
+            formatter.render(&request).unwrap(),
+            "False,False,False,False,False,False,False,False,True,True;\
+             False,False,False,False,True,False,False,True,False,True;\
+             False,False,False,False,True,True,False,False,False,True;\
+             False,False,False,False,True,False,True,False,False,True;\
+             True,True,False,True,False,False,False,False,False,True;\
+             True,True,False,False,False,False,False,False,False,True;\
+             True,True,True,False,False,False,False,False,False,True;\
+             True,True,False,False,False,False,False,False,False,False"
+        );
+    }
+
     #[test]
     fn harmony_literal_markers_keep_text_and_token_trust_boundaries() {
         let formatter = formatter_for(

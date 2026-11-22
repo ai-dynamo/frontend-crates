@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
-    ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
-    raise_exception, strftime_now, tojson,
+    ChatTemplate, fromjson, python_formatter, python_iterable, python_methods, python_number,
+    python_sequence, python_string, python_trim, raise_exception, strftime_now, tojson,
 };
 use super::{
     ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
@@ -749,6 +749,9 @@ impl HfTokenizerConfigJsonFormatter {
         env.add_filter("tojson", tojson);
         env.add_filter("string", python_string);
         env.set_formatter(python_formatter);
+        env.add_test("iterable", python_iterable);
+        env.add_test("sequence", python_sequence);
+        env.add_test("number", python_number);
 
         // Templates that round-trip tool call `arguments` (a JSON string) back into an
         // object need this; minijinja has no builtin. Both spellings are in the wild.

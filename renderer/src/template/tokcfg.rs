@@ -230,6 +230,32 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
     }
 }
 
+/// The `iterable` test as Jinja2 runs it: true when Python's `iter()` accepts the
+/// value. MiniJinja also iterates `none`, as an empty loop, so its builtin calls
+/// `none` iterable where Python does not.
+pub fn python_iterable(value: &Value) -> bool {
+    !value.is_none() && value.try_iter().is_ok()
+}
+
+/// The `sequence` test as Jinja2 runs it: true for a value with a length and item
+/// access, which in Python includes strings and dicts (and Jinja2's undefined).
+/// MiniJinja's builtin is true for lists only.
+pub fn python_sequence(value: &Value) -> bool {
+    matches!(
+        value.kind(),
+        ValueKind::String
+            | ValueKind::Bytes
+            | ValueKind::Seq
+            | ValueKind::Map
+            | ValueKind::Undefined
+    )
+}
+
+/// The `number` test as Jinja2 runs it: Python's booleans are numbers too.
+pub fn python_number(value: &Value) -> bool {
+    matches!(value.kind(), ValueKind::Number | ValueKind::Bool)
+}
+
 /// minijinja-contrib's pycompat string methods, with Python's whitespace where
 /// Rust's differs: `strip`, `lstrip`, `rstrip` and `split()` also treat U+001C..U+001F
 /// as whitespace, `isspace` is false for `""`, and `splitlines` ends lines at every
