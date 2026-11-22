@@ -7,6 +7,7 @@
 use std::io;
 
 use serde_json::ser::Formatter;
+use unicode_properties::{GeneralCategoryGroup, UnicodeGeneralCategory};
 
 /// Recover serde_json numbers after MiniJinja's serializer has represented
 /// arbitrary-precision Number structs as maps. Keep this at the JSON boundary;
@@ -348,8 +349,8 @@ pub(crate) fn python_splitlines(s: &str, keepends: bool) -> Vec<&str> {
 
 /// Python's `repr` of a string: single quotes unless only `'` occurs, `\\`, the quote
 /// and `\t \n \r` escaped, and other unprintable characters as `\xNN`, `\uNNNN` or
-/// `\UNNNNNNNN`. Unprintable is control, separator (except space), format and
-/// private-use; other unassigned code points print as themselves.
+/// `\UNNNNNNNN`. Unprintable is CPython's `Py_UNICODE_ISPRINTABLE`: every `Other`
+/// (Cc, Cf, Cs, Co, Cn) and `Separator` (Zs, Zl, Zp) general category except space.
 pub(crate) fn python_str_repr(s: &str, out: &mut String) {
     let quote = ['\'', '"'][usize::from(s.contains('\'') && !s.contains('"'))];
     out.push(quote);
@@ -360,14 +361,7 @@ pub(crate) fn python_str_repr(s: &str, out: &mut String) {
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             c if c == quote => out.extend(['\\', c]),
-            ' ' => out.push(' '),
-            c if c.is_control()
-                || c.is_whitespace()
-                || matches!(c, '\u{ad}' | '\u{600}'..='\u{605}' | '\u{61c}' | '\u{6dd}' | '\u{70f}'
-                    | '\u{180e}' | '\u{200b}'..='\u{200f}' | '\u{202a}'..='\u{202e}'
-                    | '\u{2060}'..='\u{206f}' | '\u{feff}' | '\u{fff9}'..='\u{fffb}'
-                    | '\u{e000}'..='\u{f8ff}' | '\u{e0000}'..='\u{e007f}' | '\u{f0000}'..) =>
-            {
+            c if !is_python_printable(c) => {
                 let code = u32::from(c);
                 out.push_str(&match code {
                     ..0x100 => format!("\\x{code:02x}"),
@@ -381,9 +375,38 @@ pub(crate) fn python_str_repr(s: &str, out: &mut String) {
     out.push(quote);
 }
 
+/// CPython's `Py_UNICODE_ISPRINTABLE`: false for the `Other` and `Separator` general
+/// categories (control, format, surrogate, private-use, unassigned, and space, line
+/// and paragraph separators), except U+0020.
+fn is_python_printable(c: char) -> bool {
+    c == ' '
+        || !matches!(
+            c.general_category_group(),
+            GeneralCategoryGroup::Other | GeneralCategoryGroup::Separator
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Expected spellings are CPython's `repr`: unassigned (U+0378), format (U+08E2,
+    /// U+00AD), private-use and separator characters escape; printable non-ASCII stays.
+    #[test]
+    fn str_repr_escapes_python_nonprintable() {
+        for (input, expected) in [
+            ("\u{378}", r"'\u0378'"),
+            ("\u{8e2}", r"'\u08e2'"),
+            ("\u{ad}\u{a0}\u{85}\u{7f}", r"'\xad\xa0\x85\x7f'"),
+            ("\u{2028}\u{3000}\u{e000}", r"'\u2028\u3000\ue000'"),
+            ("\u{e0001}\u{10ffff}", r"'\U000e0001\U0010ffff'"),
+            ("a b\u{e9}\u{4e2d}\u{1f600}", "'a b\u{e9}\u{4e2d}\u{1f600}'"),
+        ] {
+            let mut out = String::new();
+            python_str_repr(input, &mut out);
+            assert_eq!(out, expected, "{input:?}");
+        }
+    }
 
     #[test]
     fn template_boundaries_keep_numbers_numeric() {
