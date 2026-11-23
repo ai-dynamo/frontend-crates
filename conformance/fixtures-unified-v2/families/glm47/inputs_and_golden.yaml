@@ -89,6 +89,17 @@ tools:
       - value
       additionalProperties: false
     strict: true
+  tools_75dd58c153074b2e:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+  - name: get_time
+    parameters:
+      type: object
+      properties: {}
   tools_387de911bb2ab3d2:
   - name: get_weather
     parameters:
@@ -1888,17 +1899,6 @@ tools:
         enum_text:
           $ref: '#/$defs/EnumAlias'
           nullable: true
-  tools_75dd58c153074b2e:
-  - name: run
-    parameters:
-      type: object
-      properties:
-        cmd:
-          type: string
-  - name: get_time
-    parameters:
-      type: object
-      properties: {}
 requests:
   007daaca42a3b0592281ac94df4f79f9f3742ec5577b7bc81c69cbfb2e992218:
     input: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
@@ -1989,6 +1989,14 @@ requests:
     - 12
     - 12
     finish_step: true
+  06a261701eb6c41792efcde3900f76bf30f203607d4e5ab596c6bdab10196a85:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_key></arg_key><arg_value>Paris</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 36
+    - 47
+    - 12
+    finish_step: true
   078f6ea99d9d438691a92ed97f139402196aad33fa282ca0141c548ed0834959:
     input: <tool_call>get_weather<arg_key>value</arg_key><arg_value>42.0</arg_value></tool_call>
     tools: tools_387de911bb2ab3d2
@@ -2032,21 +2040,21 @@ requests:
     - 12
     finish_step: true
   0a0d9446e430656f4bef4fad97910011bb15caae9599bd82fc2b963d886849db:
-    input: '''90s</think>''Answer'''
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '''90s</think>''Answer'''
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 20
     finish_step: true
   0a351ec6831a4828665f02897e3df9f67f0251a45d4ab1ffe011882751be3dff:
-    input: Let me think, this SQL fragment is '1'='1</think>'Yes'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, this SQL fragment is '1'='1</think>'Yes'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 54
@@ -2062,6 +2070,15 @@ requests:
     - 10
     - 11
     - 7
+    - 12
+    - 12
+    finish_step: true
+  0b62a18a22490140b0e57c58c293595288b61808166eaebab3191f7c782ad1b4:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>prefix</tool_call><tool_call> after</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 53
+    - 29
     - 12
     - 12
     finish_step: true
@@ -2081,11 +2098,11 @@ requests:
     - 57
     finish_step: true
   0bfd6ddcf8e7fc3fa807e93142a6f620937b55d940310118ece733832d7968ed:
-    input: '`name</think>`Answer`'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`name</think>`Answer`'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 21
@@ -2139,13 +2156,13 @@ requests:
     input: '"<tool_call>lookup<arg_key>q</arg_key><arg_value>x</arg_value></tool_call>" trailing'
     tools: tools_81b3b17af2bd185e
   0fb1c9d4b222a6ab6afea7ab400bb1d263cdb021aa732c9447f6ad9787bb54f3:
-    input: 'f''" OR x -- ''
-
-      </think>"Answer"'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: 'f''" OR x -- ''
+
+      </think>"Answer"'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 30
@@ -2575,11 +2592,11 @@ requests:
     - 12
     finish_step: true
   21adf7e2971a3aaebaa2284c20bc3c56e122075a387a7d754d2023af8ca4edef:
-    input: '`pytest -x</think>Run `pytest`'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`pytest -x</think>Run `pytest`'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 30
@@ -2719,6 +2736,14 @@ requests:
     - 12
     - 12
     finish_step: true
+  2b7851ac715b4352401b96b84fcbfa04f7d2e38bb157475e4156db6448dab027:
+    input: <tool_call>run<arg_key></arg_key><arg_value><arg_key>cmd</arg_key><arg_key></arg_key><arg_value>Paris</arg_value></arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 44
+    - 69
+    - 24
+    finish_step: true
   2bb5954210567ce4f5cc95ce00d38cefdbc45506643e29b1b42202306071e160:
     input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1e400</arg_value></tool_call>
     tools: tools_81ef407beab6fe3e
@@ -2815,11 +2840,11 @@ requests:
     - 12
     finish_step: true
   31231374e4ae37fb4f617d6f24635721105e3b33ef447d464b085a775a610591:
-    input: Let me think, the marker </think> is a special marker
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the marker </think> is a special marker
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 53
@@ -3046,6 +3071,14 @@ requests:
     - 12
     - 12
     finish_step: true
+  40b9395338903cd97e2111ac80f153c32953cd1a76c35c3779f7dbca2158edb4:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_key> </arg_key><arg_value><arg_key>cmd</arg_key><arg_value>hidden</arg_value></arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 67
+    - 51
+    - 24
+    finish_step: true
   4156f50eedf1ef7287bc2acf92924b01fcb1aa52ffa41a13cb1e8271b9101972:
     init:
       starting_state: None
@@ -3074,11 +3107,11 @@ requests:
     - 12
     finish_step: true
   4339065b4c0af2a2c2fcd98f9221de4bcd773a1a629a6ada18f427123cbfb266:
-    input: Let me think, I should try `pytest -x</think>Run pytest
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should try `pytest -x</think>Run pytest
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 55
@@ -3285,11 +3318,11 @@ requests:
     - 12
     finish_step: true
   4c4d56f0ed35b32a61314759ccc935fa3423b2d0b484117ebb5c35e894dbe4fc:
-    input: Let me think, I should run this command "grep -v '</think>' ..."
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should run this command "grep -v '</think>' ..."
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 64
@@ -3392,6 +3425,14 @@ requests:
     - 11
     - 4
     - 12
+    - 12
+    finish_step: true
+  50b403511fd86f4fbc030c32066cd5589c041192a5a51f0e4e655ad37bd91800:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_key>bad<junk></arg_key><arg_value>Paris</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 36
+    - 56
     - 12
     finish_step: true
   51571e40a6365a09853006529e4c49a891d3587159f1a3048f129c684bec3d59:
@@ -3500,6 +3541,17 @@ requests:
     chunk_sizes:
     - 107
     finish_step: true
+  54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>prefix</tool_call> first second</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 53
+    - 12
+    - 6
+    - 7
+    - 12
+    - 12
+    finish_step: true
   55276c13bc6f6db15ec40050559faca816086d4241f35428a68f7510193021bd:
     input: <tool_call>schema_probe<arg_key>value</arg_key><arg_value>42</arg_value></tool_call>
     tools: tools_fbb97c1a6a0aceda
@@ -3513,6 +3565,14 @@ requests:
     - 2
     - 12
     - 12
+    finish_step: true
+  57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>first</arg_value><arg_key>cmd</arg_key><arg_value>second</arg_value></tool_call><tool_call>get_time</tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 64
+    - 63
+    - 31
     finish_step: true
   58ead30ec4cdd62c45b4c69f24d25024ab5f0737e02003a080538f4ee83a895a:
     init:
@@ -3608,11 +3668,11 @@ requests:
     - 12
     finish_step: true
   5fa11fd6bf79ada6c3a6f2deb0d1017d1275e3d44f005074f86d26698ac41aac:
-    input: Let me think, user is asking if </think> is special</think>Yes
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, user is asking if </think> is special</think>Yes
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 62
@@ -3658,16 +3718,16 @@ requests:
     - 12
     finish_step: true
   61dfd4cdfdf94bebadec391fd39f793687a8a0a89331265cbfea932519ec0776:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
     input: '`load_config`''s check is fine, but `open(''/tmp/x'')` is not.
 
       </think>
 
 
       I''ve found the bug in `app.py`.'
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 101
@@ -3722,11 +3782,11 @@ requests:
     - 12
     finish_step: true
   650fc6d18b09ecda0770925216ed69680a3cf262779f10bc874ee754b6e13e86:
-    input: '`name`''s path.</think>''Answer'''
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '`name`''s path.</think>''Answer'''
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 30
@@ -4256,11 +4316,11 @@ requests:
     - 12
     finish_step: true
   84ccf7b13f0194c1f2329275c6829d1368363efb4b34e7649786ad2cdcd246a3:
-    input: The literal "<tool_call>" marker is part of the explanation. <tool_call>run<arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: The literal "<tool_call>" marker is part of the explanation. <tool_call>run<arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>
     tools: tools_ac03f4607c61c9ce
     chunk_sizes:
     - 61
@@ -4302,11 +4362,11 @@ requests:
     - 12
     finish_step: true
   86932f70a0a02c3a6c5d04ff7076c1ffb9f8926818718ff5137894d25e86a7bc:
-    input: Let me think, the reference is 80s' music</think>'Yes'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the reference is 80s' music</think>'Yes'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 54
@@ -4360,11 +4420,11 @@ requests:
     - 12
     finish_step: true
   8af32ebdcd8fcaa9851bcb19b027fe59ac8f4c0f7fc810f60428acc402ff3dde:
-    input: The special "</think>" marker is used to delineate parser paths
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: The special "</think>" marker is used to delineate parser paths
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 63
@@ -4701,6 +4761,14 @@ requests:
     - 12
     - 12
     finish_step: true
+  9c2eda1be37129c18403774ff25393c45b39db021d82ab4f6e1f3af5fd6fbc0e:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_key></arg_key><arg_value><arg_key>cmd</arg_key><arg_value>recovered</arg_value></arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 66
+    - 54
+    - 24
+    finish_step: true
   9c54c5a5b6d5a7ab55549dbca23802a6358961be93971fce6894fd218f4e9fd8:
     input: <tool_call>capture_payload<arg_key>metrics</arg_key><arg_value>["temperature","humidity"]</arg_value><arg_key>count</arg_key><arg_value>5</arg_value></tool_call>
     tools: tools_7f03b4392817a770
@@ -4821,11 +4889,11 @@ requests:
     - 6
     finish_step: true
   a25cd2bb559cf7a4d92b15cdb0b7b7073f3ff9e8ec9e16468544b29c88628089:
-    input: 27"</think>"Answer"
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: 27"</think>"Answer"
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 19
@@ -4845,11 +4913,11 @@ requests:
     - 12
     finish_step: true
   a4876338bfda7cc3a1dc239ac7bef87b76ef163a0241cba1334fa070f674b926:
-    input: '''</think>''</think>Answer'
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: '''</think>''</think>Answer'
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 24
@@ -4878,6 +4946,14 @@ requests:
     chunk_sizes:
     - 8
     - 57
+    finish_step: true
+  a5a0bee68418f66b4eff1476de43c9e9ea30f150a24fcd51cbba6ee68cabb0ac:
+    input: <tool_call>run<arg_key>broken<bad></arg_key><arg_value><arg_key>cmd</arg_key><arg_key></arg_key><arg_value>Paris</arg_value></arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 55
+    - 69
+    - 24
     finish_step: true
   a670662fead6237578fc663ff5a9854c0ec8ec82f47649d6041cb4b9d71e6f01:
     init:
@@ -4940,11 +5016,11 @@ requests:
     - 12
     finish_step: true
   a9e8f53fa894d198aa56725ba3bc7dba4d004295b613d7ad03c4fe47faadc37e:
-    input: Let me think, the year is 80s'</think>Yes
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the year is 80s'</think>Yes
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 41
@@ -4964,11 +5040,11 @@ requests:
     - 12
     finish_step: true
   acf70b967a32a94ee3659cfb1665d0873d10fe3fada65b3418a3014744a5c8b0:
-    input: <tool_call>write_file<arg_key>content</arg_key><arg_value><think></think>answer</arg_value></tool_call>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: <tool_call>write_file<arg_key>content</arg_key><arg_value><think></think>answer</arg_value></tool_call>
     tools: tools_14bcb316cd445c47
     chunk_sizes:
     - 103
@@ -5058,6 +5134,14 @@ requests:
     chunk_sizes:
     - 11
     - 47
+    - 12
+    finish_step: true
+  b1ff93a242190efd5a432e93ed68b09ca7a1f82a4797aa9b7c6df72db624a5c4:
+    input: "<tool_call>run<arg_key>cmd</arg_key><arg_key> \t </arg_key><arg_value>Paris</arg_value></tool_call>"
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 36
+    - 50
     - 12
     finish_step: true
   b2c8dc6305b90675d0bfd5ad91f787bb519fbbb782d5339e3aa3c44b52036cea:
@@ -5272,11 +5356,11 @@ requests:
     - 12
     finish_step: true
   bdbdb00044984e69ca1938a3947fb32d2a84e2196c1d9793920a7d68edee8de5:
-    input: Let me think, I should run this command "grep -v '</think>
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, I should run this command "grep -v '</think>
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 58
@@ -5320,11 +5404,11 @@ requests:
     - 12
     finish_step: true
   bfcf9f083c45a75f02a94dc1e43463076c567c631516c3155bf2e1a8edf076b1:
-    input: Let me think, "The marker </think> is a special marker"
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, "The marker </think> is a special marker"
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 55
@@ -5890,6 +5974,15 @@ requests:
     - 12
     - 12
     finish_step: true
+  d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 36
+    - 33
+    - 5
+    - 24
+    finish_step: true
   da632a1ae3342d8ceb8f07bed5f7198499052ae06dc11e23328809293ef07fad:
     init:
       starting_state: Reasoning
@@ -6030,6 +6123,15 @@ requests:
     - 4
     - 12
     - 12
+    finish_step: true
+  e1f42f4fdd9968ede04c252542bab4baacbe87e2d0b95080a46b3f9e772c4b35:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>prefix</tool_call> first second
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 53
+    - 12
+    - 6
+    - 7
     finish_step: true
   e30b7ad7188129773911a3a42c908c10c9d06b25b06b4c83d46e25f3ced4f303:
     init:
@@ -6320,11 +6422,11 @@ requests:
     - 12
     finish_step: true
   f02ec74d75b1eec33fce66d50a2b3eec4f05a5a361fd4094bcad194433fd686d:
-    input: <tool_call>write_file<arg_key>path</arg_key><arg_value>/tmp/literal.txt</arg_value><arg_key>content</arg_key><arg_value><think></think>answer</arg_value></tool_call>
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+    input: <tool_call>write_file<arg_key>path</arg_key><arg_value>/tmp/literal.txt</arg_value><arg_key>content</arg_key><arg_value><think></think>answer</arg_value></tool_call>
     tools: tools_a7861137bdb03589
     chunk_sizes:
     - 165
@@ -6490,11 +6592,11 @@ requests:
     - 12
     finish_step: true
   fd453812decf50ed7d49af92561485893e355cfa666b8ae05699d4856decf9ec:
-    input: Let me think, the TV size is 40"</think>Yes
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
+    input: Let me think, the TV size is 40"</think>Yes
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 43
@@ -6530,34 +6632,6 @@ requests:
     - 4
     - 12
     - 12
-    finish_step: true
-  54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45:
-    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>prefix</tool_call> first second</arg_value></tool_call>
-    tools: tools_75dd58c153074b2e
-    chunk_sizes:
-    - 53
-    - 12
-    - 6
-    - 7
-    - 12
-    - 12
-    finish_step: true
-  57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e:
-    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>first</arg_value><arg_key>cmd</arg_key><arg_value>second</arg_value></tool_call><tool_call>get_time</tool_call>
-    tools: tools_75dd58c153074b2e
-    chunk_sizes:
-    - 64
-    - 63
-    - 31
-    finish_step: true
-  d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df:
-    input: <tool_call>run<arg_key>cmd</arg_key><arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>
-    tools: tools_75dd58c153074b2e
-    chunk_sizes:
-    - 36
-    - 33
-    - 5
-    - 24
     finish_step: true
 cases:
   tool_only:
@@ -11224,10 +11298,10 @@ cases:
       arguments:
         cmd: Paris
   glm47_duplicate_argument_key_progress:
-    description: GLM rejects repeated arg_key names even after a string prefix was emitted. The following independent call still completes; split-point tests cover whole-input rejection.
     policy:
     - I7
     - P2
+    description: GLM rejects repeated arg_key names even after a string prefix was emitted. The following independent call still completes; split-point tests cover whole-input rejection.
     display_id: UNIFIED.glm5-duplicate_argument_key_progress
     request: 57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e
     golden:
@@ -11235,10 +11309,10 @@ cases:
       name: get_time
       arguments: {}
   glm47_missing_middle_argument_value_progress:
-    description: GLM skips a closed arg_key with no arg_value when a later valid key/value follows. The later string emits progress before its value and call closers arrive.
     policy:
     - I7
     - P2
+    description: GLM skips a closed arg_key with no arg_value when a later valid key/value follows. The later string emits progress before its value and call closers arrive.
     display_id: UNIFIED.glm5-missing_middle_argument_value_progress
     request: d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df
     golden:
@@ -11247,10 +11321,10 @@ cases:
       arguments:
         cmd: Paris
   glm47_ambiguous_outer_close_holdback:
-    description: GLM holds an outer-close marker and its suffix in an open string until arg_value closes. At EOF the same prefix can recover a missing value closer, so the suffix cannot be emitted early.
     policy:
     - I7
     - P2
+    description: GLM holds an outer-close marker and its suffix in an open string until arg_value closes. At EOF the same prefix can recover a missing value closer, so the suffix cannot be emitted early.
     display_id: UNIFIED.glm5-ambiguous_outer_close_holdback
     request: 54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45
     golden:
@@ -11258,3 +11332,89 @@ cases:
       name: run
       arguments:
         cmd: prefix</tool_call> first second
+  glm47_ambiguous_outer_close_eof_alternative:
+    policy:
+    - I7
+    - P2
+    description: 'The same open-value prefix as the literal holdback case ends at EOF: recover the first outer fence and preserve the suffix as text.'
+    display_id: UNIFIED.glm5-ambiguous_outer_close_eof_alternative
+    request: e1f42f4fdd9968ede04c252542bab4baacbe87e2d0b95080a46b3f9e772c4b35
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: prefix
+    - kind: text
+      text: ' first second'
+  glm47_literal_nested_opener_closes_without_eof:
+    policy:
+    - I7
+    - P2
+    description: A nested opener followed by an impossible invoke name is literal data. Flush at value-close and complete at the real outer close, without EOF.
+    display_id: UNIFIED.glm5-literal_nested_opener_closes_without_eof
+    request: 0b62a18a22490140b0e57c58c293595288b61808166eaebab3191f7c782ad1b4
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: prefix</tool_call><tool_call> after
+  glm47_missing_value_empty_key_leaves_inner_pair_unowned:
+    policy:
+    - I7
+    - P2
+    description: A raw empty key cannot claim its apparent value; its valid inner pair still recovers the missing argument.
+    display_id: UNIFIED.glm5-missing_value_empty_key_leaves_inner_pair_unowned
+    request: 9c2eda1be37129c18403774ff25393c45b39db021d82ab4f6e1f3af5fd6fbc0e
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: recovered
+  glm47_missing_value_empty_replacement:
+    policy:
+    - I7
+    - P2
+    description: GLM does not complete an abandoned argument when the replacement key is empty. The turn emits nothing.
+    display_id: UNIFIED.glm5-missing_value_empty_replacement
+    request: 06a261701eb6c41792efcde3900f76bf30f203607d4e5ab596c6bdab10196a85
+    golden: []
+  glm47_missing_value_malformed_replacement:
+    policy:
+    - I7
+    - P2
+    description: GLM does not complete an abandoned argument when the replacement key contains malformed XML. The turn emits nothing.
+    display_id: UNIFIED.glm5-missing_value_malformed_replacement
+    request: 50b403511fd86f4fbc030c32066cd5589c041192a5a51f0e4e655ad37bd91800
+    golden: []
+  glm47_missing_value_whitespace_owns_inner_pair:
+    policy:
+    - I7
+    - P2
+    description: An apparent pair inside a whitespace key's claimed value cannot validate recovery of an earlier missing value. The turn emits nothing.
+    display_id: UNIFIED.glm5-missing_value_whitespace_owns_inner_pair
+    request: 40b9395338903cd97e2111ac80f153c32953cd1a76c35c3779f7dbca2158edb4
+    golden: []
+  glm47_missing_value_whitespace_replacement:
+    policy:
+    - I7
+    - P2
+    description: A raw whitespace key is discarded after claiming its value; it cannot validate missing-value recovery. The turn emits nothing.
+    display_id: UNIFIED.glm5-missing_value_whitespace_replacement
+    request: b1ff93a242190efd5a432e93ed68b09ca7a1f82a4797aa9b7c6df72db624a5c4
+    golden: []
+  glm47_unowned_empty_wrapper_cannot_hide_missing_value:
+    policy:
+    - I7
+    - P2
+    description: An initial raw empty key owns no value, so its apparent value cannot hide a real missing key and invalid replacement. The turn emits nothing.
+    display_id: UNIFIED.glm5-unowned_empty_wrapper_cannot_hide_missing_value
+    request: 2b7851ac715b4352401b96b84fcbfa04f7d2e38bb157475e4156db6448dab027
+    golden: []
+  glm47_unowned_malformed_wrapper_cannot_hide_missing_value:
+    policy:
+    - I7
+    - P2
+    description: An initial malformed raw key owns no value; inspect later keys before accepting recovery. The turn emits nothing.
+    display_id: UNIFIED.glm5-unowned_malformed_wrapper_cannot_hide_missing_value
+    request: a5a0bee68418f66b4eff1476de43c9e9ea30f150a24fcd51cbba6ee68cabb0ac
+    golden: []
