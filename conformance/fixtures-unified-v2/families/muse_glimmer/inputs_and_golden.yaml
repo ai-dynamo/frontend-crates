@@ -9325,6 +9325,13 @@ requests:
     - 21
     - 7
     finish_step: true
+  e2ae3855e1c31b0731a4c9e514b090a7b78daf506313ee6a53294319ff2896bc:
+    input: <|start|>assistant to=self<|message|>x `<|eom|><|start|>assistant to=user<|message|>a `b`<|eom|><|start|>assistant to=user<|message|>Done.<|eot|>
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_cbf47ccf5fd2ef00
   e38e9bc77860e64a9ce05e42e9b2c7b96ffe9b3a42e61ea2930ac1cae515b62f:
     input: '<|start|>assistant to=server.tools.weather<|message|><atem:function_calls>
 
@@ -15256,3 +15263,17 @@ cases:
       name: run
       arguments:
         cmd: Paris
+  muse_unmatched_quote_message_boundary:
+    description: 'A Muse thought ends inside an unmatched backtick and a later message holds a balanced backtick pair. The quote cannot span the `<|eom|>` message boundary: the thought ends at it, and the following messages are visible content.'
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.muse-unmatched_quote_message_boundary
+    historical_ids:
+    - UNIFIED.muse-9
+    request: e2ae3855e1c31b0731a4c9e514b090a7b78daf506313ee6a53294319ff2896bc
+    golden:
+    - kind: reasoning
+      text: x `
+    - kind: text
+      text: a `b`Done.

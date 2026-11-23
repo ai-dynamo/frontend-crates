@@ -65,6 +65,92 @@ const MARKERS: [&str; 4] = [START, MESSAGE, EOM, EOT];
 const PROSE_HOLDBACK_MARKERS: [&str; 6] =
     [START, MESSAGE, EOM, EOT, INVOKE_OPEN_PREFIX, INVOKE_CLOSE];
 
+/// Where prose quotation may be read up to, given the message terminators in the
+/// buffer. A balanced prose quotation keeps the control markers inside it literal,
+/// but it cannot span a message boundary: an `<|eom|>` or `<|eot|>` whose next
+/// control marker is `<|start|>`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MessageBoundary {
+    /// No terminator in the buffer.
+    None,
+    /// The first terminator ending at this offset; its next control marker has not
+    /// arrived, so it may still be a boundary.
+    Unresolved(usize),
+    /// The terminator of the first message boundary ends at this offset.
+    At(usize),
+}
+
+/// Incremental search for the first message boundary of the scanner buffer. Each
+/// pushed byte is searched once: `from` and the candidate's `next_from` only move
+/// forward until `consumed` shifts them with the buffer.
+#[derive(Debug, Default)]
+struct BoundarySearch {
+    /// No terminator starts before this offset, except the candidate's.
+    from: usize,
+    /// The first terminator not yet ruled out: its start, its end, and where the
+    /// search for its next control marker resumes.
+    candidate: Option<(usize, usize, usize)>,
+}
+
+impl BoundarySearch {
+    fn find(&mut self, buffer: &str) -> MessageBoundary {
+        loop {
+            if let Some((at, after, next_from)) = self.candidate {
+                let next = MARKERS
+                    .iter()
+                    .filter_map(|m| buffer[next_from..].find(m).map(|p| (p, *m)))
+                    .min_by_key(|(p, _)| *p);
+                match next {
+                    Some((_, START)) => return MessageBoundary::At(after),
+                    Some(_) => {
+                        self.candidate = None;
+                        self.from = after;
+                    }
+                    None => {
+                        self.candidate = Some((at, after, resume_at(buffer, next_from)));
+                        return MessageBoundary::Unresolved(after);
+                    }
+                }
+            } else {
+                let from = self.from;
+                match [EOM, EOT]
+                    .iter()
+                    .filter_map(|t| buffer[from..].find(t).map(|p| (from + p, t.len())))
+                    .min_by_key(|(p, _)| *p)
+                {
+                    Some((at, len)) => self.candidate = Some((at, at + len, at + len)),
+                    None => {
+                        self.from = resume_at(buffer, from);
+                        return MessageBoundary::None;
+                    }
+                }
+            }
+        }
+    }
+
+    /// The first `n` bytes of the buffer were removed.
+    fn consumed(&mut self, n: usize) {
+        match self.candidate {
+            Some((at, after, next_from)) if at >= n => {
+                self.candidate = Some((at - n, after - n, next_from - n));
+            }
+            Some(_) => *self = Self::default(),
+            None => self.from = self.from.saturating_sub(n),
+        }
+    }
+}
+
+/// The offset from which a marker search must resume: a marker can start no
+/// earlier than its longest proper prefix at the end of `buffer`.
+fn resume_at(buffer: &str, from: usize) -> usize {
+    let longest = MARKERS.iter().map(|m| m.len()).max().unwrap_or(0);
+    let mut at = buffer.len().saturating_sub(longest - 1).max(from);
+    while !buffer.is_char_boundary(at) {
+        at -= 1;
+    }
+    at.max(from)
+}
+
 /// The ATEM tool BLOCK pair, which wraps a tool channel's invokes.
 const BLOCK_OPEN: &str = "<atem:function_calls>";
 const BLOCK_CLOSE: &str = "</atem:function_calls>";
@@ -1038,6 +1124,7 @@ fn normalize_name(emitted: &str, tools: &[ToolDefinition]) -> String {
 pub(crate) struct MuseChannelScanner {
     emitter: MuseInvokeEmitter,
     buffer: String,
+    boundary: BoundarySearch,
     prose: ProseControlState,
     state: State,
     /// Whether the next header may resolve WITHOUT `<|start|>` framing. True at
@@ -1101,6 +1188,7 @@ fn channel_scanner(tools: &[Tool], commentary_is_content: bool) -> MuseChannelSc
             schema_string_types: commentary_is_content,
         },
         buffer: String::new(),
+        boundary: BoundarySearch::default(),
         prose: ProseControlState::default(),
         state: State::Idle,
         allow_bare_header: true,
@@ -1119,6 +1207,13 @@ fn channel_scanner(tools: &[Tool], commentary_is_content: bool) -> MuseChannelSc
 }
 
 impl MuseChannelScanner {
+    /// Remove and return the first `n` bytes of the buffer, keeping the message
+    /// boundary search in step.
+    fn take_buffer(&mut self, n: usize) -> String {
+        self.boundary.consumed(n);
+        self.buffer.drain(..n).collect()
+    }
+
     pub(crate) fn set_message_phases(&mut self, enabled: bool) {
         // Glimmer must retain its existing event stream when Responses opts in.
         self.preserve_phases = enabled && self.commentary_is_content;
@@ -1335,10 +1430,21 @@ impl MuseChannelScanner {
     fn drain(&mut self, flush: bool, out: &mut Vec<UnifiedParserEvent>) -> anyhow::Result<()> {
         loop {
             if self.state != State::InToolChannel && self.prose_invoke_depth == 0 {
+                // Quotation is read only through the first message boundary's
+                // terminator, as if the stream ended there: a quote it cannot close is
+                // unmatched. Until the marker after a terminator arrives, quotation is
+                // read only through that terminator, so a quote cannot close across it
+                // before the boundary is known (every chunking then gives the same
+                // result).
+                let (scan_end, bounded) = match self.boundary.find(&self.buffer) {
+                    MessageBoundary::At(end) => (end, true),
+                    MessageBoundary::Unresolved(after) if !flush => (after, false),
+                    _ => (self.buffer.len(), false),
+                };
                 let control = self.prose.classify(
-                    &self.buffer,
+                    &self.buffer[..scan_end],
                     PROSE_HOLDBACK_MARKERS,
-                    flush,
+                    flush || bounded,
                     |text, at, flush| {
                         let suffix = &text[at..];
                         if !flush && INVOKE_OPEN_PREFIX.starts_with(suffix) {
@@ -1370,7 +1476,7 @@ impl MuseChannelScanner {
                     ProseControl::Ordinary => (0, false, false),
                 };
                 if length > 0 {
-                    let text: String = self.buffer.drain(..length).collect();
+                    let text = self.take_buffer(length);
                     self.prose.consume(&text);
                     if self.state == State::InReasoning {
                         // Commit a sanitizer-held prefix before bypassing it for
@@ -1416,7 +1522,7 @@ impl MuseChannelScanner {
                 && let Some((start, end)) = self.next_invoke(self.tool_body_limit(flush))
             {
                 let invoke = self.buffer[start..end].to_string();
-                self.buffer.drain(..end);
+                self.take_buffer(end);
                 if let Some(delta) = self.emitter.parse_invoke(&invoke, self.next_index)? {
                     emit_call(out, delta);
                     self.next_index += 1;
@@ -1456,11 +1562,11 @@ impl MuseChannelScanner {
                     self.allow_bare_header =
                         bare_pos == Some(body_end) && start_pos != Some(body_end);
                 }
-                let body: String = self.buffer.drain(..body_end).collect();
+                let body = self.take_buffer(body_end);
                 if let Some(c) = body.chars().next_back() {
                     self.last_body_char = Some(c);
                 }
-                self.buffer.drain(..term_len);
+                self.take_buffer(term_len);
                 match self.state {
                     State::InReasoning => {
                         // Only a thought that PRODUCED something can be adjacent to the
@@ -1498,7 +1604,7 @@ impl MuseChannelScanner {
             if split == 0 {
                 return Ok(());
             }
-            let body: String = self.buffer.drain(..split).collect();
+            let body = self.take_buffer(split);
             if let Some(c) = body.chars().next_back() {
                 self.last_body_char = Some(c);
             }
@@ -1524,7 +1630,7 @@ impl MuseChannelScanner {
         let recipient = recipient.map(str::to_string);
 
         let prefix = self.buffer[..header_start].to_string();
-        self.buffer.drain(..msg_pos + MESSAGE.len());
+        self.take_buffer(msg_pos + MESSAGE.len());
         self.emit_text(out, &prefix);
         self.prose_invoke_depth = 0;
         self.prose.clear();
@@ -1586,7 +1692,7 @@ impl MuseChannelScanner {
                 self.buffer.len() - tail
             });
         if hold_from > 0 {
-            let emitted: String = self.buffer.drain(..hold_from).collect();
+            let emitted = self.take_buffer(hold_from);
             self.emit_text(out, &emitted);
         }
     }
@@ -1608,6 +1714,7 @@ impl MuseChannelScanner {
         self.reasoning_body_emitted = false;
         self.prose_invoke_depth = 0;
         self.next_index = 0;
+        self.boundary = BoundarySearch::default();
         (
             std::mem::take(&mut self.buffer),
             std::mem::replace(&mut self.state, State::Idle),

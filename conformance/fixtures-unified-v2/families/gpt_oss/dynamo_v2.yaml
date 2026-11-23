@@ -1,15 +1,15 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"e9b0f3b0fda4f5c0df073f9b39e29d2b3a60cd6e1e315863ee834ff85e138009","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"35bbe84b5831072e5f12673ac6a44aacdd694d8609d30bba31ddf1412649d9e7","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_055a7c6bd89bda32
 origins:
-  origin_b8732c711a8808fa:
+  origin_055a7c6bd89bda32:
     crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+    source_sha256: bac781101217979eb652495e8716a027f0507b385739608bc689c2ac54bcd3c8
+    git_commit: f11a5b209d85cfa11692facdab34d27198d83e28
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_e28f22e40131abf6:
+  context_676b57cff5ffa421:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -56,8 +56,8 @@ contexts:
             - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
         provenance:
           crate_version: 0.10.9
-          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          source_sha256: bac781101217979eb652495e8716a027f0507b385739608bc689c2ac54bcd3c8
+          git_commit: f11a5b209d85cfa11692facdab34d27198d83e28
           implementation: dynamo_v2
           version: 0.10.9
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
@@ -5441,7 +5441,7 @@ records:
       - expected: []
   gpt_oss_native_builtin_python_raw:
     case_key: UNIFIED.gpt_oss-native_builtin_python_raw
-    context: context_e28f22e40131abf6
+    context: context_676b57cff5ffa421
     request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     output:
       assembled: []

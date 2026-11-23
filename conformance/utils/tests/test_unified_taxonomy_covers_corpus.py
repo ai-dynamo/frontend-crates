@@ -641,6 +641,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "muse_quoted_reserved_eom_argument",
                 "muse_quoted_reserved_eot_argument",
                 "muse_quoted_reserved_start_argument",
+                "muse_unmatched_quote_message_boundary",
                 "prefilled_response_guided_closer_inside_invoke_quote",
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
@@ -1060,7 +1061,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
+    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 10 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
