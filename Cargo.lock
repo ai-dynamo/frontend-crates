@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.13"
+version = "11.0.14"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1247,7 +1247,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.10.10"
+version = "0.10.12"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",

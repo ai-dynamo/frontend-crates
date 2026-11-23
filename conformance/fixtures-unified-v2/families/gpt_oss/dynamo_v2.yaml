@@ -1,15 +1,15 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.10.yaml","version":"0.10.10"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"45c48d2100493072d52e35261dc1de071cdf98724c47be6353089136ec2dacce","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.10.yaml","surface":"unified","version":"0.10.10"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"1fbf0d6b288a7e9d2ddb49e61028cd77732c36a7c51a923626d88ad16611c611","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_3ec61a522034d71a
+  origin: origin_aa19258e42a2ea9d
 origins:
-  origin_3ec61a522034d71a:
-    crate_version: 0.10.10
-    source_sha256: 4ece6848bc241625bd7bd0a047ae4d3d9d84f188eca232032ac81c284c83b445
-    git_commit: 8bcecd94495caf8db411cff748ac005aa33925f9
+  origin_aa19258e42a2ea9d:
+    crate_version: 0.10.12
+    source_sha256: abde4cd4bcc77371721e0ad86a987c0bd85f7ae903049098e9cb76b89ea20a0f
+    git_commit: 0633630fe8533a8288e47d488b785770f0893892
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -24,7 +24,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_c63fbe3ff20e5913:
+  context_dbdaaf2d312c261e:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -55,16 +55,119 @@ contexts:
             chunks:
             - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
         provenance:
-          crate_version: 0.10.10
-          source_sha256: 4ece6848bc241625bd7bd0a047ae4d3d9d84f188eca232032ac81c284c83b445
-          git_commit: 8bcecd94495caf8db411cff748ac005aa33925f9
+          crate_version: 0.10.12
+          source_sha256: abde4cd4bcc77371721e0ad86a987c0bd85f7ae903049098e9cb76b89ea20a0f
+          git_commit: 0633630fe8533a8288e47d488b785770f0893892
           implementation: dynamo_v2
-          version: 0.10.10
+          version: 0.10.12
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
+        resolution: fresh_execution
+      verified_recaptures:
+      - result:
+          assembled:
+          - kind: tool_call
+            name: python
+            arguments: '"print(1)"'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: python
+              arguments: '"print(1)"'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+            tools:
+            - name: python
+              parameters:
+                type: string
+            chunks:
+            - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+        provenance:
+          crate_version: 0.10.9
+          source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
+          git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+          implementation: dynamo_v2
+          version: 0.10.9
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: tool_call
+            name: python
+            arguments: '"print(1)"'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: python
+              arguments: '"print(1)"'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+            tools:
+            - name: python
+              parameters:
+                type: string
+            chunks:
+            - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+        provenance:
+          crate_version: 0.10.11
+          source_sha256: ac1d9ae3fd455c9f2597226aa874469a5ae48beb8263d1f711610de4398c14ae
+          git_commit: 009932f1466984f9b9425ad7b27330b7f081856a
+          implementation: dynamo_v2
+          version: 0.10.11
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: tool_call
+            name: python
+            arguments: '"print(1)"'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: python
+              arguments: '"print(1)"'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+            tools:
+            - name: python
+              parameters:
+                type: string
+            chunks:
+            - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+        provenance:
+          crate_version: 0.10.11
+          source_sha256: e137b0174e2779e0ce9972e72e242b8b85358e9cf0bb631f09f1074d93aa9aa8
+          git_commit: 8f1e436cf8bdda0b533778e59e6e4f192d62bfc3
+          implementation: dynamo_v2
+          version: 0.10.11
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
         resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.10.yaml
+  member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.12.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -5441,7 +5544,7 @@ records:
       - expected: []
   gpt_oss_native_builtin_python_raw:
     case_key: UNIFIED.gpt_oss-native_builtin_python_raw
-    context: context_c63fbe3ff20e5913
+    context: context_dbdaaf2d312c261e
     request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     output:
       assembled: []
