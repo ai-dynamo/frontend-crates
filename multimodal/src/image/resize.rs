@@ -424,6 +424,7 @@ fn f32_taps(in_size: usize, out_size: usize, filter: F32Filter) -> Vec<(usize, V
         .collect()
 }
 
+#[inline(always)]
 fn weighted_sum(weights: &[f32], fused: bool, value: impl Fn(usize) -> f32) -> f32 {
     // torch's AVX2 and AVX-512 builds multiply taps 1.. four at a time,
     // unfused, and fuse only the leftover (len - 1) % 4 taps.
@@ -440,15 +441,35 @@ fn f32_horizontal(
     fused: bool,
 ) -> Vec<f32> {
     let mut out = vec![0.0f32; h * out_w * 3];
+    #[cfg(target_arch = "x86_64")]
+    if fused && std::arch::is_x86_feature_detected!("fma") {
+        execution::for_chunks_mut(&mut out, out_w * 3, |y, row| {
+            // SAFETY: this CPU has FMA.
+            unsafe { horizontal_row_fma(row, &src[y * w * 3..(y + 1) * w * 3], taps) }
+        });
+        return out;
+    }
     execution::for_chunks_mut(&mut out, out_w * 3, |y, row| {
-        let src_row = &src[y * w * 3..(y + 1) * w * 3];
-        for (xx, (xmin, weights)) in taps.iter().enumerate() {
-            for c in 0..3 {
-                row[xx * 3 + c] = weighted_sum(weights, fused, |j| src_row[(xmin + j) * 3 + c]);
-            }
-        }
+        horizontal_row(row, &src[y * w * 3..(y + 1) * w * 3], taps, fused);
     });
     out
+}
+
+#[inline(always)]
+fn horizontal_row(row: &mut [f32], src_row: &[f32], taps: &[(usize, Vec<f32>)], fused: bool) {
+    for (xx, (xmin, weights)) in taps.iter().enumerate() {
+        for c in 0..3 {
+            row[xx * 3 + c] = weighted_sum(weights, fused, |j| src_row[(xmin + j) * 3 + c]);
+        }
+    }
+}
+
+/// The fused row with `mul_add` as one instruction: a baseline x86-64 build
+/// calls libm's `fmaf` for each fused tap. Both round alike.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "fma")]
+fn horizontal_row_fma(row: &mut [f32], src_row: &[f32], taps: &[(usize, Vec<f32>)]) {
+    horizontal_row(row, src_row, taps, true);
 }
 
 fn f32_vertical(
@@ -458,13 +479,38 @@ fn f32_vertical(
     fused: bool,
 ) -> Vec<f32> {
     let mut out = vec![0.0f32; out_h * w * 3];
+    #[cfg(target_arch = "x86_64")]
+    if fused && std::arch::is_x86_feature_detected!("fma") {
+        execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
+            // SAFETY: this CPU has FMA.
+            unsafe { vertical_row_fma(row, src, w, &taps[yy]) }
+        });
+        return out;
+    }
     execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
-        let (ymin, weights) = &taps[yy];
-        for (i, v) in row.iter_mut().enumerate() {
-            *v = weighted_sum(weights, fused, |j| src[(ymin + j) * w * 3 + i]);
-        }
+        vertical_row(row, src, w, &taps[yy], fused);
     });
     out
+}
+
+#[inline(always)]
+fn vertical_row(
+    row: &mut [f32],
+    src: &[f32],
+    w: usize,
+    (ymin, weights): &(usize, Vec<f32>),
+    fused: bool,
+) {
+    for (i, v) in row.iter_mut().enumerate() {
+        *v = weighted_sum(weights, fused, |j| src[(ymin + j) * w * 3 + i]);
+    }
+}
+
+/// [`horizontal_row_fma`] for the vertical pass.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "fma")]
+fn vertical_row_fma(row: &mut [f32], src: &[f32], w: usize, taps: &(usize, Vec<f32>)) {
+    vertical_row(row, src, w, taps, true);
 }
 
 pub fn resize_lanczos_rgb(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
@@ -732,6 +778,38 @@ mod tests {
             blake3::hash(&out).to_hex().as_str(),
             "b044e906d89f8ee9693bd06549867a391e5b7463cbb2fa71906910935e3a9b64"
         );
+    }
+
+    /// The FMA build of a fused row rounds like the portable build, on taps
+    /// of every tail length (0 to 3 fused taps).
+    #[cfg(target_arch = "x86_64")]
+    #[test]
+    fn fma_rows_round_like_the_portable_rows() {
+        if !std::arch::is_x86_feature_detected!("fma") {
+            return;
+        }
+        let (h, w) = (37, 53);
+        let src: Vec<f32> = noise(h * w * 3).into_iter().map(f32::from).collect();
+        let bits = |row: &[f32]| row.iter().map(|v| v.to_bits()).collect::<Vec<u32>>();
+        let mut tails = [false; 4];
+        for (out_h, out_w) in [(11, 17), (9, 13), (30, 41), (5, 7)] {
+            let taps = f32_taps(w, out_w, F32Filter::Bicubic);
+            taps.iter()
+                .for_each(|(_, weights)| tails[(weights.len() - 1) % 4] = true);
+            let (mut portable, mut fma) = (vec![0.0; out_w * 3], vec![0.0; out_w * 3]);
+            horizontal_row(&mut portable, &src[..w * 3], &taps, true);
+            // SAFETY: FMA was detected above.
+            unsafe { horizontal_row_fma(&mut fma, &src[..w * 3], &taps) };
+            assert_eq!(bits(&portable), bits(&fma), "horizontal to {out_w}");
+
+            let taps = f32_taps(h, out_h, F32Filter::Bicubic);
+            let (mut portable, mut fma) = (vec![0.0; w * 3], vec![0.0; w * 3]);
+            vertical_row(&mut portable, &src, w, &taps[out_h / 2], true);
+            // SAFETY: FMA was detected above.
+            unsafe { vertical_row_fma(&mut fma, &src, w, &taps[out_h / 2]) };
+            assert_eq!(bits(&portable), bits(&fma), "vertical to {out_h}");
+        }
+        assert_eq!(tails, [true; 4]);
     }
 
     #[test]
