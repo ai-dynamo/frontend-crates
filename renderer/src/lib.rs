@@ -18,6 +18,8 @@
 //! formats (native ones, and chat templates unless
 //! [`ChatTemplate::with_request_control_tokens_as_text`] turns it off)
 //! preserve tokenizer policy through [`RenderedPrompt`].
+//! [`native_formatter_for_with`] gives the native DeepSeek and Inkling
+//! formatters the same choice.
 
 // TODO:
 // 1. Query if `add_generation_prompt` is present in the prompt template
@@ -47,6 +49,7 @@ mod template;
 pub use template::{
     ChatTemplate, ChatTemplateContentFormat, ChatTemplateValue, ContextMixins, MediaPlaceholders,
     deepseek_formatter_for, kimi_k3_formatter_for, may_be_fix_tool_schema, native_formatter_for,
+    native_formatter_for_with,
 };
 
 /// Selects which context-mixin behaviors a template renders with.
@@ -253,6 +256,49 @@ impl RenderedPrompt {
     /// Discard tokenization boundaries, pending segments, and generation-state metadata.
     pub fn into_text(self) -> String {
         self.text
+    }
+}
+
+/// Prompt text a native renderer writes in order: its own control tokens become
+/// control segments, and all other text, template wording and request text
+/// alike, joins one ordinary segment until the next control token.
+///
+/// Segments then break only where the tokenizer already splits on added tokens,
+/// so a prompt that spells no control token in its text encodes to the same ids
+/// as its joined text, and one that does keeps that spelling ordinary.
+#[derive(Debug, Default)]
+pub(crate) struct PromptBuilder {
+    segments: Vec<RenderedSegment>,
+}
+
+impl PromptBuilder {
+    pub(crate) fn control(&mut self, token: &str) {
+        self.segments.push(RenderedSegment::new(token, true));
+    }
+
+    pub(crate) fn push_str(&mut self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
+        match self.segments.last_mut() {
+            Some(segment) if !segment.allow_special => segment.text.push_str(text),
+            _ => self.segments.push(RenderedSegment::new(text, false)),
+        }
+    }
+
+    pub(crate) fn push(&mut self, ch: char) {
+        self.push_str(ch.encode_utf8(&mut [0; 4]));
+    }
+
+    pub(crate) fn into_prompt(self) -> RenderedPrompt {
+        RenderedPrompt::segmented(self.segments)
+    }
+}
+
+impl std::fmt::Write for PromptBuilder {
+    fn write_str(&mut self, text: &str) -> std::fmt::Result {
+        self.push_str(text);
+        Ok(())
     }
 }
 
@@ -499,7 +545,8 @@ impl PromptFormatter {
 #[cfg(test)]
 mod rendered_prompt_tests {
     use super::{
-        NoOpFormatter, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
+        NoOpFormatter, OAIPromptFormatter, PromptBuilder, PromptRenderError, RenderedPrompt,
+        RenderedSegment,
     };
 
     #[test]
@@ -515,6 +562,31 @@ mod rendered_prompt_tests {
         assert_eq!(segments[1].text, "user text");
         assert!(!segments[1].allow_special);
         assert_eq!(prompt.as_str(), "<|open|>user text");
+    }
+
+    #[test]
+    fn prompt_builder_joins_ordinary_text_between_control_tokens() {
+        use std::fmt::Write;
+
+        let mut prompt = PromptBuilder::default();
+        prompt.control("<s>");
+        prompt.push_str("user ");
+        let turn = 2;
+        write!(prompt, "turn {turn}").unwrap();
+        prompt.push('.');
+        prompt.push_str("");
+        prompt.control("</s>");
+        prompt.control("<s>");
+
+        assert_eq!(
+            prompt.into_prompt().segments().unwrap(),
+            [
+                RenderedSegment::new("<s>", true),
+                RenderedSegment::new("user turn 2.", false),
+                RenderedSegment::new("</s>", true),
+                RenderedSegment::new("<s>", true),
+            ]
+        );
     }
 
     #[test]

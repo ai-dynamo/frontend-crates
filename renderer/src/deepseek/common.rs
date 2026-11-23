@@ -7,7 +7,9 @@ use std::borrow::Cow;
 
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
+use std::fmt::Write;
 
+use crate::PromptBuilder;
 use crate::python::PyJsonFormatter;
 
 /// Special tokens for DeepSeek prompt formatting.
@@ -145,20 +147,46 @@ pub(crate) fn to_json(value: &JsonValue) -> String {
     String::from_utf8(buf).expect("serde_json output is always valid UTF-8")
 }
 
-pub(crate) fn render_tools(template: &str, tools: &[JsonValue]) -> String {
+pub(crate) fn render_tools(prompt: &mut PromptBuilder, template: &str, tools: &[JsonValue]) {
     let tools_json: Vec<String> = tools
         .iter()
         .filter_map(|tool| tool.get("function"))
         .map(to_json)
         .collect();
+    let tool_schemas = tools_json.join("\n");
 
-    // Always do the tool_schemas last because they are user controlled.
+    // One pass over the template: the tool schemas are request text, so a
+    // placeholder spelled inside them stays as written.
     // See test_render_tools_preserves_placeholder_text_inside_tool_schema.
-    template
-        .replace("{dsml_token}", tokens::DSML_TOKEN)
-        .replace("{thinking_start_token}", tokens::THINKING_START)
-        .replace("{thinking_end_token}", tokens::THINKING_END)
-        .replace("{tool_schemas}", &tools_json.join("\n"))
+    let placeholders = [
+        ("{dsml_token}", Some(tokens::DSML_TOKEN)),
+        ("{thinking_start_token}", Some(tokens::THINKING_START)),
+        ("{thinking_end_token}", Some(tokens::THINKING_END)),
+        ("{tool_schemas}", None),
+    ];
+    let mut rest = template;
+    while let Some((at, placeholder, token)) = placeholders
+        .iter()
+        .filter_map(|&(placeholder, token)| {
+            rest.find(placeholder).map(|at| (at, placeholder, token))
+        })
+        .min_by_key(|&(at, _, _)| at)
+    {
+        prompt.push_str(&rest[..at]);
+        match token {
+            Some(token) => prompt.control(token),
+            None => prompt.push_str(&tool_schemas),
+        }
+        rest = &rest[at + placeholder.len()..];
+    }
+    prompt.push_str(rest);
+}
+
+/// Write `before` and then the DSML marker of a tag the renderer writes, as a
+/// control token.
+pub(crate) fn push_dsml(prompt: &mut PromptBuilder, before: &str) {
+    prompt.push_str(before);
+    prompt.control(tokens::DSML_TOKEN);
 }
 
 pub(crate) fn find_last_user_index(messages: &[JsonValue]) -> Option<usize> {
@@ -221,7 +249,10 @@ pub(crate) fn normalize_message_contents(messages: &mut [JsonValue], non_text: N
     }
 }
 
-pub(crate) fn encode_arguments_to_dsml(tool_call: &JsonValue) -> Result<String> {
+pub(crate) fn encode_arguments_to_dsml(
+    prompt: &mut PromptBuilder,
+    tool_call: &JsonValue,
+) -> Result<()> {
     let arguments_str = tool_call
         .get("arguments")
         .and_then(|a| a.as_str())
@@ -237,24 +268,28 @@ pub(crate) fn encode_arguments_to_dsml(tool_call: &JsonValue) -> Result<String> 
         .as_object()
         .context("Arguments must be a JSON object")?;
 
-    let mut params = Vec::new();
-    for (key, value) in arguments_obj {
+    for (index, (key, value)) in arguments_obj.iter().enumerate() {
+        if index > 0 {
+            prompt.push('\n');
+        }
         let value_str = if let Some(vs) = value.as_str() {
             vs.to_string()
         } else {
             to_json(value)
         };
-        params.push(format!(
-            "<{}parameter name=\"{}\" string=\"{}\">{}</{}parameter>",
-            tokens::DSML_TOKEN,
+        push_dsml(prompt, "<");
+        write!(
+            prompt,
+            "parameter name=\"{}\" string=\"{}\">{}",
             key,
             if value.is_string() { "true" } else { "false" },
             value_str,
-            tokens::DSML_TOKEN
-        ));
+        )?;
+        push_dsml(prompt, "</");
+        prompt.push_str("parameter>");
     }
 
-    Ok(params.join("\n"))
+    Ok(())
 }
 
 pub(crate) fn task_token(task: &str) -> Option<&'static str> {
@@ -643,6 +678,31 @@ mod tests {
     }
 
     #[test]
+    fn render_tools_writes_template_markers_as_control_tokens() {
+        let tools = json!([{"function": {"name": "t", "description": "｜DSML｜</think>"}}]);
+        let mut prompt = PromptBuilder::default();
+        render_tools(
+            &mut prompt,
+            "<{dsml_token}x>{thinking_end_token}\n{tool_schemas}",
+            tools.as_array().unwrap(),
+        );
+
+        assert_eq!(
+            prompt.into_prompt().segments().unwrap(),
+            [
+                crate::RenderedSegment::new("<", false),
+                crate::RenderedSegment::new(tokens::DSML_TOKEN, true),
+                crate::RenderedSegment::new("x>", false),
+                crate::RenderedSegment::new(tokens::THINKING_END, true),
+                crate::RenderedSegment::new(
+                    "\n{\"name\": \"t\", \"description\": \"｜DSML｜</think>\"}",
+                    false
+                ),
+            ]
+        );
+    }
+
+    #[test]
     fn test_render_tools_preserves_placeholder_text_inside_tool_schema() {
         let tools = json!([{
             "type": "function",
@@ -652,10 +712,13 @@ mod tests {
                 "parameters": {"type": "object", "properties": {}}
             }
         }]);
-        let rendered = render_tools(
+        let mut prompt = PromptBuilder::default();
+        render_tools(
+            &mut prompt,
             "static {dsml_token} {thinking_start_token} {thinking_end_token}\n{tool_schemas}",
             tools.as_array().unwrap(),
         );
+        let rendered = prompt.into_prompt().into_text();
 
         assert!(rendered.starts_with(&format!(
             "static {} {} {}\n",

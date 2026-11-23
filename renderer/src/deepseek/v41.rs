@@ -5,12 +5,13 @@
 
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
+use std::fmt::Write;
 
-use super::common::{ThinkingMode, reasoning_text, resolve_thinking_mode, to_json};
+use super::common::{ThinkingMode, push_dsml, reasoning_text, resolve_thinking_mode, to_json};
 use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
-use crate::RenderedPrompt;
+use crate::{PromptBuilder, RenderedPrompt};
 
-const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
+pub(super) const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
 
 fn validate_text(text: &str) -> Result<&str> {
     ensure!(
@@ -51,7 +52,7 @@ pub(super) fn drop_thinking_messages(mut messages: Vec<Value>) -> Vec<Value> {
     messages
 }
 
-pub(super) fn encode_arguments(tool_call: &Value) -> Result<String> {
+pub(super) fn encode_arguments(prompt: &mut PromptBuilder, tool_call: &Value) -> Result<()> {
     let original = tool_call
         .get("arguments")
         .context("Missing tool arguments")?;
@@ -68,22 +69,24 @@ pub(super) fn encode_arguments(tool_call: &Value) -> Result<String> {
     if !arguments.is_object() {
         arguments = serde_json::json!({"arguments": original});
     }
-    let parameters = arguments
-        .as_object()
-        .unwrap()
-        .iter()
-        .map(|(name, value)| {
-            let content = value
-                .as_str()
-                .map(str::to_owned)
-                .unwrap_or_else(|| to_json(value));
-            format!(
-                "<｜DSML｜ parameter name=\"{name}\" string=\"{}\">{content}</｜DSML｜ parameter>",
-                value.is_string()
-            )
-        })
-        .collect::<Vec<_>>();
-    Ok(parameters.join("\n"))
+    for (index, (name, value)) in arguments.as_object().unwrap().iter().enumerate() {
+        if index > 0 {
+            prompt.push('\n');
+        }
+        let content = value
+            .as_str()
+            .map(str::to_owned)
+            .unwrap_or_else(|| to_json(value));
+        push_dsml(prompt, "<");
+        write!(
+            prompt,
+            " parameter name=\"{name}\" string=\"{}\">{content}",
+            value.is_string()
+        )?;
+        push_dsml(prompt, "</");
+        prompt.push_str(" parameter>");
+    }
+    Ok(())
 }
 
 enum OrderMessage<'a> {
