@@ -1888,6 +1888,17 @@ tools:
         enum_text:
           $ref: '#/$defs/EnumAlias'
           nullable: true
+  tools_75dd58c153074b2e:
+  - name: run
+    parameters:
+      type: object
+      properties:
+        cmd:
+          type: string
+  - name: get_time
+    parameters:
+      type: object
+      properties: {}
 requests:
   007daaca42a3b0592281ac94df4f79f9f3742ec5577b7bc81c69cbfb2e992218:
     input: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
@@ -6519,6 +6530,34 @@ requests:
     - 4
     - 12
     - 12
+    finish_step: true
+  54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>prefix</tool_call> first second</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 53
+    - 12
+    - 6
+    - 7
+    - 12
+    - 12
+    finish_step: true
+  57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_value>first</arg_value><arg_key>cmd</arg_key><arg_value>second</arg_value></tool_call><tool_call>get_time</tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 64
+    - 63
+    - 31
+    finish_step: true
+  d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df:
+    input: <tool_call>run<arg_key>cmd</arg_key><arg_key>cmd</arg_key><arg_value>Paris</arg_value></tool_call>
+    tools: tools_75dd58c153074b2e
+    chunk_sizes:
+    - 36
+    - 33
+    - 5
+    - 24
     finish_step: true
 cases:
   tool_only:
@@ -11184,3 +11223,38 @@ cases:
       name: run
       arguments:
         cmd: Paris
+  glm47_duplicate_argument_key_progress:
+    description: GLM rejects repeated arg_key names even after a string prefix was emitted. The following independent call still completes; split-point tests cover whole-input rejection.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.glm5-duplicate_argument_key_progress
+    request: 57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e
+    golden:
+    - kind: tool_call
+      name: get_time
+      arguments: {}
+  glm47_missing_middle_argument_value_progress:
+    description: GLM skips a closed arg_key with no arg_value when a later valid key/value follows. The later string emits progress before its value and call closers arrive.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.glm5-missing_middle_argument_value_progress
+    request: d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: Paris
+  glm47_ambiguous_outer_close_holdback:
+    description: GLM holds an outer-close marker and its suffix in an open string until arg_value closes. At EOF the same prefix can recover a missing value closer, so the suffix cannot be emitted early.
+    policy:
+    - I7
+    - P2
+    display_id: UNIFIED.glm5-ambiguous_outer_close_holdback
+    request: 54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45
+    golden:
+    - kind: tool_call
+      name: run
+      arguments:
+        cmd: prefix</tool_call> first second
