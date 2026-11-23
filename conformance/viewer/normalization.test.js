@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { parseYaml } from './yaml_data.js';
-import { sameValue, getField } from './values.js';
+import { sameValue, getField, canonicalJson } from './values.js';
+import { sha256 } from './data.js';
 import { validateUnifiedInputs, validateUnifiedSnapshot, validateResolvedUnified } from './resources.js';
 import { expandFamily, expandSnapshot } from './normalization.js';
 
@@ -80,4 +81,42 @@ await test('normalized authored identities remain ordinary mapping keys', async 
     const resolved = await expandSnapshot(snapshot, raw);
     assert(Object.hasOwn(resolved.records, id));
   }
+});
+
+await test('archived result references preserve full payloads and independent receipts', async () => {
+  const fixture = parseYaml(await readFile(new URL('../utils/tests/fixtures/normalized-results.yaml', import.meta.url), 'utf8'), { unified: true });
+  const expanded = await expandSnapshot(fixture.snapshot, fixture.authored);
+  assert(sameValue(expanded, fixture.expected_snapshot));
+  const metadata = expanded.records.one.value.document.record_metadata;
+  assert.deepEqual(Object.keys(metadata.verified_recaptures[0]), ['result', 'provenance', 'resolution']);
+  metadata.verified_recaptures[0].result.chunks.length = 0;
+  assert.equal(metadata.verified_recapture.result.chunks.length, 2);
+  assert.equal(metadata.verified_recaptures[1].result.chunks.length, 2);
+  assert(sameValue(await expandSnapshot(fixture.snapshot, fixture.authored), fixture.expected_snapshot));
+  for (const mutate of [
+    m => { m.verified_recaptures[0].result_ref = '0'.repeat(64); },
+    m => { delete m.verified_recapture; },
+    m => { m.verified_recapture.result_ref = fixture.payload_sha256; },
+    m => { m.verified_recaptures[0].result = {}; },
+    m => { m.verified_recapture.result.chunks.reverse(); },
+    m => { m.verified_recapture.result.literal.float = 1000000000000000.25; },
+    m => { m.verified_recapture.result.literal = new Map([[1n, 'typed key']]); },
+    m => { m.verified_recapture.result.literal.date = new Uint16Array([100]); },
+  ]) {
+    const invalid = structuredClone(fixture.snapshot);
+    mutate(invalid.contexts.shared.record_metadata);
+    await assert.rejects(expandSnapshot(invalid, fixture.authored));
+  }
+  for (const payload of [{ value: 1.0 }, { value: Infinity }, new Map([[1n, 'typed key']]),
+    { value: new Uint8Array([97]) }]) {
+    const invalid = structuredClone(fixture.snapshot);
+    const metadata = invalid.contexts.shared.record_metadata;
+    metadata.verified_recapture.result = payload;
+    const digest = await sha256(new TextEncoder().encode(canonicalJson(payload)));
+    for (const archive of metadata.verified_recaptures) archive.result_ref = digest;
+    await assert.rejects(expandSnapshot(invalid, fixture.authored));
+  }
+  const unused = structuredClone(fixture.snapshot);
+  unused.contexts.unused = { record_metadata: { verified_recaptures: [{ result_ref: 'bad' }] } };
+  await assert.rejects(expandSnapshot(unused, fixture.authored));
 });

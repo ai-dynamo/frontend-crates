@@ -8,7 +8,7 @@ import hashlib
 import json
 from collections import Counter
 
-from viewer_codec import canonical_typed, typed_equal
+from viewer_codec import canonical_typed, encode_typed, typed_equal
 
 SCHEMA = 3
 PRODUCER_FIELDS = {"captured_with", "capture_origin"}
@@ -20,6 +20,65 @@ def _key(value):
 
 def request_digest(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _portable_payload(value):
+    if value is None or type(value) in (str, bool, int):
+        return True
+    if type(value) is list:
+        return all(_portable_payload(item) for item in value)
+    return type(value) is dict and all(type(key) is str and _portable_payload(item) for key, item in value.items())
+
+
+def _payload_digest(value):
+    # Existing request digests agree across readers for this exact JSON subset.
+    if type(value) is not dict or not _portable_payload(value):
+        raise ValueError("result reference requires an integer-only JSON payload")
+    return request_digest(value)
+
+
+def _expand_result_refs(context):
+    metadata = context.get("record_metadata")
+    if not isinstance(metadata, dict):
+        return
+    active = metadata.get("verified_recapture")
+    if isinstance(active, dict) and "result_ref" in active:
+        raise ValueError("active result must be inline")
+    archives = metadata.get("verified_recaptures", [])
+    if not isinstance(archives, list):
+        raise ValueError("invalid archived recaptures")
+    references = [receipt for receipt in archives if isinstance(receipt, dict) and "result_ref" in receipt]
+    if not references:
+        return
+    if not isinstance(active, dict) or "result" not in active:
+        raise ValueError("result reference has no active payload")
+    digest = _payload_digest(active["result"])
+    for receipt in references:
+        if "result" in receipt or type(receipt["result_ref"]) is not str or receipt["result_ref"] != digest:
+            raise ValueError("invalid result reference or digest mismatch")
+        expanded = {"result" if key == "result_ref" else key:
+                    copy.deepcopy(active["result"]) if key == "result_ref" else value
+                    for key, value in receipt.items()}
+        receipt.clear()
+        receipt.update(expanded)
+
+
+def _compact_result_refs(context):
+    metadata = context.get("record_metadata")
+    if not isinstance(metadata, dict):
+        return
+    active = metadata.get("verified_recapture")
+    if not isinstance(active, dict) or type(active.get("result")) is not dict or not _portable_payload(active["result"]):
+        return
+    payload = active["result"]
+    digest = _payload_digest(payload)
+    ordered = encode_typed(payload)
+    for receipt in metadata.get("verified_recaptures", []):
+        if isinstance(receipt, dict) and "result" in receipt and encode_typed(receipt["result"]) == ordered:
+            compact = {"result_ref" if key == "result" else key: digest if key == "result" else value
+                       for key, value in receipt.items()}
+            receipt.clear()
+            receipt.update(compact)
 
 
 def _fields(value, required, optional=()):
@@ -158,6 +217,10 @@ def expand_snapshot(document, authored):
     if "origin" in provenance:
         provenance["origin"] = _reference(origins, provenance["origin"])
     defaults = _fields(document["record_defaults"], {"member", "producer", "context"})
+    contexts = copy.deepcopy(document["contexts"])
+    for context in contexts.values():
+        if isinstance(context, dict):
+            _expand_result_refs(context)
     records = {}
     for identity, stored in document["records"].items():
         _fields(stored, {"case_key"}, {"request", "stimulus", "output", "error", "unavailable", "producer", "context", "member", "suppress_inherited_from"})
@@ -171,7 +234,7 @@ def expand_snapshot(document, authored):
             raise ValueError("unknown normalized producer field")
         if "capture_origin" in producer and producer["capture_origin"] is not None:
             producer["capture_origin"] = _reference(origins, producer["capture_origin"])
-        context = _reference(document["contexts"], stored.get("context", defaults["context"]))
+        context = _reference(contexts, stored.get("context", defaults["context"]))
         if not isinstance(context, dict):
             raise ValueError("normalized context must be a mapping")
         if set(context) & PRODUCER_FIELDS:
@@ -189,7 +252,7 @@ def expand_snapshot(document, authored):
             "schema_version": 2, "provenance": provenance, "records": records}
 
 
-def encode_snapshot(document, authored):
+def encode_snapshot(document, authored, *, result_refs=True):
     requests = expand_requests(authored)
     origins = {}; producers = {}; contexts = {}; records = {}
     provenance = copy.deepcopy(document["provenance"])
@@ -216,6 +279,9 @@ def encode_snapshot(document, authored):
         if "suppress_inherited_from" in wrapped:
             stored["suppress_inherited_from"] = wrapped["suppress_inherited_from"]
         records[identity] = stored
+    if result_refs:
+        for context in contexts.values():
+            _compact_result_refs(context)
     defaults = {field: Counter(record[field] for record in records.values()).most_common(1)[0][0]
                 for field in ("member", "producer", "context")}
     for record in records.values():

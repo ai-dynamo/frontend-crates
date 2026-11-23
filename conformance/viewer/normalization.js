@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 import { sha256 } from './data.js';
-import { canonicalJson, isMapping, hasField, mergeMappings } from './values.js';
+import { canonicalJson, isMapping, hasField, getField, mappingEntries, mergeMappings } from './values.js';
 
 export const isNormalized = value => value?.schema_version === 3 || value?.schema_version === 3n;
 const clone = value => structuredClone(value);
@@ -13,6 +13,33 @@ function fields(value, required, optional = []) {
 function reference(table, identity) {
   if (typeof identity !== 'string' || !Object.hasOwn(table, identity)) throw new Error(`unknown normalized reference: ${identity}`);
   return clone(table[identity]);
+}
+
+function portablePayload(value) {
+  if (value === null || ['string', 'boolean', 'bigint'].includes(typeof value)) return true;
+  if (Array.isArray(value)) return value.every(portablePayload);
+  return isMapping(value) && mappingEntries(value).every(([key, item]) => typeof key === 'string' && portablePayload(item));
+}
+
+async function expandResultRefs(context) {
+  const metadata = getField(context, 'record_metadata');
+  if (!isMapping(metadata)) return;
+  const active = getField(metadata, 'verified_recapture');
+  if (isMapping(active) && hasField(active, 'result_ref')) throw new Error('active result must be inline');
+  const archives = getField(metadata, 'verified_recaptures', []);
+  if (!Array.isArray(archives)) throw new Error('invalid archived recaptures');
+  const references = archives.filter(receipt => isMapping(receipt) && hasField(receipt, 'result_ref'));
+  if (!references.length) return;
+  if (!isMapping(active) || !hasField(active, 'result')) throw new Error('result reference has no active payload');
+  const payload = getField(active, 'result');
+  if (!isMapping(payload) || !portablePayload(payload)) throw new Error('result reference requires an integer-only JSON payload');
+  const digest = await sha256(new TextEncoder().encode(canonicalJson(payload)));
+  for (const [index, receipt] of archives.entries()) {
+    if (!isMapping(receipt) || !hasField(receipt, 'result_ref')) continue;
+    if (hasField(receipt, 'result') || getField(receipt, 'result_ref') !== digest) throw new Error('invalid result reference or digest mismatch');
+    const entries = mappingEntries(receipt).map(([key, value]) => key === 'result_ref' ? ['result', clone(payload)] : [key, value]);
+    archives[index] = receipt instanceof Map ? new Map(entries) : Object.fromEntries(entries);
+  }
 }
 
 export async function expandRequests(document) {
@@ -73,6 +100,8 @@ export async function expandSnapshot(document, authored) {
     ['capture_selection', 'execution_proof', 'historical_evidence']);
   const requests = await expandRequests(authored);
   for (const key of ['origins', 'producers', 'contexts', 'records']) fields(document[key], Object.keys(document[key]));
+  const contexts = clone(document.contexts);
+  for (const context of Object.values(contexts)) if (isMapping(context)) await expandResultRefs(context);
   const provenance = clone(document.provenance);
   if (Object.hasOwn(provenance, 'origin')) provenance.origin = reference(document.origins, provenance.origin);
   fields(document.record_defaults, ['member', 'producer', 'context']);
@@ -85,7 +114,7 @@ export async function expandSnapshot(document, authored) {
     const producer = reference(document.producers, Object.hasOwn(stored, 'producer') ? stored.producer : document.record_defaults.producer);
     fields(producer, [], ['captured_with', 'capture_origin']);
     if (Object.hasOwn(producer, 'capture_origin') && producer.capture_origin !== null) producer.capture_origin = reference(document.origins, producer.capture_origin);
-    const context = reference(document.contexts, Object.hasOwn(stored, 'context') ? stored.context : document.record_defaults.context);
+    const context = reference(contexts, Object.hasOwn(stored, 'context') ? stored.context : document.record_defaults.context);
     if (!isMapping(context)) throw new Error('normalized context must be a mapping');
     if (hasField(context, 'captured_with') || hasField(context, 'capture_origin')) throw new Error('normalized context repeats producer fields');
     const stimulus = Object.hasOwn(stored, 'request')

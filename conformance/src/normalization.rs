@@ -21,6 +21,7 @@ pub trait Value: Clone {
     fn get(&self, name: &str) -> Option<&Self>;
     fn set(&mut self, name: &str, value: Self) -> Result<()>;
     fn digest(&self) -> Result<String>;
+    fn payload_digest(&self) -> Result<String>;
 
     fn field(&self, name: &str) -> Result<&Self> {
         self.get(name)
@@ -203,8 +204,62 @@ pub fn family<V: Value>(document: &V) -> Result<V> {
     ])
 }
 
+fn expand_result_refs<V: Value>(context: &mut V) -> Result<()> {
+    let Some(metadata) = context.get("record_metadata") else {
+        return Ok(());
+    };
+    let active = metadata.get("verified_recapture");
+    if active.and_then(|v| v.get("result_ref")).is_some() {
+        return Err("active recapture result must stay inline".into());
+    }
+    let Some(archives) = metadata.get("verified_recaptures") else {
+        return Ok(());
+    };
+    let archives = archives.items()?;
+    if !archives.iter().any(|v| v.get("result_ref").is_some()) {
+        return Ok(());
+    }
+    let result = active
+        .and_then(|v| v.get("result"))
+        .ok_or("archived result reference needs an inline active result")?;
+    let digest = result.payload_digest()?;
+    let mut expanded = Vec::with_capacity(archives.len());
+    for archive in archives {
+        if let Some(reference) = archive.get("result_ref") {
+            if archive.get("result").is_some() || reference.as_text()? != digest {
+                return Err("invalid archived result reference".into());
+            }
+            let mut receipt = V::object();
+            for (name, value) in archive.entries()? {
+                if name == "result_ref" {
+                    receipt.set("result", result.clone())?;
+                } else {
+                    receipt.set(name, value.clone())?;
+                }
+            }
+            expanded.push(receipt);
+        } else {
+            expanded.push(archive.clone());
+        }
+    }
+    let mut metadata = metadata.clone();
+    metadata.set("verified_recaptures", V::array(expanded))?;
+    context.set("record_metadata", metadata)
+}
+
+/// Validate every payload reference, including contexts unused by records.
+pub fn contexts<V: Value>(document: &V) -> Result<V> {
+    let mut contexts = document.field("contexts")?.clone();
+    for (name, value) in document.field("contexts")?.entries()? {
+        let mut context = value.clone();
+        expand_result_refs(&mut context)?;
+        contexts.set(name, context)?;
+    }
+    Ok(contexts)
+}
+
 /// Reconstruct complete per-record metadata; references are never deep-merged.
-pub fn metadata<V: Value>(document: &V, stored: &V) -> Result<V> {
+pub fn metadata<V: Value>(document: &V, stored: &V, contexts: &V) -> Result<V> {
     let defaults = document.field("record_defaults")?;
     let origins = document.field("origins")?;
     let mut producer = reference(
@@ -219,7 +274,7 @@ pub fn metadata<V: Value>(document: &V, stored: &V) -> Result<V> {
         producer.set("capture_origin", origin)?;
     }
     let mut context = reference(
-        document.field("contexts")?,
+        contexts,
         stored.get("context").unwrap_or(defaults.field("context")?),
     )?;
     if context.get("captured_with").is_some() || context.get("capture_origin").is_some() {
@@ -255,6 +310,7 @@ pub fn snapshot<V: Value>(document: &V, authored: &V) -> Result<V> {
         ],
     )?;
     let library = requests(authored)?;
+    let contexts = contexts(document)?;
     let origins = document.field("origins")?;
     let mut provenance = document.field("provenance")?.clone();
     if let Some(origin) = provenance.get("origin") {
@@ -290,7 +346,7 @@ pub fn snapshot<V: Value>(document: &V, authored: &V) -> Result<V> {
         if states.len() != 1 {
             return Err("normalized record needs exactly one observation".into());
         }
-        let context = metadata(document, stored)?;
+        let context = metadata(document, stored, &contexts)?;
         let stimulus = if let Some(request) = stored.get("request") {
             object(&[
                 ("inline", reference(&library, request)?),

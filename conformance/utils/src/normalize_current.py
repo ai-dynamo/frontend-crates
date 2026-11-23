@@ -32,10 +32,16 @@ def normalize(root: Path, *, check: bool = False) -> dict:
             authored = normalized.expand_family(original)
             frozen = list(normalized.expand_requests(original).values()) if original.get("schema_version") == 3 else []
             captures = {}
+            reference_formats = {}
             for path in sorted(paths):
                 raw = history._parse_yaml_raw(path, path.read_bytes())
                 capture = normalized.expand_snapshot(raw, original)
                 captures[path] = capture
+                reference_formats[path] = any("result_ref" in receipt
+                    for context in raw.get("contexts", {}).values()
+                    if isinstance(context, dict) and isinstance(context.get("record_metadata"), dict)
+                    for receipt in context["record_metadata"].get("verified_recaptures", [])
+                    if isinstance(receipt, dict))
                 records += len(capture["records"])
                 frozen.extend(record["value"]["stimulus"]["inline"] for record in capture["records"].values()
                               if "inline" in record["value"]["stimulus"])
@@ -45,7 +51,8 @@ def normalize(root: Path, *, check: bool = False) -> dict:
             family = history._validate_family(authored_path, normalized.expand_family(encoded))
             encoded_documents = {authored_path: history.dump_yaml(encoded).encode()}
             for path, capture in captures.items():
-                compact = normalized.encode_snapshot(capture, encoded)
+                # Existing inline and referenced snapshots are both legal storage.
+                compact = normalized.encode_snapshot(capture, encoded, result_refs=not check or reference_formats[path])
                 expanded = normalized.expand_snapshot(compact, encoded)
                 if not typed_equal(capture, expanded):
                     raise ValueError(f"normalization changed a resolved capture: {path}")
