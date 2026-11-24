@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.14...dynamo-parsers-v11.0.15) - 2026-11-24
+
+### Bug fixes
+
+- *(parsers)* Keep negative number arguments in the pythonic tool parser (DIS-3425) ([#610](https://github.com/ai-dynamo/frontend-crates/pull/610))
+
 ## [11.0.14](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v11.0.13...dynamo-parsers-v11.0.14) - 2026-11-22
 
 ### Bug fixes
