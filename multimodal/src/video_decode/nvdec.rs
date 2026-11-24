@@ -521,6 +521,11 @@ fn surface_bytes(&(_, (width, height), surfaces, _): &DecoderKey) -> u64 {
 fn take_idle(key: &DecoderKey) -> Option<CuVideoDecoder> {
     let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
     let at = idle.iter().rposition(|(k, _)| k == key)?;
+    #[cfg(test)]
+    TAKEN
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .push(*key);
     Some(idle.remove(at).1 as CuVideoDecoder)
 }
 
@@ -1148,9 +1153,115 @@ fn decode_run(
     Ok(())
 }
 
+/// Held by each test that decodes the `gop_*` fixtures on NVDEC, so that a
+/// test can count the idle decoders of their keys: no other fixture is 160x160.
+#[cfg(test)]
+pub(super) static GOP_CLIPS: Mutex<()> = Mutex::new(());
+
+/// The key of each decoder `take_idle` hands out, in order.
+#[cfg(test)]
+static TAKEN: Mutex<Vec<DecoderKey>> = Mutex::new(Vec::new());
+
 #[cfg(test)]
 mod tests {
+    use super::super::{ByteSource, Payload, VideoDecodeLimits, decode_frames_with, demux, probe};
     use super::*;
+
+    fn fixture(name: &str) -> Vec<u8> {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/video_decode");
+        std::fs::read(dir.join(name)).unwrap()
+    }
+
+    /// The idle decoders of `codec` at 160x160, the size of the `gop_*` fixtures.
+    fn idle_gop(codec: c_uint) -> Vec<usize> {
+        let idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+        let gop = idle
+            .iter()
+            .filter(|(key, _)| key.0 == codec && key.1 == (160, 160));
+        gop.map(|&(_, decoder)| decoder).collect()
+    }
+
+    /// Destroy the decoders that `idle_gop(codec)` lists.
+    fn drop_gop(codec: c_uint) {
+        let api = api().unwrap();
+        let _context = Context::new(api).unwrap();
+        let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+        let (gop, rest): (Vec<_>, Vec<_>) = std::mem::take(&mut *idle)
+            .into_iter()
+            .partition(|(key, _)| key.0 == codec && key.1 == (160, 160));
+        *idle = rest;
+        drop(idle);
+        destroy(api, gop.into_iter().map(|(_, decoder)| decoder));
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn a_decoder_handed_between_clips_decodes_like_a_fresh_one() {
+        let _only = GOP_CLIPS.lock().unwrap_or_else(PoisonError::into_inner);
+        let limits = VideoDecodeLimits::default();
+        // The same frames in closed and open GOPs: two streams, one decoder key.
+        let clips = ["gop_h264.mp4", "gop_h264_open.mp4"].map(fixture);
+        let decode_all = |bytes: &Vec<u8>| {
+            let all: Vec<u64> = (0..probe(bytes).unwrap().frame_count).collect();
+            decode_frames_with(&bytes.as_slice(), &all, None, &limits, decode).unwrap()
+        };
+        let fresh = clips.each_ref().map(|bytes| {
+            drop_gop(CODEC_H264);
+            decode_all(bytes)
+        });
+        let taken = || {
+            let taken = TAKEN.lock().unwrap_or_else(PoisonError::into_inner);
+            let gop = taken
+                .iter()
+                .filter(|key| key.0 == CODEC_H264 && key.1 == (160, 160));
+            gop.count()
+        };
+        let before = taken();
+        for (bytes, want) in clips.iter().zip(&fresh).cycle().take(4) {
+            let got = decode_all(bytes);
+            assert!(got.rgb() == want.rgb());
+            assert_eq!(got.timestamps(), want.timestamps());
+        }
+        // Each decode can take the decoder the one before left, unless the
+        // decoders of parallel tests push it out of the list first; a pool
+        // that never hands one out fails here.
+        assert!(taken() > before);
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn a_failed_decode_does_not_keep_its_decoder() {
+        /// Fails every read that touches `self.1`.
+        struct FailsIn(Vec<u8>, std::ops::Range<u64>);
+        impl ByteSource for FailsIn {
+            fn len(&self) -> u64 {
+                self.0.len() as u64
+            }
+            fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+                if offset < self.1.end && self.1.start < offset + buf.len() as u64 {
+                    return Err(std::io::Error::other("read failed"));
+                }
+                (&self.0[..]).read_at(offset, buf)
+            }
+        }
+        let _only = GOP_CLIPS.lock().unwrap_or_else(PoisonError::into_inner);
+        let bytes = fixture("gop_av1.mp4");
+        let limits = VideoDecodeLimits::default();
+        let all: Vec<u64> = (0..probe(&bytes).unwrap().frame_count).collect();
+        decode_frames_with(&bytes.as_slice(), &all, None, &limits, decode).unwrap();
+        assert_eq!(idle_gop(CODEC_AV1).len(), 1);
+        // Packet 20 cannot be read, so the decode fails after it took the
+        // idle decoder.
+        let Payload::Source { offset, len } = demux(&bytes.as_slice()).unwrap().packets[20].payload
+        else {
+            unreachable!("MP4 packets stay in the source")
+        };
+        let failing = FailsIn(bytes, offset..offset + len as u64);
+        let r = decode_frames_with(&failing, &all, None, &limits, decode);
+        assert!(matches!(r, Err(MmError::Internal { .. })), "{r:?}");
+        assert_eq!(idle_gop(CODEC_AV1), Vec::<usize>::new());
+    }
 
     #[test]
     fn missing_driver_libraries_are_reported_not_fatal() {
