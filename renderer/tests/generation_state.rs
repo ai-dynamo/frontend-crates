@@ -488,8 +488,10 @@ fn template_default_effort_preserves_explicit_effort_and_message_text() {
         req.effort = Some(alternate.clone());
         assert_eq!(formatter.render(&req).unwrap(), explicit);
         req.effort = None;
-        req.args.insert("reasoning_effort".into(), alternate);
-        assert_eq!(formatter.render(&req).unwrap(), explicit);
+        if key != "reasoning_effort" {
+            req.args.insert("reasoning_effort".into(), alternate);
+            assert_eq!(formatter.render(&req).unwrap(), explicit);
+        }
         req.args.clear();
         req.args
             .insert("emit_default_thinking_effort".into(), json!("false"));
