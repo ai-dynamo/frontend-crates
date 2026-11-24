@@ -279,7 +279,9 @@ decoder can take 200 ms. At most 8 decoders stay idle, and the oldest goes
 first. Their NV12 decode surfaces stay under 1 GiB; the driver allocates more
 than the surfaces (two idle 8192x4320 HEVC decoders hold 1.1 GiB on an RTX
 6000 Ada). When the driver cannot create a new decoder, the idle decoders are
-destroyed and the creation is tried once more.
+destroyed and the creation is tried once more. No timer frees idle decoders:
+one holds its GPU 0 memory until a newer one pushes it out of the list, a new
+decoder cannot be created, or the process exits.
 
 ```rust
 use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};

@@ -503,7 +503,10 @@ fn h273_matrix(codec: VideoCodec, code: u8) -> Result<Matrix> {
 type DecoderKey = (c_uint, (u32, u32), c_uint, Rect16);
 
 /// Decoders of finished decodes, kept for the next video of the same key:
-/// destroying a decoder can take 200 ms. Addresses, so the list is `Send`.
+/// destroying a decoder can take 200 ms. One holds its GPU 0 memory until
+/// `admit` pushes it out, a new decoder cannot be created (`drop_idle`), or the
+/// process exits.
+/// Addresses, so the list is `Send`.
 static IDLE: Mutex<Vec<(DecoderKey, usize)>> = Mutex::new(Vec::new());
 /// Most idle decoders, and most bytes of decode surfaces they hold on the GPU.
 const IDLE_DECODERS: usize = 8;
