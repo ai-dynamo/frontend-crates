@@ -274,13 +274,16 @@ def history_request_contract(site, identities):
             if version == "Latest":
                 family_versions = {row["family"]: row["version"] for row in current if row["implementation"] == implementation}
             else:
-                for item in candidates:
-                    if item["implementation"] != implementation or item["version"].split(".")[0] != version.split(".")[0]:
-                        continue
-                    for family in item["capture_families"]:
-                        prior = family_versions.get(family)
-                        if prior is None or unified_history._capture_release_sort_key(item["version"]) > unified_history._capture_release_sort_key(prior):
-                            family_versions[family] = item["version"]
+                blockers = catalog["metadata"]["unified_capture_policy"][implementation]["source_blockers"]
+                major_candidates = [item for item in candidates
+                                    if item["implementation"] == implementation
+                                    and item["version"].split(".")[0] == version.split(".")[0]]
+                for item in sorted(major_candidates, key=lambda item: (
+                    item["version"] not in blockers and not item.get("source_blocker")
+                    and item.get("has_captured_results") is not False,
+                    unified_history._capture_release_sort_key(item["version"]),
+                )):
+                    family_versions.update(dict.fromkeys(item["capture_families"], item["version"]))
             families = {family for item in resources if item["kind"] == "inputs-and-golden"
                         for family in item.get("families", [item.get("family")])}
         else:

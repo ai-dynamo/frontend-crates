@@ -245,18 +245,26 @@ function v1ReleaseSources(catalog, sources) {
     const captures = sources.filter(source => source.implementation === implementation);
     if (!captures.length) continue;
     const groups = new Map();
-    const add = (choice, family, version) => {
-      if (!groups.has(choice)) groups.set(choice, {});
-      const versions = groups.get(choice);
-      if (!versions[family] || compareVersions(version, versions[family]) > 0) versions[family] = version;
+    const add = (choice, family, version, available = true) => {
+      if (!groups.has(choice)) groups.set(choice, new Map());
+      const candidates = groups.get(choice);
+      const prior = candidates.get(family);
+      if (!prior || (available && !prior.available)
+          || (available === prior.available && compareVersions(version, prior.version) > 0)) {
+        candidates.set(family, { version, available });
+      }
     };
+    const sourceBlockers = catalog.metadata.unified_capture_policy?.[implementation]?.source_blockers;
     for (const row of current.filter(row => row.implementation === implementation)) add('Latest', row.family, row.version);
     for (const source of captures) {
       const major = Number(source.version.split('.')[0]);
       if (major >= 11 || /[-a-z]/i.test(source.version)) continue;
-      for (const family of source.capture_families || []) add(`${major}.x`, family, source.version);
+      // Archived blockers remain readable so their recorded outcomes can be shown.
+      const available = !sourceBlockers?.[source.version] && !source.source_blocker && source.has_captured_results !== false;
+      for (const family of source.capture_families || []) add(`${major}.x`, family, source.version, available);
     }
-    for (const [release_choice, family_versions] of groups) {
+    for (const [release_choice, candidates] of groups) {
+      const family_versions = Object.fromEntries([...candidates].map(([family, capture]) => [family, capture.version]));
       const version = Object.values(family_versions).sort((a, b) => compareVersions(b, a))[0];
       result.push({ ...captures[0], id: `${implementation}@unified@${release_choice}`, version,
         release_choice, family_versions, capture_families: Object.keys(family_versions), source_blocker: null, has_captured_results: true });

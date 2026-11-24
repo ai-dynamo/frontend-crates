@@ -2082,6 +2082,13 @@ def test_v1_major_choices_preserve_golden_and_measured_family_versions(historica
             historical = driver.execute_script(snapshot, f"{implementation}@{major}")
             assert historical.keys() == latest.keys()
             assert all(item["golden"] is not None for values in historical.values() for item in values)
+            if major == "9.x":
+                assert historical["gpt_oss"]
+                assert all(item["capture"]["version"] == "9.2.10" for item in historical["gpt_oss"])
+                assert any("events" in item["capture"]["block"] for item in historical["gpt_oss"])
+            if major == "3.x" and implementation == "dynamo_v1_jail":
+                assert historical["gpt_oss"]
+                assert all(item["capture"]["version"] == "3.0.0" for item in historical["gpt_oss"])
             if major == "10.x":
                 assert all(item["capture"]["version"] == "10.0.1" for item in historical["gpt_oss"])
                 assert all(item["capture"]["version"] == "10.2.2" for item in historical["qwen3"])

@@ -23,6 +23,40 @@ await test('latest and history selectors accept only version numbers', async () 
   }
 });
 
+await test('v1 history prefers available family releases and retains unavailable-only evidence', async () => {
+  const { default: assert } = await import('node:assert/strict');
+  const { tabCandidates } = await import('./model.js');
+  const mode = 'unified';
+  const implementation = 'dynamo_v1';
+  const catalog = {
+    capture_generation: { mode: 'history', current: [{ implementation, family: 'measured', version: '11.0.13' }] },
+    metadata: {
+      selection_policy: { unified: { reference: 'dynamo_v2', implementation_order: [implementation], historical_control_aliases: {} } },
+      implementations: [],
+      unified_capture_policy: { [implementation]: { source_blockers: { '9.2.13': 'source unavailable' } } },
+    },
+    sources: { candidates: [
+      { implementation: 'dynamo_v2', mode, version: '0.10.11' },
+      { implementation, mode, version: '9.2.13', capture_families: ['measured', 'blocked'] },
+      { implementation, mode, version: '9.2.9', capture_families: ['measured', 'older'] },
+      { implementation, mode, version: '9.2.10', capture_families: ['measured'] },
+      { implementation, mode, version: '9.2.11', capture_families: ['measured'], has_captured_results: false },
+      { implementation, mode, version: '9.2.12', capture_families: ['measured'], source_blocker: 'source unavailable' },
+      { implementation, mode, version: '3.0.0', capture_families: ['measured'], has_captured_results: false },
+    ] },
+  };
+
+  for (const candidates of [catalog.sources.candidates, [...catalog.sources.candidates].reverse()]) {
+    catalog.sources.candidates = candidates;
+    const selections = tabCandidates(catalog, { mode });
+    const choice = release => selections.find(({ source }) => source.release_choice === release);
+    assert.deepEqual(choice('9.x').source.family_versions, { measured: '9.2.10', older: '9.2.9', blocked: '9.2.13' });
+    assert.ok(choice('9.x').control.identities.includes('dynamo_v1@9.2.13'));
+    assert.deepEqual(choice('3.x').source.family_versions, { measured: '3.0.0' });
+    assert.deepEqual(choice('Latest').source.family_versions, { measured: '11.0.13' });
+  }
+});
+
 await test('columns cannot omit, duplicate, replace, or combine authored cases', async () => {
   const { default: assert }=await import('node:assert/strict');
   const { validateCaseColumns }=await import('./model.js');
