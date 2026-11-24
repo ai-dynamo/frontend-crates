@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 import { expandFamily, expandSnapshot } from './normalization.js';
-import { sha256, createWorkerParser, validateResource, resourceMetrics } from './data.js';
+import { sha256, createWorkerParser, validateResource, resourceMetrics, gunzipSync } from './data.js';
+import { validateRendererSuite } from './renderer.js';
 import { canonicalJson, sameValue, getField, hasField, setField, deleteField, mergeMappings, mappingEntries, isMapping } from './values.js';
 import { compareVersions, provenanceReleaseVersion, unifiedCaptureVersionPattern, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, selectedUnifiedSnapshot } from './model.js';
 
@@ -658,6 +659,22 @@ export class FixtureResources {
     await this.admitResource(resource);
     const value = await cachedTask(this.documents, `${resource.sha256}:${resource.size}:snapshot`, async () => this.parser.parseSnapshot(await this.store.read(resource), resource));
     return { value, member: resource.path, resource: resource.path };
+  }
+
+  async renderer() {
+    if (this.embedded?.catalog.sources.renderer?.length) return this.embedded.renderer();
+    const resources = this.catalog.sources.renderer;
+    if (!Array.isArray(resources) || resources.length !== 1) throw new Error('Renderer suite resource missing or duplicated');
+    const resource = resources[0];
+    if (resource.kind !== 'renderer-suite' || resource.format !== 'typed-json-v1' || !['none', 'gzip'].includes(resource.compression)) throw new Error('Unsupported renderer resource');
+    await this.admitResource(resource);
+    return cachedTask(this.documents, `${resource.sha256}:${resource.size}:renderer`, async () => {
+      const bytes = await this.store.read(resource);
+      const decoded = resource.compression === 'gzip' ? gunzipSync(bytes) : bytes;
+      const envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decoded));
+      if (envelope.schema !== 1 || envelope.kind !== 'renderer-suite') throw new Error('Invalid renderer suite envelope');
+      return validateRendererSuite(envelope.renderer);
+    });
   }
 
 

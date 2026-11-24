@@ -756,6 +756,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "clap",
+ "dynamo-conformance-fixtures-v2",
  "fastcdc",
  "flate2",
  "libc",
@@ -1158,9 +1159,12 @@ dependencies = [
  "dynamo-protocols",
  "dynamo-renderer",
  "futures",
+ "minijinja",
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.9",
+ "tempfile",
  "tokio",
 ]
 

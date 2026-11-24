@@ -13,12 +13,13 @@
 /* The capture picker and comparison cards share one selection owner. */
 body { background: var(--page-bg); color: var(--ink); }
 #viewer > h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 18px 0 8px; font-size: 25px; }
-.capture-slot-controls { display: grid; width: 100%; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.capture-slot-controls { display: grid; width: 100%; grid-template-columns: repeat(var(--capture-slot-count,3),minmax(0,1fr)); }
 .capture-slots { display: grid; grid-template-columns: minmax(0,3fr) minmax(max-content,1fr); align-items: stretch; }
 .capture-slots > .capture-slots-notice { grid-column: 1 / -1; }
 .capture-slot { display: grid; grid-template-columns: auto minmax(0,1fr); align-content: start; padding: 14px; }
 .capture-slot-engine-trigger { color: var(--ink); }
 .capture-slot .capture-slot-badge { width: 25px; height: 25px; flex-basis: 25px; border-radius: 6px; font-size: 14px; }
+.capture-slot[data-engine="reference"] .capture-slot-badge { background: var(--ink-muted); color: var(--panel-bg); }
 .capture-summary { grid-column: 1 / -1; min-width: 0; color: var(--ink-muted); font-size: 11px; }
 .tab-panel:not([data-load-state="ready"]) .capture-summary { visibility: hidden; }
 .engine-status-bar { display: flex; gap: 0; height: 8px; margin: 8px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-alt); }
@@ -117,3 +118,10 @@ body { background: var(--page-bg); color: var(--ink); }
 }
 
 .tabs:empty { display: none; }
+.renderer-results { border-collapse: collapse; table-layout: fixed; width: 100%; }
+.renderer-results th,.renderer-results td { border: 1px solid var(--line); padding: 8px; vertical-align: top; text-align: left; }
+.renderer-results th:first-child { width: 110px; }
+.renderer-results pre,.renderer-reference-input pre,.renderer-request-details pre,.renderer-settings-details pre,.renderer-model-case pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 360px; overflow: auto; }
+.renderer-request-details,.renderer-settings-details { margin: 10px 0; }
+.renderer-model-case + .renderer-model-case { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+.renderer-model-source { overflow-wrap: anywhere; color: var(--ink-muted); }

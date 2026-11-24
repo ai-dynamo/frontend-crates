@@ -319,14 +319,15 @@ def _historical_dynamo_key(driver):
 
 
 def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
+    has_renderer = any(tab["id"] == "tab-renderer" for tab in _published_catalog(published_viewer)["metadata"]["tabs"])
     server, requests = _server(root=published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
         driver.get(f"{base}/index.html?tab=tab-unified&view=details&transpose=0&keep=1")
         _ready(driver, "tab-unified")
-        assert driver.title == 'Dynamo Parser Conformance Table'
-        assert driver.find_element('css selector', '#viewer > h1').text.startswith('Parser Conformance')
+        assert driver.title == ('Dynamo Conformance Tables' if has_renderer else 'Dynamo Parser Conformance Table')
+        assert driver.find_element('css selector', '#viewer > h1').text.startswith('Dynamo Conformance' if has_renderer else 'Parser Conformance')
         assert len(driver.find_element('css selector', '.source-commit').text) == 12
         assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-comparison-table] .matrix-cell")
         family_labels = {item.text for item in driver.find_elements("css selector", "#tab-unified .comparison-matrix tbody tr > th:first-child")}
@@ -341,7 +342,7 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': None, 'selected': ['dynamo']}
         slot_engines = [slot.get_attribute('data-engine') for slot in driver.find_elements('css selector', '#tab-unified .capture-slot')]
         assert slot_engines == ['dynamo', 'none', 'none']
-        assert driver.find_elements('css selector', '#viewer > .tabs .tab-button') == []
+        assert [button.get_attribute('data-tab-target') for button in driver.find_elements('css selector', '#viewer > .tabs .tab-button')] == (['tab-unified', 'tab-renderer'] if has_renderer else [])
         loaded = [path for path in requests if "/viewer-data/" in path]
         assert loaded == [], 'default capture data must come entirely from HTML'
         assert not any('viewer-resolved-catalog' in path for path in requests)
@@ -518,11 +519,11 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert not any(node.is_displayed() for node in driver.find_elements('css selector', '.generated-command'))
         assert driver.find_element('css selector', '.case-descriptions').is_displayed()
-        labels = driver.find_elements("css selector", ".capture-slot-selected-label")
+        labels = driver.find_elements("css selector", "#tab-unified .capture-slot-selected-label")
         assert labels and all(driver.execute_script("return arguments[0].scrollHeight <= arguments[0].clientHeight", label) for label in labels)
-        slot_tops = [slot.rect["y"] for slot in driver.find_elements("css selector", ".capture-slot")]
+        slot_tops = [slot.rect["y"] for slot in driver.find_elements("css selector", "#tab-unified .capture-slot")]
         assert max(slot_tops) - min(slot_tops) < 1
-        dynamo_options = driver.find_elements("css selector", '[data-slot-capture="0"] option')
+        dynamo_options = driver.find_elements("css selector", '#tab-unified [data-slot-capture="0"] option')
         v1_values = [option.get_attribute("value") for option in dynamo_options
                      if option.get_attribute("value").startswith("dynamo_v1")]
         assert v1_values
@@ -1152,7 +1153,7 @@ def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer
             };
         """, stale_failure)
         capture_select = _choose_engine(driver, 1, 'vllm')
-        capture_select.send_keys(Keys.ESCAPE)
+        driver.execute_script("arguments[0].blur();", capture_select)
         rust = next(option.get_attribute('value') for option in capture_select.find_elements('tag name', 'option')
                     if option.get_attribute('value').startswith('vllm_rust@'))
         driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", capture_select, rust)
@@ -1440,7 +1441,7 @@ def test_unified_slots_migrate_legacy_comparison_url_and_fit_mobile(historical_p
         boxes = [slot.rect for slot in slots]
         assert all(box['x'] >= 0 and box['x'] + box['width'] <= 390 for box in boxes)
         assert all(driver.execute_script("return arguments[0].scrollHeight <= arguments[0].clientHeight", label)
-                   for label in driver.find_elements('css selector', '.capture-slot-selected-label'))
+                   for label in driver.find_elements('css selector', '#tab-unified .capture-slot-selected-label'))
         assert 'keep=1' in driver.current_url and driver.current_url.endswith('#saved')
         params = dict(parse_qsl(urlsplit(driver.current_url).query))
         assert params['slots_tab-unified'].split(',')[0] == 'sglang_python@0.5.21'

@@ -474,8 +474,10 @@ def test_every_rendered_config_key_exists_in_the_emitted_init() -> None:
     the two sides together.
     """
     js = (UTILS / "src/assets/conformance_view.js").read_text()
-    keys = set(re.findall(r"\{\s*key:\s*'([a-z_]+)'", js))
-    assert keys, "CONFIG_KEYS not found in conformance_view.js"
+    config_keys = re.search(r"\b(?:const|let|var)\s+CONFIG_KEYS\s*=\s*\[(.*?)^\s*\];", js, re.S | re.M)
+    assert config_keys, "CONFIG_KEYS not found in conformance_view.js"
+    keys = set(re.findall(r"\{\s*key:\s*'([a-z_]+)'", config_keys[1]))
+    assert keys, "CONFIG_KEYS has no rendered init keys"
 
     emitted = set()
     for family in FAMILIES:

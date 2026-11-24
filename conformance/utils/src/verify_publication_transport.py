@@ -516,13 +516,14 @@ def compare(baseline, candidate):
     before = runtime_catalog(baseline)
     after = runtime_catalog(candidate)
     require(after["transport"]["schema"] == 2, "candidate is not transport v2")
-    before_resources = {r["path"]: r for r in before["sources"]["unified"] if not (r["kind"] == "inputs-and-golden" and isinstance(r.get("families"), list))}
-    after_resources = {r["path"]: r for r in after["sources"]["unified"]}
+    before_resources = {r["path"]: r for r in [*before["sources"]["unified"], *before["sources"].get("renderer", [])]
+                        if not (r["kind"] == "inputs-and-golden" and isinstance(r.get("families"), list))}
+    after_resources = {r["path"]: r for r in [*after["sources"]["unified"], *after["sources"].get("renderer", [])]}
     require(before_resources.keys() == after_resources.keys(), "logical capture/input selections differ")
     decoder = Decoder(candidate)
     baseline_decoder = Decoder(baseline)
     packed_baseline = before.get("transport", {}).get("schema") == 2
-    counts = {"capture_selections": 0, "family_inputs": 0, "authored_unified_cases_total": 0, "authored_unified_cases_active": 0, "original_resources": 0, "legacy_raw_aliases": 0, "logical_bytes": 0, "original_bytes": 0}
+    counts = {"capture_selections": 0, "family_inputs": 0, "renderer_suites": 0, "authored_unified_cases_total": 0, "authored_unified_cases_active": 0, "original_resources": 0, "legacy_raw_aliases": 0, "logical_bytes": 0, "original_bytes": 0}
     shared_inputs = None
     for path, original in before_resources.items():
         current = after_resources[path]
@@ -544,7 +545,7 @@ def compare(baseline, candidate):
             counts["authored_unified_cases_active"] += active
         else:
             recipe = read_index(candidate, current["recipe_index"])[path]
-            counts["capture_selections"] += 1
+            counts["renderer_suites" if original["kind"] == "renderer-suite" else "capture_selections"] += 1
         new_bytes = decoder.reconstruct(recipe)
         identity(new_bytes, current["sha256"], current["size"])
         require(old_bytes == new_bytes, f"decoded payload differs: {path}")

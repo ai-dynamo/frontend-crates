@@ -25,6 +25,8 @@ export function validateStartupCatalog(catalog, { resolved = true } = {}) {
     resource.format !== 'typed-json-v1' && (resolved || resource.format !== undefined))) {
     throw new Error(resolved ? 'Browser data needs regeneration' : 'Unsupported conformance resource format');
   }
+  if (catalog.sources.renderer !== undefined && (!Array.isArray(catalog.sources.renderer)
+      || catalog.sources.renderer.some(resource => resource.kind !== 'renderer-suite' || resource.format !== 'typed-json-v1'))) throw new Error('Unsupported renderer resources');
   return catalog;
 }
 
@@ -108,6 +110,10 @@ export async function discoverHistory(baseUrl, catalog, { fetchImpl = globalThis
       || JSON.stringify(history.capture_generation.current) !== JSON.stringify(catalog.capture_generation?.current)) {
     throw new Error('History catalog does not match embedded latest captures');
   }
+  if (catalog.sources.renderer?.length && (!history.sources.renderer?.length
+      || !history.metadata.tabs.some(tab => tab.id === 'tab-renderer')
+      || JSON.stringify(history.metadata.renderer) !== JSON.stringify(catalog.metadata.renderer)
+      || history.sources.renderer[0].source_fingerprint !== catalog.sources.renderer[0].source_fingerprint)) throw new Error('History catalog does not preserve the embedded renderer suite');
   return history;
 }
 
@@ -221,7 +227,7 @@ window.__formatConformanceValue = stringifyValue;
 window.__conformanceCaptureOutcome = selectedCaptureOutcome;
 
 function resourceFor(catalog, path) {
-  const direct = [...catalog.sources.unified, ...(catalog.sources.original_unified || [])].find(resource => resource.path === path);
+  const direct = [...catalog.sources.unified, ...(catalog.sources.original_unified || []), ...(catalog.sources.renderer || []), ...(catalog.sources.original_renderer || [])].find(resource => resource.path === path);
   if (direct) return { resource: direct, member: null };
   const logical = path.replace(/^conformance\//, '');
   for (const resource of catalog.sources.archives) {
@@ -249,7 +255,7 @@ async function rawView(catalog, reader, path) {
 function fixtureLinks(tab, historyAvailable) {
   const rewrite = cell => {
     if (cell.fixture_href) {
-      if (historyAvailable) {
+      if (historyAvailable || tab.kind === 'renderer') {
         const url = new URL(location.href); url.searchParams.set('raw', cell.fixture_href);
         cell.fixture_href = url.href;
       } else cell.fixture_href = null;
@@ -290,7 +296,7 @@ async function initialize() {
   const reader = new FixtureResources(catalog, startup.store, undefined, embeddedIdentities ? startup.catalog : null);
   window.addEventListener('pagehide', () => reader.dispose(), { once: true });
   if (params.has('raw')) {
-    if (catalog.transport?.schema !== 2 && ![...catalog.sources.unified, ...(catalog.sources.original_unified || [])].some(resource => resource.path === params.get('raw'))) {
+    if (catalog.transport?.schema !== 2 && ![...catalog.sources.unified, ...(catalog.sources.original_unified || []), ...(catalog.sources.renderer || []), ...(catalog.sources.original_renderer || [])].some(resource => resource.path === params.get('raw'))) {
       const full = await loading.run('raw-catalog', 'original resource catalog', async () => {
         const fullResponse = await fetch(new URL('conformance/viewer-catalog.json', baseUrl), { cache: 'no-store' });
         if (!fullResponse.ok) throw new Error(`Catalog fetch failed (${fullResponse.status})`);
@@ -303,13 +309,13 @@ async function initialize() {
     const rawCatalog = startup.catalog.capture_generation?.current?.some(capture => capture.source === path) ? startup.catalog : catalog;
     await loading.run('raw', path.split('/').at(-1), () => rawView(rawCatalog, reader, path)); return;
   }
-  if (params.get('tab') && params.get('tab') !== 'tab-unified') {
+  if (params.get('tab') && !catalog.metadata.tabs.some(tab => tab.id === params.get('tab'))) {
     const url = new URL(location.href);
     url.searchParams.set('tab', 'tab-unified');
     history.replaceState(null, '', url.toString());
   }
-  const active = catalog.metadata.tabs.find(tab => tab.id === 'tab-unified');
-  const descriptors = tabCandidates(catalog, active, { golden: true });
+  const active = catalog.metadata.tabs.find(tab => tab.id === params.get('tab')) || catalog.metadata.tabs.find(tab => tab.id === 'tab-unified');
+  const descriptorsFor = tabId => tabCandidates(catalog, catalog.metadata.tabs.find(tab => tab.id === tabId), { golden: true });
   const publicationElement = document.getElementById('conformance-publication');
   let publication = publicationElement ? JSON.parse(publicationElement.textContent) : null;
   let sourceLink = createSourceLink(baseUrl, publication, bootstrapRevision);
@@ -319,10 +325,10 @@ async function initialize() {
   page.tabs = catalog.metadata.tabs.map(spec => ({
     ...tabPresentation(spec, catalog, tabCandidates(catalog, spec), path => `source:${path}`),
     id: spec.id, kind: spec.suite === 'toolcalling' ? 'toolcalling' : spec.suite, mode: spec.mode === 'stream' && spec.suite === 'toolcalling' ? 'streamv1' : spec.mode,
-    active: spec.id === active.id, no_parser_col: spec.suite === 'unified',
-    comparison_defaults: catalog.metadata.unified_display?.comparison_defaults,
-    comparison_slot_engines: catalog.metadata.unified_display?.comparison_slot_engines,
-    comparison_languages: catalog.metadata.unified_display?.comparison_languages,
+    active: spec.id === active.id, no_parser_col: ['unified', 'renderer'].includes(spec.suite),
+    comparison_defaults: spec.suite === 'renderer' ? undefined : catalog.metadata.unified_display?.comparison_defaults,
+    comparison_slot_engines: spec.suite === 'renderer' ? ['reference', 'dynamo'] : catalog.metadata.unified_display?.comparison_slot_engines,
+    comparison_languages: spec.suite === 'renderer' ? ['Python', 'Rust'] : catalog.metadata.unified_display?.comparison_languages,
     rows: [], columns: [], column_groups: [], stats: {}, glossary: [],
     candidates: captureControls(catalog, spec),
   }));
@@ -341,9 +347,10 @@ async function initialize() {
   resolveSources();
   root.dataset.catalogRevision = catalog.revision;
   let controller;
-  let slotOwner;
-  let comparison;
+  const slotOwners = new Map();
+  const comparisons = new Map();
   async function recoverLoadError(notice, generation) {
+    const panel = notice.closest('.tab-panel');
     const isCurrent = () => generation === loader.generation && panel.dataset.loadState === 'error';
     const expected = publication && {...publication,
       resolved_catalog_revision: historyAvailable ? catalog.revision : publication.resolved_catalog_revision};
@@ -367,7 +374,8 @@ async function initialize() {
       // Cached selections can rebuild synchronously; let the loading notice paint first.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       if (generation !== loader.generation) throw new Error('Obsolete fixture selection');
-      await timedStartupPhase('resourcePreparation', () => reader.prepareUnified(descriptors.filter(item => selection.selected.includes(item.control.key))));
+      const spec = catalog.metadata.tabs.find(tab => tab.id === tabId);
+      if (spec.suite === 'unified') await timedStartupPhase('resourcePreparation', () => reader.prepareUnified(descriptorsFor(tabId).filter(item => selection.selected.includes(item.control.key))));
       if (generation !== loader.generation) throw new Error('Obsolete fixture selection');
       return timedStartupPhase('modelConstruction', () => buildTab(catalog, reader, tabId, { ...selection, sourceLink: path => `source:${path}` }));
     },
@@ -379,7 +387,7 @@ async function initialize() {
       panel.dataset.loadState = state;
       panel.setAttribute('aria-busy', String(state === 'loading'));
       panel.querySelector('.load-status')?.remove();
-      const labels = selection?.selected.map(key => descriptors.find(item => item.control.key === key)?.control.label || key);
+      const labels = selection?.selected.map(key => descriptorsFor(tabId).find(item => item.control.key === key)?.control.label || key);
       loading.set(`selection:${tabId}`, state === 'loading' ? labels?.join(', ') || 'selected fixtures' : null);
       let failureNotice;
       if (state === 'error') {
@@ -406,7 +414,7 @@ async function initialize() {
       commit();
       resolveSources();
       panel.dataset.hasModel = 'true';
-      comparison.update(model);
+      comparisons.get(tabId).update(model);
       controller.updatePanel(panel, pin);
       window.__conformanceModel = model;
       window.scrollTo(scroll.x, scroll.y);
@@ -418,16 +426,24 @@ async function initialize() {
     },
   });
   window.__conformanceLoader = loader;
-  const load = panel => { if (panel.classList.contains('active')) return loader.select(panel.id, controller.selection(panel)); };
-  controller = window.initializeConformanceController({ normalizePopupKey: key => canonicalUnifiedPopupKey(key, catalog.metadata.unified_aliases), engineSelection: { selection: () => slotOwner?.selection() || { reference: null, selected: [] } }, columnKeys: columnKeysFor(catalog.metadata), cellOutcome: selectedCellOutcome, selectionChanged: load, tabChanged: id => load(document.getElementById(id)) });
+  const load = panel => {
+    if (!panel.classList.contains('active')) return;
+    for (const tab of page.tabs) if (tab.id !== panel.id) loading.set(`selection:${tab.id}`, null);
+    return loader.select(panel.id, controller.selection(panel));
+  };
+  controller = window.initializeConformanceController({ normalizePopupKey: key => canonicalUnifiedPopupKey(key, catalog.metadata.unified_aliases), engineSelection: { selection: panel => slotOwners.get((panel || controller?.activePanel())?.id)?.selection() || { reference: null, selected: [] } }, columnKeys: columnKeysFor(catalog.metadata), cellOutcome: selectedCellOutcome, selectionChanged: load, tabChanged: id => load(document.getElementById(id)) });
   window.__conformanceController = controller;
-  const panel = document.getElementById('tab-unified');
-  panel.querySelector('.cmpctl')?.replaceChildren();
-  slotOwner = window.mountConformanceCaptureSlots(page, panel, () => {
-    if (!slotOwner) return;
-    load(panel);
-  }, { availableIdentities: historyAvailable ? null : embeddedIdentities, beforeUpdate: () => reserveCaptureSize(panel, true) });
-  comparison = mountComparison(panel, controller, () => catalog.sources.unified.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
+  for (const spec of catalog.metadata.tabs) {
+    const panel = document.getElementById(spec.id);
+    panel.querySelector('.cmpctl')?.replaceChildren();
+    const owner = window.mountConformanceCaptureSlots(page, panel, () => {
+      if (slotOwners.has(spec.id)) load(panel);
+    }, { availableIdentities: spec.suite === 'renderer' || historyAvailable ? null : embeddedIdentities, beforeUpdate: () => reserveCaptureSize(panel, true) });
+    slotOwners.set(spec.id, owner);
+    comparisons.set(spec.id, mountComparison(panel, controller, () => spec.suite === 'renderer'
+      ? (catalog.metadata.renderer?.models || []).map(model => model.id)
+      : catalog.sources.unified.filter(item => item.kind === 'inputs-and-golden').map(item => item.family)));
+  }
   const firstLoad = load(controller.activePanel());
   async function discoverOlderResults() {
     await firstLoad;
@@ -440,16 +456,18 @@ async function initialize() {
       // Catalog replacement invalidates every build admitted against the old reader.
       loader.generation++;
       catalog = history; reader.catalog = catalog;
-      descriptors.splice(0, descriptors.length, ...tabCandidates(catalog, active, { golden: true }));
       page.legacy_candidate_identities = catalog.metadata.legacy_candidate_identities || {};
       for (const tab of page.tabs) {
         const spec = catalog.metadata.tabs.find(item => item.id === tab.id);
         tab.candidates = captureControls(catalog, spec);
       }
       root.dataset.catalogRevision = catalog.revision;
-      slotOwner.setCandidates(page.tabs.find(tab => tab.id === 'tab-unified').candidates);
-      slotOwner.setAvailableIdentities(null, { notify: false });
-      await load(panel);
+      for (const tab of page.tabs) {
+        const owner = slotOwners.get(tab.id);
+        owner.setCandidates(tab.candidates);
+        owner.setAvailableIdentities(null, { notify: false });
+      }
+      await load(controller.activePanel());
     }
     else {
       const notice = document.createElement('p');
@@ -461,7 +479,7 @@ async function initialize() {
   discoverOlderResults().catch(error => {
     window.__conformanceError = error.stack;
     const notice = document.createElement('p'); notice.className = 'error'; notice.textContent = error.message;
-    panel.querySelector('.capture-slots').appendChild(notice);
+    controller.activePanel().querySelector('.capture-slots').appendChild(notice);
   });
   // Publication is optional and never gates controls or fixture resolution.
   firstLoad.then(readPublication).then(metadata => {

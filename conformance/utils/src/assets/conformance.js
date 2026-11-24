@@ -1,6 +1,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 // Maintained conformance matrix controller for asynchronously loaded tab models.
+function conformanceLegacyCaptureSelection(params, tabId, initialTab, fallbackReference, resolveSlotKey) {
+  // Global ref/cmp and retired-tab aliases belong to the parser suite.
+  const parser = tabId === 'tab-unified';
+  const initialParserTab = initialTab === 'tab-renderer' ? null : initialTab;
+  const tabs = parser ? [...new Set([initialParserTab, tabId].filter(Boolean))] : [tabId];
+  const baseParam = tabs.map(id => 'base_' + id).find(key => params.has(key));
+  const compareParam = tabs.map(id => 'cmp_' + id).find(key => params.has(key));
+  const globalReference = parser && params.has('ref');
+  const globalCompare = parser && params.has('cmp');
+  if (!baseParam && !compareParam && !globalReference && !globalCompare) return null;
+  const reference = baseParam ? params.get(baseParam) : globalReference ? params.get('ref') : fallbackReference;
+  const compares = compareParam ? params.get(compareParam) : globalCompare ? params.get('cmp') : '';
+  return [reference, ...(compares || '').split(',')].map(resolveSlotKey);
+}
+
 window.initializeConformanceController = function (hooks = {}) {
   // Gutter kept between a popup and the viewport edge (2em at the 16px root size).
   // The tooltip is width:max-content and the widest ones run to the full cap below, so
@@ -26,9 +41,9 @@ window.initializeConformanceController = function (hooks = {}) {
   function activePanel() { return document.querySelector('.tab-panel.active'); }
   function panelCtl(panel) { return panel ? panel.querySelector('.cmpctl') : null; }
   // Reference = the single checked radio; Compare-with = every checked checkbox.
-  function ctlBase(ctl) { if (hooks.engineSelection) return hooks.engineSelection.reference; const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
+  function ctlBase(ctl) { if (hooks.engineSelection) return hooks.engineSelection.selection(ctl?.closest('.tab-panel')).reference; const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
   function ctlShown(ctl) {
-    if (hooks.engineSelection) return hooks.engineSelection.selection().selected;
+    if (hooks.engineSelection) return hooks.engineSelection.selection(ctl?.closest('.tab-panel')).selected;
     return ctl ? Array.from(ctl.querySelectorAll('input.cmp-on:checked')).map(function (x) { return x.value; }) : [];
   }
   // The Reference parser can't compare to itself: disable (and flag) its own
@@ -90,7 +105,7 @@ window.initializeConformanceController = function (hooks = {}) {
       if (first && first !== baseSec) { baseSec.parentNode.insertBefore(baseSec, first); }
     }
     // Per-chunk grid: show only the columns in the Reference + Compare-with selection.
-    tip.querySelectorAll('.ttip-chunks').forEach(function (grid) {
+    tip.querySelectorAll('.ttip-chunks,.renderer-results').forEach(function (grid) {
       const cands = grid.querySelectorAll('[data-cand]');
       if (cands.length) {
         // Candidate-column grid: columns ARE the (impl, version) candidates. Show the
@@ -184,10 +199,11 @@ window.initializeConformanceController = function (hooks = {}) {
       if (marker) marker.replaceWith(segments); else cell.insertBefore(segments, cell.firstChild);
     }
     segments.replaceChildren();
+    const outcomeLabels = window.__CONFORMANCE_PAGE?.tabs.find(tab => tab.id === cell.closest('.tab-panel')?.id)?.status_labels || segmentLabels;
     const labels = keys.map(key => {
       const status = window.__conformanceCaptureOutcome(data, key, 'golden');
-      segments.insertAdjacentHTML('beforeend', window.__conformanceCaptureSegmentHtml(status, key));
-      return key + ': ' + segmentLabels[status];
+      segments.insertAdjacentHTML('beforeend', window.__conformanceCaptureSegmentHtml(status, key, outcomeLabels));
+      return key + ': ' + outcomeLabels[status];
     });
     cell.setAttribute('aria-label', labels.join('; '));
     const tip = cell._ttip || cell.querySelector('.ttip');
@@ -203,7 +219,7 @@ window.initializeConformanceController = function (hooks = {}) {
   }
   function applyCtl(panel) {
     const ctl = panelCtl(panel);
-    const oracle = panel.id === 'tab-unified' && !!panel._comparisonSelection;
+    const oracle = ['tab-unified', 'tab-renderer'].includes(panel.id) && !!panel._comparisonSelection;
     if (!ctl && !oracle) { return; }
     const base = oracle ? (panel._comparisonSelection.keys.length ? 'golden' : null) : ctlBase(ctl);
     if (ctl) syncRefDisable(ctl, oracle ? null : base, oracle);
@@ -401,13 +417,12 @@ window.initializeConformanceController = function (hooks = {}) {
   viewCheckboxes.forEach(function (cb) {
     cb.addEventListener('change', function () { applyView(cb.checked, true); });
   });
-  // Reset: drop every URL param (compare/view state) and reload at defaults, but
-  // stay on the current tab.
+  // Reset the active suite and shared view controls; retain the other suite's filters.
   document.querySelectorAll('[data-reset]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      const tab = new URLSearchParams(window.location.search).get('tab');
+      const tab = activePanel()?.id || new URLSearchParams(window.location.search).get('tab') || 'tab-unified';
       const u = new URL(window.location.href);
-      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['slots_tab-unified', 'tab', 'ref', 'cmp', 'view', 'transpose', 'vertical', 'layout_tab-unified', 'focus_tab-unified', 'groups_tab-unified', 'peer_tab-unified', 'search_tab-unified', 'cols', 'show', 'hide', 'popup'].includes(key)) u.searchParams.delete(key);
+      for (const key of [...u.searchParams.keys()]) if (key.endsWith('_' + tab) || ['tab', 'ref', 'cmp', 'view', 'transpose', 'vertical', 'cols', 'show', 'hide', 'popup'].includes(key)) u.searchParams.delete(key);
       if (tab) { u.searchParams.set('tab', tab); }
       window.location.href = u.href;  // reload at defaults, same tab
     });
@@ -1146,7 +1161,7 @@ window.initializeConformanceController = function (hooks = {}) {
           && (!panel.querySelector('[data-comparison-table]') || candidate.closest('[data-comparison-table]'));
       });
     if (cell && cell._ttipPin) { cell._ttipPin(); }
-    else if (!(panel && panel.id === 'tab-unified' && panel.dataset.loadState !== 'ready')) {
+    else if (!(panel && ['tab-unified', 'tab-renderer'].includes(panel.id) && panel.dataset.loadState !== 'ready')) {
       const url = new URL(window.location.href);
       url.searchParams.delete('popup');
       window.history.replaceState(null, '', url.toString());
@@ -1485,7 +1500,7 @@ window.initializeConformanceController = function (hooks = {}) {
   return { refreshPanel, updatePanel, disposePanel, restorePopup, activePanel, refreshPopupLayout: repositionVisibleTooltips,
     selection(panel) {
       const ctl = panelCtl(panel), reference = ctlBase(ctl);
-      return hooks.engineSelection ? hooks.engineSelection.selection() : { reference, selected: reference ? [reference, ...ctlShown(ctl).filter(key => key !== reference)] : [] };
+      return hooks.engineSelection ? hooks.engineSelection.selection(panel) : { reference, selected: reference ? [reference, ...ctlShown(ctl).filter(key => key !== reference)] : [] };
     },
   };
 };
@@ -1493,12 +1508,14 @@ window.initializeConformanceController = function (hooks = {}) {
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}, { availableIdentities = null, beforeUpdate = () => {} } = {}) {
-  const tab = page && page.tabs && page.tabs.find(item => item.id === 'tab-unified');
+  const tab = page && page.tabs && page.tabs.find(item => item.id === panel?.id);
   if (!tab || !panel) return null;
 
   const engines = tab.comparison_slot_engines || ['dynamo', 'sglang', 'vllm'];
-  const engineNames = { dynamo: 'Dynamo', sglang: 'SGLang', vllm: 'vLLM' };
-  const engineLetters = { dynamo: 'D', sglang: 'S', vllm: 'V' };
+  const slotCount = tab.comparison_slot_count || 3;
+  const pickerId = tab.id === 'tab-unified' ? 'unified-capture-picker' : tab.id + '-capture-picker';
+  const engineNames = { dynamo: tab.kind === 'renderer' ? 'Dynamo renderer' : 'Dynamo', sglang: 'SGLang', vllm: 'vLLM', reference: 'Model reference' };
+  const engineLetters = { dynamo: 'D', sglang: 'S', vllm: 'V', reference: 'R' };
   const candidates = [];
   const byKey = new Map();
   const byIdentity = new Map();
@@ -1506,7 +1523,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
   const engineName = engine => engine ? engineNames[engine] : 'None';
   const engineOf = item => {
     const impl = String(item.impl || item.key).toLowerCase();
-    return impl.startsWith('dynamo') ? 'dynamo' : impl.startsWith('sglang') ? 'sglang' : 'vllm';
+    return impl === 'reference' ? 'reference' : impl.startsWith('dynamo') ? 'dynamo' : impl.startsWith('sglang') ? 'sglang' : 'vllm';
   };
   // Catalog descriptors define availability before any selected history is loaded.
   const available = [];
@@ -1599,7 +1616,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
   const preferredByEngine = engines.map(engine => {
     return captureChoices(engine)[0]?.key || null;
   });
-  const preferred = [preferredByEngine[0], null, null];
+  const preferred = tab.comparison_initial_all ? preferredByEngine.slice(0, slotCount) : [preferredByEngine[0], ...Array(slotCount - 1).fill(null)];
   const params = new URLSearchParams(window.__CONFORMANCE_INITIAL_SEARCH || window.location.search);
   const slotsParam = 'slots_' + tab.id;
   const initialTab = params.get('tab');
@@ -1613,16 +1630,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     const identity = legacyCandidates.get(key) || key;
     return byIdentity.get(identity) || byIdentity.get(key) || '';
   };
-  const legacyTabs = [...new Set([initialTab, tab.id].filter(Boolean))];
-  const legacyBaseParam = legacyTabs.map(id => 'base_' + id).find(key => params.has(key));
-  const legacyCompareParam = legacyTabs.map(id => 'cmp_' + id).find(key => params.has(key));
-  const legacyRef = (legacyBaseParam && params.get(legacyBaseParam)) ?? params.get('ref');
-  const legacyCmp = (legacyCompareParam && params.get(legacyCompareParam)) ?? params.get('cmp');
-  const hasLegacy = Boolean(legacyBaseParam || legacyCompareParam || params.has('ref') || params.has('cmp'));
-  const legacySelection = hasLegacy
-    ? [(legacyBaseParam || params.has('ref')) ? legacyRef : preferred[0], ...(legacyCmp || '').split(',')]
-      .map(resolveSlotKey)
-    : null;
+  const legacySelection = conformanceLegacyCaptureSelection(params, tab.id, initialTab, preferred[0], resolveSlotKey);
   // Stream-tab links encode engine columns; other legacy comparisons preserve their authored order.
   const legacy = initialTab === 'tab-toolcalling-streamv1' && legacySelection
     ? legacySelection.reduce((slots, key) => {
@@ -1636,8 +1644,8 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
   const requested = params.has(slotsParam) ? (params.get(slotsParam) || '').split(',').map(key => key && key !== 'none' ? resolveSlotKey(key) : '') : legacy;
   const initial = requested === null ? preferred : requested;
   for (const key of requested || []) if (key) linkedChoices.add(key);
-  const overflow = initial.filter(Boolean).length > 3;
-  const slots = [null, null, null];
+  const overflow = initial.filter(Boolean).length > slotCount;
+  const slots = Array(slotCount).fill(null);
   const slotEngines = [...engines];
   // Restoration and updates share primary ownership and duplicate prevention.
   function normalizeSlots() {
@@ -1676,18 +1684,19 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
       slotEngines[index] = engineOf(current);
     });
   }
-  initial.slice(0, 3).forEach((key, index) => {
+  initial.slice(0, slotCount).forEach((key, index) => {
     slots[index] = key || null;
   });
   normalizeSlots();
 
   const selector = document.createElement('section');
   selector.className = 'capture-slots';
-  selector.setAttribute('aria-label', 'Parser captures compared with GOLDEN');
+  selector.setAttribute('aria-label', tab.kind === 'renderer' ? 'Renderer captures compared with model reference' : 'Parser captures compared with GOLDEN');
+  selector.style.setProperty('--capture-slot-count', slotCount);
   if (overflow) {
     const notice = document.createElement('p');
     notice.className = 'capture-slots-notice';
-    notice.textContent = 'This link selected more than three captures. Showing the first three.';
+    notice.textContent = slotCount === 3 ? 'This link selected more than three captures. Showing the first three.' : `This link selected more than ${slotCount} captures. Showing the first ${slotCount}.`;
     selector.appendChild(notice);
   }
   const controls = document.createElement('div');
@@ -1723,7 +1732,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     const engine = slotEngines[index];
     return '<div class="capture-slot" data-engine="' + (engine || 'none') + '">'
       + '<button type="button" class="capture-slot-engine-trigger" data-slot-open="' + index + '"'
-      + ' aria-haspopup="dialog" aria-expanded="false" aria-controls="unified-capture-picker"'
+      + ' aria-haspopup="dialog" aria-expanded="false" aria-controls="' + pickerId + '"'
       + ' aria-label="Edit comparison slot ' + (index + 1) + ': ' + engineName(engine) + '">'
       + '<span class="capture-slot-badge" data-slot-badge="' + index + '" aria-hidden="true">' + (engineLetters[engine] || '—') + '</span>'
       + '<span class="capture-slot-engine" data-slot-engine="' + index + '">' + engineName(engine) + '</span></button>'
@@ -1731,7 +1740,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
   }).join('');
   selector.appendChild(controls);
   const actions = document.querySelector('.tabs-right');
-  if (actions) {
+  if (actions && page.tabs.length === 1) {
     actions.classList.add('capture-slot-actions');
     selector.appendChild(actions);
   }
@@ -1794,7 +1803,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
 
   const picker = document.createElement('dialog');
   picker.className = 'comparison-picker';
-  picker.id = 'unified-capture-picker';
+  picker.id = pickerId;
   picker.setAttribute('aria-label', 'Choose comparison engine or capture');
   document.body.appendChild(picker);
   let activeSlot = 0;
@@ -1902,7 +1911,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
       availableIdentities = identities;
       // Discovery may finish after a user changes a slot. Preserve that choice;
       // only an untouched initial historical URL can restore its deferred slots.
-      if (!selectionTouched) initial.slice(0, 3).forEach((key, index) => { state.slots[index] = key || null; });
+      if (!selectionTouched) initial.slice(0, slotCount).forEach((key, index) => { state.slots[index] = key || null; });
       update(false);
       const changed = state.slots.join(',') !== previous;
       if (changed && notify) onChange();

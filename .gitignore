@@ -35,3 +35,13 @@ conformance/CONFORMANCE_unified.html
 
 # Python bytecode of the fixture generators.
 __pycache__/
+
+# Local conformance dependencies, catalogs and validation outputs.
+/conformance/viewer/node_modules/
+/conformance/viewer-catalog.json
+/conformance/viewer-unified-catalog.json
+/conformance/viewer-publication.json
+/conformance/viewer-latest-catalog.json
+/conformance/CONFORMANCE_v2.html
+/logs/
+/build/conformance-cache/

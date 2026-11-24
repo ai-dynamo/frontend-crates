@@ -27,7 +27,7 @@ QUALIFICATION_NODES = (
 BROWSER_MODULES = {
     "browser": ("test_browser_smoke.py",),
     "viewer": ("test_browser_viewer.py", "test_browser_harry_comparison.py"),
-    "native-browser": ("test_native_publication_browser.py", "test_capture_split_browser.py", "test_browser_download_scheduler.py"),
+    "native-browser": ("test_native_publication_browser.py", "test_capture_split_browser.py", "test_browser_download_scheduler.py", "test_renderer_browser.py"),
 }
 VIEWER_SMOKE_TESTS = (
     "test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose",

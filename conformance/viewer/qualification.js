@@ -491,6 +491,41 @@ const catalog = JSON.parse(await readFile(args[2] || new URL('conformance/viewer
 const activeIds = [];
 for (const spec of catalog.metadata.tabs) {
   const descriptors = tabCandidates(catalog, spec);
+  if (spec.suite === 'renderer') {
+    const reader = await newReader();
+    try {
+      const suite = await reader.renderer();
+      const tab = await buildTab(catalog, reader, spec.id);
+      assert.deepEqual(tab.candidates, descriptors.map(descriptor => descriptor.control));
+      assert.deepEqual(tab.candidates.map(candidate => candidate.key), ['renderer_reference', 'renderer_dynamo']);
+      assert.deepEqual(tab.rows.map(row => row.family), suite.manifest.models.map(model => model.id));
+      const authoredIds = [...new Set(suite.models.flatMap(bundle => bundle.inputs.cases.map(input => input.id)))].sort();
+      assert.deepEqual(tab.columns.map(column => column.case_id).sort(), authoredIds);
+      assert.equal(tab.column_groups.reduce((sum, group) => sum + group.span, 0), tab.columns.length);
+      for (const bundle of suite.models) {
+        const row = tab.rows.find(row => row.family === bundle.model.id);
+        assert.deepEqual(Object.values(row.cells).filter(cell => cell.applicable).map(cell => cell.case_id).sort(),
+          bundle.inputs.cases.map(input => input.id).sort());
+        for (const input of bundle.inputs.cases) {
+          const cell = row.cells[input.id];
+          assert.equal(cell.tooltip.renderer, true);
+          assert.deepEqual(cell.tooltip.input.request, input.request);
+          assert.deepEqual(cell.tooltip.settings, input.settings);
+          assert.deepEqual(cell.tooltip.metadata_expectation, input.metadata_expectation);
+          assert.deepEqual(cell.tooltip.metadata_origin, input.metadata_origin);
+          assert.deepEqual(cell.tooltip.reference, bundle.reference?.results[input.id]);
+          assert.deepEqual(cell.tooltip.dynamo, bundle.dynamo?.results[input.id]);
+          assert.deepEqual(cell.tooltip.reference_producer, bundle.reference?.producer);
+          assert.deepEqual(cell.tooltip.dynamo_producer, bundle.dynamo?.producer);
+          assert.notEqual(selectedCaptureOutcome(cell, 'renderer_dynamo'), 'leak', 'rendered markers are prompt output');
+        }
+      }
+      console.log(`Renderer model coverage: ${tab.rows.length} models, ${tab.stats.real} authored cases`);
+    } finally {
+      reader.dispose();
+    }
+    continue;
+  }
   assert.equal(descriptors.filter(descriptor => descriptor.control.default_bucket === 'A').length,
     1, `${spec.id}: retained tabs need exactly one Reference`);
   assert.equal(Boolean(tabPresentation(spec, catalog, descriptors).active), false);
