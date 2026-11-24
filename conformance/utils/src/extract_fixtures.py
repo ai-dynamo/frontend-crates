@@ -35,7 +35,6 @@ import secrets
 import capture_sources
 import shutil
 import sys
-import tarfile
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -64,15 +63,7 @@ MANIFEST_PATH = ROOT / "conformance" / "fixtures-manifest.json"
 FIXTURES_DIR = ROOT / "conformance" / "fixtures"
 HISTORY_DIR = ROOT / "conformance" / "fixtures-unified-v2"
 
-LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def get_cache_root():
@@ -106,8 +97,7 @@ def fixtures_identity(shards, inactive=()):
 
     NOT the same thing as `snapshot`/`pin`: `pin` is a human-readable stamp
     that can stay fixed while the shards under it are re-pinned in place
-    (it happened once, to fixtures-batch-on-stream-v1 -- see the comment in
-    `main()`). Naming the cache directory by `pin` alone let two DIFFERENT
+    after a re-pin. Naming the cache directory by `pin` alone let two DIFFERENT
     shard-hash sets collide on one path; whichever extraction ran second
     called `shutil.rmtree()` on the directory a concurrent reader (a test in
     another git worktree) could
@@ -148,9 +138,9 @@ def resolve_current_generation(cache_root, pin, fid, pinned_shards, inactive=())
     `main()`). A caller that reconstructs the bare `{pin}-{fid}` path
     directly instead of calling this function is blind to every refresh: it
     treats the abandoned original generation as the cache hit forever,
-    silently undoing what `--full-refresh` was run to fix. `main()`'s
-    cache-hit check and `package_fixtures.py`'s `_extracted_snapshot_dir()`
-    both route through this one function for exactly that reason.
+    silently undoing what `--full-refresh` was run to fix. Cache-hit and
+    post-publication selection both use this function so a refresh cannot
+    restore an older generation.
 
     Returns `(path, generation)` for the highest-generation directory whose
     recorded state still matches `pinned_shards` and `inactive`, or `(None, -1)` if none
@@ -293,45 +283,17 @@ def list_cached_snapshots(cache_root):
 
 
 def shard_file(shard):
-    """Resolve a manifest shard entry to its checked-out file, failing actionably.
-
-    A git-lfs pointer file (checkout without `git lfs pull`) is the common
-    failure: the file exists but holds ~130 bytes of pointer text, not the
-    tarball.
-    """
-    if shard.get("format") == "unified-history":
-        path = HISTORY_DIR
-        if not path.is_dir():
-            sys.exit(f"Unified history missing: {path}")
-        actual, size = unified_history.store_digest(path)
-        if actual != shard["sha256"] or size != shard["size"]:
-            sys.exit(
-                f"Unified history differs from the manifest pin: expected "
-                f"{shard['sha256'][:12]}…/{shard['size']} B, got "
-                f"{actual[:12]}…/{size} B\nRun package_fixtures.py to refresh the pin."
-            )
-        return path
-    path = FIXTURES_DIR / shard["path"]
-    if not path.exists():
+    if shard.get("format") != "unified-history":
+        raise ValueError("only Unified history can be materialized")
+    path = HISTORY_DIR
+    if not path.is_dir():
+        sys.exit(f"Unified history missing: {path}")
+    actual, size = unified_history.store_digest(path)
+    if actual != shard["sha256"] or size != shard["size"]:
         sys.exit(
-            f"Shard missing: {path}\n"
-            "The fixture store is part of the git checkout. If this is a fresh\n"
-            "clone, ensure git-lfs is installed and run: git lfs pull"
-        )
-    with open(path, "rb") as f:
-        head = f.read(len(LFS_POINTER_PREFIX))
-    if head == LFS_POINTER_PREFIX:
-        sys.exit(
-            f"{path} is a git-lfs pointer, not the shard itself.\n"
-            "Install git-lfs and fetch the objects: git lfs install && git lfs pull"
-        )
-    actual = sha256_file(path)
-    if actual != shard["sha256"]:
-        sys.exit(
-            f"SHA256 mismatch for {shard['path']}: expected {shard['sha256'][:12]}…, "
-            f"got {actual[:12]}…\n"
-            "The checked-out shard does not match the manifest pin. Re-run\n"
-            "package_fixtures.py (which rewrites both together) or restore the file."
+            f"Unified history differs from the manifest pin: expected "
+            f"{shard['sha256'][:12]}…/{shard['size']} B, got "
+            f"{actual[:12]}…/{size} B\nRun package_fixtures.py to refresh the pin."
         )
     return path
 
@@ -359,36 +321,19 @@ def update_symlinks(cache_root, snap_dir, verbose=False):
             print(f"  [symlink] {link} -> {target}", file=sys.stderr)
 
 
-def extract_tarball(tarball_path, dest_dir, verbose=False):
-    dest_dir.mkdir(parents=True, exist_ok=True)
+
+
+def materialize_shard(shard, source, dest_dir, *, derived_release_versions=None, verbose=False):
+    if shard.get("format") != "unified-history":
+        raise ValueError("only Unified history can be materialized")
     if verbose:
-        print(f"  [extract] {tarball_path.name} -> {dest_dir}", file=sys.stderr)
-    with tarfile.open(str(tarball_path), "r:gz") as tf:
-        # filter="data" (PEP 706) rejects absolute paths, "..", links pointing
-        # outside the destination, and device entries — shard tarballs come
-        # from PR-controlled files, so never trust member paths.
-        tf.extractall(str(dest_dir), filter="data")
-
-
-def materialize_shard(
-    shard,
-    source,
-    dest_dir,
-    *,
-    derived_release_versions=None,
-    verbose=False,
-):
-    if shard.get("format") == "unified-history":
-        if verbose:
-            print(f"  [materialize] {source.name} -> {dest_dir / 'unified'}", file=sys.stderr)
-        unified_history.materialize_store(
-            source,
-            dest_dir / "unified",
-            derived_release_versions=derived_release_versions,
-            current_capture_id=f"dynamo_v2-{dynamo_version.dynamo_v2_label(ROOT)}",
-        )
-    else:
-        extract_tarball(source, dest_dir, verbose=verbose)
+        print(f"  [materialize] {source.name} -> {dest_dir / 'unified'}", file=sys.stderr)
+    unified_history.materialize_store(
+        source,
+        dest_dir / "unified",
+        derived_release_versions=derived_release_versions,
+        current_capture_id=f"dynamo_v2-{dynamo_version.dynamo_v2_label(ROOT)}",
+    )
 
 
 def show_info(manifest, cache_root):
@@ -440,11 +385,11 @@ def current_materialization_identity():
             for path in sorted(paths)]
 
 
-def _extract(args, *, legacy_only=False, current=True):
+def _extract(args, *, current=True):
     if current and capture_sources.is_current(ROOT):
         document = capture_sources.current(ROOT)
         authored = current_materialization_identity()
-        fid = capture_sources.digest(capture_sources.encoded({"current": document, "authored": authored, "format": 2, "legacy_only": legacy_only}))
+        fid = capture_sources.digest(capture_sources.encoded({"current": document, "authored": authored, "format": 2}))
         cache_root = get_cache_root()
         destination = cache_root / f"current-{fid}"
         if args.info or args.dry_run:
@@ -455,9 +400,7 @@ def _extract(args, *, legacy_only=False, current=True):
             if selected is None or args.full_refresh:
                 temporary = cache_root / f".current-{fid}-{secrets.token_hex(8)}"
                 temporary.mkdir()
-                capture_sources.materialize_legacy(ROOT, temporary, document=document, authored=authored)
-                if not legacy_only:
-                    unified_history.materialize_store(HISTORY_DIR, temporary / "unified")
+                unified_history.materialize_store(HISTORY_DIR, temporary / "unified")
                 if capture_sources.current(ROOT) != document:
                     raise ValueError("current captures changed during extraction")
                 if current_materialization_identity() != authored:
@@ -480,8 +423,6 @@ def _extract(args, *, legacy_only=False, current=True):
     manifest = json.loads(MANIFEST_PATH.read_text())
     pin = manifest["snapshot"]
     shards = fixture_disposition.active_shards(manifest)
-    if legacy_only:
-        shards = [shard for shard in shards if shard.get("format") != "unified-history"]
     inactive = fixture_disposition.verify_inactive_shards(manifest, FIXTURES_DIR)
 
     cache_root = get_cache_root()
@@ -526,11 +467,7 @@ def _extract(args, *, legacy_only=False, current=True):
     # changing, not writes deep inside an already-created subtree, so a
     # genuinely still-running long build (or one with a large gap between
     # its last top-level entry and its last file write) could be swept by a
-    # CONCURRENT process's own sweep step. `extract_tarball`'s unconditional
-    # `mkdir(parents=True, exist_ok=True)` means the victim wouldn't even
-    # notice -- it would silently recreate the directory, keep writing, and
-    # ultimately publish a `.fixtures-state.json` claiming completeness over
-    # data that was actually wiped mid-build. A leftover `.tmp.*` dir is
+    # CONCURRENT process's own sweep step. A leftover `.tmp.*` dir is
     # never referenced by any symlink and can never be mistaken for a valid
     # cache (see `list_cached_snapshots`'s state-file check), so leaving
     # orphans in place is purely a disk-hygiene cost, not a correctness one
@@ -573,12 +510,12 @@ def _extract(args, *, legacy_only=False, current=True):
     print(snap_dir)
 
 
-def extract_snapshot(args, *, legacy_only=False):
+def extract_snapshot(args):
     with unified_history._store_read_lock(HISTORY_DIR):
-        _extract(args, legacy_only=legacy_only)
+        _extract(args)
 
 
-def extract_history(args, source, *, legacy_only=False):
+def extract_history(args, source):
     global MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR
     source = Path(source).resolve()
     with capture_sources.history_view(ROOT, source) as source:
@@ -587,19 +524,18 @@ def extract_history(args, source, *, legacy_only=False):
             MANIFEST_PATH = source / "conformance/fixtures-manifest.json"
             FIXTURES_DIR = source / "conformance/fixtures"
             HISTORY_DIR = source / capture_sources.STORE
-            _extract(args, legacy_only=legacy_only, current=False)
+            _extract(args, current=False)
         finally:
             MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR = original
 
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Extract conformance fixtures from the in-repo LFS shard store"
+        description="Materialize Unified conformance YAML"
     )
     ap.add_argument("--full-refresh", action="store_true", help="Ignore existing cache, re-extract all")
     ap.add_argument("--dry-run", action="store_true", help="Show plan without extracting")
     ap.add_argument("--info", action="store_true", help="Show manifest info and cache state, then exit")
-    ap.add_argument("--legacy-only", action="store_true", help="Extract legacy fixtures without materializing Unified history")
     ap.add_argument("--include-history", action="store_true")
     ap.add_argument("--history-source", type=Path)
     ap.add_argument("-v", "--verbose", action="store_true", help="Print per-shard details")
@@ -609,9 +545,9 @@ def main():
         ap.error("--history-source requires --include-history")
     if args.include_history:
         args.history_source = args.history_source or capture_sources.default_history(ROOT)
-        extract_history(args, args.history_source, legacy_only=args.legacy_only)
+        extract_history(args, args.history_source)
     else:
-        extract_snapshot(args, legacy_only=args.legacy_only)
+        extract_snapshot(args)
 
 
 if __name__ == "__main__":
