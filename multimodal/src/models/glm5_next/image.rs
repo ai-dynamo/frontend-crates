@@ -9,6 +9,7 @@
 use crate::MmError;
 use crate::image::decode::{DecodeLimits, decode_rgb_smart};
 use crate::image::resize::resize_rgb;
+use crate::models::glm5_next::video::{self, VideoStage};
 use crate::models::glm5_next::{Glm5NextProcessor, Glm5NextSpec};
 use crate::models::qwen_vl::{MropeItem, Resampler, mrope_image_only, normalize_lut};
 use crate::processor::{
@@ -30,11 +31,11 @@ pub struct Glm5NextImageSpec {
 
 pub struct Glm5NextImageProcessor {
     planner: Glm5NextProcessor,
-    pub(super) spec: Glm5NextImageSpec,
+    spec: Glm5NextImageSpec,
     /// Per-channel u8 to normalized f32, as Dynamo's Qwen-VL `normalize_lut`.
     lut: [[f32; 256]; 3],
     /// The video processor's lookup; HF's video processor is torchvision-backed.
-    pub(super) video_lut: Option<[[f32; 256]; 3]>,
+    video_lut: Option<[[f32; 256]; 3]>,
 }
 
 fn check_mean_std(mean: &[f32; 3], std: &[f32; 3]) -> Result<(), MmError> {
@@ -228,7 +229,10 @@ impl MmFamilyProcessor for Glm5NextImageProcessor {
             }
             let expansion = match &item.geometry {
                 Some(Geometry::TimedGrid { grid, timestamps }) => {
-                    self.video_expansion(grid, timestamps, text)?
+                    let stage = self.video_stage().ok_or_else(|| {
+                        MmError::invalid_input("glm5_next: video item for a spec without video")
+                    })?;
+                    video::expansion(&stage, grid, timestamps, text)?
                 }
                 _ => vec![ExpansionPart::Feature {
                     id,
@@ -306,6 +310,15 @@ impl MmFamilyProcessor for Glm5NextImageProcessor {
 }
 
 impl Glm5NextImageProcessor {
+    /// The video path's inputs; `None` for a spec without a video processor.
+    fn video_stage(&self) -> Option<VideoStage<'_>> {
+        Some(VideoStage {
+            video: self.spec.planner.video.as_ref()?,
+            lut: self.video_lut.as_ref()?,
+            image_token_id: self.spec.planner.image_token_id,
+        })
+    }
+
     fn placeholder_modality(&self, id: i32) -> Option<Modality> {
         let planner = &self.spec.planner;
         if id == planner.image_token_id {
@@ -327,7 +340,10 @@ impl Glm5NextImageProcessor {
             fps,
         } = media
         {
-            return self.process_video(rgb, (*height, *width), frame_indices, *fps, videos);
+            let stage = self.video_stage().ok_or_else(|| {
+                MmError::unsupported("glm5_next: this spec has no video processor")
+            })?;
+            return video::process(&stage, rgb, (*height, *width), frame_indices, *fps, videos);
         }
         let DecodedMedia::Image { rgb, height, width } = media else {
             return Err(MmError::unsupported(
