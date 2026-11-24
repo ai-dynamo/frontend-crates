@@ -100,6 +100,7 @@ fn armed_decode_matches_the_inline_decode() {
     for name in [
         "gop_vp8.webm",
         "gop_vp9.webm",
+        "gop_vp9.mp4",
         "vp9_altref.webm",
         "vp9_invisible.webm",
     ] {
@@ -136,5 +137,54 @@ fn armed_decode_matches_the_inline_decode() {
                 assert_eq!(armed.timestamps(), inline.timestamps(), "{name} {set:?}");
             }
         }
+    }
+}
+
+#[cfg(feature = "video-decode")]
+#[test]
+fn an_armed_mp4_decode_fails_like_the_inline_decode() {
+    use dynamo_multimodal::video_decode::{
+        ByteSource, VideoDecodeLimits, decode_frames_from, probe,
+    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    /// Fails each read of byte `self.1` after the first: the demuxer reads
+    /// every VP9 packet once to find the shown frames, and the decode reads it
+    /// again.
+    struct FailsOnRereadOf<'a>(&'a [u8], u64, AtomicUsize);
+    impl ByteSource for FailsOnRereadOf<'_> {
+        fn len(&self) -> u64 {
+            self.0.len() as u64
+        }
+        fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+            if (offset..offset + buf.len() as u64).contains(&self.1)
+                && self.2.fetch_add(1, Ordering::Relaxed) > 0
+            {
+                return Err(std::io::Error::other("read failed"));
+            }
+            self.0.read_at(offset, buf)
+        }
+    }
+    execution::init_pool(2).unwrap();
+    // NVDEC decodes it where it can, else libvpx in parts: CUDA_VISIBLE_DEVICES=
+    // runs the parts on a GPU host.
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/video_decode/gop_vp9.mp4");
+    let bytes = std::fs::read(path).unwrap();
+    let info = probe(&bytes).unwrap();
+    let all: Vec<u64> = (0..info.frame_count).collect();
+    // The last byte of the media data, just before `moov`: in the last frame,
+    // an inter frame of the last part.
+    let at = bytes.windows(4).position(|w| w == b"moov").unwrap() as u64 - 5;
+    let output = info.width as usize * info.height as usize * 3 * all.len();
+    // The default room fits every part at once; no room leaves one thread.
+    for max_output_bytes in [VideoDecodeLimits::default().max_output_bytes, output] {
+        let mut limits = VideoDecodeLimits::default();
+        limits.max_output_bytes = max_output_bytes;
+        let decode = || {
+            let source = FailsOnRereadOf(&bytes, at, AtomicUsize::new(0));
+            let frames = decode_frames_from(&source, &all, None, &limits);
+            frames.map(drop).unwrap_err().to_string()
+        };
+        assert_eq!(decode(), execution::in_pool(decode));
     }
 }

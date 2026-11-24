@@ -3659,6 +3659,7 @@ mod tests {
             for name in [
                 "gop_vp8.webm",
                 "gop_vp9.webm",
+                "gop_vp9.mp4",
                 "vp9_altref.webm",
                 "vp9_invisible.webm",
             ] {

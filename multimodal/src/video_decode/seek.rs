@@ -589,6 +589,7 @@ mod tests {
             "gop_hev1.mp4",
             "gop_vp8.webm",
             "gop_vp9.webm",
+            "gop_vp9.mp4",
             "gop_av1.mp4",
         ] {
             let bytes = fixture(name);
