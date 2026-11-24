@@ -419,7 +419,7 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     let order = Order::new(track);
     let runs = seek::plan(track, &order, sampler.targets)?;
     if execution::threads() > 1 {
-        let parts = seek::split_at_keys(track, &runs)?;
+        let parts = seek::split_at_keys(track, &runs);
         if parts.len() > 1 {
             return decode_parts(track, sampler, &order, &parts, (matrix, full_range));
         }
@@ -455,9 +455,9 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
 }
 
 /// [`decode`] over `parts`, runs that each start at a key frame, on one
-/// decoder each in the CPU pool. Each part ends at its last sampled frame,
-/// and a part without one is not decoded. A part converts its sampled frames
-/// as they decode, and they reach `sampler` in order. The packets that the
+/// decoder each in the CPU pool. The parts decode the packets [`decode`]
+/// does, up to the last sampled frame. A part converts its sampled frames as
+/// they decode, and they reach `sampler` in order. The packets that the
 /// parts in flight read from the source and the frames they convert stay
 /// within the room the output limit leaves, else one part runs at a time;
 /// each part in flight also holds a libvpx decoder.
@@ -472,14 +472,17 @@ pub(super) fn decode_parts(
     let (targets, resize, conversion) = (sampler.targets, sampler.resize, sampler.conversion);
     let sampled =
         |index: usize| order.shown[index].filter(|shown| targets.binary_search(shown).is_ok());
+    let Some(last) = parts
+        .iter()
+        .rev()
+        .find_map(|part| (part.start..part.end).rev().find(|&i| sampled(i).is_some()))
+    else {
+        return Ok(());
+    };
     let parts: Vec<Range<usize>> = parts
         .iter()
-        .filter_map(|part| {
-            let last = (part.start..part.end)
-                .rev()
-                .find(|&i| sampled(i).is_some())?;
-            Some(part.start..last + 1)
-        })
+        .filter(|part| part.start <= last)
+        .map(|part| part.start..part.end.min(last + 1))
         .collect();
     // A part holds the packets it reads from the source, its converted frames,
     // and the frame it converts as NV12 and as source-size RGB.
@@ -493,9 +496,9 @@ pub(super) fn decode_parts(
                     Payload::Source { len, .. } => len,
                     Payload::Owned(_) => 0,
                 };
-                read + if sampled(i).is_some() { frame } else { 0 }
+                read.saturating_add(if sampled(i).is_some() { frame } else { 0 })
             };
-            part.clone().map(packet).sum::<usize>()
+            part.clone().map(packet).fold(0, usize::saturating_add)
         })
         .max()
         .unwrap_or(0)
@@ -515,9 +518,16 @@ pub(super) fn decode_parts(
         })
     };
     let inputs = parts.iter().map(|part| {
-        part.clone()
-            .map(|i| read(i).map(|bytes| (i, bytes)))
-            .collect::<Vec<_>>()
+        let mut packets = Vec::new();
+        for i in part.clone() {
+            let packet = read(i).map(|bytes| (i, bytes));
+            let failed = packet.is_err();
+            packets.push(packet);
+            if failed {
+                break;
+            }
+        }
+        packets
     });
     let (api, packets) = (api()?, &track.packets);
     execution::try_for_each_ordered(

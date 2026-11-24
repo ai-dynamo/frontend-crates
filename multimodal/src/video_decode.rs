@@ -58,12 +58,12 @@
 //!
 //! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
 //! at a time, so only its index (sample tables) is held; a libvpx decode on
-//! an armed pool reads the packets of the segments in flight ahead, within the
-//! room `max_output_bytes` leaves. WebM and Matroska packets are read into
-//! memory while the file is demuxed, so those hold the whole video next to the
-//! source. A VP8 or VP9 clip is also read once in full
-//! before decoding, to find which packets display a frame and what colour VP9
-//! declares.
+//! an armed pool reads the packets of the segments in flight ahead, as many
+//! segments as fit the room `max_output_bytes` leaves and at least one. WebM
+//! and Matroska packets are read into memory while the file is demuxed, so
+//! those hold the whole video next to the source. A VP8 or VP9 clip is also
+//! read once in full before decoding, to find which packets display a frame
+//! and what colour VP9 declares.
 
 // Decoding is Linux-only; elsewhere the decode path is compiled out.
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
@@ -3648,7 +3648,7 @@ mod tests {
             };
             let order = seek::Order::new(track);
             let runs = seek::plan(track, &order, sampler.targets)?;
-            let parts = seek::split_at_keys(track, &runs)?;
+            let parts = seek::split_at_keys(track, &runs);
             vpx::decode_parts(track, sampler, &order, &parts, colour)
         }
 
@@ -3668,7 +3668,7 @@ mod tests {
                     end: track.packets.len(),
                     parameter_sets: Vec::new(),
                 }];
-                let parts = seek::split_at_keys(&track, &whole).unwrap();
+                let parts = seek::split_at_keys(&track, &whole);
                 assert!(
                     !name.starts_with("gop_") || parts.len() > 1,
                     "{name}: {parts:?}"
@@ -3696,38 +3696,51 @@ mod tests {
             }
         }
 
-        /// A part decodes nothing after its last sampled frame: with seeking off,
-        /// a packet the serial decode never reaches fails neither decode.
+        /// Parts decode the packets the serial decode does: every packet of a
+        /// run up to the last sampled frame, and none after it.
         #[test]
-        fn a_part_ends_at_its_last_sampled_frame() {
-            let mut bytes = fixture("gop_vp8.webm");
-            let at = {
-                let track = demux(&bytes).unwrap();
-                let last_key = track.packets.iter().rev().find(|p| p.sync).unwrap();
-                let Payload::Owned(key) = &last_key.payload else {
+        fn parts_decode_the_packets_the_serial_decode_does() {
+            let original = fixture("gop_vp8.webm");
+            let track = demux(&original).unwrap();
+            let at = |index: usize| {
+                let Payload::Owned(data) = &track.packets[index].payload else {
                     unreachable!("Matroska packets are read")
                 };
-                bytes
-                    .windows(key.len())
-                    .position(|w| w == &key[..])
+                original
+                    .windows(data.len())
+                    .position(|w| w == &data[..])
                     .unwrap()
             };
-            // The last key frame declares one more column than the container.
-            bytes[at + 6] += 1;
-            let decode = |backend: Backend| {
-                seek::DISABLED.set(true);
+            let last_key = track.packets.iter().rposition(|p| p.sync).unwrap();
+            let decode = |bytes: &[u8], indices: &[u64], seek: bool, backend: Backend| {
+                seek::DISABLED.set(!seek);
                 let frames = decode_frames_with(
-                    &bytes.as_slice(),
-                    &[1],
+                    &bytes,
+                    indices,
                     None,
                     &VideoDecodeLimits::default(),
                     backend,
                 );
                 seek::DISABLED.set(false);
-                frames.unwrap()
+                frames
             };
-            let (serial, in_parts) = (decode(vpx::decode), decode(vpx_in_parts));
+            // The last key frame declares one more column than the container:
+            // past the last sampled frame, so neither decode reads it.
+            let mut wide = original.clone();
+            wide[at(last_key) + 6] += 1;
+            let serial = decode(&wide, &[1], false, vpx::decode).unwrap();
+            let in_parts = decode(&wide, &[1], false, vpx_in_parts).unwrap();
             assert!(in_parts.frame(0) == serial.frame(0));
+            // Packet 1 claims to be a key frame and has no key frame header:
+            // inside the run to frame 8, so both decodes fail on it.
+            let mut broken = original.clone();
+            broken[at(1)] &= !1;
+            let serial = decode(&broken, &[0, 8], true, vpx::decode).map(drop);
+            let in_parts = decode(&broken, &[0, 8], true, vpx_in_parts).map(drop);
+            assert_eq!(
+                in_parts.unwrap_err().to_string(),
+                serial.unwrap_err().to_string()
+            );
         }
 
         #[test]
