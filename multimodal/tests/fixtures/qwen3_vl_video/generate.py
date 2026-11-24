@@ -14,6 +14,12 @@ video in order), and `get_rope_index`'s positions (little-endian i64, `[3, len]`
 the expansion is HF's own; the Rust test encodes timestamps through the
 recorded map, as a host encodes them through its tokenizer.
 
+The `CHECKPOINT_CASES` run each checkpoint's own processor
+(`AutoProcessor.from_pretrained`) and model class's `get_rope_index`. Their
+case.json names a `model_dir` instead of a spec: `models/<name>/` holds the
+checkpoint's `preprocessor_config.json` and `video_preprocessor_config.json`
+and its `config.json` cut to the keys `spec_from_model_dir` reads.
+
     python multimodal/tests/fixtures/qwen3_vl_video/generate.py
 """
 
@@ -25,10 +31,13 @@ import numpy as np
 import torch
 import torchvision
 import transformers
+from huggingface_hub import hf_hub_download
 from torchvision.transforms.v2 import functional as tvF
-from transformers import AutoTokenizer, Qwen3VLConfig
+from transformers import AutoConfig, AutoProcessor, AutoTokenizer, Qwen3VLConfig
 from transformers.models.qwen2_vl.image_processing_qwen2_vl import Qwen2VLImageProcessor
+from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5Model
 from transformers.models.qwen3_vl.modeling_qwen3_vl import Qwen3VLModel
+from transformers.models.qwen4_exp.modeling_qwen4_exp import Qwen4ExpModel
 from transformers.models.qwen3_vl.processing_qwen3_vl import Qwen3VLProcessor
 from transformers.models.qwen3_vl.video_processing_qwen3_vl import (
     Qwen3VLVideoProcessor,
@@ -70,6 +79,26 @@ CASES = {
     # A 3-frame temporal patch for video while images keep 2; the timestamps
     # 0.25 and 0.75 are exact ties.
     "tps3": dict(prompt=f"{V}What?", media=[("video", (4, 32, 32), [0, 1, 2, 3], 4.0)], tps=3),
+}
+
+# name: (repo, revision, model class). Qwen3.8-Flash-Next is `qwen4_exp`.
+CHECKPOINTS = {
+    "qwen3_5": ("Qwen/Qwen3.5-0.8B", "2fc06364715b967f1860aea9cf38778875588b17", Qwen3_5Model),
+    "qwen4_exp": ("Qwen/Qwen3.8-Flash-Next", "812d96e10a0dd82b69d749e68693698cf6c36daa",
+                  Qwen4ExpModel),
+}
+CONFIG_KEYS = ("model_type", "image_token_id", "video_token_id", "vision_start_token_id",
+               "vision_end_token_id")
+VISION_KEYS = ("patch_size", "temporal_patch_size")
+# The checkpoints' own bounds: frames under 32 px are scaled up, and the
+# 2-frame 16x16 clip is below the clip minimum.
+CHECKPOINT_CASES = {
+    "video": dict(prompt=f"Watch {V}now.",
+                  media=[("video", (5, 24, 40), [0, 6, 12, 18, 24], 12.0)]),
+    "image_video": dict(prompt=f"{V}then {I} and {V}Describe.",
+                        media=[("video", (2, 16, 16), [0, 15], 30.0),
+                               ("image", (48, 80)),
+                               ("video", (4, 32, 32), [0, 1, 2, 3], 2.0)]),
 }
 
 
@@ -140,12 +169,28 @@ def rope_model():
         return Qwen3VLModel(cfg)
 
 
-def generate(name, case, tokenizer):
+def write_model_dir(name, repo, revision):
+    model_dir = os.path.join(ROOT, "models", name)
+    os.makedirs(model_dir, exist_ok=True)
+    for file in ("preprocessor_config.json", "video_preprocessor_config.json"):
+        with open(hf_hub_download(repo, file, revision=revision)) as f:
+            text = f.read()
+        with open(os.path.join(model_dir, file), "w") as f:
+            f.write(text)
+    with open(hf_hub_download(repo, "config.json", revision=revision)) as f:
+        config = json.load(f)
+    trimmed = {k: config[k] for k in CONFIG_KEYS}
+    trimmed["vision_config"] = {k: config["vision_config"][k] for k in VISION_KEYS}
+    with open(os.path.join(model_dir, "config.json"), "w") as f:
+        json.dump(trimmed, f, indent=1)
+        f.write("\n")
+    return f"models/{name}"
+
+
+def generate(name, case, processor, video, model, source, tokenizer_ref):
     case_dir = os.path.join(ROOT, name)
     os.makedirs(case_dir, exist_ok=True)
-    vp, video = video_processor(case)
-    processor = Qwen3VLProcessor(image_processor=Qwen2VLImageProcessor(**image_spec(case)),
-                                 tokenizer=tokenizer, video_processor=vp)
+    vp, tokenizer = processor.video_processor, processor.tokenizer
 
     images, videos, metadata, media, features, timestamp_ids = [], [], [], [], [], {}
     for k, (kind, shape, *timing) in enumerate(case["media"]):
@@ -181,28 +226,20 @@ def generate(name, case, tokenizer):
         f"{name}: the resized frames do not reproduce pixel_values_videos")
 
     ids = out["input_ids"]
-    positions, delta = rope_model().get_rope_index(
+    positions, delta = model.get_rope_index(
         ids, out["mm_token_type_ids"], image_grid_thw=out.get("image_grid_thw"),
         video_grid_thw=out["video_grid_thw"], attention_mask=torch.ones_like(ids))
     mrope = positions[:, 0, :].reshape(-1).numpy().astype("<i8")
 
-    spec = dict(family="qwen_vl", image_token_id=IMAGE_PAD, **image_spec(case),
-                resample="aten_u8",
-                video=dict(video_token_id=VIDEO_PAD, vision_start_token_id=VISION_START,
-                           vision_end_token_id=VISION_END,
-                           processor=dict(video_processor_type="Qwen3VLVideoProcessor",
-                                          **{k: video[k] for k in ("patch_size", "merge_size",
-                                                                   "temporal_patch_size", "size")}),
-                           image_mean=video["image_mean"], image_std=video["image_std"]))
     record = dict(
-        spec=spec, media=media,
+        **source, media=media,
         prompt_ids=tokenizer.encode(case["prompt"], add_special_tokens=False),
         timestamp_ids=timestamp_ids, input_ids=ids[0].tolist(),
         video_grids=out["video_grid_thw"].tolist(), mrope_delta=int(delta.reshape(-1)[0]),
         pixel_values_videos_blake3=digest(pixel_values_videos.astype("<f4")),
         mrope_blake3=digest(mrope),
         provenance={"generator": "multimodal/tests/fixtures/qwen3_vl_video/generate.py",
-                    "tokenizer": f"{MODEL}@{REVISION}",
+                    "tokenizer": tokenizer_ref,
                     "transformers": transformers.__version__, "torch": torch.__version__,
                     "torchvision": torchvision.__version__, "numpy": np.__version__})
     with open(os.path.join(case_dir, "case.json"), "w") as f:
@@ -216,4 +253,31 @@ if __name__ == "__main__":
         ["<|vision_start|>", "<|vision_end|>", "<|image_pad|>", "<|video_pad|>"]
     ) == [VISION_START, VISION_END, IMAGE_PAD, VIDEO_PAD]
     for name, case in CASES.items():
-        generate(name, case, tokenizer)
+        vp, video = video_processor(case)
+        processor = Qwen3VLProcessor(image_processor=Qwen2VLImageProcessor(**image_spec(case)),
+                                     tokenizer=tokenizer, video_processor=vp)
+        spec = dict(family="qwen_vl", image_token_id=IMAGE_PAD, **image_spec(case),
+                    resample="aten_u8",
+                    video=dict(video_token_id=VIDEO_PAD, vision_start_token_id=VISION_START,
+                               vision_end_token_id=VISION_END,
+                               processor=dict(video_processor_type="Qwen3VLVideoProcessor",
+                                              **{k: video[k] for k in
+                                                 ("patch_size", "merge_size",
+                                                  "temporal_patch_size", "size")}),
+                               image_mean=video["image_mean"], image_std=video["image_std"]))
+        generate(name, case, processor, video, rope_model(), dict(spec=spec),
+                 f"{MODEL}@{REVISION}")
+    for checkpoint, (repo, revision, model_class) in CHECKPOINTS.items():
+        processor = AutoProcessor.from_pretrained(repo, revision=revision)
+        assert type(processor) is Qwen3VLProcessor
+        assert type(processor.video_processor) is Qwen3VLVideoProcessor
+        vp = processor.video_processor
+        video = dict(patch_size=vp.patch_size, merge_size=vp.merge_size,
+                     temporal_patch_size=vp.temporal_patch_size,
+                     image_mean=vp.image_mean, image_std=vp.image_std)
+        with torch.device("meta"):
+            model = model_class(AutoConfig.from_pretrained(repo, revision=revision))
+        source = dict(model_dir=write_model_dir(checkpoint, repo, revision))
+        for name, case in CHECKPOINT_CASES.items():
+            generate(f"{checkpoint}_{name}", case, processor, video, model, source,
+                     f"{repo}@{revision}")
