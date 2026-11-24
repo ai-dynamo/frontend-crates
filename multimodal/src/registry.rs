@@ -261,17 +261,17 @@ const GLM5_NEXT_INERT: &[&str] = &[
 ];
 
 /// Knobs that shape pixel values: the pixel pipeline honors only these values.
+/// HF reads a null stage flag as off and refuses a null factor or resample;
+/// only `do_convert_rgb` may be null, a no-op on the host's RGB frames.
 const GLM5_NEXT_PIXEL_PINNED: &[(&str, Predicate)] = &[
-    ("do_rescale", |v| v.is_null() || v.as_bool() == Some(true)),
-    ("rescale_factor", |v| {
-        v.is_null() || v.as_f64() == Some(1.0 / 255.0)
-    }),
-    ("do_normalize", |v| v.is_null() || v.as_bool() == Some(true)),
+    ("do_rescale", |v| v.as_bool() == Some(true)),
+    ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
+    ("do_normalize", |v| v.as_bool() == Some(true)),
     ("do_convert_rgb", |v| {
         v.is_null() || v.as_bool() == Some(true)
     }),
     // PIL's BICUBIC, the class default.
-    ("resample", |v| v.is_null() || v.as_u64() == Some(3)),
+    ("resample", |v| v.as_u64() == Some(3)),
 ];
 
 /// `Glm5NextVideoProcessor` knobs with one honored value. SGLang samples

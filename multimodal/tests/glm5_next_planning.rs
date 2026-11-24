@@ -394,6 +394,18 @@ fn pixel_knobs_gate_only_the_pixel_spec() {
         glm5_next_pixel_spec(GLM53_CONFIG, &no_mean.to_string()),
         Err(MmError::InvalidInput { .. })
     ));
+    for knob in ["do_rescale", "rescale_factor", "do_normalize", "resample"] {
+        let mut null = image_processor_object();
+        null[knob] = serde_json::Value::Null;
+        assert!(glm_spec(GLM53_CONFIG, &null.to_string()).is_ok(), "{knob}");
+        assert!(
+            matches!(
+                glm5_next_pixel_spec(GLM53_CONFIG, &null.to_string()),
+                Err(MmError::Unsupported { .. })
+            ),
+            "{knob}"
+        );
+    }
 }
 
 #[test]
@@ -407,6 +419,10 @@ fn an_unhonored_video_block_leaves_video_off() {
         with("video_processor_type", "Qwen3VLVideoProcessor".into()),
         with("max_duration", 30.into()),
         with("do_normalize", false.into()),
+        with("do_normalize", serde_json::Value::Null),
+        with("do_rescale", serde_json::Value::Null),
+        with("rescale_factor", serde_json::Value::Null),
+        with("resample", serde_json::Value::Null),
         with("resize_mode", "pad".into()),
         with("fps", serde_json::Value::Null),
         with("merge_size", 1.into()),
