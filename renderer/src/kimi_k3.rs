@@ -345,16 +345,7 @@ fn message_declares_tool(message: &Value, name: &str) -> bool {
 }
 
 fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> Result<Option<&str>> {
-    let default_effort = match args.and_then(|args| args.get("emit_default_thinking_effort")) {
-        None | Some(Value::Null | Value::Bool(true)) => Some("max"),
-        Some(Value::Bool(false)) => None,
-        Some(_) => {
-            return Err(PromptRenderError::invalid_request(
-                "emit_default_thinking_effort must be a boolean",
-            )
-            .into());
-        }
-    };
+    let default_effort = crate::emit_default_thinking_effort(args)?.then_some("max");
     let effort = args.and_then(|args| {
         args.get("thinking_effort")
             .or_else(|| args.get("reasoning_effort"))

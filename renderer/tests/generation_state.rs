@@ -372,3 +372,140 @@ fn kimi_partial_response_metadata_initializes_unified_parser() {
     events.extend(parser.finish().unwrap().events);
     assert_eq!(assemble(&events), expected, "one character per chunk");
 }
+
+#[test]
+fn deepseek_v4_omits_only_the_default_effort_prefix() {
+    let formatter = DeepSeekV4Formatter::new_thinking();
+    let mut request = user_request();
+    let default = check(&formatter, &request, GenerationState::Reasoning);
+    request
+        .args
+        .insert("emit_default_thinking_effort".into(), json!(false));
+    let omitted = check(&formatter, &request, GenerationState::Reasoning);
+    assert_eq!(
+        omitted.as_str(),
+        "<｜begin▁of▁sentence｜><｜User｜>Hello<｜Assistant｜><think>"
+    );
+    request.effort = Some(json!("high"));
+    assert_eq!(
+        check(&formatter, &request, GenerationState::Reasoning),
+        default
+    );
+    request.effort = Some(json!("none"));
+    let chat = check(&formatter, &request, GenerationState::Response);
+    assert!(chat.as_str().ends_with("</think>"));
+}
+
+#[test]
+fn template_default_effort_preserves_explicit_effort_and_message_text() {
+    let gpt_oss = r#"{%- macro build_system_message() -%}
+        {%- if reasoning_effort is not defined %}{%- set reasoning_effort = "medium" %}{%- endif %}
+        {{- "Reasoning: " + reasoning_effort + "\n\n" }}
+        {%- endmacro -%}{{ build_system_message() }}"#;
+    let beam = r#"{%- macro build_system_message(builtin_tool_definitions) -%}
+        {%- if reasoning_effort is not defined or reasoning_effort is none %}{%- set reasoning_effort = 512 %}{%- endif %}
+        {{- "\n\nReasoning effort: " + (reasoning_effort | string) }}
+        {%- endmacro -%}{{ build_system_message([]) }}"#;
+    let glm52 = r"[gMASK]<sop>
+{%- set effective_reasoning_effort = 'high' if reasoning_effort is defined and reasoning_effort == 'high' else 'max' -%}
+{%- if (enable_thinking is not defined or enable_thinking) and effective_reasoning_effort is not none -%}<|system|>Reasoning Effort: {{ effective_reasoning_effort | capitalize }}{%- endif -%}";
+    let glm53 = r"[gMASK]<sop>
+{%- set effective_reasoning_effort = reasoning_effort if reasoning_effort is defined and reasoning_effort in ['low', 'high'] else 'max' -%}
+{%- if effective_reasoning_effort is not none -%}<|system|>Reasoning Effort: {{ effective_reasoning_effort | capitalize }}{%- endif -%}";
+    let muse = r"{%- macro render_reasoning() -%}
+        {%- set rs = reasoning_strength if reasoning_strength is defined and reasoning_strength else 'high' -%}
+        {{- 'Reasoning strength: ' + rs + '.' -}}
+        {%- endmacro -%}{{- '\n\n' -}} {{- render_reasoning() -}}";
+    for (source, key, default, alternate, instruction, alternative) in [
+        (
+            gpt_oss,
+            "reasoning_effort",
+            json!("medium"),
+            json!("low"),
+            "Reasoning: medium\n\n",
+            "Reasoning: low",
+        ),
+        (
+            beam,
+            "reasoning_effort",
+            json!(512),
+            json!(32),
+            "\n\nReasoning effort: 512",
+            "Reasoning effort: 32",
+        ),
+        (
+            glm52,
+            "reasoning_effort",
+            json!("max"),
+            json!("high"),
+            "<|system|>Reasoning Effort: Max",
+            "Reasoning Effort: High",
+        ),
+        (
+            glm53,
+            "reasoning_effort",
+            json!("max"),
+            json!("low"),
+            "<|system|>Reasoning Effort: Max",
+            "Reasoning Effort: Low",
+        ),
+        (
+            muse,
+            "reasoning_strength",
+            json!("high"),
+            json!("low"),
+            "\n\nReasoning strength: high.",
+            "Reasoning strength: low.",
+        ),
+    ] {
+        let template = format!("{source}{{{{ messages[0].content }}}}<|assistant|>");
+        let config: ChatTemplate =
+            serde_json::from_value(json!({"chat_template": [
+                {"name": "default", "template": template},
+                {"name": "tool_use", "template": "{{ emit_default_thinking_effort }}: custom tool prompt"}
+            ]})).unwrap();
+        let PromptFormatter::OAI(formatter) =
+            PromptFormatter::from_parts(config, ContextMixins::default(), false).unwrap();
+        let mut req =
+            Request::new(json!([{"role":"user","content":format!("Keep {instruction} here.")}]));
+        let baseline = formatter.render(&req).unwrap();
+        assert_eq!(baseline.matches(instruction).count(), 2, "{baseline:?}");
+        req.args
+            .insert("emit_default_thinking_effort".into(), json!(true));
+        assert_eq!(formatter.render(&req).unwrap(), baseline);
+        req.args
+            .insert("emit_default_thinking_effort".into(), json!(false));
+        assert_eq!(
+            formatter.render(&req).unwrap(),
+            baseline.replacen(instruction, "", 1)
+        );
+        req.args.insert(key.into(), default);
+        assert_eq!(formatter.render(&req).unwrap(), baseline);
+        req.args.insert(key.into(), alternate.clone());
+        let explicit = formatter.render(&req).unwrap();
+        assert!(explicit.contains(alternative), "{explicit:?}");
+        req.args.remove(key);
+        req.effort = Some(alternate.clone());
+        assert_eq!(formatter.render(&req).unwrap(), explicit);
+        req.effort = None;
+        req.args.insert("reasoning_effort".into(), alternate);
+        assert_eq!(formatter.render(&req).unwrap(), explicit);
+        req.args.clear();
+        req.args
+            .insert("emit_default_thinking_effort".into(), json!("false"));
+        assert!(
+            formatter
+                .render(&req)
+                .unwrap_err()
+                .to_string()
+                .contains("must be a boolean")
+        );
+        req.tools = Some(json!([{"type":"function","function":{"name":"test","parameters":{}}}]));
+        req.args
+            .insert("emit_default_thinking_effort".into(), json!("custom"));
+        assert_eq!(
+            formatter.render(&req).unwrap(),
+            "custom: custom tool prompt"
+        );
+    }
+}
