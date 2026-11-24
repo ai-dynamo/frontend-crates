@@ -537,12 +537,13 @@ fn admit(idle: &mut Vec<(DecoderKey, usize)>, key: DecoderKey, decoder: usize) -
     evicted
 }
 
-/// False when there was none to destroy. A context must be current.
-fn drop_idle(api: &Api) -> bool {
+/// Destroy every idle decoder and return how many there were. A context
+/// must be current.
+fn drop_idle(api: &Api) -> usize {
     let idle = std::mem::take(&mut *IDLE.lock().unwrap_or_else(PoisonError::into_inner));
-    let any = !idle.is_empty();
+    let count = idle.len();
     destroy(api, idle.into_iter().map(|(_, decoder)| decoder));
-    any
+    count
 }
 
 fn destroy(api: &Api, decoders: impl IntoIterator<Item = usize>) {
@@ -840,7 +841,7 @@ impl State<'_, '_, '_, '_> {
                     || unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) };
                 let mut code = create();
                 // Idle decoders can hold the GPU memory a new one needs.
-                if code != CUDA_SUCCESS && drop_idle(self.api) {
+                if code != CUDA_SUCCESS && drop_idle(self.api) > 0 {
                     code = create();
                 }
                 check(code, "cuvidCreateDecoder")?;
