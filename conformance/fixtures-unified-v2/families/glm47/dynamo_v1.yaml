@@ -1,4 +1,4 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v1","lineage":[{"family":"glm47","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v1-11.0.13.yaml","version":"11.0.13"}],"mode":"unified","payload_sha256":"2e98468070aeccfe6c794da241e384120301e1a2bda55ce5b719e1099f83c8dd","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v1-11.0.13.yaml","surface":"unified","version":"11.0.13"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v1","lineage":[{"family":"glm47","implementation":"dynamo_v1","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v1-11.0.13.yaml","version":"11.0.13"}],"mode":"unified","payload_sha256":"66fa24e252830609cd43b45cfd1e117791b2c8570a428c5bcf132fc4c2792c55","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v1-11.0.13.yaml","surface":"unified","version":"11.0.13"}
 document:
   mode: unified
 schema_version: 3
@@ -26,6 +26,11 @@ origins:
     source_sha256: ab60c47ff0611ebd819a27c55849cc67768197d18703ac13544940a6d6f39a1c
     adapter_sha256: 155397153539b2ee01fce067ea5a176363c6fac08594fdb0581a7a9f24b2072a
     job_sha256: a0c74bf8d36d6bd038d6792a4e2d231b7670be51e72cda2574df69e453defb22
+  origin_28a6eb19604f04ba:
+    crate_version: 11.0.13
+    source_sha256: bf379ff16f36f7347db25f30920fc2bfd91cb46dfd3ad11dd5e1ff72d4363b69
+    adapter_sha256: 2a55d2b8542a45d277f22524028f434cf1b73dd1b6476bfe14887ad6ffb4a0af
+    job_sha256: 8768330f70665e3a81e748353ba84df6046ee17e1122572874c932fe17d94b9e
   origin_f6aa4477767bc3ce:
     crate_version: 11.0.7
     source_sha256: 89ad3bd800da569d1d2ad30094f2b307ae30231e65aeabdf7ca7cdb8c326cb59
@@ -53,6 +58,10 @@ producers:
     captured_with:
       dynamo_v1: 11.0.7
     capture_origin: origin_7fc0dcd594fbcaeb
+  producer_0b64fb9913771dc6:
+    captured_with:
+      dynamo_v1: 11.0.13
+    capture_origin: origin_28a6eb19604f04ba
   producer_dde97371fe1b83fc:
     captured_with:
       dynamo_v1: 11.0.7
@@ -9268,6 +9277,82 @@ contexts:
           - kind: tool_call
             name: capture_payload
             arguments: '{"metrics":["temperature","humidity"],"count":5}'
+  context_0bb608f85f601252:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: run
+          arguments: '{}'
+        - name: second</arg_value>
+          arguments: '{}'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.13
+        source_sha256: bf379ff16f36f7347db25f30920fc2bfd91cb46dfd3ad11dd5e1ff72d4363b69
+        adapter_sha256: 2a55d2b8542a45d277f22524028f434cf1b73dd1b6476bfe14887ad6ffb4a0af
+        job_sha256: 8768330f70665e3a81e748353ba84df6046ee17e1122572874c932fe17d94b9e
+        crate_checksum: 5d539ebe2b7528a53e0b18cc833c7c51dac474172566c1249c82aa0f41705a90
+        cargo_lock_sha256: 5df49e6260f35ae737c9ff46c132b164396b3245ba7d679e3f619e2f435266b2
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_gpt_oss_no_reasoning_init
+        - conformance_no_jail
+        - conformance_reasoning_context
+        results_sha256: 148abb1306a30b9952e33a3917509bbd185ce9c98361cf1a01066952f137b616
+  context_0d57dd94daacc55a:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: run
+          arguments: '{"cmd":"second"}'
+        - name: get_time
+          arguments: '{}'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.13
+        source_sha256: bf379ff16f36f7347db25f30920fc2bfd91cb46dfd3ad11dd5e1ff72d4363b69
+        adapter_sha256: 2a55d2b8542a45d277f22524028f434cf1b73dd1b6476bfe14887ad6ffb4a0af
+        job_sha256: 8768330f70665e3a81e748353ba84df6046ee17e1122572874c932fe17d94b9e
+        crate_checksum: 5d539ebe2b7528a53e0b18cc833c7c51dac474172566c1249c82aa0f41705a90
+        cargo_lock_sha256: 5df49e6260f35ae737c9ff46c132b164396b3245ba7d679e3f619e2f435266b2
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_gpt_oss_no_reasoning_init
+        - conformance_no_jail
+        - conformance_reasoning_context
+        results_sha256: 148abb1306a30b9952e33a3917509bbd185ce9c98361cf1a01066952f137b616
+  context_af935a0a8ba8dfff:
+    mode: unified
+    record_metadata:
+      batch_final:
+        reasoning_text: ''
+        normal_text: ''
+        calls:
+        - name: run
+          arguments: '{"cmd":"Paris"}'
+      dynamo_v1_capture_provenance:
+        implementation: dynamo_v1
+        version: 11.0.13
+        source_sha256: bf379ff16f36f7347db25f30920fc2bfd91cb46dfd3ad11dd5e1ff72d4363b69
+        adapter_sha256: 2a55d2b8542a45d277f22524028f434cf1b73dd1b6476bfe14887ad6ffb4a0af
+        job_sha256: 8768330f70665e3a81e748353ba84df6046ee17e1122572874c932fe17d94b9e
+        crate_checksum: 5d539ebe2b7528a53e0b18cc833c7c51dac474172566c1249c82aa0f41705a90
+        cargo_lock_sha256: 5df49e6260f35ae737c9ff46c132b164396b3245ba7d679e3f619e2f435266b2
+        compatibility_flags:
+        - conformance_async_tool_api
+        - conformance_tool_api_schemas
+        - conformance_gpt_oss_no_reasoning_init
+        - conformance_no_jail
+        - conformance_reasoning_context
+        results_sha256: 148abb1306a30b9952e33a3917509bbd185ce9c98361cf1a01066952f137b616
   context_ba3b05205319b95d:
     mode: unified
     inherited_from: 11.0.8
@@ -50499,6 +50584,42 @@ records:
       - kind: tool_call
         name: capture_payload
         arguments: '{"metrics":["temperature","humidity"],"count":5}'
+  glm47_ambiguous_outer_close_holdback:
+    case_key: glm47_ambiguous_outer_close_holdback
+    producer: producer_0b64fb9913771dc6
+    context: context_0bb608f85f601252
+    request: 54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{}'
+      - kind: tool_call
+        name: second</arg_value>
+        arguments: '{}'
+  glm47_duplicate_argument_key_progress:
+    case_key: glm47_duplicate_argument_key_progress
+    producer: producer_0b64fb9913771dc6
+    context: context_0d57dd94daacc55a
+    request: 57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"second"}'
+      - kind: tool_call
+        name: get_time
+        arguments: '{}'
+  glm47_missing_middle_argument_value_progress:
+    case_key: glm47_missing_middle_argument_value_progress
+    producer: producer_0b64fb9913771dc6
+    context: context_af935a0a8ba8dfff
+    request: d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"Paris"}'
   glm47_parameterless_call_shape_inside_argument:
     case_key: glm47_parameterless_call_shape_inside_argument
     context: context_ba3b05205319b95d

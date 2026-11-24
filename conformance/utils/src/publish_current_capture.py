@@ -19,7 +19,7 @@ import yaml
 import capture_sources as sources
 import capture_stimulus
 import dynamo_version
-from capture_versions import capture_release_sort_key
+from capture_versions import capture_release_sort_key, provenance_release_version
 import unified_archives
 import unified_history
 import migrate_capture_sources
@@ -245,7 +245,11 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
                     document["records"][case_id] = preserved
                     continue
                 metadata = preserved["value"]["document"].setdefault("record_metadata", {})
-                if active is not None and not unified_history.typed_equal(active["result"], measured):
+                if active is not None and (
+                    not unified_history.typed_equal(active["result"], measured)
+                    or provenance_release_version(active["provenance"]["version"]) != version
+                    or active["provenance"]["source_sha256"] != origin["source_sha256"]
+                ):
                     archive = metadata.setdefault("verified_recaptures", [])
                     if not any(unified_history.typed_equal(active, item) for item in archive):
                         archive.append(active)

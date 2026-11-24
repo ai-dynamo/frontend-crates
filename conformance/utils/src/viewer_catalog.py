@@ -48,6 +48,8 @@ from impls import (
 )
 from fixture_disposition import TOOLCALLING_CASE_ALIASES
 
+IMPL_LANGUAGE = {spec.key: spec.language for spec in IMPL_SPECS}
+
 VIEWER_SELECTION_POLICY = {
     "unified": {
         "capture_contracts": {
@@ -59,6 +61,10 @@ VIEWER_SELECTION_POLICY = {
             },
             "vllm_python": {"label": "batch + stream, Combined", "assembled": "final"},
             "vllm_rust": {"label": "stream, Combined & Unified", "assembled": "stream"},
+            "dynamo_sglang_python": {
+                "label": "stream, SGLang detectors",
+                "assembled": "stream",
+            },
         },
         "reference": "dynamo_v2",
         "implementation_order": [
@@ -67,6 +73,7 @@ VIEWER_SELECTION_POLICY = {
             "sglang_python",
             "vllm_python",
             "vllm_rust",
+            "dynamo_sglang_python",
         ],
         "golden_bucket": "C",
         "historical_control_aliases": {
@@ -352,9 +359,9 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
                 else "vllm"
                 if implementation.startswith("vllm")
                 else "sglang",
-                "language": "rust"
-                if implementation.startswith("dynamo") or implementation == "vllm_rust"
-                else "python",
+                "language": IMPL_LANGUAGE[
+                    BATCH_SOURCE_IMPL.get(implementation, implementation)
+                ],
                 "mode": "batch" if implementation in UNIFIED_BATCH_IMPLS else "stream",
                 "source_blockers": {
                     version: reason

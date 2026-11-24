@@ -481,6 +481,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
         """)
         newest_v2_by_minor = {}
         v1_choices = set()
+        dynamo_sglang_choices = set()
         for item in candidates:
             if item.get("identity", "").startswith("dynamo_v2@") or item["key"].startswith("dynamo@"):
                 version = item["version"]
@@ -488,10 +489,12 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 current = newest_v2_by_minor.get(minor)
                 if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                     newest_v2_by_minor[minor] = item
+            elif item["key"].startswith("dynamo_sglang_python@"):
+                dynamo_sglang_choices.add(item["key"])
             elif item["key"].startswith(("dynamo_v1@", "dynamo_v1_jail@")):
                 v1_choices.add(item["key"])
         expected = {item["key"] for item in newest_v2_by_minor.values()}
-        expected.update(v1_choices)
+        expected.update(v1_choices | dynamo_sglang_choices)
         for producer in ("dynamo_v2", "dynamo_v1", "dynamo_v1_jail"):
             recent = sorted((item for item in candidates if item.get("identity", "").startswith(producer + "@")),
                             key=lambda item: unified_history._capture_release_sort_key(item["version"]), reverse=True)[:2]

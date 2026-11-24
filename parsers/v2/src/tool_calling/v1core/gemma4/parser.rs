@@ -201,10 +201,7 @@ impl<'a> Cursor<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        let bytes = self.src.as_bytes();
-        while self.pos < bytes.len() && bytes[self.pos].is_ascii_whitespace() {
-            self.pos += 1;
-        }
+        self.pos += self.rest().len() - self.rest().trim_start().len();
     }
 
     fn peek_byte(&self) -> Option<u8> {
@@ -264,21 +261,31 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
     Ok(ParsedValue::Object(map))
 }
 
+// Bare keys end at a same-line colon and cannot contain Gemma framing tokens.
+// Callers trim surrounding Unicode whitespace and preserve all interior text.
+pub(crate) fn argument_key_end(input: &str) -> Option<usize> {
+    let end = input.find([':', '\n', '\r'])?;
+    let key = &input[..end];
+    (input.as_bytes()[end] == b':'
+        && !key.trim().is_empty()
+        && ![
+            TOOL_CALL_START,
+            TOOL_CALL_END,
+            STRING_DELIM,
+            "<|channel>",
+            "<channel|>",
+        ]
+        .iter()
+        .any(|marker| key.contains(marker)))
+    .then_some(end)
+}
+
 fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
-    let bytes = cur.src.as_bytes();
-    let start = cur.pos;
-    while cur.pos < bytes.len() {
-        let b = bytes[cur.pos];
-        if is_call_name_char(char::from(b)) {
-            cur.pos += 1;
-        } else {
-            break;
-        }
-    }
-    if cur.pos == start {
-        anyhow::bail!("expected bare key at offset {}", start);
-    }
-    Ok(cur.src[start..cur.pos].to_string())
+    let end = argument_key_end(cur.rest())
+        .ok_or_else(|| anyhow::anyhow!("expected bare key at offset {}", cur.pos))?;
+    let key = cur.rest()[..end].trim().to_owned();
+    cur.pos += end;
+    Ok(key)
 }
 
 /// Consume `keyword` ASCII-case-insensitively, only when the next byte is not
@@ -423,6 +430,19 @@ fn parse_number(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn argument_keys_cannot_consume_framing_tokens() {
+        for marker in [
+            TOOL_CALL_START,
+            TOOL_CALL_END,
+            STRING_DELIM,
+            "<|channel>",
+            "<channel|>",
+        ] {
+            assert!(parse_args_object(&format!("bad{marker}key:true")).is_err());
+        }
+    }
 
     #[test]
     fn a_body_missing_its_close_marker_is_still_typeable() {

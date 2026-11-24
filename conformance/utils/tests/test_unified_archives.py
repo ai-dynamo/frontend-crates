@@ -55,6 +55,19 @@ def test_archive_keeps_latest_two_and_exact_history_bytes(tmp_path):
     assert not (root / "families/gemma4/dynamo_v2-0.5.0.yaml").exists()
 
 
+def test_dynamo_sglang_capture_archives_under_registered_engine_name(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    for version in ("1.6.0", "1.6.1", "1.6.2"):
+        _write_capture(root, version, {"text_only": _change(version)}, implementation="dynamo_sglang_python")
+
+    unified_history.archive_versions(root)
+
+    archive = root / "versions/dynamo_sglang-1.6.0.tar.gz"
+    assert unified_archives.paths(root) == [archive]
+    assert list(unified_archives.members(archive))[0][0] == "families/gemma4/dynamo_sglang_python-1.6.0.yaml"
+
+
 def test_members_spools_archive_and_enforces_decoded_limit(tmp_path, monkeypatch):
     archive_path = tmp_path / "dynamo-0.1.0.tar.gz"
     with tarfile.open(archive_path, "w:gz") as output:

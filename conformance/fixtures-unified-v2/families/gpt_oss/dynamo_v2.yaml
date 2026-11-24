@@ -1,15 +1,15 @@
-capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"3900f37a0a71b42eabdf023aefdac0b4401f1fa149212dcc32444167f1d54262","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","surface":"unified","version":"0.10.9"}
+capture_selection: {"family":"gpt_oss","implementation":"dynamo_v2","lineage":[{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gpt_oss","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"136dfc7352b5ebe65a3a3d1b42afcf586ae9c933008cbf4c9c7374a66f64263a","source":"conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.11.yaml","surface":"unified","version":"0.10.11"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_b8732c711a8808fa
+  origin: origin_9c7c0602c574a2d9
 origins:
-  origin_b8732c711a8808fa:
-    crate_version: 0.10.9
-    source_sha256: 240f9fbe4290261ca7cc238eb9ecaf44964a460c97c44a8450e78550c5715d5c
-    git_commit: f97495f1acfcb94e3b0894a5beda423a8cd14f87
+  origin_9c7c0602c574a2d9:
+    crate_version: 0.10.11
+    source_sha256: e137b0174e2779e0ce9972e72e242b8b85358e9cf0bb631f09f1074d93aa9aa8
+    git_commit: 8f1e436cf8bdda0b533778e59e6e4f192d62bfc3
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -32,12 +32,47 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_e28f22e40131abf6:
+  context_9d0805f39f2004c1:
     mode: unified
     record_metadata:
       parser_path: unified
       verified_recapture:
         result:
+          assembled:
+          - kind: tool_call
+            name: python
+            arguments: '"print(1)"'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: python
+              arguments: '"print(1)"'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+            tools:
+            - name: python
+              parameters:
+                type: string
+            chunks:
+            - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+        provenance:
+          crate_version: 0.10.11
+          source_sha256: e137b0174e2779e0ce9972e72e242b8b85358e9cf0bb631f09f1074d93aa9aa8
+          git_commit: 8f1e436cf8bdda0b533778e59e6e4f192d62bfc3
+          implementation: dynamo_v2
+          version: 0.10.11
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
+        resolution: fresh_execution
+      verified_recaptures:
+      - result:
           assembled:
           - kind: tool_call
             name: python
@@ -71,8 +106,42 @@ contexts:
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
         resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: tool_call
+            name: python
+            arguments: '"print(1)"'
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: python
+              arguments: '"print(1)"'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+            tools:
+            - name: python
+              parameters:
+                type: string
+            chunks:
+            - delta_text: <|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>
+        provenance:
+          crate_version: 0.10.11
+          source_sha256: ac1d9ae3fd455c9f2597226aa874469a5ae48beb8263d1f711610de4398c14ae
+          git_commit: 009932f1466984f9b9425ad7b27330b7f081856a
+          implementation: dynamo_v2
+          version: 0.10.11
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: d64fbea86db8ea085579d0b757caa32593c00641e02a78f3abdeb48c1b1b9d99
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.9.yaml
+  member: conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v2-0.10.11.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
@@ -5449,7 +5518,7 @@ records:
       - expected: []
   gpt_oss_native_builtin_python_raw:
     case_key: UNIFIED.gpt_oss-native_builtin_python_raw
-    context: context_e28f22e40131abf6
+    context: context_9d0805f39f2004c1
     request: 926b3bd2ef37d84f3f69cb8215ce3dbc60b3564ea0f788269d930541afd3adf8
     output:
       assembled: []

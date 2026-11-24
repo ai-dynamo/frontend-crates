@@ -70,6 +70,7 @@ IMPL_SPECS: tuple[ImplSpec, ...] = (
     ImplSpec("vllm_rust", None, "vllm", "rust", "vLLM Rust", "R", "r", ("stream",)),
     ImplSpec("vllm_python", "vllm", "vllm", "python", "vLLM Python", "V", "p", ("batch", "stream")),
     ImplSpec("sglang_python", "sglang", "sglang", "python", "SGLang Python", "S", "r", ("batch", "stream")),
+    ImplSpec("dynamo_sglang_python", None, "dynamo_sglang", "python", "Dynamo SGLang processor", "D", "p", ("stream",)),
 )
 
 
@@ -132,6 +133,8 @@ def _unified_pipelines(implementation: str) -> dict[str, tuple[str, str]]:
 
 VLLM_UNIFIED_PIPELINES = _unified_pipelines("vllm_python")
 SGLANG_UNIFIED_PIPELINES = _unified_pipelines("sglang_python")
+# Dynamo's SGLang chat processor constructs SGLang's detectors under the same names.
+DYNAMO_SGLANG_UNIFIED_PIPELINES = SGLANG_UNIFIED_PIPELINES
 DYNAMO_UNIFIED_PIPELINES = _unified_pipelines("dynamo_v1")
 DYNAMO_JAIL_UNIFIED_PIPELINES = {**DYNAMO_UNIFIED_PIPELINES, **_unified_pipelines("dynamo_v1_jail")}
 VLLM_TOKENIZER_MARKERS = {family: row["vllm_tokenizer_markers"]

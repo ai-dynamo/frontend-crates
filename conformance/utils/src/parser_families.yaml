@@ -783,6 +783,11 @@ unified_peer_sources:
     label: "SGLang Python {version} (stream, reasoning + tool detectors)"
     stream: true
     legacy_key: null
+  dynamo_sglang_python:
+    impl: dynamo
+    label: "Dynamo SGLang processor {version} (stream, SGLang detectors)"
+    stream: true
+    legacy_key: null
 
 # Historical batch capture identities and release-source limitations.
 unified_batch:

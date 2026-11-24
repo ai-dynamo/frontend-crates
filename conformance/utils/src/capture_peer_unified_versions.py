@@ -28,10 +28,14 @@ import yaml_fast  # noqa: F401
 from capture_unified_job import build_job
 from capture_stimulus import capture_input, unavailable_result
 from capture_stimulus import execution_outcome, request_for_case, validate_execution
-from peer_modules import published_module_paths
+from peer_modules import NAMESPACE_PACKAGES, peer_package, published_module_paths
 
 ROOT = Path(__file__).resolve().parents[3]
-IMAGE_NAMES = {"vllm": "vllm/vllm-openai:v0.31.0", "sglang": "lmsysorg/sglang:v0.5.14"}
+# dynamo_sglang runs in the Dynamo runtime image that pairs ai-dynamo with its SGLang release.
+IMAGE_NAMES = {"vllm": "vllm/vllm-openai:v0.31.0", "sglang": "lmsysorg/sglang:v0.5.14",
+               "dynamo_sglang": None}
+# The Dynamo processor has no batch parser path to capture.
+STREAM_ONLY_ENGINES = {"dynamo_sglang"}
 
 
 def sha256(data):
@@ -85,6 +89,7 @@ def validate_artifact_selection(target, missing):
 
 
 def package_payload(archive, engine):
+    package = peer_package(engine)[1]
     if archive.suffix == ".whl":
         with zipfile.ZipFile(archive) as stream:
             members = [(name, stream.read(name)) for name in stream.namelist() if not name.endswith("/")]
@@ -100,14 +105,16 @@ def package_payload(archive, engine):
             raise ValueError("Unsafe published package member")
         if name == "PKG-INFO" or (".dist-info/" in name and name.endswith("/METADATA")):
             metadata = data
-        if not (name.startswith(engine + "/") or (".dist-info/" in name and name.endswith("/METADATA"))):
+        if not (name.startswith(package + "/") or (".dist-info/" in name and name.endswith("/METADATA"))):
             continue
         if relative.suffix in {".md", ".txt"}:
             continue
         if name in payload:
             raise ValueError("Duplicate published package member")
         payload[name] = data
-    if engine + "/__init__.py" not in payload or metadata is None:
+    has_package = (package + "/__init__.py" in payload or (
+        package in NAMESPACE_PACKAGES and any(name.startswith(package + "/") for name in payload)))
+    if not has_package or metadata is None:
         raise ValueError("Published artifact lacks its Python package or version metadata")
     if not any(".dist-info/" in name and name.endswith("/METADATA") for name in payload):
         payload[engine + "-frozen.dist-info/METADATA"] = metadata
@@ -150,14 +157,34 @@ def download_artifact(artifact, destination):
         raise ValueError("Downloaded artifact differs from frozen hash")
 
 
+def supported_modes(engine):
+    return ("stream",) if engine in STREAM_ONLY_ENGINES else ("stream", "batch")
+
+
+def selected_modes(engine, modes=None):
+    supported = supported_modes(engine)
+    selected = tuple(mode for mode in (supported if modes is None else modes) if mode in supported)
+    if not selected:
+        raise ValueError(f"{engine} capture supports only {' and '.join(supported)} mode")
+    return selected
+
+
 def worker(target_path, jobs, output, mode):
     target = json.loads(target_path.read_text())
     engine, expected_version = target["implementation"], target["version"]
+    selected_modes(engine, (mode,))
+    runtime = None
+    if engine == "dynamo_sglang":
+        runtime = {"image_id": os.environ["CONFORMANCE_DYNAMO_SGLANG_IMAGE_ID"],
+                   "sglang_version": importlib.metadata.version("sglang")}
+        if runtime != target["runtime"]["identity"]:
+            raise ValueError("Dynamo SGLang worker runtime differs from the pinned release pairing")
     package_digest = validate_extracted_artifact(target_path.parent, target)
-    expected_root = target_path.parent / "package" / engine
+    distribution, package_name = peer_package(engine)
+    expected_root = target_path.parent / "package" / package_name
     roles, missing = mode_api_inventory(expected_root, engine, mode)
     inspection_only = validate_artifact_selection(target, missing)
-    if importlib.metadata.version(engine) != expected_version:
+    if importlib.metadata.version(distribution) != expected_version:
         raise ValueError("Imported package metadata differs from frozen version")
     adapter = importlib.import_module("capture_unified_batch")
     pipeline = None
@@ -165,8 +192,11 @@ def worker(target_path, jobs, output, mode):
     if missing:
         before = adapter.source_identity_root(engine, expected_root, expected_version)
     else:
-        package = importlib.import_module(engine)
-        if not Path(package.__file__).resolve().is_relative_to(expected_root.resolve()):
+        package = importlib.import_module(package_name)
+        # A namespace package has no file; check the modules it measures instead.
+        files = ([package.__file__] if package.__dict__.get("__file__") else
+                 [importlib.import_module(package_name + "." + relative).__file__ for relative in roles.values()])
+        if not all(Path(path).resolve().is_relative_to(expected_root.resolve()) for path in files):
             raise ValueError("Imported package is outside the isolated frozen artifact")
         if mode == "batch":
             pipeline = adapter.vllm_pipeline() if engine == "vllm" else adapter.sglang_pipeline()
@@ -213,6 +243,9 @@ def worker(target_path, jobs, output, mode):
                    "job_sha256": sha256(job_path.read_bytes()), "results_sha256": sha256(json_bytes(capture["results"]))}
         if inspection_only:
             receipt.update(inspection_only=True, artifact_selection="foreign_abi_inspection")
+        if runtime is not None:
+            capture.setdefault("sglang_version", runtime["sglang_version"])
+            receipt["runtime"] = runtime
         capture["provenance"] = receipt
         validate_execution(capture, job, job_path.read_bytes(), receipt["implementation"], expected_version)
         for record in capture["results"].values():
@@ -228,14 +261,19 @@ def worker(target_path, jobs, output, mode):
 
 def mode_api_inventory(package_root, engine, mode):
     roles = published_module_paths(package_root, engine)
-    required = ("protocol",) if engine == "vllm" and mode == "stream" and roles["combined"] else ("protocol", "reasoning", "tools")
+    if engine in STREAM_ONLY_ENGINES:
+        required = ("processor",)
+    elif engine == "vllm" and mode == "stream" and roles["combined"]:
+        required = ("protocol",)
+    else:
+        required = ("protocol", "reasoning", "tools")
     return roles, [role for role in required if roles[role] is None]
 
 
 def worker_modes(target_path, jobs, output, modes=None):
     target = json.loads(target_path.read_text())
     statuses = {}
-    for mode in modes or ("stream", "batch"):
+    for mode in selected_modes(target["implementation"], modes):
         directory = output / f"{target['implementation']}_python{'_batch' if mode == 'batch' else ''}-{target['version']}"
         job_directory = jobs / ("batch" if mode == "batch" else "unified")
         log = target_path.parent / (mode + ".log")
@@ -251,9 +289,10 @@ def worker_modes(target_path, jobs, output, modes=None):
 
 def run_target(target, work, bundle, images, artifact_cache=None, modes=None):
     engine, version = target["implementation"], target["version"]
+    modes = selected_modes(engine, modes)
     directory = work / "producers" / f"{engine}-{version}"
+    image_id = images[directory.name if engine == "dynamo_sglang" else engine]
     directory.mkdir(parents=True, exist_ok=False)
-    modes = tuple(modes or ("stream", "batch"))
     result = {"implementation": engine, "version": version, "modes": {}, "requested_modes": list(modes)}
     try:
         target_record = target_artifact_record(target)
@@ -282,9 +321,11 @@ def run_target(target, work, bundle, images, artifact_cache=None, modes=None):
                "-e", f"PYTHONPATH={bundle}:{directory / 'package'}", "-e", "PYTHONDONTWRITEBYTECODE=1",
                "-e", "USER=capture", "-e", "LOGNAME=capture", "-e", f"HOME={runtime}",
                "-e", f"TMPDIR={runtime / 'tmp'}", "-e", f"TORCHINDUCTOR_CACHE_DIR={runtime / 'inductor'}",
-               "-e", "VLLM_TARGET_DEVICE=cpu", "-e", "VLLM_LOGGING_LEVEL=ERROR", images[engine],
-               str(bundle / Path(__file__).name), "--worker", "--target", str(target_path),
-               "--jobs", str(work / "jobs"), "--output", str(work / "captures"), "--mode", "all", "--only-modes", *modes]
+               "-e", "VLLM_TARGET_DEVICE=cpu", "-e", "VLLM_LOGGING_LEVEL=ERROR"]
+    if engine == "dynamo_sglang":
+        command.extend(["-e", f"CONFORMANCE_DYNAMO_SGLANG_IMAGE_ID={image_id}"])
+    command.extend([image_id, str(bundle / Path(__file__).name), "--worker", "--target", str(target_path),
+               "--jobs", str(work / "jobs"), "--output", str(work / "captures"), "--mode", "all", "--only-modes", *modes])
     log = directory / "container.log"
     with log.open("wb") as stream:
         try:
@@ -305,12 +346,18 @@ def run_target(target, work, bundle, images, artifact_cache=None, modes=None):
     return result
 
 
-def resolve_images(overrides=None):
+def resolve_images(overrides=None, engines=None):
     names = {**IMAGE_NAMES, **(overrides or {})}
-    if set(names) != set(IMAGE_NAMES) or any(not isinstance(image, str) or not image.strip() for image in names.values()):
-        raise ValueError("image overrides must name nonempty peer images")
+    if set(names) != set(IMAGE_NAMES):
+        raise ValueError("image overrides must name known peer engines")
+    # Inspect only the images of engines being run, so each stays optional.
+    if engines is None:
+        engines = {engine for engine, image in names.items() if image is not None}
+    selected = {engine: image for engine, image in names.items() if engine in engines}
+    if any(not isinstance(image, str) or not image.strip() for image in selected.values()):
+        raise ValueError("selected peer images must be nonempty")
     return {engine: subprocess.check_output(["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True).strip()
-            for engine, image in names.items()}
+            for engine, image in selected.items()}
 
 
 def run_inventory(inventory, work, workers, versions=None, artifact_cache=None, image_overrides=None, modes=None):
@@ -321,6 +368,18 @@ def run_inventory(inventory, work, workers, versions=None, artifact_cache=None, 
                if target["implementation"] in IMAGE_NAMES and (not versions or target["version"] in versions)]
     if not targets or workers < 1:
         raise ValueError("Nonempty peer inventory and positive worker count required")
+    engines = {target["implementation"] for target in targets}
+    for engine in engines:
+        selected_modes(engine, modes)
+    images = resolve_images(image_overrides, engines - {"dynamo_sglang"})
+    for target in targets:
+        if target["implementation"] == "dynamo_sglang":
+            runtime = target["runtime"]
+            image = (image_overrides or {}).get("dynamo_sglang", runtime["image"])
+            image_id = resolve_images({"dynamo_sglang": image}, {"dynamo_sglang"})["dynamo_sglang"]
+            if image_id != runtime["identity"]["image_id"]:
+                raise ValueError("Dynamo SGLang image differs from the pinned release pairing")
+            images[f'dynamo_sglang-{target["version"]}'] = image_id
     work.mkdir(parents=True, exist_ok=False)
     bundle = work / "adapter"
     shutil.copytree(Path(__file__).parent, bundle, ignore=shutil.ignore_patterns("__pycache__", "*.md", "*.txt"))
@@ -334,7 +393,6 @@ def run_inventory(inventory, work, workers, versions=None, artifact_cache=None, 
             (jobs / (path.parent.name + ".json")).write_text(json.dumps(build_job(path.parent.parent, path.parent.name, mode=mode), ensure_ascii=False) + "\n")
     frozen = {str(path.relative_to(work)): sha256(path.read_bytes()) for path in (work / "jobs").rglob("*.json")}
     (work / "frozen-jobs.json").write_text(json.dumps(frozen, sort_keys=True))
-    images = resolve_images(image_overrides)
     (work / "images.json").write_text(json.dumps(images))
     completed = []
     with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -420,7 +478,9 @@ def validate_source_evidence(work, directory, mode, target, capture_mode):
     if source["version"] != target["version"]:
         raise ValueError("source manifest version differs from frozen target")
     frozen_adapter = json.loads((work / "adapter-manifest.json").read_text())
-    roles, missing = mode_api_inventory(directory / "package" / target["implementation"], target["implementation"], capture_mode)
+    engine = target["implementation"]
+    package = directory / "package" / peer_package(engine)[1]
+    roles, missing = mode_api_inventory(package, engine, capture_mode)
     validate_artifact_selection(target_record, missing)
     required = required_adapter_files(work / "adapter", target["implementation"], capture_mode, roles, missing)
     if not required.issubset(source["adapter_files"]):
@@ -428,7 +488,6 @@ def validate_source_evidence(work, directory, mode, target, capture_mode):
     for relative, digest in source["adapter_files"].items():
         if frozen_adapter.get(relative) != digest or sha256((work / "adapter" / relative).read_bytes()) != digest:
             raise ValueError("executed adapter differs from frozen bundle")
-    package = directory / "package" / target["implementation"]
     actual_package = {str(path.relative_to(package)): sha256(path.read_bytes()) for path in package.rglob("*.py")}
     if not actual_package or source["package_files"] != actual_package:
         raise ValueError("executed package differs from complete frozen source manifest")
@@ -472,7 +531,7 @@ def coverage_target_rows(work, jobs, targets, documents=None):
         status = json.loads(status_path.read_text()) if status_path.is_file() else {}
         if status and (status["implementation"], status["version"]) != (engine, version):
             raise ValueError("coverage target identity differs from frozen inventory")
-        for mode in ("stream", "batch"):
+        for mode in supported_modes(engine):
             implementation = engine + "_python" + ("_batch" if mode == "batch" else "")
             outcome = status.get("modes", {}).get(mode, {})
             blocker = status.get("blocker") or outcome.get("blocker")
@@ -485,6 +544,13 @@ def coverage_target_rows(work, jobs, targets, documents=None):
                 if target_evidence != target_artifact_record(target, artifact=selected) or sha256((directory / selected["filename"]).read_bytes()) != selected["sha256"]:
                     raise ValueError("execution artifact differs from frozen release")
                 source = validate_source_evidence(work, directory, outcome, target, mode)
+                roles, missing = mode_api_inventory(directory / "package" / peer_package(engine)[1], engine, mode)
+                inspection_only = validate_artifact_selection(target_evidence, missing)
+                if engine == "dynamo_sglang":
+                    expected_runtime = target["runtime"]["identity"]
+                    frozen_image = json.loads((work / "images.json").read_text())[directory.name]
+                    if frozen_image != expected_runtime["image_id"]:
+                        raise ValueError("Dynamo SGLang image differs from the frozen runtime")
             for family, (job_path, job) in jobs["batch" if mode == "batch" else "unified"].items():
                 document = None
                 if source is not None:
@@ -495,8 +561,8 @@ def coverage_target_rows(work, jobs, targets, documents=None):
                     receipt = document["provenance"]
                     if receipt["artifact_sha256"] != selected["sha256"] or any(receipt.get(key) != source[key] for key in ("source_sha256", "adapter_sha256", "extracted_package_sha256")):
                         raise ValueError("execution receipt differs from artifact or source manifest")
-                    roles, missing = mode_api_inventory(directory / "package" / engine, engine, mode)
-                    inspection_only = validate_artifact_selection(target_evidence, missing)
+                    if engine == "dynamo_sglang" and receipt["runtime"] != expected_runtime:
+                        raise ValueError("Dynamo SGLang receipt differs from the frozen runtime")
                     if bool(receipt.get("inspection_only")) != inspection_only or (
                             inspection_only and receipt.get("artifact_selection") != "foreign_abi_inspection"):
                         raise ValueError("execution receipt differs from artifact ABI inspection policy")
@@ -706,6 +772,7 @@ def main():
     parser.add_argument("--artifact-cache", type=Path, help="reuse only hash-verified published artifacts from an earlier isolated run")
     parser.add_argument("--vllm-image", help="installed dependency image for vLLM; the resolved immutable ID is retained")
     parser.add_argument("--sglang-image", help="installed dependency image for SGLang; the resolved immutable ID is retained")
+    parser.add_argument("--dynamo-sglang-image", help="local reference to the same Dynamo SGLang runtime image pinned in the inventory")
     parser.add_argument("--coverage-only", action="store_true", help="validate retained evidence without running producers")
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--target", type=Path)
@@ -723,7 +790,8 @@ def main():
         if args.coverage_only:
             print(json.dumps(write_coverage(args.work), sort_keys=True))
         else:
-            overrides = {engine: image for engine, image in (("vllm", args.vllm_image), ("sglang", args.sglang_image)) if image}
+            overrides = {engine: image for engine, image in (("vllm", args.vllm_image), ("sglang", args.sglang_image),
+                                                             ("dynamo_sglang", args.dynamo_sglang_image)) if image}
             run_inventory(args.inventory, args.work, args.workers, args.versions, args.artifact_cache, overrides,
                           [args.mode] if args.mode in {"stream", "batch"} else None)
     else:
