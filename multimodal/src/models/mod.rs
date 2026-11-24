@@ -12,4 +12,6 @@ pub mod glm5_next;
 pub mod kimi_k3;
 pub mod nemotron_vl;
 pub mod pixtral;
+#[cfg(feature = "audio")]
+pub mod qwen3_asr;
 pub mod qwen_vl;

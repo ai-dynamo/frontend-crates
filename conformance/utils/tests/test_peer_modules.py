@@ -16,14 +16,15 @@ import peer_modules as compat
     for capability, paths in roles.items()
 ])
 def test_published_layout_selects_each_actual_module_without_import_fallback(tmp_path, monkeypatch, engine, capability, paths):
-    package = ModuleType(engine)
+    package_name = peer_modules.peer_package(engine)[1]
+    package = ModuleType(package_name)
     package.__file__ = str(tmp_path / "__init__.py")
     sentinel = SimpleNamespace()
     imported = []
 
     def load(name):
         imported.append(name)
-        return package if name == engine else sentinel
+        return package if name == package_name else sentinel
 
     monkeypatch.setattr(peer_modules.importlib, "import_module", load)
     for relative in reversed(paths):
@@ -32,7 +33,7 @@ def test_published_layout_selects_each_actual_module_without_import_fallback(tmp
         path.write_bytes(b"# published API\n")
         assert peer_modules.published_module_paths(tmp_path, engine)[capability] == relative
         assert peer_modules.resolve_peer_module(engine, capability) is sentinel
-        assert imported[-1] == engine + "." + relative
+        assert imported[-1] == package_name + "." + relative
 
 
 def test_present_modern_module_dependency_error_never_selects_old_layout(tmp_path, monkeypatch):

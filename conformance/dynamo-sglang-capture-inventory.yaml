@@ -1,0 +1,22 @@
+schema_version: 1
+policy:
+  corpus: UNIFIED
+  dynamo_sglang: latest stable ai-dynamo release, run in its paired SGLang runtime image
+targets:
+- implementation: dynamo_sglang
+  version: 1.6.2
+  runtime:
+    image: nvcr.io/nvidia/ai-dynamo/sglang-runtime@sha256:471908699ede1849272085cf5cdb959f13ffec87f634f3738829a2645fef6c5d
+    identity:
+      image_id: sha256:0512a344b1b69288c630dfe4ade46434da807d10b733dfcb8128b2c9493e070f
+      sglang_version: 0.5.21
+  source_kind: pypi
+  repository: https://github.com/ai-dynamo/dynamo
+  git_commit: 28f9765d98ded77149a94d0defee6d54e97f6741
+  artifacts:
+  - filename: ai_dynamo-1.6.2-py3-none-any.whl
+    url: https://files.pythonhosted.org/packages/ee/cd/fa9c496f6e2a937b8234ee462daf5e75027cadf8e9cfec2de73aae6f480a/ai_dynamo-1.6.2-py3-none-any.whl
+    sha256: 91c6c35ef02bee0fcbbbf6c3b42e97010aa6cc5d9180557852057b25df5cd84c
+    yanked: false
+    yanked_reason: null
+    requires_python: '>=3.10'

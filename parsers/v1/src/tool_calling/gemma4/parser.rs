@@ -500,10 +500,7 @@ impl<'a> Cursor<'a> {
     }
 
     fn skip_whitespace(&mut self) {
-        let bytes = self.src.as_bytes();
-        while self.pos < bytes.len() && bytes[self.pos].is_ascii_whitespace() {
-            self.pos += 1;
-        }
+        self.pos += self.rest().len() - self.rest().trim_start().len();
     }
 
     fn peek_byte(&self) -> Option<u8> {
@@ -563,21 +560,31 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
     Ok(Value::Object(map))
 }
 
+// Bare keys end at a same-line colon and cannot contain Gemma framing tokens.
+// Callers trim surrounding Unicode whitespace and preserve all interior text.
+fn argument_key_end(input: &str) -> Option<usize> {
+    let end = input.find([':', '\n', '\r'])?;
+    let key = &input[..end];
+    (input.as_bytes()[end] == b':'
+        && !key.trim().is_empty()
+        && ![
+            TOOL_CALL_START,
+            TOOL_CALL_END,
+            STRING_DELIM,
+            "<|channel>",
+            "<channel|>",
+        ]
+        .iter()
+        .any(|marker| key.contains(marker)))
+    .then_some(end)
+}
+
 fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
-    let bytes = cur.src.as_bytes();
-    let start = cur.pos;
-    while cur.pos < bytes.len() {
-        let b = bytes[cur.pos];
-        if b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.' {
-            cur.pos += 1;
-        } else {
-            break;
-        }
-    }
-    if cur.pos == start {
-        anyhow::bail!("expected bare key at offset {}", start);
-    }
-    Ok(cur.src[start..cur.pos].to_string())
+    let end = argument_key_end(cur.rest())
+        .ok_or_else(|| anyhow::anyhow!("expected bare key at offset {}", cur.pos))?;
+    let key = cur.rest()[..end].trim().to_owned();
+    cur.pos += end;
+    Ok(key)
 }
 
 /// Consume `keyword` ASCII-case-insensitively, only when the next byte is not
@@ -720,6 +727,77 @@ mod tests {
         assert_eq!(calls.len(), 1, "expected exactly one tool call");
         let args: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
         (calls[0].function.name.clone(), args)
+    }
+
+    #[test]
+    fn unicode_argument_keys_preserve_the_entire_object() {
+        for key in [
+            "remarks",
+            "備考",
+            "café",
+            "cafe\u{301}",
+            "𐐀",
+            "🔑",
+            "field_日本語.v2-1",
+            "$ref",
+            "@type",
+            "a/b",
+            "bad/key",
+            "user name",
+            "備考　欄",
+            "bad?key",
+            "bad\u{2003}key",
+            "bad\u{85}key",
+        ] {
+            let input = format!(
+                "<|tool_call>call:update_customer_remarks{{custom_fields:{{{key}:<|\"|>Prefers email contact<|\"|>}},count:2,items:[{{{key}:true}}]}}<tool_call|>"
+            );
+            let (name, arguments) = extract_first(&input);
+            assert_eq!(name, "update_customer_remarks");
+            assert_eq!(
+                arguments,
+                serde_json::json!({
+                    "custom_fields": {key: "Prefers email contact"},
+                    "count": 2,
+                    "items": [{key: true}],
+                }),
+                "key={key:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn surrounding_unicode_whitespace_is_trimmed_from_argument_keys() {
+        let input = "<|tool_call>call:f{\u{3000}custom_fields\u{2003}:{\u{3000}備考\u{2003}:<|\"|>NYC<|\"|>},\u{3000}count\u{3000}:2\u{3000}}<tool_call|>";
+        assert_eq!(
+            extract_first(input).1,
+            serde_json::json!({"custom_fields": {"備考": "NYC"}, "count": 2})
+        );
+    }
+
+    #[test]
+    fn argument_keys_cannot_consume_framing_tokens() {
+        for marker in [
+            TOOL_CALL_START,
+            TOOL_CALL_END,
+            STRING_DELIM,
+            "<|channel>",
+            "<channel|>",
+        ] {
+            assert!(parse_args_object(&format!("bad{marker}key:true")).is_err());
+        }
+    }
+
+    #[test]
+    fn empty_or_multiline_argument_keys_keep_malformed_object_fallback() {
+        for key in ["", " \t\u{3000}", "bad\nkey", "bad\rkey"] {
+            let input = format!("<|tool_call>call:f{{{key}:true}}<tool_call|>");
+            assert_eq!(
+                extract_first(&input).1,
+                serde_json::json!({}),
+                "key={key:?}"
+            );
+        }
     }
 
     #[test] // detection helper

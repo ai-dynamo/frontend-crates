@@ -318,7 +318,7 @@
   //   text input  -> one `ttip-final` row: input_text + each candidate's assembled block
   //   chunk input -> one row per input chunk (per-candidate deltas) + a `ttip-final`
   //                  assembled row.
-  var _IMPL_KEYS = ['dynamo_v1', 'dynamo_v2', 'vllm_rust', 'vllm_python', 'sglang_python'];
+  var _IMPL_KEYS = ['dynamo_sglang_python', 'dynamo_v1', 'dynamo_v2', 'vllm_rust', 'vllm_python', 'sglang_python'];
   function implKeyOf(candKey) {
     for (var i = 0; i < _IMPL_KEYS.length; i++) {
       if (candKey.indexOf(_IMPL_KEYS[i]) === 0) { return _IMPL_KEYS[i]; }

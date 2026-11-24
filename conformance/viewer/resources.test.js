@@ -681,7 +681,7 @@ const recapturedRecord = { value: {
 const selectedRecapture = materializeUnifiedRecord(inputs.cases.id, recapturedRecord, 'sample', { implementation: 'dynamo_v2', version: '0.7.24', captureMode: 'stream' });
 assert.deepEqual(selectedRecapture.cases['UNIFIED.1'].assembled, freshResult.assembled);
 assert.equal(recapturedRecord.value.observation.value.assembled[0].text, 'original');
-for (const implementation of ['sglang_python', 'vllm_python', 'vllm_rust']) {
+for (const implementation of ['sglang_python', 'vllm_python', 'vllm_rust', 'dynamo_sglang_python']) {
   const peerRecord = structuredClone(recapturedRecord);
   peerRecord.value.document.record_metadata.verified_recapture.provenance.implementation = implementation;
   const selected = materializeUnifiedRecord(inputs.cases.id, peerRecord, 'sample', { implementation, version: '0.7.24', captureMode: 'stream' });

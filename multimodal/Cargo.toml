@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-multimodal"
 readme = "README.md"
-version = "0.2.14"
+version = "0.2.17"
 edition.workspace = true
 description = "Shared multimodal input processing, prompt geometry, token accounting, and content identity for LLM inference serving."
 authors.workspace = true
@@ -12,7 +12,11 @@ license = "Apache-2.0"
 homepage.workspace = true
 repository.workspace = true
 keywords = ["llm", "multimodal", "vision", "preprocessing", "inference"]
-include = ["src/**/*", "Cargo.toml", "README.md"]
+include = ["src/**/*", "examples/audio_preprocess.rs", "Cargo.toml", "README.md"]
+
+[[example]]
+name = "audio_preprocess"
+required-features = ["audio-decode"]
 
 [features]
 default = ["parallel"]
@@ -24,6 +28,11 @@ fetch = ["dep:base64", "dep:ipnet", "dep:reqwest", "dep:tokio", "dep:url"]
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
 # rayon from the dependency graph and force the inline path at compile time.
 parallel = ["dep:rayon"]
+# Experimental CPU audio processing. Explicit opt-in: unlike the image
+# families, the rustfft backend is not yet qualified as bit-exact to HF/torch.
+audio = ["dep:rustfft", "dep:rubato"]
+# Container decoding is optional independently of the decoded PCM path.
+audio-decode = ["audio", "dep:symphonia"]
 # `video_decode`: MP4 / WebM / Matroska demuxing, probing, frame sampling, and
 # hardware decoding through NVDEC, with VP8 / VP9 on the CPU through libvpx
 # when NVDEC cannot. NVIDIA's driver libraries and libvpx are loaded at runtime
@@ -41,6 +50,11 @@ matroska-demuxer = { workspace = true, optional = true }
 png.workspace = true
 rayon = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+rustfft = { version = "6.4", optional = true }
+rubato = { version = "0.16.2", optional = true }
+symphonia = { version = "0.6", default-features = false, features = [
+    "wav", "pcm", "flac", "mp3", "ogg", "vorbis",
+], optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { workspace = true, optional = true, features = ["net", "time"] }

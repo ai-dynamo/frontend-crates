@@ -1,0 +1,20 @@
+{
+  "generator": {
+    "numpy": "1.26.4",
+    "soundfile": "0.13.1",
+    "libsndfile": "1.2.2"
+  },
+  "source_frames": 4096,
+  "channels": 2,
+  "sample_rate": 22050,
+  "pcm": "channel 0: ((i % 64)-32)*400; channel 1: (((i+16)%64)-32)*400, int16",
+  "lossless": [
+    "wav",
+    "flac"
+  ],
+  "lossy": [
+    "ogg",
+    "mp3"
+  ],
+  "lossy_reference": "libsndfile read(dtype=float32), interleaved little-endian f32; numerical comparison only"
+}

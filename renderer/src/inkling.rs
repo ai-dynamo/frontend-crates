@@ -15,7 +15,7 @@ use anyhow::{Context, Result, bail};
 use minijinja::Value;
 use serde_json::{Map, Value as JsonValue, json};
 
-use crate::{OAIChatLikeRequest, OAIPromptFormatter};
+use crate::{GenerationState, OAIChatLikeRequest, OAIPromptFormatter, RenderedPrompt};
 
 const MESSAGE_USER: &str = "<|message_user|>";
 const MESSAGE_MODEL: &str = "<|message_model|>";
@@ -41,6 +41,10 @@ impl OAIPromptFormatter for InklingFormatter {
     }
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
+        Ok(self.render_prompt(req)?.into_text())
+    }
+
+    fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         let mut messages = json_value(req.messages()).context("serialize Inkling messages")?;
         crate::reject_unsupported_partial_assistant(&messages)?;
         crate::reject_unsupported_message_tools(&messages, &["developer"])?;
@@ -119,10 +123,13 @@ impl OAIPromptFormatter for InklingFormatter {
         if let Some(effort) = reasoning_effort {
             write_reasoning_effort(&mut output, effort)?;
         }
-        if req.should_add_generation_prompt() {
+        let state = if req.should_add_generation_prompt() {
             output.push_str(MESSAGE_MODEL);
-        }
-        Ok(output)
+            GenerationState::Unopened
+        } else {
+            GenerationState::Unknown
+        };
+        Ok(RenderedPrompt::text(output).with_generation_state(state))
     }
 }
 

@@ -17,8 +17,9 @@ import tempfile
 import yaml
 
 import capture_sources as sources
+import capture_stimulus
 import dynamo_version
-from capture_versions import capture_release_sort_key
+from capture_versions import capture_release_sort_key, provenance_release_version
 import unified_archives
 import unified_history
 import migrate_capture_sources
@@ -187,6 +188,7 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             required_capture_dirs={directory},
         )
         pairs, results = [], []
+        adapter = None
         fingerprints = {path: sources.digest(data) for path, data in authored_sources.items()}
         for (family, implementation), capture in store.histories.items():
             target = root / sources.latest_path("unified", family, implementation)
@@ -196,11 +198,8 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             authored_storage = unified_history._parse_yaml_raw(authored_path, authored_sources[authored_path])
             prior_snapshot = normalized_yaml.expand_snapshot(
                 unified_history._parse_yaml_raw(target, previous), authored_storage)
-            if prior_snapshot.get("execution_proof") or prior_snapshot.get("historical_evidence") or any(
-                set(record["value"]["document"].get("record_metadata", {})) - {"parser_path"}
-                for record in prior_snapshot["records"].values()
-            ):
-                raise ValueError("latest refresh must not discard retained execution or recapture evidence")
+            if prior_snapshot.get("execution_proof") or prior_snapshot.get("historical_evidence"):
+                raise ValueError("latest refresh cannot rebind retained root execution evidence")
             fingerprints[target] = sources.digest(previous)
             selection = json.loads(previous.split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
             if capture_release_sort_key(version) < capture_release_sort_key(selection["version"]):
@@ -212,17 +211,53 @@ def refresh_unpublished_latest(root: Path, loose: Path, provenance: dict) -> lis
             for case_id, retained in prior_snapshot["records"].items():
                 incoming = document["records"].get(case_id)
                 case = store.families[family].cases.get(case_id)
-                if retained["member"] != logical or incoming is None or case is None or not unified_history.typed_equal(
-                    unified_history.materialized_record(case, retained["value"]),
-                    unified_history.materialized_record(case, incoming["value"]),
-                ):
-                    raise ValueError(
-                        "latest refresh cannot replace retained observations, requests or producer identity; "
-                        "conflicting native captures require archival support"
+                if retained["member"] != selection["source"] or incoming is None or case is None:
+                    raise ValueError("latest refresh cannot replace retained requests or omit observations")
+                before, _ = unified_history.materialized_record(case, retained["value"])
+                measured, _ = unified_history.materialized_record(case, incoming["value"])
+                if not unified_history.typed_equal(before.get("capture_input"), measured.get("capture_input")):
+                    raise ValueError("latest refresh cannot replace retained requests")
+                preserved = copy.deepcopy(retained)
+                preserved["member"] = logical
+                active = preserved["value"]["document"].get("record_metadata", {}).get("verified_recapture")
+                if active is None and unified_history.typed_equal(before, measured):
+                    document["records"][case_id] = preserved
+                    continue
+                if adapter is None:
+                    adapter = sources.digest(sources.encoded([
+                        sources.identity(path, sources.read(root, path)) for path in (
+                            "conformance/tests/unified_render.rs", "conformance/tests/common/unified_capture.rs",
+                            "conformance/tests/common/mod.rs",
+                        )
+                    ]))
+                supplement = {
+                    "result": measured,
+                    "provenance": {**origin, "implementation": implementation, "version": version,
+                                   "adapter_sha256": adapter,
+                                   "job_sha256": sources.digest(sources.encoded(measured["capture_input"]))},
+                    "resolution": "fresh_execution",
+                }
+                if active is not None and unified_history.typed_equal(active, supplement):
+                    capture_stimulus.select_peer_observation(
+                        {**before, **preserved["value"]["document"]["record_metadata"]},
+                        case["request"], implementation=implementation, version=version,
                     )
-                # Loose ingestion may enrich bindings or rewrite display aliases;
-                # neither permits replacing the original evidence or its metadata.
-                document["records"][case_id] = copy.deepcopy(retained)
+                    document["records"][case_id] = preserved
+                    continue
+                metadata = preserved["value"]["document"].setdefault("record_metadata", {})
+                if active is not None and (
+                    not unified_history.typed_equal(active["result"], measured)
+                    or provenance_release_version(active["provenance"]["version"]) != version
+                    or active["provenance"]["source_sha256"] != origin["source_sha256"]
+                ):
+                    archive = metadata.setdefault("verified_recaptures", [])
+                    if not any(unified_history.typed_equal(active, item) for item in archive):
+                        archive.append(active)
+                metadata["verified_recapture"] = supplement
+                original = {**before, **metadata}
+                capture_stimulus.select_peer_observation(original, case["request"],
+                                                        implementation=implementation, version=version)
+                document["records"][case_id] = preserved
             unified_history._validate_complete_snapshot(target, document, store.families[family], implementation, version)
             lineage = copy.deepcopy(selection["lineage"])
             if not any(row["path"] == logical for row in lineage):

@@ -247,9 +247,8 @@ def test_batch_popup_shows_final_fields_and_inapplicable_chunks(published_viewer
 @pytest.mark.parametrize("implementation,scenario,has_origin", [
     ("dynamo_v1", "tool_only", True),
     ("dynamo_v1_jail", "tool_only", True),
-    # The latest native snapshot is a full fresh capture, without a verified
-    # recapture overlay. Historical v1 observations retain their overlay origin.
     ("dynamo_v2", "tool_only", False),
+    ("dynamo_v2", "gpt_oss_native_builtin_python_raw", True),
     *[(implementation, "gpt_oss_assistant_default_channel_visible_response", False)
       for implementation in ("dynamo_v1", "dynamo_v1_jail", "dynamo_v2")],
 ])
@@ -461,6 +460,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
         """)
         newest_v2_by_minor = {}
         newest_v1_by_producer_major = {}
+        dynamo_sglang_choices = set()
         for item in candidates:
             if item.get("identity", "").startswith("dynamo_v2@") or item["key"].startswith("dynamo@"):
                 version = item["version"]
@@ -468,6 +468,8 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 current = newest_v2_by_minor.get(minor)
                 if current is None or capture_release_sort_key(version) > capture_release_sort_key(current["version"]):
                     newest_v2_by_minor[minor] = item
+            elif item["key"].startswith("dynamo_sglang_python@"):
+                dynamo_sglang_choices.add(item["key"])
             elif item["key"].startswith(("dynamo_v1@", "dynamo_v1_jail@")):
                 producer = item["key"].split("@", 1)[0]
                 version = item["version"]
@@ -475,7 +477,7 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(h
                 line = (producer, major)
                 newest_v1_by_producer_major[line] = max(newest_v1_by_producer_major.get(line, version), version,
                                                          key=capture_release_sort_key)
-        expected = {item["key"] for item in newest_v2_by_minor.values()}
+        expected = {item["key"] for item in newest_v2_by_minor.values()} | dynamo_sglang_choices
         expected.update(f"{producer}@{version}" for (producer, _major), version in newest_v1_by_producer_major.items())
         for producer in ("dynamo_v2", "dynamo_v1", "dynamo_v1_jail"):
             recent = sorted((item for item in candidates if item.get("identity", "").startswith(producer + "@")),

@@ -3678,6 +3678,53 @@ _GLM_REFERENCE_TOOLS = [{"name": "capture_payload", "parameters": {
     },
     "required": ["payload", "count"],
 }}]
+
+# GLM alone uses separate key/value elements and an outer-close EOF fallback.
+# Other registered families use JSON, named parameter elements, or channel frames.
+GLM47_STREAMING_CASES = [
+    (
+        "glm47_duplicate_argument_key_progress",
+        "GLM rejects repeated arg_key names even after a string prefix was emitted. "
+        "The following independent call still completes; split-point tests cover whole-input rejection.",
+        ["<tool_call>run<arg_key>cmd</arg_key><arg_value>first</arg_value>",
+         "<arg_key>cmd</arg_key><arg_value>second</arg_value></tool_call>",
+         "<tool_call>get_time</tool_call>"],
+        [{"kind": "tool_call", "name": "get_time", "arguments": {}}],
+    ),
+    (
+        "glm47_missing_middle_argument_value_progress",
+        "GLM skips a closed arg_key with no arg_value when a later valid key/value follows. "
+        "The later string emits progress before its value and call closers arrive.",
+        ["<tool_call>run<arg_key>cmd</arg_key>",
+         "<arg_key>cmd</arg_key><arg_value>", "Paris", "</arg_value></tool_call>"],
+        [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "Paris"}}],
+    ),
+    (
+        "glm47_ambiguous_outer_close_holdback",
+        "GLM holds an outer-close marker and its suffix in an open string until arg_value closes. "
+        "At EOF the same prefix can recover a missing value closer, so the suffix cannot be emitted early.",
+        ["<tool_call>run<arg_key>cmd</arg_key><arg_value>prefix",
+         "</tool_call>", " first", " second", "</arg_value>", "</tool_call>"],
+        [{"kind": "tool_call", "name": "run", "arguments": {
+            "cmd": "prefix</tool_call> first second",
+        }}],
+    ),
+]
+for scenario, description, chunks, expected in GLM47_STREAMING_CASES:
+    EDGE.append((
+        scenario, description, ["I7", "P2"], expected,
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "input_chunks": {"glm47": chunks}, "finish_step": True},
+        OnlyFamilies({"glm47": (
+            "".join(chunks),
+            D("UNSUPPORTED", "No vLLM base capture supplies this request-specific tool schema."),
+            M,
+        )}),
+        [{"name": "run", "parameters": {
+            "type": "object", "properties": {"cmd": {"type": "string"}},
+        }}, {"name": "get_time", "parameters": {"type": "object", "properties": {}}}],
+    ))
+
 EDGE.append((
     "glm47_reference_type_intersection",
     "PR #271: GLM resolves local reference chains before coercing string and integer arguments. This case does not distinguish sibling type intersections.",
@@ -4914,7 +4961,7 @@ _GPT_OSS_REVIEW_CASES = (
     ("gpt_oss_visible_scalar_string_quoted_controls", "A framed assistant final body is a top-level JSON string containing Unicode, escaped quotes and a complete quoted tool header. Preserve the string bytes as visible text; controls inside its quotes cannot route or terminate messages.",
      '<|start|>assistant<|channel|>final<|message|>"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"<|return|>',
      [{"kind":"text", "text":'"é\\\"<|start|>assistant to=python<|channel|>commentary<|message|>print(1)<|call|>끝"'}]),
-    ("gpt_oss_native_builtin_python_raw", "A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony's documented Python-tool convention. TODO in a later PR: preserve raw Python as a JSON string argument value through the existing tool-call API; keep this measured disagreement visible.",
+    ("gpt_oss_native_builtin_python_raw", "A framed assistant analysis call to the built-in python recipient carries raw print(1) and ends with tool handoff, following openai-harmony's documented Python-tool convention. The offered string schema preserves the raw Python body as a JSON string argument value.",
      '<|start|>assistant to=python<|channel|>analysis<|message|>print(1)<|call|>',
      [{"kind":"tool_call", "name":"python", "arguments":'"print(1)"'}]),
     ("gpt_oss_quoted_tool_header_in_final_json", "Recipientless Harmony commentary precedes a final JSON string quoting a directed tool header and action stop. Reasoning removes both envelopes; the later JSON must retain data ownership without creating a tool call. Concatenate visible payloads without adding a separator.",

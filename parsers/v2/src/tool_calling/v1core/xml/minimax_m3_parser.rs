@@ -277,7 +277,7 @@ pub(crate) fn native_union_children_ambiguous(root: &Value, schema: &Value) -> b
 
 #[derive(Clone, Copy)]
 pub(crate) enum M3ParameterKind {
-    LiteralString { streamable: bool },
+    LiteralString,
     Typed,
     // Repeated array tags and unknown-schema tags can aggregate earlier values.
     Buffered,
@@ -330,7 +330,7 @@ fn path_kind(root: &Value, path: &[String]) -> M3ParameterKind {
         .iter()
         .any(|&schema| is_literal_string(Some(schema), root))
     {
-        M3ParameterKind::LiteralString { streamable: false }
+        M3ParameterKind::LiteralString
     } else {
         M3ParameterKind::Buffered
     }
@@ -345,9 +345,7 @@ fn schema_kind(root: &Value, schema: &Value) -> M3ParameterKind {
         || walker.has_type(Some(schema), "number")
         || walker.has_type(Some(schema), "boolean");
     if string && !object && !array && !walker.exhausted {
-        return M3ParameterKind::LiteralString {
-            streamable: !scalar && walker.permits_null(schema) == Some(false),
-        };
+        return M3ParameterKind::LiteralString;
     }
     if !array && (object || scalar) && !walker.exhausted {
         M3ParameterKind::Typed
@@ -392,7 +390,7 @@ fn match_close_tags(
                 path.push(name.to_string());
                 if matches!(
                     path_kind(root_schema, &path),
-                    M3ParameterKind::LiteralString { .. }
+                    M3ParameterKind::LiteralString
                 ) {
                     let close = format!("{namespace_token}</{name}>");
                     if let Some(at) = body[value_start..].find(&close) {
@@ -1958,18 +1956,18 @@ mod tests {
             json!({"unknown": "null"})
         );
 
-        // A non-nullable scoped string streams while open; a nullable one waits.
+        // Both string shapes own literal tags until the matching parameter closer.
         let tools = vec![ToolDefinition {
             name: "f".into(),
             parameters: Some(parameters.clone()),
         }];
         assert!(matches!(
             parameter_kind("f", "plain", &tools),
-            M3ParameterKind::LiteralString { streamable: true }
+            M3ParameterKind::LiteralString
         ));
         assert!(matches!(
             parameter_kind("f", "text", &tools),
-            M3ParameterKind::LiteralString { streamable: false }
+            M3ParameterKind::LiteralString
         ));
     }
 

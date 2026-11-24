@@ -7,6 +7,12 @@
 //! followed directly by `<arg_key>`/`<arg_value>` pairs. `WrappedBlockScanner`
 //! owns all buffering, recovery, and chunk-boundary handling; this module only
 //! supplies the grammar and value emitter.
+//!
+//! An open string withholds bytes from its first literal `</tool_call>` until
+//! `</arg_value>` disambiguates it. At EOF, the same outer marker instead
+//! recovers a missing value closer and leaves the following bytes as text.
+//! Publishing that ambiguous suffix early would make this recovery impossible
+//! without retracting already-emitted argument bytes.
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
@@ -276,7 +282,7 @@ impl InvokeEmitter for Glm47Emitter {
                 let key_end = header.cursor + relative;
                 let raw_key = &invoke[header.key_start..key_end];
                 let key = raw_key.trim();
-                if key.is_empty() || raw_key.contains('<') || partial.seen_keys.contains(key) {
+                if key.is_empty() || raw_key.contains('<') {
                     partial.blocked = true;
                     break;
                 }
@@ -292,7 +298,14 @@ impl InvokeEmitter for Glm47Emitter {
                 self.searched_bytes += whitespace + value_header.len().min(ARG_VALUE_START.len());
             }
             if !value_header.starts_with(ARG_VALUE_START) {
-                if !ARG_VALUE_START.starts_with(value_header) {
+                if value_header.starts_with(ARG_KEY_START) {
+                    // A key without a value does not own the next argument.
+                    partial.scan_cursor = header.cursor;
+                    continue;
+                }
+                if !ARG_VALUE_START.starts_with(value_header)
+                    && !ARG_KEY_START.starts_with(value_header)
+                {
                     partial.blocked = true;
                 }
                 partial.header = Some(header);
@@ -311,7 +324,10 @@ impl InvokeEmitter for Glm47Emitter {
                 .and_then(|schema| schema.get("properties"))
                 .and_then(|properties| properties.get(key))
                 .is_some_and(is_unambiguous_string);
-            partial.seen_keys.insert(key.to_string());
+            if !partial.seen_keys.insert(key.to_string()) {
+                partial.blocked = true;
+                break;
+            }
             if streamable {
                 arguments.push(if partial.emitted_json.is_empty() && arguments.is_empty() {
                     '{'
@@ -356,6 +372,17 @@ impl InvokeEmitter for Glm47Emitter {
             arguments: String::new(),
             complete: false,
         };
+        let key_order = source_arg_key_order(invoke);
+        let mut seen_keys = HashSet::new();
+        if key_order.iter().any(|key| !seen_keys.insert(key)) {
+            tracing::warn!(
+                why = "glm47_duplicate_argument_key",
+                tool_index,
+                "GLM stream dropped an invoke with repeated argument keys"
+            );
+            // Reserve the same index even when no prefix was streamed.
+            return Ok(Some(incomplete()));
+        }
         // EOF recovery must not validate a truncated next argument header.
         if has_incomplete_argument_header(invoke)
             || (!invoke.ends_with(BLOCK_END) && !invoke.trim_end().ends_with(ARG_VALUE_END))
@@ -380,13 +407,12 @@ impl InvokeEmitter for Glm47Emitter {
                 return Ok(streamed.map(|_| incomplete()));
             }
         };
-        let arguments = reorder_arguments(&call.function.arguments, &source_arg_key_order(invoke));
+        let arguments = reorder_arguments(&call.function.arguments, &key_order);
         let arguments = if let Some(partial) = streamed {
             if partial.tool_index != tool_index
                 || partial.name != call.function.name
                 || !arguments.starts_with(&partial.emitted_json)
             {
-                // Last-write-wins cannot retract already-published duplicate values.
                 tracing::warn!(
                     why = "glm47_streamed_call_prefix_mismatch",
                     tool_index,
@@ -433,6 +459,9 @@ fn has_incomplete_argument_header(invoke: &str) -> bool {
         };
         rest = rest[end + ARG_KEY_END.len()..].trim_start();
         let Some(value) = rest.strip_prefix(ARG_VALUE_START) else {
+            if rest.contains(ARG_KEY_START) {
+                continue;
+            }
             return true;
         };
         let Some(end) = value.find(ARG_VALUE_END) else {
@@ -750,8 +779,18 @@ fn source_arg_key_order(block: &str) -> Vec<String> {
         let Some(end) = block[start..].find(ARG_KEY_END) else {
             break;
         };
-        let name = block[start..start + end].trim();
+        let raw_key = &block[start..start + end];
+        if let Some(nested) = raw_key.rfind(ARG_KEY_START) {
+            // The batch regex recovers the inner key after a malformed opener.
+            cursor = start + nested;
+            continue;
+        }
+        let name = raw_key.trim();
         cursor = start + end + ARG_KEY_END.len();
+        if raw_key.is_empty() || raw_key.contains('<') {
+            // Invalid keys cannot hide valid pairs inside their apparent value.
+            continue;
+        }
         let value_header = block[cursor..].trim_start();
         if !value_header.starts_with(ARG_VALUE_START) {
             continue;
@@ -1073,18 +1112,19 @@ mod tests {
         let opener = "<tool_call>write_file<arg_key>content</arg_key><arg_value>prefix";
         let mut parser = Glm47ToolStreamParser::new(&tools);
         let mut output = parser.push(opener).unwrap();
-        for chunk in char_chunks("</tool_call> literal text") {
+        let literal = format!("{BLOCK_END}{}", " literal text".repeat(32));
+        for chunk in char_chunks(&literal) {
             assert!(
                 parser.push(chunk).unwrap().calls.is_empty(),
                 "chunk {chunk:?}"
             );
         }
         let resolved = parser.push(ARG_VALUE_END).unwrap();
-        assert_eq!(resolved.calls[0].arguments, "</tool_call> literal text\"");
+        assert_eq!(resolved.calls[0].arguments, format!("{literal}\""));
         output.append(resolved);
         output.append(parser.push(BLOCK_END).unwrap());
         output.append(parser.finish().unwrap());
-        let input = format!("{opener}</tool_call> literal text{ARG_VALUE_END}{BLOCK_END}");
+        let input = format!("{opener}{literal}{ARG_VALUE_END}{BLOCK_END}");
         assert_append_only(output, &batch_arguments(&tools, &input));
 
         for suffix in ["", "</arg_", "</tool_"] {
@@ -1269,31 +1309,111 @@ mod tests {
     }
 
     #[test]
-    fn native_duplicate_key_invalidates_published_prefix_without_poisoning_next_call() {
+    fn native_duplicate_keys_are_rejected_at_every_split() {
         let mut tools = tools();
         tools.extend(file_tools());
-        let first = "<tool_call>write_file<arg_key>path</arg_key><arg_value>first</arg_value>";
-        let duplicate = "<arg_key>path</arg_key><arg_value>changed</arg_value></tool_call>";
-        let input = format!("{first}{duplicate}");
-        let expected = batch_arguments(&tools, &input);
-        assert_append_only(legacy(&tools, &[&input]), &expected);
-        // A duplicate arriving entirely in the final chunk still reconciles.
-        for chunks in [vec![first, duplicate], char_chunks(&input)] {
-            let mut parser = Glm47ToolStreamParser::new(&tools);
-            let mut output = ToolParseResult::default();
-            for chunk in chunks {
-                output.append(parser.push(chunk).unwrap());
+        for (key, first, second, malformed, tail) in [
+            ("path", "first", "changed", "", ""),
+            ("path", "same", "same", "", ""),
+            ("count", "1", "2", "", ""),
+            ("path", "first", "changed", "broken<arg_key>", ""),
+            (
+                "path",
+                "first",
+                "changed",
+                "bad<junk></arg_key><arg_value><arg_key>",
+                "",
+            ),
+            (
+                "path",
+                "first",
+                "changed",
+                "</arg_key><arg_value><arg_key>",
+                "",
+            ),
+            ("path", "first", "changed", "", "<arg_ke"),
+        ] {
+            for opener in [BLOCK_START, ""] {
+                let invalid = format!(
+                    "{opener}write_file<arg_key>{key}</arg_key><arg_value>{first}</arg_value>\
+                     <arg_key>{malformed} {key} </arg_key><arg_value>{second}</arg_value>{tail}{BLOCK_END}"
+                );
+                assert!(
+                    legacy(&tools, &[&invalid])
+                        .coalesce_calls()
+                        .calls
+                        .is_empty()
+                );
+                let input = format!("{invalid}<tool_call>get_time</tool_call>");
+                let expected = ToolParseResult {
+                    normal_text: String::new(),
+                    calls: vec![ToolCallDelta {
+                        tool_index: 1,
+                        name: Some("get_time".into()),
+                        arguments: "{}".into(),
+                        complete: true,
+                    }],
+                };
+                for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                    assert_eq!(
+                        legacy(&tools, &[&input[..split], &input[split..]]).coalesce_calls(),
+                        expected,
+                        "split {split} for {input:?}"
+                    );
+                }
+                assert_eq!(
+                    legacy(&tools, &char_chunks(&input)).coalesce_calls(),
+                    expected
+                );
             }
-            assert!(output.calls.iter().all(|d| !d.complete));
-            assert!(output.clone().coalesce_calls().calls.is_empty());
-            output.append(parser.push("<tool_call>get_time</tool_call>").unwrap());
-            output.append(parser.finish().unwrap());
-            let calls = output.coalesce_calls().calls;
-            assert_eq!(calls.len(), 1);
-            assert_eq!(calls[0].tool_index, 1);
-            assert_eq!(calls[0].name.as_deref(), Some("get_time"));
-            assert_eq!(calls[0].arguments, "{}");
         }
+    }
+
+    #[test]
+    fn native_missing_middle_argument_recovers_at_every_split() {
+        let tools = file_tools();
+        let first = "<tool_call>write_file<arg_key>path</arg_key><arg_value>文件.txt</arg_value>";
+        let last = "<arg_key>content</arg_key><arg_value>recovered</arg_value></tool_call>";
+        for middle in [
+            "<arg_key>content</arg_key>",
+            "<arg_key>path</arg_key>",
+            "<arg_key>count</arg_key> \n",
+            "<arg_key>content</arg_key><arg_key>count</arg_key>",
+        ] {
+            let input = format!("{first}{middle}{last}");
+            let expected = r#"{"path":"文件.txt","content":"recovered"}"#;
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_append_only(
+                    legacy(&tools, &[&input[..split], &input[split..]]),
+                    expected,
+                );
+            }
+            assert_append_only(legacy(&tools, &char_chunks(&input)), expected);
+        }
+    }
+
+    #[test]
+    fn native_missing_middle_argument_does_not_block_later_string_progress() {
+        let tools = file_tools();
+        let mut parser = Glm47ToolStreamParser::new(&tools);
+        let mut output = parser
+            .push("<tool_call>write_file<arg_key>content</arg_key>")
+            .unwrap();
+        output.append(
+            parser
+                .push("<arg_key>content</arg_key><arg_value>")
+                .unwrap(),
+        );
+        for part in ["one ", "two ", "中文"] {
+            let update = parser.push(part).unwrap();
+            assert_eq!(update.calls.len(), 1, "no argument progress for {part:?}");
+            assert_eq!(update.calls[0].arguments, part);
+            assert!(!update.calls[0].complete);
+            output.append(update);
+        }
+        output.append(parser.push("</arg_value></tool_call>").unwrap());
+        output.append(parser.finish().unwrap());
+        assert_append_only(output, r#"{"content":"one two 中文"}"#);
     }
 
     #[test]

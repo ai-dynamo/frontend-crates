@@ -47,6 +47,8 @@ from impls import (
 )
 from fixture_disposition import TOOLCALLING_CASE_ALIASES
 
+IMPL_LANGUAGE = {spec.key: spec.language for spec in IMPL_SPECS}
+
 VIEWER_SELECTION_POLICY = {
     "unified": {
         "capture_contracts": {
@@ -58,6 +60,10 @@ VIEWER_SELECTION_POLICY = {
             },
             "vllm_python": {"label": "batch + stream, Combined", "assembled": "final"},
             "vllm_rust": {"label": "stream, Combined & Unified", "assembled": "stream"},
+            "dynamo_sglang_python": {
+                "label": "stream, SGLang detectors",
+                "assembled": "stream",
+            },
         },
         "reference": "dynamo_v2",
         "implementation_order": [
@@ -66,6 +72,7 @@ VIEWER_SELECTION_POLICY = {
             "sglang_python",
             "vllm_python",
             "vllm_rust",
+            "dynamo_sglang_python",
         ],
         "golden_bucket": "C",
         "historical_control_aliases": {
@@ -86,18 +93,6 @@ VIEWER_TAB_SPECS = (
 )
 
 UNIFIED_LEAK_MARKERS = ("<|", "|>", "<think>", "</think>", "◁", "<channel", "channel|>")
-
-UNIFIED_FAMILY_LEAK_MARKERS = {
-    "gemma4": ("thought\n",),
-    "qwen3": (
-        "<tool_call>",
-        "</tool_call>",
-        "<function=",
-        "</function>",
-        "<parameter=",
-        "</parameter>",
-    ),
-}
 
 
 def generation_metadata(revision: str, catalog_revision: str, command: str, output: str) -> dict:
@@ -353,9 +348,9 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
                 else "vllm"
                 if implementation.startswith("vllm")
                 else "sglang",
-                "language": "rust"
-                if implementation.startswith("dynamo") or implementation == "vllm_rust"
-                else "python",
+                "language": IMPL_LANGUAGE[
+                    BATCH_SOURCE_IMPL.get(implementation, implementation)
+                ],
                 "mode": "batch" if implementation in UNIFIED_BATCH_IMPLS else "stream",
                 "source_blockers": {
                     version: reason
@@ -371,8 +366,8 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
         "unified_leak_markers": {
             "common": list(UNIFIED_LEAK_MARKERS),
             "families": {
-                family: list(markers)
-                for family, markers in UNIFIED_FAMILY_LEAK_MARKERS.items()
+                family: list(spec["leak_markers"])
+                for family, spec in parser_declarations["unified"].items()
             },
         },
         "implementations": implementations,

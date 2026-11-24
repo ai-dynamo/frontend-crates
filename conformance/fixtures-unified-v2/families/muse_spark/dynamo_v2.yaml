@@ -1,11 +1,15 @@
-capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"9118356bfa237a9dd267cfb977b34424a542174681645dbdd4fc0c34e07ba033","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"muse_spark","implementation":"dynamo_v2","lineage":[{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"muse_spark","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"188bbaf9ff3f956a23e7ff82559561b2a5b0e2d15340544f6f580080b871eccf","source":"conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.11.yaml","surface":"unified","version":"0.10.11"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_883f78c28b7d2088
+  origin: origin_9c7c0602c574a2d9
 origins:
+  origin_9c7c0602c574a2d9:
+    crate_version: 0.10.11
+    source_sha256: e137b0174e2779e0ce9972e72e242b8b85358e9cf0bb631f09f1074d93aa9aa8
+    git_commit: 8f1e436cf8bdda0b533778e59e6e4f192d62bfc3
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -21,7 +25,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.7.yaml
+  member: conformance/fixtures-unified-v2/families/muse_spark/dynamo_v2-0.10.11.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:

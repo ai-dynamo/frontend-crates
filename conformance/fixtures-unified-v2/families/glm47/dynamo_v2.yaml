@@ -1,19 +1,27 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"}],"mode":"unified","payload_sha256":"b629a7e5931e82e8d570fad7a18d0282bd33727517020ab883433888b4894e45","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","surface":"unified","version":"0.10.7"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"fc98bd63bdd4ee338717c2787259f1a9cf2ba7dbe3aae695ab4a8225bed17621","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","surface":"unified","version":"0.10.11"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_f457b65d31427dcd
+  origin: origin_9c7c0602c574a2d9
 origins:
-  origin_f457b65d31427dcd:
-    crate_version: 0.10.7
-    source_sha256: 39a40d77e46a561e8264e75b6fa9cf6bf79051240c29277de7c19890aeaa642e
-    git_commit: e67a5509193bbc79a8fdf4abf86d51d11b5db1eb
+  origin_9c7c0602c574a2d9:
+    crate_version: 0.10.11
+    source_sha256: e137b0174e2779e0ce9972e72e242b8b85358e9cf0bb631f09f1074d93aa9aa8
+    git_commit: 8f1e436cf8bdda0b533778e59e6e4f192d62bfc3
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
     git_commit: 731c488a763345d2940794be01d3a5d7c89ebc3a
+  origin_f457b65d31427dcd:
+    crate_version: 0.10.7
+    source_sha256: 39a40d77e46a561e8264e75b6fa9cf6bf79051240c29277de7c19890aeaa642e
+    git_commit: e67a5509193bbc79a8fdf4abf86d51d11b5db1eb
+  origin_369a55db5a4e4dd9:
+    crate_version: 0.10.11
+    source_sha256: ac1d9ae3fd455c9f2597226aa874469a5ae48beb8263d1f711610de4398c14ae
+    git_commit: 009932f1466984f9b9425ad7b27330b7f081856a
 producers:
   producer_446828e67b23fad3:
     captured_with:
@@ -23,13 +31,17 @@ producers:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_f457b65d31427dcd
+  producer_81dce86a6a6f21c6:
+    captured_with:
+      dynamo_v2: 0.10.11
+    capture_origin: origin_369a55db5a4e4dd9
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml
+  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml
   producer: producer_aad5f6f536370a6c
   context: context_cdf0b3c0134ec96f
 records:
@@ -2006,6 +2018,88 @@ records:
           arguments: '{"metrics":["temperature","humidity"],"count":5}'
           complete: true
       - expected: []
+  glm47_ambiguous_outer_close_holdback:
+    case_key: UNIFIED.glm5-ambiguous_outer_close_holdback
+    producer: producer_81dce86a6a6f21c6
+    request: 54af6b30812417884c3c2436d9d95bf8e492b19ca9e9cd8768616ce607f76a45
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"prefix</tool_call> first second"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"prefix'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: </tool_call> first second"
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
+          complete: true
+      - expected: []
+  glm47_duplicate_argument_key_progress:
+    case_key: UNIFIED.glm5-duplicate_argument_key_progress
+    producer: producer_81dce86a6a6f21c6
+    request: 57315f15e1f2cbde430b2030f49d3d87a2918527cc210bc7268ee3412d8c927e
+    output:
+      assembled:
+      - kind: tool_call
+        name: get_time
+        arguments: '{}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"first"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: ''
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: get_time
+          arguments: '{}'
+          complete: true
+      - expected: []
+  glm47_missing_middle_argument_value_progress:
+    case_key: UNIFIED.glm5-missing_middle_argument_value_progress
+    producer: producer_81dce86a6a6f21c6
+    request: d999b8bd75f2fa1010eb8ef95315c4d6e22f4e323e31d290a1b262602e13c6df
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"Paris"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"'
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: Paris
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"}'
+          complete: true
+      - expected: []
   glm47_parameterless_call_shape_inside_argument:
     case_key: UNIFIED.glm5-parameterless_call_shape_inside_argument
     request: df259a37fa01485d58e1f5509e33107a2fd40c601d3c01c76473df1e2f1cb384
@@ -3524,7 +3618,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -3552,7 +3646,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -4749,7 +4843,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -4779,7 +4873,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -4826,7 +4920,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -4856,7 +4950,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -5124,7 +5218,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -5154,7 +5248,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -5208,7 +5302,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -5243,7 +5337,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -6719,7 +6813,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '42'
+          arguments: "42"
           complete: false
       - expected:
         - kind: tool_call
@@ -8513,13 +8607,13 @@ records:
     output:
       assembled:
       - kind: reasoning
-        text: Check London météo🙂 before answering; this is prose, not JSON.
+        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
       chunks:
       - expected:
         - kind: reasoning
-          text: 'Check London météo🙂 before answering; this is prose, not '
+          text: "Check London météo\U0001F642 before answering; this is prose, not "
       - expected:
         - kind: reasoning
           text: JSON.
@@ -8594,7 +8688,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -8622,7 +8716,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -8693,7 +8787,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -8728,7 +8822,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call
@@ -9169,7 +9263,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '1'
+          arguments: "1"
           complete: false
       - expected:
         - kind: tool_call
@@ -9194,7 +9288,7 @@ records:
       - expected:
         - kind: tool_call
           name: null
-          arguments: '2'
+          arguments: "2"
           complete: false
       - expected:
         - kind: tool_call

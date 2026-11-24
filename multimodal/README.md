@@ -16,6 +16,8 @@ against the mirrored HF processor.
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool |
 | `fetch`    | off     | `fetch::MediaFetcher`, a protected http(s)/data: fetcher for untrusted URLs (SSRF policy, redirect revalidation, byte caps); links reqwest and tokio. The trusted-source `fetch_bytes*` helpers in the same module are still stubs |
 | `video-decode` | off | `video_decode`: MP4 / WebM / Matroska demuxing and decoding to RGB frames, through NVDEC or (VP8 / VP9) libvpx, both loaded at runtime; links `matroska-demuxer`. 64-bit Linux only |
+| `audio` | off | experimental, model-independent PCM validation/import, mono conversion, explicit Rubato FFT resampling, length planning and configurable CPU log-mel features |
+| `audio-decode` | off | includes `audio`; in-memory WAV/FLAC/MP3/Ogg-Vorbis decoding through Symphonia; preserves source rate and mono/stereo channels |
 
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
@@ -78,6 +80,7 @@ prompt length (token costs)         │
 | `video_decode` *(feature)* | `Video` (open once: `info`, `decode`, `decode_sampled`) and the one-shot `probe`, `decode_frames`, `decode_sampled`: MP4 / WebM / Matroska to the RGB frames a caller names, through NVDEC or libvpx, each frame resized by a `Fit` as it is decoded (§2.4) |
 | `video` | per-request video inputs: `VideoOptions` (`fps`, `max_frames`, `num_frames`) → `resolve_num_frames`; `VideoPixelBudget` |
 | `frames` | `VideoFrames`, what a decoder hands over (RGB + timestamps), and `encode_jpeg_frames` for a backend that takes images but not video |
+| `audio/` *(feature)* | transport-independent PCM, bounded waveform/feature planning, configurable CPU kernels |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -273,6 +276,16 @@ the decode. NVDEC needs the driver's `libnvcuvid.so.1`: in a container,
 Toolkit's default, for an image that does not set it, is `compute,utility`),
 e.g. `-e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`.
 
+A successful decode keeps its NVDEC decoder on that GPU for the next video
+with the same codec, size and number of decode surfaces, because destroying a
+decoder can take 200 ms. At most 8 decoders stay idle, and the oldest goes
+first. Their NV12 decode surfaces stay under 1 GiB; the driver allocates more
+than the surfaces (two idle 8192x4320 HEVC decoders hold 1.1 GiB on an RTX
+6000 Ada). When the driver cannot create a new decoder, the idle decoders are
+destroyed and the creation is tried once more. No timer frees idle decoders:
+one holds its GPU 0 memory until a newer one pushes it out of the list, a new
+decoder cannot be created, or the process exits.
+
 ```rust
 use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};
 use dynamo_multimodal::video::resolve_num_frames;
@@ -289,6 +302,79 @@ let fit = Qwen3VlVideoFit { video: &model, budget };        // `budget`: the req
 let frames = video.decode(&indices, Some(&fit), &limits)?;
 // frames.frame(i) is Some(RGB) at frames.width() x frames.height(); frames.timestamps()[i] its time
 ```
+
+### 2.5 Generic audio building blocks (experimental)
+
+The audio primitives run synchronously on the caller's thread. The experimental
+Qwen3-ASR family below composes them with model-specific prompt geometry.
+
+1. **Ingress:** `audio::decode::decode(bytes, limits)` (feature `audio-decode`)
+   yields owned `DecodedMedia::Audio { samples, sample_rate, channels }`.
+   Samples are interleaved f32, frame/channel order, at the source rate.
+   WAV written to a pipe with unknown lengths is decoded through EOF, with
+   complete PCM frames required. WAV with a declared frame count must match it.
+   MP3 decoding honors gapless metadata when present. Without it, the frame
+   count comes from decoded packets and can include encoder delay and padding.
+   `audio::from_f32le(bytes, rate, channels, frames, max_frames)` instead
+   copies and validates decoded PCM from any transport, without a decoder.
+   Both accept mono/stereo only; surround downmix requires an explicit future
+   channel-layout policy. NaN/Inf, incomplete frames, empty input and caps fail
+   with typed errors. Finite PCM is not clipped to [-1, 1].
+2. **Waveform policy:** `waveform::plan` and `waveform::prepare` share integer
+   length arithmetic. Preparation averages stereo channels in f64, optionally
+   resamples, truncates to `max_samples`, then zero-pads to `pad_to_samples`.
+   `ResamplePolicy::Reject` refuses rate mismatch; `RubatoFft` explicitly picks
+   that CPU backend. Resampling removes filter latency and returns exactly
+   `ceil(source_frames * target_rate/source_rate)` samples. Limits apply to
+   intermediate lengths as well as the final waveform. Rates above 384 kHz
+   are currently unsupported.
+3. **Feature geometry:** `LogMelConfig::plan(samples, valid_samples, limits)`
+   returns exactly the dimensions used by `LogMelExtractor::extract` and rejects
+   the same invalid configurations. For repeated planning, resolve and call
+   `LogMelConfig::validate` once. The resulting `ValidatedLogMelConfig` can plan
+   without PCM or an FFT, and the engine can build an extractor from it.
+   The caller selects rate, FFT/hop/mel counts, Slaney/HTK scale, area normalization,
+   periodic/symmetric Hann or rectangular window, centered reflect/zero or
+   uncentered framing, FFT output precision, final-frame dropping, log10 floor,
+   dynamic range and affine output transform. Input length is never implicitly
+   padded or truncated by feature extraction.
+4. **Output:** `LogMelFeatures.data` is contiguous f32 `[mel, frame]`, with no
+   batch dimension. `FeaturePlan::frame_anchor_mask` marks anchors `i*hop`
+   before `valid_samples`. It is not a model convolution/encoder mask. A model
+   adapter owns feature-token counts, chunking, special tokens, prompt layout
+   and conversion to named model tensors. Mel frames are not LLM tokens.
+
+`WaveformConfig` and `LogMelConfig` reject unknown JSON keys. These are kernel
+policies supplied by a consumer or a future family resolver, not a second
+checkpoint resolver alongside #607's planned API. There is no universal
+feature-extractor default: callers supply the numerical policy explicitly.
+
+**Reference status.** `tests/audio_reference.rs` checks complete tensors and
+frame masks against committed NumPy CPU captures from transformers 5.12.1 /
+NumPy 1.26.4 for four configurations (8/16/22.05/24 kHz, 32/48/80/128 mel bins).
+Those fixtures use exact f32-bit assertions. They qualify only those captures,
+not a model family or a PyTorch/librosa/soxr backend. Rubato FFT resampling and
+Symphonia lossy decoding have distinct numerical contracts; neither silently
+claims parity with the Python loader. The existing bit-exact image-family bar
+and conservative registry are unchanged. Model-level reference qualification
+and engine end-to-end validation remain separate follow-ups.
+
+For integration without a GPU/model, the example accepts encoded audio or
+explicit f32le PCM, applies both stages and writes features plus JSON metadata:
+
+```sh
+cargo run -p dynamo-multimodal --features audio-decode --example audio_preprocess \
+    -- INPUT CONFIG.json OUTPUT.f32le
+```
+
+`CONFIG.json` contains `input` (`{"kind":"encoded"}` or
+`{"kind":"f32le","sample_rate":22050,"channels":2,"sample_frames":4096}`),
+`waveform` (a `WaveformConfig`) and `features` (a `LogMelConfig`). All file IO
+belongs to this example; the library operates on caller-provided buffers.
+`tests/fixtures/audio` contains reproducible synthetic inputs and reference
+capture scripts. PCM imported from a future SHM snapshot enters at stage 1
+and bypasses container decoding; mapping validation and read receipts stay
+with the host. No SHM transport changes are part of this crate.
 
 ## 3. Python-parity map
 
@@ -808,6 +894,28 @@ What remains:
 
 ### Video and audio: planned layout
 
+#### Experimental Qwen3-ASR profile
+
+With the `audio` feature, select `qwen3_asr` using a typed `Qwen3AsrSpec`
+or the existing JSON spec with `audio_token_id`, `audio_start_id` and
+`audio_end_id` taken from the checkpoint. The explicit profile accepts mono
+16 kHz PCM up to 30 seconds and emits Whisper features and the named
+`feature_attention_mask`. Consumers that require PCM16 WAV can use
+`audio::decode::decode_wav_pcm16` with `audio-decode` before processing.
+
+The profile rejects clips longer than 30 seconds. For accepted clips, it pads
+to 30 seconds and counts `ceil(samples / 160)` valid frames, following SGLang's
+Python processor. Hugging Face `AutoProcessor` with `padding=True` can count
+`floor(samples / 160)` frames for a single clip. For example, 160,096 samples
+give 131 audio tokens with this profile and 130 with that AutoProcessor path.
+
+As in [#607](https://github.com/ai-dynamo/frontend-crates/issues/607), metadata
+planning and decoded media processing share the token count and prompt layout.
+`num_media_tokens` and `layout_from_metadata` need the sample count, rate and
+prompt IDs. The engine supplies decoded PCM to compute features and positions.
+The family is experimental and requires explicit selection. Automatic checkpoint
+resolution remains reserved for profiles that meet the bit-exact reference bar.
+
 ```
 src/
   image/                 as today
@@ -816,9 +924,9 @@ src/
     sample.rs            further sampling policies (Qwen smart_nframes, GLM fps
                          windows) — pure index/timestamp math, no decoders
   audio/                 (feature `audio`)
-    decode.rs            container decode + resample to mono f32 (symphonia)
-    features.rs          STFT + log-mel filterbank (rustfft), the HF
-                         feature-extractor equivalent
+    decode.rs            implemented: bounded source-rate PCM decode (symphonia)
+    waveform.rs          implemented: mono/rate/length policy and planning
+    features.rs          implemented: configurable STFT + log-mel (rustfft)
   models/
     qwen_vl/             grows into a directory when its video path lands
       mod.rs             image path + spec + registry glue

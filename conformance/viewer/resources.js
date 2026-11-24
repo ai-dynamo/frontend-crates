@@ -491,7 +491,7 @@ export function selectVerifiedRecapture(value, input, stimulus, implementation, 
   keys(recapture, ['result', 'provenance', 'resolution'], ['result', 'provenance', 'resolution'], 'verified recapture');
   const provenance = recapture.provenance;
   const batch = captureMode === 'batch';
-  if (!['sglang_python', 'vllm_python', 'vllm_rust', 'dynamo_v2'].includes(implementation) && !batch) throw new Error('unsupported verified recapture implementation');
+  if (!['sglang_python', 'vllm_python', 'vllm_rust', 'dynamo_v2', 'dynamo_sglang_python'].includes(implementation) && !batch) throw new Error('unsupported verified recapture implementation');
   if (implementation !== 'sglang_python' && getField(provenance, 'implementation') !== implementation) throw new Error('verified recapture implementation differs from candidate');
   if (getField(provenance, 'version') !== version) throw new Error('verified recapture version differs from candidate');
   for (const field of ['source_sha256', 'adapter_sha256', 'job_sha256']) {
