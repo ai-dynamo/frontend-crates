@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Bit-exact resamplers: PIL's fixed-point kernels, torchvision's uint8
-//! antialias path, and ATen's float32 antialias bilinear. Which one a family
+//! antialias path, and ATen's float32 antialias bilinear and bicubic. Which one a family
 //! selects is part of its spec — they quantize or round differently, so their
 //! outputs are NOT interchangeable at the byte level.
 
@@ -37,6 +37,11 @@ pub enum Resample {
     /// DEFAULT) can move a pixel by one. torchvision v2 keeps uint8 on AVX2,
     /// AVX-512 and aarch64, so it reaches this kernel only under x86 DEFAULT.
     AtenF32Bilinear,
+    /// ATen's float32 antialias bicubic: torchvision v1 `resize` on a uint8
+    /// tensor, clamped and rounded back to u8. Bitwise against torch's AVX2
+    /// and AVX-512 CPU dispatch for outputs at least 2 pixels wide; the
+    /// DEFAULT dispatch fuses no multiply-add and can move a pixel by one.
+    AtenF32Bicubic,
 }
 
 /// The fixed-point resamplers. They share PIL's geometry, kernels and
@@ -259,7 +264,12 @@ pub fn resize_rgb(
         let fixed = match resample {
             Resample::Pil(filter) => FixedPoint::Pil(filter),
             Resample::AtenU8 => FixedPoint::AtenU8,
-            Resample::AtenF32Bilinear => return f32_bilinear(src, h, w, out_h, out_w),
+            Resample::AtenF32Bilinear => {
+                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bilinear);
+            }
+            Resample::AtenF32Bicubic => {
+                return f32_resize(src, h, w, out_h, out_w, F32Filter::Bicubic);
+            }
         };
         resize_passes::<3>(src, h, w, out_h, out_w, fixed)
     })
@@ -323,27 +333,77 @@ fn resize_passes<const C: usize>(
     }
 }
 
-/// ATen's `_upsample_bilinear2d_aa` on f32; each output sums its taps in
-/// order, without FMA.
-fn f32_bilinear(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
+#[derive(Clone, Copy)]
+enum F32Filter {
+    Bilinear,
+    Bicubic,
+}
+
+impl F32Filter {
+    /// Half the interpolation size: the filter's support at scale 1.
+    fn half_size(self) -> f32 {
+        match self {
+            Self::Bilinear => 1.0,
+            Self::Bicubic => 2.0,
+        }
+    }
+
+    /// Bicubic mirrors torch's AVX2 and AVX-512 CPU kernels, which fuse
+    /// multiply-adds in the filter and in the tail of each sum.
+    fn fused(self) -> bool {
+        matches!(self, Self::Bicubic)
+    }
+
+    /// ATen's `aa_filter`; bicubic is Keys' kernel with `a = -0.5` in f32.
+    fn weight(self, x: f32) -> f32 {
+        let x = x.abs();
+        match self {
+            Self::Bilinear => (1.0 - f64::from(x)).max(0.0) as f32,
+            Self::Bicubic => {
+                let a = -0.5f32;
+                if x < 1.0 {
+                    ((a + 2.0).mul_add(x, -(a + 3.0)) * x).mul_add(x, 1.0)
+                } else if x < 2.0 {
+                    a.mul_add(x, -5.0 * a)
+                        .mul_add(x, 8.0 * a)
+                        .mul_add(x, -4.0 * a)
+                } else {
+                    0.0
+                }
+            }
+        }
+    }
+}
+
+/// ATen's `_upsample_{bilinear,bicubic}2d_aa` on f32, then torchvision's
+/// clamp and round to u8; each output sums its taps in order.
+fn f32_resize(
+    src: &[u8],
+    h: usize,
+    w: usize,
+    out_h: usize,
+    out_w: usize,
+    filter: F32Filter,
+) -> Vec<u8> {
     let mut plane: Vec<f32> = src.iter().map(|&v| f32::from(v)).collect();
+    let fused = filter.fused();
     if out_w != w {
-        plane = f32_horizontal(&plane, h, w, out_w, &f32_bilinear_taps(w, out_w));
+        plane = f32_horizontal(&plane, (h, w, out_w), &f32_taps(w, out_w, filter), fused);
     }
     if out_h != h {
-        plane = f32_vertical(&plane, out_w, out_h, &f32_bilinear_taps(h, out_h));
+        plane = f32_vertical(&plane, (out_w, out_h), &f32_taps(h, out_h, filter), fused);
     }
     plane.iter().map(|&v| v.round_ties_even() as u8).collect()
 }
 
 /// The f32/f64 mix mirrors ATen's promotions in
-/// `_compute_indices_min_size_weights_aa` and the bilinear `aa_filter`.
-fn f32_bilinear_taps(in_size: usize, out_size: usize) -> Vec<(usize, Vec<f32>)> {
+/// `_compute_indices_min_size_weights_aa` and `aa_filter`.
+fn f32_taps(in_size: usize, out_size: usize, filter: F32Filter) -> Vec<(usize, Vec<f32>)> {
     let scale = in_size as f32 / out_size as f32;
     let (support, invscale) = if scale >= 1.0 {
-        (scale, (1.0 / f64::from(scale)) as f32)
+        (filter.half_size() * scale, (1.0 / f64::from(scale)) as f32)
     } else {
-        (1.0, 1.0)
+        (filter.half_size(), 1.0)
     };
     let max_taps = f64::from(support).ceil() as i64 * 2 + 1;
     (0..out_size)
@@ -354,7 +414,7 @@ fn f32_bilinear_taps(in_size: usize, out_size: usize) -> Vec<(usize, Vec<f32>)> 
             let mut weights: Vec<f32> = (xmin..xmin + (xmax - xmin).clamp(0, max_taps))
                 .map(|x| {
                     let d = ((f64::from(x as f32 - center) + 0.5) * f64::from(invscale)) as f32;
-                    (1.0 - f64::from(d.abs())).max(0.0) as f32
+                    filter.weight(d)
                 })
                 .collect();
             let total = weights.iter().fold(0.0f32, |sum, &w| sum + w);
@@ -364,41 +424,93 @@ fn f32_bilinear_taps(in_size: usize, out_size: usize) -> Vec<(usize, Vec<f32>)> 
         .collect()
 }
 
-fn weighted_sum(weights: &[f32], value: impl Fn(usize) -> f32) -> f32 {
-    weights
-        .iter()
-        .enumerate()
-        .fold(0.0, |sum, (j, &w)| sum + value(j) * w)
+#[inline(always)]
+fn weighted_sum(weights: &[f32], fused: bool, value: impl Fn(usize) -> f32) -> f32 {
+    // torch's AVX2 and AVX-512 builds multiply taps 1.. four at a time,
+    // unfused, and fuse only the leftover (len - 1) % 4 taps.
+    let tail = if fused { (weights.len() - 1) % 4 } else { 0 };
+    let split = weights.len() - tail;
+    let head = (1..split).fold(value(0) * weights[0], |sum, j| sum + value(j) * weights[j]);
+    (split..weights.len()).fold(head, |sum, j| value(j).mul_add(weights[j], sum))
 }
 
 fn f32_horizontal(
     src: &[f32],
-    h: usize,
-    w: usize,
-    out_w: usize,
+    (h, w, out_w): (usize, usize, usize),
     taps: &[(usize, Vec<f32>)],
+    fused: bool,
 ) -> Vec<f32> {
     let mut out = vec![0.0f32; h * out_w * 3];
+    #[cfg(target_arch = "x86_64")]
+    if fused && std::arch::is_x86_feature_detected!("fma") {
+        execution::for_chunks_mut(&mut out, out_w * 3, |y, row| {
+            // SAFETY: this CPU has FMA.
+            unsafe { horizontal_row_fma(row, &src[y * w * 3..(y + 1) * w * 3], taps) }
+        });
+        return out;
+    }
     execution::for_chunks_mut(&mut out, out_w * 3, |y, row| {
-        let src_row = &src[y * w * 3..(y + 1) * w * 3];
-        for (xx, (xmin, weights)) in taps.iter().enumerate() {
-            for c in 0..3 {
-                row[xx * 3 + c] = weighted_sum(weights, |j| src_row[(xmin + j) * 3 + c]);
-            }
-        }
+        horizontal_row(row, &src[y * w * 3..(y + 1) * w * 3], taps, fused);
     });
     out
 }
 
-fn f32_vertical(src: &[f32], w: usize, out_h: usize, taps: &[(usize, Vec<f32>)]) -> Vec<f32> {
-    let mut out = vec![0.0f32; out_h * w * 3];
-    execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
-        let (ymin, weights) = &taps[yy];
-        for (i, v) in row.iter_mut().enumerate() {
-            *v = weighted_sum(weights, |j| src[(ymin + j) * w * 3 + i]);
+#[inline(always)]
+fn horizontal_row(row: &mut [f32], src_row: &[f32], taps: &[(usize, Vec<f32>)], fused: bool) {
+    for (xx, (xmin, weights)) in taps.iter().enumerate() {
+        for c in 0..3 {
+            row[xx * 3 + c] = weighted_sum(weights, fused, |j| src_row[(xmin + j) * 3 + c]);
         }
+    }
+}
+
+/// The fused row with `mul_add` as one instruction: a baseline x86-64 build
+/// calls libm's `fmaf` for each fused tap. Both round alike.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "fma")]
+fn horizontal_row_fma(row: &mut [f32], src_row: &[f32], taps: &[(usize, Vec<f32>)]) {
+    horizontal_row(row, src_row, taps, true);
+}
+
+fn f32_vertical(
+    src: &[f32],
+    (w, out_h): (usize, usize),
+    taps: &[(usize, Vec<f32>)],
+    fused: bool,
+) -> Vec<f32> {
+    let mut out = vec![0.0f32; out_h * w * 3];
+    #[cfg(target_arch = "x86_64")]
+    if fused && std::arch::is_x86_feature_detected!("fma") {
+        execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
+            // SAFETY: this CPU has FMA.
+            unsafe { vertical_row_fma(row, src, w, &taps[yy]) }
+        });
+        return out;
+    }
+    execution::for_chunks_mut(&mut out, w * 3, |yy, row| {
+        vertical_row(row, src, w, &taps[yy], fused);
     });
     out
+}
+
+#[inline(always)]
+fn vertical_row(
+    row: &mut [f32],
+    src: &[f32],
+    w: usize,
+    (ymin, weights): &(usize, Vec<f32>),
+    fused: bool,
+) {
+    for (i, v) in row.iter_mut().enumerate() {
+        *v = weighted_sum(weights, fused, |j| src[(ymin + j) * w * 3 + i]);
+    }
+}
+
+/// [`horizontal_row_fma`] for the vertical pass.
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "fma")]
+fn vertical_row_fma(row: &mut [f32], src: &[f32], w: usize, taps: &(usize, Vec<f32>)) {
+    vertical_row(row, src, w, taps, true);
 }
 
 pub fn resize_lanczos_rgb(src: &[u8], h: usize, w: usize, out_h: usize, out_w: usize) -> Vec<u8> {
@@ -637,6 +749,67 @@ mod tests {
             blake3::hash(&out).to_hex().as_str(),
             "c040d72c2c1d859c609951961303ccd433f1d8211580c10e91709a40e98bf66a"
         );
+    }
+
+    /// 40x40 to 84x84 noise (seed 7, the video fixtures' `noise`): BLAKE3 of
+    /// torchvision v1 `resize(BICUBIC, antialias=True)` on the CHW uint8
+    /// tensor, torch 2.14.1 on AVX-512. Unfused filter weights move 2 bytes.
+    #[test]
+    fn f32_bicubic_matches_torch_on_an_upscale() {
+        let src: Vec<u8> = (0..40 * 40 * 3u64)
+            .map(|i| ((i + 7).wrapping_mul(2_654_435_761) >> 20) as u8)
+            .collect();
+        let out = resize_rgb(&src, 40, 40, 84, 84, Resample::AtenF32Bicubic);
+        assert_eq!(
+            blake3::hash(&out).to_hex().as_str(),
+            "5316374e6f9df6980190192e96eb90a820d1dbf75448717beca7f2cd1866c208"
+        );
+    }
+
+    /// 300x400 to 75x100 noise (seed 7): an exact 4x downscale, where only
+    /// the edge taps round. Fusing every tap moves 13 bytes. BLAKE3 as above.
+    #[test]
+    fn f32_bicubic_matches_torch_on_a_4x_downscale() {
+        let src: Vec<u8> = (0..300 * 400 * 3u64)
+            .map(|i| ((i + 7).wrapping_mul(2_654_435_761) >> 20) as u8)
+            .collect();
+        let out = resize_rgb(&src, 300, 400, 75, 100, Resample::AtenF32Bicubic);
+        assert_eq!(
+            blake3::hash(&out).to_hex().as_str(),
+            "b044e906d89f8ee9693bd06549867a391e5b7463cbb2fa71906910935e3a9b64"
+        );
+    }
+
+    /// The FMA build of a fused row rounds like the portable build, on taps
+    /// of every tail length (0 to 3 fused taps).
+    #[cfg(target_arch = "x86_64")]
+    #[test]
+    fn fma_rows_round_like_the_portable_rows() {
+        if !std::arch::is_x86_feature_detected!("fma") {
+            return;
+        }
+        let (h, w) = (37, 53);
+        let src: Vec<f32> = noise(h * w * 3).into_iter().map(f32::from).collect();
+        let bits = |row: &[f32]| row.iter().map(|v| v.to_bits()).collect::<Vec<u32>>();
+        let mut tails = [false; 4];
+        for (out_h, out_w) in [(11, 17), (9, 13), (30, 41), (5, 7)] {
+            let taps = f32_taps(w, out_w, F32Filter::Bicubic);
+            taps.iter()
+                .for_each(|(_, weights)| tails[(weights.len() - 1) % 4] = true);
+            let (mut portable, mut fma) = (vec![0.0; out_w * 3], vec![0.0; out_w * 3]);
+            horizontal_row(&mut portable, &src[..w * 3], &taps, true);
+            // SAFETY: FMA was detected above.
+            unsafe { horizontal_row_fma(&mut fma, &src[..w * 3], &taps) };
+            assert_eq!(bits(&portable), bits(&fma), "horizontal to {out_w}");
+
+            let taps = f32_taps(h, out_h, F32Filter::Bicubic);
+            let (mut portable, mut fma) = (vec![0.0; w * 3], vec![0.0; w * 3]);
+            vertical_row(&mut portable, &src, w, &taps[out_h / 2], true);
+            // SAFETY: FMA was detected above.
+            unsafe { vertical_row_fma(&mut fma, &src, w, &taps[out_h / 2]) };
+            assert_eq!(bits(&portable), bits(&fma), "vertical to {out_h}");
+        }
+        assert_eq!(tails, [true; 4]);
     }
 
     #[test]

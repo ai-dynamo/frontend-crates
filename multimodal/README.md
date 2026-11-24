@@ -138,7 +138,10 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 
 `spec_from_model_dir` reads `preprocessor_config.json`, or the nested
 transformers v5 `processor_config.json` when a checkpoint ships only that
-file (GLM-5.3-Flash). For Qwen, `spec_from_hf_configs` resolves images
+file (GLM-5.3-Flash). For GLM-5.3-Flash it gives the metadata-only
+`ProcessorSpec::Glm5Next`; `registry::glm5_next_pixel_spec(config_json,
+processor_config_json)` gives the image and video pixel spec from the same
+files (§6). For Qwen, `spec_from_hf_configs` resolves images
 only. A Mistral Large 4 directory resolves from
 `params.json` and `processor_config.json` to the HF `PixtralProcessor`
 pipeline; a mistral-common engine such as vLLM counts differently (§9).
@@ -260,6 +263,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
 | per video, Qwen3-VL, Qwen3.5, `qwen4_exp` | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
+| per video, GLM-5.3-Flash | `video::sample::glm_frame_indices`, then `process_items` (several videos split the budget), `layout_with_text`, `positions_with_features` | source frame count and `VideoInfo::average_fps` → the frames to decode; those frames → features, grid, expanded prompt and M-RoPE; needs a `Glm5NextSpec.video` (§6) |
 | per video, Nemotron 3.5 Super VL | `rewrite_prompt`, `process_items`, `layout_with_text`; `NemotronVlProcessor::video_layout` from metadata | sampled frames, their source indices and fps, and a `TextEncoder` that can decode → features and expanded prompt (§8); needs a `NemotronVlSpec.video` |
 
 `fit` is optional: `None` keeps the selected frames at the source size;
@@ -406,6 +410,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
+| `video::sample::glm_frame_indices`, `models::glm5_next::plan_video_grid`, `Glm5NextImageProcessor` video | SGLang's GLM processor (`glm_sample_frame_indices`, the canvas pre-resize, then `Glm5NextVideoProcessor` and `Glm5NextProcessor`) | **bitwise** sampled frames, grids, `pixel_values_videos`, ids, feature spans and M-RoPE (SGLang 25c1c439 goldens in `tests/fixtures/glm5_next_video`, which also record where HF differs) |
+| `image::resize::resize_rgb(AtenF32Bicubic)` | torchvision v1 `transforms.functional.resize(BICUBIC, antialias=True)` on a uint8 tensor (f32, then clamp and round) | **bitwise** against torch 2.14.1's AVX2 and AVX-512 CPU dispatch for outputs at least 2 pixels wide (a 45-size sweep of upscales and integer and non-integer downscales); torch's DEFAULT dispatch can differ by one |
 | `models::nemotron_vl::NemotronVlProcessor` with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` → `[1, 3, H, W]` bfloat16 features, expanded ids, item offsets (`feature_ranges`) | **bitwise** for a prompt given as token ids, including the request budget |
 | `models::nemotron_vl::NemotronVlProcessor` with `sizing = hf` | the checkpoint's `image_processing_nemotron_h_omni.py` `_preprocess` sizes and `num_tokens` | exact tile sizes and token counts; no pixel path |
 | `NemotronVlProcessor` video with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` with `video_data`, on the frames it sampled → `[frames, 3, H, W]` bfloat16, expanded ids, item offsets | **bitwise**, including the processor's EVS split of the `<image>` counts, which the engine changes after pruning (§8; SGLang 25c1c439 goldens in `tests/fixtures/nemotron_vl_video`) |
@@ -511,7 +517,7 @@ python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
 The stdlib-only generator executes the pinned source's pure geometry
 functions. Fixture settings are mathematical test inputs, not model defaults.
 
-## 6. GLM-5.3-Flash images
+## 6. GLM-5.3-Flash images and video
 
 
 `Glm5NextImageProcessor` adds the full image pipeline on top of the shared
@@ -529,8 +535,8 @@ The default trait method preserves Qwen's plain RGB conversion. GLM uses
 onto an edge-contrasting background, matching SGLang's `smart_to_rgb` for PNG,
 WebP, GIF, and alpha-bitmask BMP. GLM then resizes the content without
 unnecessary upscaling, zero-pads to the planned canvas, normalizes and
-patchifies, expands placeholders, and emits image-only M-RoPE positions.
-Video and samples deeper than 8 bits remain unsupported.
+patchifies, expands placeholders, and emits M-RoPE positions.
+Samples deeper than 8 bits remain unsupported.
 
 The metadata-only `Glm5NextSpec` API and `spec_from_hf_configs` keep their
 planning contract. Python-free consumers can combine that planning spec
@@ -570,16 +576,67 @@ accepts either the flat image-processor object or the nested
 `processor_class`). Knobs that only shape pixel values are ignored; `do_resize`
 must stay on, crop/pad must stay off, unknown knobs are refused, and processor
 `patch_size` / `merge_size` / `temporal_patch_size` must agree with
-`vision_config`.
+`vision_config`. A `video_processor` block that the pipeline can honor fills
+`Glm5NextSpec.video`; any other block leaves it `None` and never fails the
+resolve.
+
+`registry::glm5_next_pixel_spec(config_json, processor_config_json)` gives the
+pixel spec (`Glm5NextImageSpec`, images and video) from the same files, for
+`ProcessorSpec::Glm5NextImage`. It is stricter than the planner: `image_mean`
+and `image_std` are required, `do_rescale` (1/255), `do_normalize` and
+`do_convert_rgb` must stay on with bicubic `resample`, and a
+`video_processor` block it cannot honor (another processor type, a nonzero
+`max_duration`, an unknown knob) is an `Err`.
 
 The chat template renders each image as
 `<|begin_of_image|><|image|><|end_of_image|>`; `layout_from_metadata` expands
 only `<|image|>` (`layout_by_placeholder`), so the delimiters stay text and
-`feature_ranges` covers exactly the repeated image ids. GLM expands **video**
-frames with the same image token, which this planner does not reproduce:
-video metadata is `Unsupported`, and a prompt containing the declared
-`video_token_id` is refused rather than mis-attributed. `process_item` and
-processed-item `layout` also return `Unsupported`.
+`feature_ranges` covers exactly the repeated image ids. The metadata-only
+planner does not lay out video: a video's tokens include its timestamp text,
+so video metadata is `Unsupported` and a prompt containing the declared
+`video_token_id` is refused. `process_item` and processed-item `layout` also
+return `Unsupported`.
+
+**Video.** `Glm5NextImageProcessor` takes video when `Glm5NextSpec.video` holds
+the `video_processor` knobs (`fps`, `max_frames`, the six geometry knobs with
+a budget for the whole clip, `image_mean`, `image_std`) and the
+`<|begin_of_image|>` / `<|end_of_image|>` ids. It mirrors SGLang's GLM
+processor, the engine that consumes it:
+
+- `video::sample::glm_frame_indices(total_frames, fps, spec.fps, max_frames)`
+  gives the source frames to decode: one per `1 / spec.fps` seconds of source
+  time, refilled by `np.linspace`, deduplicated, and the last repeated to an
+  even count. SGLang takes `total_frames` and `fps` from torchcodec, so with
+  this crate's decoder pass `VideoInfo::frame_count` and
+  `VideoInfo::average_fps` (not `VideoInfo::fps`), and give
+  `DecodedMedia::Video` the same `fps`.
+- `plan_video_grid` gives one canvas for all frames from `smart_resize` with
+  the frame count; each frame is stretched to it with torchvision v1's float
+  bicubic (`Resample::AtenF32Bicubic`), normalized, and patchified two frames
+  per temporal group into `pixel_values_videos` and `video_grid_thw`. It
+  refuses a clip when HF's video processor, which SGLang runs on the resized
+  frames, plans a different canvas from them.
+  `process_items` gives each of a request's videos `max_image_tokens / count`;
+  `process_item` refuses a video, because its size depends on the request.
+  A cache of processed video items must therefore key on that count too.
+  SGLang's per-request `fps`, `max_frames`, `max_tokens_per_frame` and
+  `max_image_tokens` are not inputs here: the spec values apply, so a host
+  refuses a request that sets them.
+- `layout_with_text` replaces `<|video|>` with, per group,
+  `<|begin_of_image|>`, `<|image|>` × `grid_h * grid_w / merge²`,
+  `<|end_of_image|>` and the host-encoded `"{t:.1f} seconds"`, where `t` is
+  the time of the group's first frame. Video frames take the image token.
+- `positions_with_features` gives `get_rope_index_glm4v`'s positions. The
+  checkpoint's `config.json` has no `mrope_section`, so the model reads 1-D
+  positions for images and video alike.
+
+HF's `Glm5NextProcessor` letterboxes each frame (aspect kept, zero padding)
+with another resize kernel, so its pixels differ from SGLang's on every
+resized clip; it also keeps no frame of a clip shorter than
+0.5 s and gives every video the whole budget. Sampling, grids and ids agree
+otherwise. `tests/glm5_next_video_golden.rs` gates on SGLang and records the
+HF fields that differ per case; regenerate its fixtures with
+`tests/fixtures/glm5_next_video/generate.py <checkpoint dir>`.
 
 Regenerate/check the Python-derived fixtures with:
 
@@ -956,9 +1013,9 @@ What remains:
    `MmError::Unsupported`.
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
-3. **Family coverage** — GLM-5.3-Flash has image preprocessing and metadata-only planning
-   (§6), Kimi-K3 has image preprocessing (§7), and Mistral Large 4 has image
-   preprocessing (§9); GLM's video expansion is next after `models::qwen_vl`.
+3. **Family coverage** — GLM-5.3-Flash has image and video preprocessing and
+   metadata-only image planning (§6), Kimi-K3 has image preprocessing (§7),
+   and Mistral Large 4 has image preprocessing (§9).
 
 ### Video and audio: planned layout
 
@@ -989,8 +1046,8 @@ src/
   image/                 as today
   video.rs               as today: request options, frame count, pixel budgets
   video/
-    sample.rs            further sampling policies (Qwen smart_nframes, GLM fps
-                         windows) — pure index/timestamp math, no decoders
+    sample.rs            sampling policies (GLM fps windows today, Qwen
+                         smart_nframes next) — pure index math, no decoders
   audio/                 (feature `audio`)
     decode.rs            implemented: bounded source-rate PCM decode (symphonia)
     waveform.rs          implemented: mono/rate/length policy and planning

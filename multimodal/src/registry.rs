@@ -9,7 +9,7 @@
 use crate::models::deepseek_v41::{DeepseekV41GeometrySpec, DeepseekV41Processor, DeepseekV41Spec};
 use crate::models::glm5_next::{
     Glm5NextGeometrySpec, Glm5NextImageProcessor, Glm5NextImageSpec, Glm5NextProcessor,
-    Glm5NextSpec,
+    Glm5NextSpec, Glm5NextVideoSpec,
 };
 use crate::models::kimi_k3::{KimiK3Processor, KimiK3Spec};
 use crate::models::nemotron_vl::{
@@ -36,9 +36,10 @@ pub enum ProcessorSpec {
     /// Metadata-only image accounting and layout; pixel processing is unsupported.
     DeepseekV41(DeepseekV41Spec),
     /// Metadata-only GLM-5.3-Flash image accounting and layout; pixel
-    /// processing and video are unsupported.
+    /// processing and video layout are unsupported.
     Glm5Next(Glm5NextSpec),
-    /// Full GLM image pipeline, selected by `glm5_next` specs with pixel knobs.
+    /// Full GLM image and video pipeline, selected by `glm5_next` specs with
+    /// pixel knobs; [`glm5_next_pixel_spec`] resolves it from a checkpoint.
     Glm5NextImage(Glm5NextImageSpec),
     /// Kimi-K3 and K3.1 images. The prompt expansion and its length need
     /// `size_tokens`, which the consumer fills from the model's tokenizer.
@@ -259,6 +260,62 @@ const GLM5_NEXT_INERT: &[&str] = &[
     "processor_class",
 ];
 
+/// Knobs that shape pixel values: the pixel pipeline honors only these values.
+/// HF reads a null stage flag as off and refuses a null factor or resample;
+/// only `do_convert_rgb` may be null, a no-op on the host's RGB frames.
+const GLM5_NEXT_PIXEL_PINNED: &[(&str, Predicate)] = &[
+    ("do_rescale", |v| v.as_bool() == Some(true)),
+    ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
+    ("do_normalize", |v| v.as_bool() == Some(true)),
+    ("do_convert_rgb", |v| {
+        v.is_null() || v.as_bool() == Some(true)
+    }),
+    // PIL's BICUBIC, the class default.
+    ("resample", |v| v.as_u64() == Some(3)),
+];
+
+/// `Glm5NextVideoProcessor` knobs with one honored value. SGLang samples
+/// frames itself, so HF's `max_duration` cap must stay off.
+const GLM5_NEXT_VIDEO_PINNED: &[(&str, Predicate)] = &[
+    ("video_processor_type", |v| {
+        v.as_str() == Some("Glm5NextVideoProcessor")
+    }),
+    ("max_duration", |v| v.is_null() || v.as_f64() == Some(0.0)),
+];
+
+/// Video knobs SGLang's GLM processor never reads: it samples frames itself,
+/// and `max_image_size` is a sentinel.
+const GLM5_NEXT_VIDEO_INERT: &[&str] = &[
+    "do_sample_frames",
+    "num_frames",
+    "max_image_size",
+    "return_metadata",
+];
+
+/// The resampler of each GLM-5.3-Flash image processor; the two share
+/// `smart_resize`.
+fn glm5_next_resampler(processor_type: &Value) -> Option<Resampler> {
+    match processor_type.as_str()? {
+        "Glm5NextImageProcessor" => Some(Resampler::AtenU8),
+        "Glm5NextImageProcessorPil" => Some(Resampler::Pil),
+        _ => None,
+    }
+}
+
+fn glm5_next_mean_std(knobs: &serde_json::Map<String, Value>) -> Result<([f32; 3], [f32; 3])> {
+    let read = |name: &str| {
+        serde_json::from_value::<[f32; 3]>(knobs.get(name).cloned().unwrap_or(Value::Null)).map_err(
+            |error| {
+                MmError::invalid_input_with_source(
+                    format!("glm5_next needs a 3-value {name}"),
+                    error,
+                )
+            },
+        )
+    };
+    Ok((read("image_mean")?, read("image_std")?))
+}
+
 fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
     let top = pre
         .as_object()
@@ -349,11 +406,162 @@ fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
     };
     let image_token_id = token_id("image_token_id")?
         .ok_or_else(|| MmError::invalid_input("config.json is missing image_token_id"))?;
-    Ok(Glm5NextSpec {
+    let mut spec = Glm5NextSpec {
         image_token_id,
         video_token_id: token_id("video_token_id")?,
         geometry,
-    })
+        video: None,
+    };
+    // A video setting never fails a resolve: an unhonored block leaves video off.
+    spec.video = (top.get("video_processor"))
+        .and_then(|video| resolve_glm5_next_video(&spec, video, config).ok());
+    Ok(spec)
+}
+
+/// The `video_processor` block of `processor_config.json` as `planner`'s video
+/// part, checked as the processor built from both would check it.
+fn resolve_glm5_next_video(
+    planner: &Glm5NextSpec,
+    video: &Value,
+    config: &Value,
+) -> Result<Glm5NextVideoSpec> {
+    let knobs = video.as_object().ok_or_else(|| {
+        MmError::invalid_input("processor_config video_processor is not an object")
+    })?;
+    for (knob, value) in knobs {
+        let knob = knob.as_str();
+        if GLM5_NEXT_GEOMETRY.contains(&knob)
+            || ["image_mean", "image_std", "fps", "max_frames"].contains(&knob)
+        {
+            continue;
+        }
+        let pinned = (GLM5_NEXT_VIDEO_PINNED.iter())
+            .chain(GLM5_NEXT_PIXEL_PINNED)
+            .chain(GLM5_NEXT_PINNED)
+            .find(|(name, _)| *name == knob);
+        match pinned {
+            Some((_, honored)) if honored(value) => {}
+            Some(_) => {
+                return Err(MmError::unsupported(format!(
+                    "glm5_next video knob {knob} = {value} cannot be honored"
+                )));
+            }
+            None if value.is_null()
+                || GLM5_NEXT_INERT.contains(&knob)
+                || GLM5_NEXT_VIDEO_INERT.contains(&knob) => {}
+            None => {
+                return Err(MmError::unsupported(format!(
+                    "unrecognized glm5_next video knob {knob}"
+                )));
+            }
+        }
+    }
+    let geometry: Glm5NextGeometrySpec =
+        serde_json::from_value(video.clone()).map_err(|error| {
+            MmError::invalid_input_with_source("invalid glm5_next video processor geometry", error)
+        })?;
+    let (image_mean, image_std) = glm5_next_mean_std(knobs)?;
+    let token_id = |field: &str| {
+        (config.get(field).and_then(Value::as_i64))
+            .and_then(|id| i32::try_from(id).ok())
+            .ok_or_else(|| MmError::invalid_input(format!("config.json needs an i32 {field}")))
+    };
+    // GLM-5.3-Flash's block omits `max_frames`, so the class value applies, as
+    // SGLang reads it from the processor.
+    let max_frames = match knobs.get("max_frames") {
+        None | Some(Value::Null) => 2048,
+        Some(value) => (value.as_u64())
+            .and_then(|n| u32::try_from(n).ok())
+            .ok_or_else(|| MmError::invalid_input("glm5_next video max_frames must be a u32"))?,
+    };
+    let spec = Glm5NextVideoSpec {
+        image_start_token_id: token_id("image_start_token_id")?,
+        image_end_token_id: token_id("image_end_token_id")?,
+        fps: (knobs.get("fps").and_then(Value::as_f64))
+            .ok_or_else(|| MmError::invalid_input("glm5_next video processor needs an fps"))?,
+        max_frames,
+        geometry,
+        image_mean,
+        image_std,
+    };
+    for (knob, field, value) in [
+        ("patch_size", "patch_size", spec.geometry.patch_size),
+        ("merge_size", "spatial_merge_size", spec.geometry.merge_size),
+        (
+            "temporal_patch_size",
+            "temporal_patch_size",
+            spec.geometry.temporal_patch_size,
+        ),
+    ] {
+        if let Some(declared) = config["vision_config"].get(field).and_then(Value::as_u64)
+            && declared != u64::from(value)
+        {
+            return Err(MmError::invalid_input(format!(
+                "glm5_next: video {knob} = {value} disagrees with vision_config.{field} = {declared}"
+            )));
+        }
+    }
+    Glm5NextImageProcessor::new(Glm5NextImageSpec {
+        planner: Glm5NextSpec {
+            video: Some(spec.clone()),
+            ..planner.clone()
+        },
+        image_mean,
+        image_std,
+        resample: Resampler::AtenU8,
+    })?;
+    Ok(spec)
+}
+
+/// The pixel spec, images and video, of a `glm5_next` checkpoint: the planner
+/// [`spec_from_hf_configs`] resolves from the same files, plus the image
+/// processor's normalization and resampler. Stricter than the planner: knobs
+/// that shape pixel values must keep the values the pipeline mirrors,
+/// `image_mean` and `image_std` are required, and a `video_processor` block
+/// the pipeline cannot honor is an `Err` rather than video left off.
+pub fn glm5_next_pixel_spec(
+    config_json: &str,
+    processor_config_json: &str,
+) -> Result<Glm5NextImageSpec> {
+    let ProcessorSpec::Glm5Next(planner) =
+        spec_from_hf_configs(config_json, processor_config_json)?
+    else {
+        return Err(MmError::unsupported(
+            "glm5_next_pixel_spec needs a glm5_next checkpoint",
+        ));
+    };
+    let parse = |json: &str| {
+        serde_json::from_str::<Value>(json)
+            .map_err(|error| MmError::invalid_input_with_source("invalid config JSON", error))
+    };
+    let (config, pre) = (parse(config_json)?, parse(processor_config_json)?);
+    let knobs = (pre.get("image_processor").unwrap_or(&pre).as_object())
+        .ok_or_else(|| MmError::invalid_input("processor config is not an object"))?;
+    for (knob, honored) in GLM5_NEXT_PIXEL_PINNED {
+        if let Some(value) = knobs.get(*knob)
+            && !honored(value)
+        {
+            return Err(MmError::unsupported(format!(
+                "glm5_next pixel knob {knob} = {value} cannot be honored"
+            )));
+        }
+    }
+    if let Some(video) = pre.get("video_processor").filter(|video| !video.is_null())
+        && planner.video.is_none()
+    {
+        resolve_glm5_next_video(&planner, video, &config)?;
+    }
+    let (image_mean, image_std) = glm5_next_mean_std(knobs)?;
+    let spec = Glm5NextImageSpec {
+        planner,
+        image_mean,
+        image_std,
+        resample: (knobs.get("image_processor_type"))
+            .and_then(glm5_next_resampler)
+            .unwrap_or(Resampler::AtenU8),
+    };
+    Glm5NextImageProcessor::new(spec.clone())?;
+    Ok(spec)
 }
 
 /// `media_proc_cfg` knobs [`KimiK3Spec`] reads. The spec refuses the values
