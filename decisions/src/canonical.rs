@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ChoiceValue, DecisionError};
+use crate::{ChoiceValue, DecisionError, Dialect};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
@@ -9,12 +9,6 @@ use serde_json::{Map, Value};
 pub enum Route {
     Decisions,
     SystemOne,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Dialect {
-    OpenAi,
-    Jev,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
