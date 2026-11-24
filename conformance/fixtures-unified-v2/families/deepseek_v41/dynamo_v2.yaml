@@ -1,15 +1,15 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"347dd0455c39d8754f389adc8a645a4a5d7d442ecedb6e3026515269ebeb9569","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"deepseek_v41","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"7c063c50e3f598d023b0edf3ad9f79370e1de36657ba061514b3a2b4f76c32aa","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_aa19258e42a2ea9d
+  origin: origin_423b0bcc49cad973
 origins:
-  origin_aa19258e42a2ea9d:
+  origin_423b0bcc49cad973:
     crate_version: 0.10.12
     source_sha256: abde4cd4bcc77371721e0ad86a987c0bd85f7ae903049098e9cb76b89ea20a0f
-    git_commit: 0633630fe8533a8288e47d488b785770f0893892
+    git_commit: 929f271ba0c24f58f75be38a54430478b6c1996d
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
