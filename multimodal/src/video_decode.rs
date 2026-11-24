@@ -27,10 +27,11 @@
 //! Decoding runs in NVIDIA's driver when it can: `libcuda.so.1` and
 //! `libnvcuvid.so.1` are loaded at runtime (see `nvdec`) and GPU 0 is used.
 //! When NVDEC cannot decode a VP8 or VP9 stream (no driver, a GPU without the
-//! codec, or VP8, which NVDEC is not used for), it is decoded on the calling
-//! thread by libvpx, also loaded at runtime (see `vpx`). Nothing is linked at
-//! build time and no decoder ships in this crate. Without a decoder for the
-//! stream, decoding returns [`MmError::Unsupported`].
+//! codec, or VP8, which NVDEC is not used for), it is decoded by libvpx, also
+//! loaded at runtime (see `vpx`): on the calling thread, or with the crate's
+//! pool armed (`execution::init_pool`), one key-frame segment per pool thread.
+//! Nothing is linked at build time and no decoder ships in this crate. Without
+//! a decoder for the stream, decoding returns [`MmError::Unsupported`].
 //!
 //! 64-bit Linux only: the driver and libvpx structures are transcribed for
 //! the 64-bit (LP64) layout, and their layout checks fail the build on 32-bit
@@ -56,11 +57,14 @@
 //! decoded). Only the sampled frames are copied off the GPU and converted.
 //!
 //! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
-//! at a time, so only its index (sample tables) is held. WebM and Matroska
-//! packets are read into memory while the file is demuxed, so those hold the
-//! whole video next to the source. A VP8 or VP9 clip is also read once in full
-//! before decoding, to find which packets display a frame and what colour VP9
-//! declares.
+//! at a time, so only its index (sample tables) is held; a libvpx decode on
+//! an armed pool reads the packets of the segments in flight ahead, as many
+//! segments as fit the room `max_output_bytes` leaves. When fewer than two
+//! segments fit, it decodes one packet at a time. WebM
+//! and Matroska packets are read into memory while the file is demuxed, so
+//! those hold the whole video next to the source. A VP8 or VP9 clip is also
+//! read once in full before decoding, to find which packets display a frame
+//! and what colour VP9 declares.
 
 // Decoding is Linux-only; elsewhere the decode path is compiled out.
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
@@ -651,6 +655,7 @@ fn decode_demuxed(
         rgb: Vec::new(),
         full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
+        room,
         batch: pool_batch(execution::threads(), room, info.width, info.height),
         sent: Vec::new(),
         appended: 0,
@@ -732,6 +737,9 @@ struct Sampler<'t> {
     /// One frame at the source size, when frames are resized.
     full: Vec<u8>,
     timestamps: Vec<f64>,
+    /// Bytes the output limit leaves for frames held between decode and
+    /// `rgb`.
+    room: usize,
     /// Kept frames converted on the CPU pool at a time, while decoding goes
     /// on; 1 converts each frame on the caller as it arrives. It is 1 on a
     /// pool thread, so a caller never waits on the pool from inside it.
@@ -779,12 +787,7 @@ impl Sampler<'_> {
         if !self.wants(index) {
             return Ok(());
         }
-        let mut copies = 0;
-        while self.targets.get(self.next) == Some(&index) {
-            self.timestamps.push(pts);
-            self.next += 1;
-            copies += 1;
-        }
+        let copies = self.take(pts, index);
         if self.batch == 1 {
             let start = self.rgb.len();
             convert_frame(
@@ -824,6 +827,26 @@ impl Sampler<'_> {
             }
         }
         Ok(())
+    }
+
+    /// Take shown frame `index`, already converted to `rgb`, if it is the
+    /// next sampled one.
+    fn push_rgb(&mut self, rgb: &[u8], pts: f64, index: u64) {
+        for _ in 0..self.take(pts, index) {
+            self.rgb.extend_from_slice(rgb);
+        }
+    }
+
+    /// The times shown frame `index` is sampled from here on, with their
+    /// timestamps recorded: 0 when it is not the next sampled one.
+    fn take(&mut self, pts: f64, index: u64) -> usize {
+        let mut copies = 0;
+        while self.targets.get(self.next) == Some(&index) {
+            self.timestamps.push(pts);
+            self.next += 1;
+            copies += 1;
+        }
+        copies
     }
 
     fn flush(&mut self) {
@@ -2201,6 +2224,7 @@ mod tests {
             rgb: Vec::new(),
             full: Vec::new(),
             timestamps: Vec::new(),
+            room: 0,
             batch,
             sent: Vec::new(),
             appended: 0,
@@ -3395,6 +3419,7 @@ mod tests {
                         rgb: Vec::new(),
                         full: Vec::new(),
                         timestamps: Vec::new(),
+                        room: 0,
                         batch: 1,
                         sent: Vec::new(),
                         appended: 0,
@@ -3616,6 +3641,111 @@ mod tests {
                     seek::DISABLED.set(false);
                 }
             }
+        }
+
+        /// [`vpx::decode`] split at every key frame, one decoder per part. The
+        /// parts run inline: the pool is armed only in `tests/armed_pool.rs`.
+        fn vpx_in_parts(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()> {
+            let colour = match track.codec {
+                VideoCodec::Vp9 => track.vp9_colour.get()?.unwrap_or((Matrix::Bt601, false)),
+                _ => (Matrix::Bt601, false),
+            };
+            let order = seek::Order::new(track);
+            let runs = seek::plan(track, &order, sampler.targets)?;
+            let parts = seek::split_at_keys(track, &runs);
+            vpx::decode_parts(track, sampler, &order, &parts, colour)
+        }
+
+        #[test]
+        fn cpu_frames_are_the_same_decoded_in_parts() {
+            let limits = VideoDecodeLimits::default();
+            for name in [
+                "gop_vp8.webm",
+                "gop_vp9.webm",
+                "gop_vp9.mp4",
+                "vp9_altref.webm",
+                "vp9_invisible.webm",
+            ] {
+                let bytes = fixture(name);
+                let track = demux(&bytes).unwrap();
+                let whole = [seek::Run {
+                    start: 0,
+                    end: track.packets.len(),
+                    parameter_sets: Vec::new(),
+                }];
+                let parts = seek::split_at_keys(&track, &whole);
+                assert!(
+                    !name.starts_with("gop_") || parts.len() > 1,
+                    "{name}: {parts:?}"
+                );
+                let n = track.info().frame_count;
+                for set in [
+                    (0..n).collect(),
+                    sample_indices(n, 4).unwrap(),
+                    vec![0, n - 1],
+                    vec![n / 2, n / 2, n - 1],
+                ] {
+                    let decode = |backend: Backend| {
+                        decode_frames_with(&bytes.as_slice(), &set, None, &limits, backend)
+                            .unwrap_or_else(|e| panic!("{name} {set:?}: {e}"))
+                    };
+                    let (serial, in_parts) = (decode(vpx::decode), decode(vpx_in_parts));
+                    for k in 0..set.len() {
+                        assert!(
+                            in_parts.frame(k) == serial.frame(k),
+                            "{name}: frame {k} of {set:?} differs"
+                        );
+                    }
+                    assert_eq!(in_parts.timestamps(), serial.timestamps(), "{name} {set:?}");
+                }
+            }
+        }
+
+        /// Parts decode the packets the serial decode does: every packet of a
+        /// run up to the last sampled frame, and none after it.
+        #[test]
+        fn parts_decode_the_packets_the_serial_decode_does() {
+            let original = fixture("gop_vp8.webm");
+            let track = demux(&original).unwrap();
+            let at = |index: usize| {
+                let Payload::Owned(data) = &track.packets[index].payload else {
+                    unreachable!("Matroska packets are read")
+                };
+                original
+                    .windows(data.len())
+                    .position(|w| w == &data[..])
+                    .unwrap()
+            };
+            let last_key = track.packets.iter().rposition(|p| p.sync).unwrap();
+            let decode = |bytes: &[u8], indices: &[u64], seek: bool, backend: Backend| {
+                seek::DISABLED.set(!seek);
+                let frames = decode_frames_with(
+                    &bytes,
+                    indices,
+                    None,
+                    &VideoDecodeLimits::default(),
+                    backend,
+                );
+                seek::DISABLED.set(false);
+                frames
+            };
+            // The last key frame declares one more column than the container:
+            // past the last sampled frame, so neither decode reads it.
+            let mut wide = original.clone();
+            wide[at(last_key) + 6] += 1;
+            let serial = decode(&wide, &[1], false, vpx::decode).unwrap();
+            let in_parts = decode(&wide, &[1], false, vpx_in_parts).unwrap();
+            assert!(in_parts.frame(0) == serial.frame(0));
+            // Packet 1 claims to be a key frame and has no key frame header:
+            // inside the run to frame 8, so both decodes fail on it.
+            let mut broken = original.clone();
+            broken[at(1)] &= !1;
+            let serial = decode(&broken, &[0, 8], true, vpx::decode).map(drop);
+            let in_parts = decode(&broken, &[0, 8], true, vpx_in_parts).map(drop);
+            assert_eq!(
+                in_parts.unwrap_err().to_string(),
+                serial.unwrap_err().to_string()
+            );
         }
 
         #[test]
