@@ -512,23 +512,14 @@ pub(crate) fn resolve_thinking_mode(
     args: Option<&std::collections::HashMap<String, serde_json::Value>>,
     default_mode: ThinkingMode,
 ) -> ThinkingMode {
-    if let Some(enabled) = crate::thinking_bool_from_args(args) {
-        return if enabled {
-            ThinkingMode::Thinking
-        } else {
-            ThinkingMode::Chat
-        };
+    if crate::thinking::template_mode_reasoning_enabled(
+        args,
+        default_mode == ThinkingMode::Thinking,
+    ) {
+        ThinkingMode::Thinking
+    } else {
+        ThinkingMode::Chat
     }
-    if let Some(args) = args
-        && let Some(mode) = args.get("thinking_mode").and_then(|v| v.as_str())
-    {
-        match mode {
-            "chat" => return ThinkingMode::Chat,
-            "thinking" => return ThinkingMode::Thinking,
-            _ => {}
-        }
-    }
-    default_mode
 }
 
 pub(crate) fn inject_tools_and_response_format(

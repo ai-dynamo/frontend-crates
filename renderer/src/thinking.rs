@@ -4,6 +4,81 @@
 //! Request policy shared by template preparation and parser gating.
 use std::collections::HashMap;
 
+type TemplateArgs = HashMap<String, serde_json::Value>;
+
+#[derive(Clone, Copy)]
+enum ReasoningMode {
+    Fixed(bool),
+    BooleanDefault(bool),
+    TemplateModeDefault(bool),
+    Effort,
+    Adaptive,
+}
+
+impl ReasoningMode {
+    fn enabled(self, args: Option<&TemplateArgs>) -> bool {
+        let value = |key| {
+            args.and_then(|args| args.get(key))
+                .and_then(|value| value.as_str())
+        };
+        match self {
+            Self::Fixed(enabled) => enabled,
+            Self::BooleanDefault(default) => {
+                crate::thinking_bool_from_args(args).unwrap_or(default)
+            }
+            Self::TemplateModeDefault(default) => template_mode_reasoning_enabled(args, default),
+            Self::Effort => value("reasoning_effort").is_some_and(|effort| effort != "none"),
+            Self::Adaptive => value("thinking_mode") != Some("disabled"),
+        }
+    }
+}
+
+/// Evaluate thinking aliases and the template's chat/thinking mode in priority order.
+pub fn template_mode_reasoning_enabled(args: Option<&TemplateArgs>, default: bool) -> bool {
+    crate::thinking_bool_from_args(args).unwrap_or_else(|| {
+        match args
+            .and_then(|args| args.get("thinking_mode"))
+            .and_then(serde_json::Value::as_str)
+        {
+            Some("chat") => false,
+            Some("thinking") => true,
+            _ => default,
+        }
+    })
+}
+
+fn reasoning_modes(selector: Option<&str>) -> (ReasoningMode, ReasoningMode) {
+    use ReasoningMode::{Adaptive, BooleanDefault, Effort, Fixed, TemplateModeDefault};
+    let common = match selector {
+        Some(
+            "kimi_k25" | "kimi_k3" | "kimi-k3" | "nemotron_nano" | "nemotron3" | "nemotron_v3",
+        ) => BooleanDefault(true),
+        Some("deepseek_v3" | "deepseek_v3_1") => TemplateModeDefault(false),
+        Some(
+            "deepseek_v3_2" | "deepseek_v4" | "deepseek-v4" | "deepseekv4" | "deepseek_v41"
+            | "minimax_m2",
+        ) => TemplateModeDefault(true),
+        Some("gemma4" | "gemma-4") => BooleanDefault(false),
+        Some("mistral") => Effort,
+        Some("minimax_m3" | "minimax-m3") => Adaptive,
+        Some("qwen3" | "glm45") => return (Fixed(true), BooleanDefault(true)),
+        Some("deepseek_r1") => return (TemplateModeDefault(true), Fixed(true)),
+        Some("muse_spark_open" | "muse_spark" | "step3" | "gpt_oss" | "kimi") => Fixed(true),
+        _ => return (Fixed(true), Fixed(false)),
+    };
+    (common, common)
+}
+
+/// Whether the request disables the legacy reasoning parser.
+pub fn legacy_reasoning_disabled(selector: Option<&str>, args: Option<&TemplateArgs>) -> bool {
+    !reasoning_modes(selector).0.enabled(args)
+}
+
+/// Whether the SGLang renderer contract permits reasoning before computing native guidance.
+pub fn sglang_reasoning_enabled(selector: Option<&str>, args: Option<&TemplateArgs>) -> bool {
+    reasoning_modes(selector).1.enabled(args)
+}
+
 /// Model rules applied before rendering; independent of parser generation.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ThinkingPolicy {

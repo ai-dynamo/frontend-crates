@@ -6792,7 +6792,7 @@ macro_rules! unified_registry {
             }
         }
 
-        fn builtin_unified_registrations() -> &'static [UnifiedParserRegistration] {
+        pub(crate) fn builtin_unified_registrations() -> &'static [UnifiedParserRegistration] {
             static ENTRIES: std::sync::LazyLock<Vec<UnifiedParserRegistration>> = std::sync::LazyLock::new(|| vec![$(UnifiedParserRegistration {
                 descriptor: UnifiedParserDescriptor::builtin($family, &[$($alias),*], $configure),
                 factory: registration::Factory::Linked(|tools| Ok($ctor(tools))),

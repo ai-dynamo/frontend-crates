@@ -25,14 +25,16 @@ type ParserFactory = fn(&[Tool]) -> anyhow::Result<Box<dyn ToolParser>>;
 struct FamilySpec {
     name: &'static str,
     parser_factory: ParserFactory,
+    standalone_batch: bool,
 }
 
 macro_rules! family_registry {
-    ($($name:literal => $parser:path),+ $(,)?) => {
+    ($($name:literal => ($parser:path, $standalone_batch:literal)),+ $(,)?) => {
         const FAMILY_SPECS: &[FamilySpec] = &[
             $(FamilySpec {
                 name: $name,
                 parser_factory: $parser,
+                standalone_batch: $standalone_batch,
             }),+
         ];
 
@@ -42,18 +44,24 @@ macro_rules! family_registry {
 }
 
 family_registry! {
-    "harmony" => HarmonyToolStreamParser::create,
-    "harmony_text" => HarmonyToolStreamParser::create,
-    "deepseek_v4" => DeepSeekV4ToolStreamParser::create,
-    "qwen3_coder" => Qwen3CoderToolStreamParser::create,
-    "muse_glimmer" => MuseGlimmerToolStreamParser::create,
-    "muse_spark" => MuseSparkToolStreamParser::create,
-    "minimax_m2" => MiniMaxM2ToolStreamParser::create,
-    "minimax_m3" => MiniMaxM3ToolStreamParser::create,
-    "gemma4" => Gemma4ToolStreamParser::create,
-    "glm47" => Glm47ToolStreamParser::create,
-    "kimi_k2" => KimiK2ToolStreamParser::create,
-    "kimi_k3" => KimiK3ToolStreamParser::create,
+    "harmony" => (HarmonyToolStreamParser::create, false),
+    "harmony_text" => (HarmonyToolStreamParser::create, false),
+    "deepseek_v4" => (DeepSeekV4ToolStreamParser::create, true),
+    "qwen3_coder" => (Qwen3CoderToolStreamParser::create, true),
+    "muse_glimmer" => (MuseGlimmerToolStreamParser::create, false),
+    "muse_spark" => (MuseSparkToolStreamParser::create, false),
+    "minimax_m2" => (MiniMaxM2ToolStreamParser::create, false),
+    "minimax_m3" => (MiniMaxM3ToolStreamParser::create, false),
+    "gemma4" => (Gemma4ToolStreamParser::create, false),
+    "glm47" => (Glm47ToolStreamParser::create, false),
+    "kimi_k2" => (KimiK2ToolStreamParser::create, false),
+    "kimi_k3" => (KimiK3ToolStreamParser::create, false),
+}
+
+/// Resolve a selector qualified for standalone tool-only batch parsing.
+pub fn standalone_batch_tool_family(selector: &str) -> Option<&'static str> {
+    let spec = family_spec(selector)?;
+    spec.standalone_batch.then_some(spec.name)
 }
 
 fn family_spec(family: &str) -> Option<&'static FamilySpec> {
@@ -63,7 +71,17 @@ fn family_spec(family: &str) -> Option<&'static FamilySpec> {
     } else {
         family
     };
-    FAMILY_SPECS.iter().find(|spec| spec.name == family)
+    FAMILY_SPECS
+        .iter()
+        .find(|spec| spec.name == family)
+        .or_else(|| {
+            let entry = crate::unified::builtin_unified_registrations()
+                .iter()
+                .find(|entry| entry.descriptor.accepts(family))?;
+            FAMILY_SPECS
+                .iter()
+                .find(|spec| spec.standalone_batch && spec.name == entry.descriptor.family)
+        })
 }
 
 /// Create the Dynamo v2 tool parser for a registered model family.
@@ -104,6 +122,21 @@ mod tests {
     use crate::structural_tag::{
         StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,
     };
+
+    #[test]
+    fn standalone_batch_uses_tool_only_names_and_qualified_aliases() {
+        for selector in ["deepseek_v4", "deepseek-v4", "deepseekv4"] {
+            assert_eq!(standalone_batch_tool_family(selector), Some("deepseek_v4"));
+            assert!(create_tool_parser_for_family(selector, &[]).is_ok());
+        }
+        assert_eq!(
+            standalone_batch_tool_family("qwen3_coder"),
+            Some("qwen3_coder")
+        );
+        for selector in ["qwen3", "glm47", "muse_spark_open", "unknown"] {
+            assert_eq!(standalone_batch_tool_family(selector), None);
+        }
+    }
 
     #[test]
     fn registered_families_all_create() {

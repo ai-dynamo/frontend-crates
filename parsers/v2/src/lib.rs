@@ -25,7 +25,8 @@ pub use tool_calling::muse_spark::MuseSparkToolStreamParser;
 pub use tool_calling::qwen3_coder::Qwen3CoderToolStreamParser;
 pub use tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser, ToolParserInput};
 pub use tool_calling::{
-    REGISTERED_FAMILIES, create_tool_parser_for_family, structural_tag_builder_for_family,
+    REGISTERED_FAMILIES, create_tool_parser_for_family, standalone_batch_tool_family,
+    structural_tag_builder_for_family,
 };
 // Vendored batch-extraction types that surface in the public streaming API
 // (e.g. `ToolStreamResult::tool_call_chunks`). v2 owns these now — see
