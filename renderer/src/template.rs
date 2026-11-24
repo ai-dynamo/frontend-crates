@@ -229,6 +229,7 @@ enum DeveloperFallback {
 struct SystemNormalization {
     /// How to retain instructions the selected template omits or rejects.
     fallback_developer: DeveloperFallback,
+    fallback_developer_in_history: DeveloperFallback,
     /// Template raises on a `system` turn that is not first.
     demote_nonleading_system: bool,
     /// Template raises on two adjacent `user` turns.
@@ -238,6 +239,10 @@ struct SystemNormalization {
 impl SystemNormalization {
     fn is_required(&self) -> bool {
         !matches!(self.fallback_developer, DeveloperFallback::Preserve)
+            || !matches!(
+                self.fallback_developer_in_history,
+                DeveloperFallback::Preserve
+            )
             || self.demote_nonleading_system
             || self.coalesce_consecutive_users
     }

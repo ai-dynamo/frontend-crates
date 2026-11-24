@@ -116,6 +116,7 @@ fn detect_system_normalization(
     );
     SystemNormalization {
         fallback_developer: DeveloperFallback::Preserve,
+        fallback_developer_in_history: DeveloperFallback::Preserve,
         demote_nonleading_system: nonleading_system || mid_after_assistant,
         coalesce_consecutive_users: consecutive_users,
     }
@@ -129,11 +130,13 @@ fn detect_developer_fallback(
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
     requires_content_arrays: bool,
+    native_text_array_roles: &[&str],
+    in_history: bool,
 ) -> DeveloperFallback {
     // Digits survive common case and escaping filters.
     const PROBE: &str = "57296048310762";
     let message = |role: &str, text: &str| {
-        let content = if requires_content_arrays {
+        let content = if requires_content_arrays || native_text_array_roles.contains(&role) {
             json!([{"type": "text", "text": text}])
         } else {
             json!(text)
@@ -145,10 +148,17 @@ fn detect_developer_fallback(
     else {
         return DeveloperFallback::Preserve;
     };
-    match render(json!([
-        message("developer", PROBE),
-        message("user", "user")
-    ])) {
+    let developer_messages = if in_history {
+        json!([
+            message("user", "first"),
+            message("assistant", "reply"),
+            message("developer", PROBE),
+            message("user", "second")
+        ])
+    } else {
+        json!([message("developer", PROBE), message("user", "user")])
+    };
+    match render(developer_messages) {
         Some(Err(_)) => DeveloperFallback::Consolidate,
         Some(Ok(developer)) if system.contains(PROBE) && !developer.contains(PROBE) => {
             // Keep the original position when the template actually renders a late system turn.
@@ -902,6 +912,20 @@ impl HfTokenizerConfigJsonFormatter {
                 &tool_use_probe_tools,
                 &probe_tokens,
             );
+        let default_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            default_template_handles_tool_calls_arguments_string,
+        );
+        let tool_use_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            tool_use_template_handles_tool_calls_arguments_string,
+        );
         let mut default_system_normalization =
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
         let mut tool_use_system_normalization =
@@ -912,6 +936,17 @@ impl HfTokenizerConfigJsonFormatter {
             &default_probe_tools,
             &probe_tokens,
             requires_content_arrays,
+            &default_native_text_array_roles,
+            false,
+        );
+        default_system_normalization.fallback_developer_in_history = detect_developer_fallback(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+            &default_native_text_array_roles,
+            true,
         );
         tool_use_system_normalization.fallback_developer = detect_developer_fallback(
             &env,
@@ -919,6 +954,17 @@ impl HfTokenizerConfigJsonFormatter {
             &tool_use_probe_tools,
             &probe_tokens,
             requires_content_arrays,
+            &tool_use_native_text_array_roles,
+            false,
+        );
+        tool_use_system_normalization.fallback_developer_in_history = detect_developer_fallback(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+            &tool_use_native_text_array_roles,
+            true,
         );
         let default_template_requires_reasoning_string = default_template_handles_reasoning
             && detect_reasoning_string_requirement(
@@ -936,20 +982,6 @@ impl HfTokenizerConfigJsonFormatter {
                 &probe_tokens,
                 tool_use_template_handles_tool_calls_arguments_string,
             );
-        let default_native_text_array_roles = detect_native_text_array_roles(
-            &env,
-            "default",
-            &default_probe_tools,
-            &probe_tokens,
-            default_template_handles_tool_calls_arguments_string,
-        );
-        let tool_use_native_text_array_roles = detect_native_text_array_roles(
-            &env,
-            "tool_use",
-            &tool_use_probe_tools,
-            &probe_tokens,
-            tool_use_template_handles_tool_calls_arguments_string,
-        );
 
         // Detect each variant once so rendering can safely fall back to flat tools.
         let handles_native_tools = |name| {

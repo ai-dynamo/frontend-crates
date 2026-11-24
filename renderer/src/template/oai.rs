@@ -712,20 +712,43 @@ fn take_message_content(message: &mut serde_json::Value) -> serde_json::Value {
 /// Apply the native-vLLM instruction fallback only in the render copy. Keep
 /// system/developer instructions together so a later shape rewrite cannot
 /// demote a converted instruction to `user`.
-fn normalize_developer_messages(messages: &mut serde_json::Value) -> Result<()> {
+fn normalize_developer_messages(
+    messages: &mut serde_json::Value,
+    rules: SystemNormalization,
+) -> Result<()> {
+    if matches!(rules.fallback_developer, DeveloperFallback::Preserve)
+        && matches!(
+            rules.fallback_developer_in_history,
+            DeveloperFallback::Preserve
+        )
+    {
+        return Ok(());
+    }
     let Some(list) = messages.as_array_mut() else {
         return Ok(());
     };
-    if !list.iter().any(|m| m["role"] == "developer") {
-        return Ok(());
-    }
-    for message in list.iter_mut() {
+    let preserve_leading_developer = list.first().is_some_and(|m| m["role"] == "developer")
+        && matches!(rules.fallback_developer, DeveloperFallback::Preserve);
+    let mut consolidate = false;
+    for (index, message) in list.iter_mut().enumerate() {
         if message["role"] == "developer" {
-            message["role"] = json!("system");
+            let fallback = if index == 0 {
+                rules.fallback_developer
+            } else {
+                rules.fallback_developer_in_history
+            };
+            match fallback {
+                DeveloperFallback::Preserve => {}
+                DeveloperFallback::RewriteInPlace => message["role"] = json!("system"),
+                DeveloperFallback::Consolidate => {
+                    message["role"] = json!("system");
+                    consolidate = true;
+                }
+            }
         }
     }
     // One leading instruction needs no consolidation or content reshaping.
-    if !list.iter().skip(1).any(|m| m["role"] == "system") {
+    if !consolidate || !list.iter().skip(1).any(|m| m["role"] == "system") {
         return Ok(());
     }
     let mut instructions = Vec::new();
@@ -760,10 +783,14 @@ fn normalize_developer_messages(messages: &mut serde_json::Value) -> Result<()> 
         }
     }
     if !instructions.is_empty() {
-        turns.insert(
-            0,
-            json!({"role": "system", "content": instructions.join("\n\n")}),
-        );
+        if preserve_leading_developer {
+            append_message_content(&mut turns[0], json!(instructions.join("\n\n")));
+        } else {
+            turns.insert(
+                0,
+                json!({"role": "system", "content": instructions.join("\n\n")}),
+            );
+        }
     }
     *list = turns;
     Ok(())
@@ -993,23 +1020,7 @@ impl HfTokenizerConfigJsonFormatter {
             }
         }
 
-        match system_normalization.fallback_developer {
-            DeveloperFallback::Preserve => {}
-            DeveloperFallback::RewriteInPlace => {
-                if let Some(messages) = messages_for_template.as_array_mut() {
-                    for message in messages {
-                        if message.get("role").and_then(serde_json::Value::as_str)
-                            == Some("developer")
-                        {
-                            message["role"] = json!("system");
-                        }
-                    }
-                }
-            }
-            DeveloperFallback::Consolidate => {
-                normalize_developer_messages(&mut messages_for_template)?;
-            }
-        }
+        normalize_developer_messages(&mut messages_for_template, system_normalization)?;
         let mut normalized_turns = if system_normalization.is_required() {
             normalize_system_messages(&mut messages_for_template, system_normalization)
         } else {
@@ -2699,6 +2710,61 @@ mod tests {
             render_shape_with_tools(&formatter, messages).unwrap(),
             "user[question]assistant[answer]developer[instruction]user[followup]"
         );
+
+        let first_only = "{% for m in messages %}{% if m.role != 'developer' or loop.first %}{{ m.role }}[{{ m.content }}]{% endif %}{% endfor %}";
+        let history_only = "{% for m in messages %}{% if m.role != 'developer' or not loop.first %}{{ m.role }}[{{ m.content }}]{% endif %}{% endfor %}";
+        for (default, tool_use, default_first_only) in [
+            (first_only, history_only, true),
+            (history_only, first_only, false),
+        ] {
+            let formatter = formatter_for_templates(default, tool_use);
+            let renders: [fn(&SysFormatter, serde_json::Value) -> Result<String>; 2] =
+                [render_shape, render_shape_with_tools];
+            for (render, first_only) in renders
+                .into_iter()
+                .zip([default_first_only, !default_first_only])
+            {
+                let (first_role, later_role) = if first_only {
+                    ("developer", "system")
+                } else {
+                    ("system", "developer")
+                };
+                assert_eq!(
+                    render(
+                        &formatter,
+                        json!([
+                            {"role": "developer", "content": "initial"},
+                            {"role": "user", "content": "question"},
+                            {"role": "assistant", "content": "answer"},
+                            {"role": "developer", "content": "instruction"},
+                            {"role": "user", "content": "followup"}
+                        ])
+                    )
+                    .unwrap(),
+                    format!(
+                        "{first_role}[initial]user[question]assistant[answer]{later_role}[instruction]user[followup]"
+                    )
+                );
+            }
+        }
+
+        let leading_system_only = format!(
+            "{{% for m in messages %}}{{% if m.role == 'system' and not loop.first %}}{{{{ raise_exception('System must be first.') }}}}{{% endif %}}{{% endfor %}}{first_only}"
+        );
+        assert_eq!(
+            render_shape(
+                &formatter_for(&leading_system_only),
+                json!([
+                    {"role": "developer", "content": "initial"},
+                    {"role": "user", "content": "question"},
+                    {"role": "assistant", "content": "answer"},
+                    {"role": "developer", "content": "instruction"},
+                    {"role": "user", "content": "followup"}
+                ])
+            )
+            .unwrap(),
+            "developer[initial\n\ninstruction]user[question]assistant[answer]user[followup]"
+        );
     }
 
     #[test]
@@ -2847,6 +2913,7 @@ mod tests {
     fn all_restrictions() -> SystemNormalization {
         SystemNormalization {
             fallback_developer: DeveloperFallback::Preserve,
+            fallback_developer_in_history: DeveloperFallback::Preserve,
             demote_nonleading_system: true,
             coalesce_consecutive_users: true,
         }
@@ -3047,6 +3114,7 @@ mod tests {
             &mut demote_only,
             SystemNormalization {
                 fallback_developer: DeveloperFallback::Preserve,
+                fallback_developer_in_history: DeveloperFallback::Preserve,
                 demote_nonleading_system: true,
                 coalesce_consecutive_users: false,
             },
@@ -3065,6 +3133,7 @@ mod tests {
             &mut coalesce_only,
             SystemNormalization {
                 fallback_developer: DeveloperFallback::Preserve,
+                fallback_developer_in_history: DeveloperFallback::Preserve,
                 demote_nonleading_system: false,
                 coalesce_consecutive_users: true,
             },
