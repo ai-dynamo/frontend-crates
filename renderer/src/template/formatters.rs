@@ -1270,6 +1270,18 @@ mod tests {
         );
     }
 
+    /// tencent/Youtu-LLM-2B drops earlier reasoning with
+    /// `content.rsplit('</think>', 1)[-1]`; pycompat has no `rsplit`.
+    #[test]
+    fn test_rsplit_matches_python() {
+        let template = "[{{ s.rsplit('</think>', 1)[-1].lstrip('\\n') }}]\
+            [{{ s.rsplit('</think>') | length }}][{{ s.rsplit(none, 1) | join('|') }}]";
+        assert_eq!(
+            render_hf(template, context! { s => "a</think>b </think>\nanswer" }),
+            "[answer][3][a</think>b </think>|answer]"
+        );
+    }
+
     #[test]
     fn test_strip_preserves_string_safety() {
         for (method, expected) in [

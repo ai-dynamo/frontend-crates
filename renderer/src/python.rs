@@ -312,6 +312,38 @@ pub(crate) fn python_split_whitespace(s: &str, maxsplit: Option<usize>) -> Vec<&
     }
 }
 
+/// Python's `str.rsplit`: splits from the right, so after `maxsplit` splits the
+/// rest is the first word; with no separator, whitespace runs separate the words.
+pub(crate) fn python_rsplit<'a>(
+    s: &'a str,
+    sep: Option<&str>,
+    maxsplit: Option<usize>,
+) -> Vec<&'a str> {
+    let mut words: Vec<&str> = match (sep, maxsplit) {
+        (Some(sep), Some(n)) => s.rsplitn(n.saturating_add(1), sep).collect(),
+        (Some(sep), None) => s.rsplit(sep).collect(),
+        (None, _) => {
+            let mut words = Vec::new();
+            let mut rest = s.trim_end_matches(is_python_space);
+            while !rest.is_empty() {
+                if maxsplit == Some(words.len()) {
+                    words.push(rest);
+                    break;
+                }
+                let start = rest
+                    .char_indices()
+                    .rfind(|&(_, c)| is_python_space(c))
+                    .map_or(0, |(i, c)| i + c.len_utf8());
+                words.push(&rest[start..]);
+                rest = rest[..start].trim_end_matches(is_python_space);
+            }
+            words
+        }
+    };
+    words.reverse();
+    words
+}
+
 /// Python's `str.splitlines`: `\r\n` and each of `\n \r \v \f \x1c \x1d \x1e \x85
 /// U+2028 U+2029` end a line, kept with `keepends`.
 pub(crate) fn python_splitlines(s: &str, keepends: bool) -> Vec<&str> {
@@ -413,6 +445,34 @@ mod tests {
             (f64::NEG_INFINITY, "-inf"),
         ] {
             assert_eq!(python_float_repr(value), python, "{value:?}");
+        }
+    }
+
+    /// CPython 3.12 `str.rsplit` results for the same arguments.
+    #[test]
+    fn rsplit_matches_python() {
+        type Case = (
+            &'static str,
+            Option<&'static str>,
+            Option<usize>,
+            &'static [&'static str],
+        );
+        let cases: &[Case] = &[
+            ("a,b,c", Some(","), Some(1), &["a,b", "c"]),
+            ("a,b,c", Some(","), Some(0), &["a,b,c"]),
+            ("aaa", Some("aa"), None, &["a", ""]),
+            ("é,你,x", Some(","), Some(1), &["é,你", "x"]),
+            ("  a b  c  ", None, None, &["a", "b", "c"]),
+            ("  a b  c  ", None, Some(1), &["  a b", "c"]),
+            ("\u{1c} a \u{1f}", None, None, &["a"]),
+            ("  ", None, None, &[]),
+        ];
+        for &(s, sep, maxsplit, words) in cases {
+            assert_eq!(
+                python_rsplit(s, sep, maxsplit),
+                words,
+                "{s:?} {sep:?} {maxsplit:?}"
+            );
         }
     }
 
