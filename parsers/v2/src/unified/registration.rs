@@ -419,6 +419,12 @@ mod tests {
             for selector in std::iter::once(&descriptor.family).chain(&descriptor.aliases) {
                 let resolved = super::super::resolve_unified_parser(selector).unwrap();
                 assert_eq!(resolved.descriptor.family, descriptor.family);
+                assert_eq!(
+                    super::super::canonical_unified_family(selector),
+                    Some(descriptor.family.as_str()),
+                    "{selector}"
+                );
+                assert!(super::super::REGISTERED_UNIFIED_FAMILIES.contains(&selector.as_str()));
                 assert!(
                     super::super::resolve_unified_parser_pair(Some(selector), Some(selector))
                         .is_some()

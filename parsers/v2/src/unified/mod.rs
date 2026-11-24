@@ -6815,10 +6815,9 @@ macro_rules! unified_registry {
 }
 
 unified_registry! {
-    "deepseek_v4" => (deepseek_v4::deepseek_v4_unified, |d| {
+    "deepseek_v4" | "deepseek-v4" | "deepseekv4" => (deepseek_v4::deepseek_v4_unified, |d| {
         d.reasoning_control = registration::ReasoningControl::DeepSeek;
         d.native_tool_call_marker = Some("<｜DSML｜tool_calls>");
-        d.aliases.extend(["deepseek-v4", "deepseekv4"].map(str::to_owned));
         d.structural_tag_builder = Some(&crate::structural_tag::builders::DEEPSEEK_DSML);
     }),
     "deepseek_v41" => (deepseek_v41::deepseek_v41_unified, |d| {
@@ -6827,22 +6826,20 @@ unified_registry! {
         d.native_tool_call_marker = Some("<｜DSML｜ calls>");
         d.structural_tag_builder = Some(&crate::structural_tag::builders::DEEPSEEK_DSML_V41);
     }),
-    "gemma4" => (gemma4::gemma4_unified, |d| {
+    "gemma4" | "gemma-4" => (gemma4::gemma4_unified, |d| {
         d.reasoning_control = registration::ReasoningControl::OptInUnlessToolSelected;
         d.disabled_reasoning_starts_response = true;
         d.prompt_style = prefill::PromptStyle::PartialThought;
-        d.aliases.push("gemma-4".into());
         d.reasoning_markers = Some(("<|channel>", "<channel|>"));
         d.marker_free_batch_response = false;
         d.native_tool_call_marker = Some("<|tool_call>");
     }),
-    "glm47" => (glm47::glm47_unified, |d| {
+    "glm47" | "glm45" => (glm47::glm47_unified, |d| {
         d.unfinished_native_call_start = Some(glm47::unfinished_native_call_start);
         d.native_grammar = NativeGrammar::GlmXml;
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.prompt_closure = prefill::PromptClosure::ClosedWhenPresent;
         d.native_tool_call_marker = Some("<tool_call>");
-        d.aliases.push("glm45".into());
         d.structural_tag_builder = Some(&crate::structural_tag::builders::GLM47);
     }),
     "hermes" => (hermes::hermes_unified, |_| {}),
@@ -6873,7 +6870,7 @@ unified_registry! {
         d.native_call_owns_following_markers = true;
         d.structural_tag_builder = Some(&crate::structural_tag::builders::MINIMAX_M3);
     }),
-    "muse_glimmer" => (muse_glimmer::muse_glimmer_unified, |d| {
+    "muse_glimmer" | "muse" => (muse_glimmer::muse_glimmer_unified, |d| {
         d.legacy_backend_completion = true;
         d.prompt_style = prefill::PromptStyle::RecipientChannels;
         d.reasoning_markers = None;
@@ -6881,7 +6878,6 @@ unified_registry! {
         d.batch_markers = Some(("<|start|>", "<|eom|>"));
         d.marker_free_batch_response = false;
         d.native_tool_call_marker = Some("<atem:invoke");
-        d.aliases.push("muse".into());
         d.deprecated_aliases.push("muse".into());
         d.deprecation_note = Some("Muse Spark Open is a different parser: `muse_spark_open`".into());
     }),
@@ -6914,10 +6910,9 @@ unified_registry! {
         d.auto_selection = AutoSelection::RequiresBothSelectors;
         d.structural_tag_builder = Some(&crate::structural_tag::builders::BEAM);
     }),
-    "kimi_k2" => (kimi_k2::kimi_k2_unified, |d| {
+    "kimi_k2" | "kimi_k25" => (kimi_k2::kimi_k2_unified, |d| {
         d.guidance.forced_tool_choice = ForcedToolGuidance::PreferTagForForced;
         d.native_tool_call_marker = Some("<|tool_call_begin|>");
-        d.aliases.push("kimi_k25".into());
         d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K2);
     }),
     "kimi_k3" | "kimi-k3" => (kimi_k3::kimi_k3_unified, |d| {
@@ -6928,12 +6923,11 @@ unified_registry! {
         d.native_tool_call_marker = Some("<|open|>call");
         d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K3);
     }),
-    "mistral_4" => (mistral::mistral_unified, |d| {
+    "mistral_4" | "mistral" => (mistral::mistral_unified, |d| {
         d.native_response_prefix = Some(|output| (output.trim_start_matches([' ', '\r', '\n', '\t']), "[THINK]"));
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.reasoning_markers = Some(("[THINK]", "[/THINK]"));
         d.marker_free_batch_response = false;
-        d.aliases.push("mistral".into());
         d.required_tokens.push(RequiredVocabularyToken {
             token: "[ARGS]".into(),
             tokenizer_description: "Mistral tokenizer v11 or later".into(),
