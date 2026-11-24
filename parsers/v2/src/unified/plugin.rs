@@ -62,6 +62,7 @@ impl Manifest {
         descriptor.required_tokens = self.required_tokens;
         descriptor.guidance.structural_tag = self.structural_tag;
         descriptor.guidance.from_reasoning_selector = self.structural_tag;
+        descriptor.notify_model_eos = true;
         descriptor.errors_are_fatal = true;
         descriptor
     }
@@ -194,7 +195,6 @@ impl ManifestV2 {
         descriptor.continuation = self.continuation;
         descriptor.discard_native_flush_calls_on_truncation =
             self.discard_native_flush_calls_on_truncation;
-        descriptor.notify_model_eos = true;
         descriptor.guidance.forced_tool_choice = self.forced_tool_guidance;
         descriptor
     }
@@ -705,6 +705,12 @@ mod tests {
         assert!(truncated.base.events.is_empty());
         call(first, CommandV2::V1(Command::Destroy));
         call(second, CommandV2::V1(Command::Destroy));
+    }
+
+    #[test]
+    fn v1_and_v2_descriptors_advertise_confirmed_model_eos() {
+        assert!(manifest().base.descriptor().notify_model_eos);
+        assert!(manifest().descriptor().notify_model_eos);
     }
 
     #[test]

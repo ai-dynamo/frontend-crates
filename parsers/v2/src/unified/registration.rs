@@ -23,6 +23,7 @@ pub enum AutoSelection {
 pub struct RequiredVocabularyToken {
     pub token: String,
     pub tokenizer_description: String,
+    /// Legacy host configuration selector, also used when reporting missing vocabulary.
     pub legacy_parser: Option<String>,
 }
 
@@ -103,6 +104,8 @@ pub struct UnifiedParserDescriptor {
     pub deprecation_note: Option<String>,
     pub reasoning_markers: Option<(&'static str, &'static str)>,
     pub native_tool_call_marker: Option<&'static str>,
+    /// Alternative opener for calls without an outer tool envelope.
+    pub native_bare_invoke_marker: Option<&'static str>,
     #[serde(skip)]
     pub unfinished_native_call_start: Option<UnfinishedNativeCallStart>,
     pub batch_prefill: BatchPrefill,
@@ -200,6 +203,7 @@ impl UnifiedParserDescriptor {
             deprecation_note: None,
             reasoning_markers: None,
             native_tool_call_marker: None,
+            native_bare_invoke_marker: None,
             unfinished_native_call_start: None,
             batch_prefill: BatchPrefill::ModelOpensChannels,
             batch_markers: None,
@@ -212,6 +216,25 @@ impl UnifiedParserDescriptor {
             structural_tag_builder: None,
             guidance: Guidance::default(),
         }
+    }
+
+    pub(crate) fn validate(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.text_input || self.token_id_input,
+            "parser must accept text or token IDs"
+        );
+        anyhow::ensure!(
+            self.batch_prefill != BatchPrefill::MarkerPair
+                || self.batch_markers.or(self.reasoning_markers).is_some(),
+            "marker-pair prefill requires markers"
+        );
+        Ok(())
+    }
+
+    pub(super) fn native_call_markers(&self) -> impl Iterator<Item = &'static str> {
+        self.native_tool_call_marker
+            .into_iter()
+            .chain(self.native_bare_invoke_marker)
     }
 
     pub(crate) fn builtin(family: &str, aliases: &[&str], configure: fn(&mut Self)) -> Self {
@@ -259,7 +282,9 @@ impl UnifiedParserDescriptor {
 
     /// Infer parser initialization from raw batch output when no rendered prompt is available.
     pub fn infer_batch_starting_state(&self, content: &str) -> UnifiedParserStartingState {
-        use super::prefill::{first_unquoted_marker_position as position, infer_marker_prefill};
+        use super::prefill::{
+            first_unquoted_marker_position as position, marker_prefill_from_positions,
+        };
         match self.batch_prefill {
             BatchPrefill::ModelOpensChannels => UnifiedParserStartingState::None,
             BatchPrefill::NamedChannels => super::prefill::named_channel_prefill(content),
@@ -273,16 +298,16 @@ impl UnifiedParserDescriptor {
                 let close = position(content, closer);
                 if self.native_call_owns_following_markers
                     && self
-                        .native_tool_call_marker
-                        .and_then(|marker| position(content, marker))
-                        .is_some_and(|tool| open.into_iter().chain(close).all(|at| tool < at))
+                        .native_call_markers()
+                        .filter_map(|marker| position(content, marker))
+                        .any(|tool| open.into_iter().chain(close).all(|at| tool < at))
                 {
                     return UnifiedParserStartingState::None;
                 }
                 if open.is_none() && close.is_none() && self.marker_free_batch_response {
                     UnifiedParserStartingState::Response
                 } else {
-                    infer_marker_prefill(content, opener, closer)
+                    marker_prefill_from_positions(open, close)
                 }
             }
         }
@@ -446,6 +471,35 @@ mod tests {
                 .descriptor;
             assert!(descriptor.requires_tool_selector_in_auto(Some(selector)));
         }
+    }
+
+    #[test]
+    fn configuration_fallback_requires_one_owner_and_prefers_a_direct_selector() {
+        use super::super::resolve_unified_parser_pair_in as resolve;
+
+        let route = |family: &str, legacy: Option<&str>| {
+            let mut entry = super::super::resolve_unified_parser("mistral_4").unwrap();
+            entry.descriptor.family = family.into();
+            entry.descriptor.required_tokens[0].legacy_parser = legacy.map(str::to_owned);
+            entry
+        };
+        let entries = [route("new", Some("old")), route("other", Some("old"))];
+        assert!(resolve(&entries, Some("old"), None).is_none());
+        assert_eq!(
+            resolve(&entries[..1], Some("old"), None)
+                .unwrap()
+                .descriptor
+                .family,
+            "new",
+        );
+        let entries = [route("new", Some("old")), route("old", None)];
+        assert_eq!(
+            resolve(&entries, Some("old"), None)
+                .unwrap()
+                .descriptor
+                .family,
+            "old",
+        );
     }
 
     #[test]

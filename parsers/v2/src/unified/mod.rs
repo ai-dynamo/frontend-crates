@@ -6499,6 +6499,9 @@ static VENDOR_PARSERS: std::sync::LazyLock<
 /// care whether they are shadowing should ask
 /// [`builtin_unified_families`] first.
 ///
+/// Factory-only overrides retain the registered selectors and use default text policy.
+/// Use [`register_unified_parser_with_descriptor`] to supply additional capabilities.
+///
 /// # Startup-only
 ///
 /// Register during startup, BEFORE serving. Every access is guarded by one `RwLock`,
@@ -6514,24 +6517,7 @@ pub fn register_unified_parser(
     family: &str,
     factory: UnifiedParserFactory,
 ) -> Option<UnifiedParserFactory> {
-    // Register under the CANONICAL name. A built-in family can be reached by more
-    // than one routing name (`qwen3` and `qwen3_coder` are one grammar), and keying
-    // on the caller's spelling shadowed only the spelling they happened to use:
-    // `register_unified_parser("qwen3", ..)` left `qwen3_coder` on the built-in, so
-    // the same family silently ran two different parsers depending on how the
-    // request was routed. Canonicalizing on both sides is what makes "replace a
-    // family this crate ships" true for every name that family answers to.
-    let mut descriptor = builtin_unified_registrations()
-        .iter()
-        .find(|entry| entry.descriptor.accepts(family))
-        .cloned()
-        .map(|entry| entry.descriptor)
-        .unwrap_or_else(|| UnifiedParserDescriptor::new(family));
-    // Existing registrations preserve their custom alias and policy on factory replacement.
-    if let Some(current) = resolve_unified_parser(family) {
-        descriptor = current.descriptor;
-    }
-    register_unified_parser_with_descriptor(descriptor, factory)
+    register_unified_parser_with_descriptor(UnifiedParserDescriptor::new(family), factory)
         .expect("an existing or default descriptor is valid")
         .and_then(|entry| entry.factory.linked())
 }
@@ -6571,18 +6557,7 @@ pub fn register_unified_parser_with_descriptor(
         descriptor.aliases.sort();
         descriptor.aliases.dedup();
     }
-    anyhow::ensure!(
-        descriptor.text_input || descriptor.token_id_input,
-        "parser must accept text or token IDs"
-    );
-    anyhow::ensure!(
-        descriptor.batch_prefill != BatchPrefill::MarkerPair
-            || descriptor
-                .batch_markers
-                .or(descriptor.reasoning_markers)
-                .is_some(),
-        "marker-pair prefill requires markers"
-    );
+    descriptor.validate()?;
     let builtins = builtin_unified_registrations();
     for name in std::iter::once(&descriptor.family).chain(&descriptor.aliases) {
         anyhow::ensure!(!name.is_empty(), "parser alias must not be empty");
@@ -6622,6 +6597,7 @@ pub fn register_loaded_unified_parsers(entries: Vec<UnifiedParserRegistration>) 
         })
         .collect();
     for entry in &entries {
+        entry.descriptor.validate()?;
         for name in std::iter::once(&entry.descriptor.family).chain(&entry.descriptor.aliases) {
             anyhow::ensure!(
                 !name.is_empty() && names.insert(name),
@@ -6696,18 +6672,34 @@ pub fn resolve_unified_parser_pair(
     resolve_unified_parser_pair_in(&unified_parser_registrations(), tool, reasoning).cloned()
 }
 
+fn configured_selector_family<'a>(
+    entries: &'a [UnifiedParserRegistration],
+    selector: &str,
+) -> Option<&'a str> {
+    if let Some(entry) = entries
+        .iter()
+        .find(|entry| entry.descriptor.accepts(selector))
+    {
+        return Some(&entry.descriptor.family);
+    }
+    let mut matches = entries.iter().filter(|entry| {
+        entry
+            .descriptor
+            .required_tokens
+            .iter()
+            .any(|token| token.legacy_parser.as_deref() == Some(selector))
+    });
+    let entry = matches.next()?;
+    matches.next().is_none().then_some(&entry.descriptor.family)
+}
+
 /// Resolve a selector pair using one host-retained effective catalog.
 pub fn resolve_unified_parser_pair_in<'a>(
     entries: &'a [UnifiedParserRegistration],
     tool: Option<&str>,
     reasoning: Option<&str>,
 ) -> Option<&'a UnifiedParserRegistration> {
-    let canonical = |selector| {
-        entries
-            .iter()
-            .find(|entry| entry.descriptor.accepts(selector))
-            .map(|entry| entry.descriptor.family.as_str())
-    };
+    let canonical = |selector| configured_selector_family(entries, selector);
     let tool = match tool {
         Some(selector) => Some(canonical(selector)?),
         None => None,
@@ -6744,17 +6736,17 @@ pub fn validate_auto_unified_pair_in(
     tool: Option<&str>,
     reasoning: Option<&str>,
 ) -> Result<()> {
+    let tool_family = tool.and_then(|selector| configured_selector_family(entries, selector));
+    let reasoning_family =
+        reasoning.and_then(|selector| configured_selector_family(entries, selector));
     for entry in entries {
         let descriptor = &entry.descriptor;
+        let family = Some(descriptor.family.as_str());
         if descriptor.auto_selection == AutoSelection::RequiresBothSelectors
-            && [tool, reasoning]
-                .into_iter()
-                .flatten()
-                .any(|name| descriptor.accepts(name))
+            && (tool_family == family || reasoning_family == family)
         {
             anyhow::ensure!(
-                tool.is_some_and(|name| descriptor.accepts(name))
-                    && reasoning.is_some_and(|name| descriptor.accepts(name)),
+                tool_family == family && reasoning_family == family,
                 "family '{}' requires both --dyn-tool-call-parser and --dyn-reasoning-parser to select that family",
                 descriptor.family
             );
@@ -6866,7 +6858,8 @@ unified_registry! {
         d.prompt_style = prefill::PromptStyle::Marker;
         d.prompt_closure = prefill::PromptClosure::OpenUnlessClosed;
         d.reasoning_markers = Some(("<mm:think>", "</mm:think>"));
-        d.native_tool_call_marker = Some("]<]minimax[>[<tool_call>");
+        d.native_tool_call_marker = Some(minimax_m3::BLOCK_START);
+        d.native_bare_invoke_marker = Some(minimax_m3::FUNCTION_START);
         d.native_call_owns_following_markers = true;
         d.structural_tag_builder = Some(&crate::structural_tag::builders::MINIMAX_M3);
     }),
@@ -6923,7 +6916,7 @@ unified_registry! {
         d.native_tool_call_marker = Some("<|open|>call");
         d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K3);
     }),
-    "mistral_4" | "mistral" => (mistral::mistral_unified, |d| {
+    "mistral_4" => (mistral::mistral_unified, |d| {
         d.native_response_prefix = Some(|output| (output.trim_start_matches([' ', '\r', '\n', '\t']), "[THINK]"));
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.reasoning_markers = Some(("[THINK]", "[/THINK]"));

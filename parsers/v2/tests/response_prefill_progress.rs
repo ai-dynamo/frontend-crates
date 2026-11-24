@@ -47,6 +47,50 @@ fn mistral_4_registers_without_a_bare_mistral_alias() {
 }
 
 #[test]
+fn minimax_batch_keeps_narration_before_bare_and_wrapped_calls() {
+    let tools = tools();
+    let registration = dynamo_parsers_v2::resolve_unified_parser("minimax_m3").unwrap();
+    let descriptor = &registration.descriptor;
+    let call = concat!(
+        r#"]<]minimax[>[<invoke name="write_file">"#,
+        "]<]minimax[>[<path>x]<]minimax[>[</path>",
+        "]<]minimax[>[<content>literal </mm:think> suffix]<]minimax[>[</content>",
+        "]<]minimax[>[</invoke>",
+    );
+    for (start, end) in [
+        ("", ""),
+        ("]<]minimax[>[<tool_call>", "]<]minimax[>[</tool_call>"),
+    ] {
+        let input = format!("Before call: {start}{call}{end}");
+        let mut parser = registration.create(&tools).unwrap();
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: descriptor.infer_batch_starting_state(&input),
+                ..Default::default()
+            })
+            .unwrap();
+        let mut events = parser.push(&input).unwrap();
+        events.extend(parser.finish().unwrap().events);
+        assert_eq!(
+            assemble(&events),
+            [
+                UnifiedEvent::Text {
+                    text: "Before call: ".into()
+                },
+                UnifiedEvent::ToolCall {
+                    name: "write_file".into(),
+                    arguments: serde_json::json!({"path": "x", "content": "literal </mm:think> suffix"}),
+                },
+            ],
+        );
+    }
+    assert_eq!(
+        descriptor.infer_batch_starting_state(&format!("plan</mm:think>{call}")),
+        UnifiedParserStartingState::Reasoning,
+    );
+}
+
+#[test]
 fn native_only_families_refuse_guided_output() {
     for family in NATIVE_ONLY_FAMILIES {
         for named in [false, true] {

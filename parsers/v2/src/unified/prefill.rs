@@ -72,7 +72,7 @@ impl super::UnifiedParserDescriptor {
                 .extend(["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"].map(str::to_owned)),
             _ => {}
         }
-        markers.extend(self.native_tool_call_marker.map(str::to_owned));
+        markers.extend(self.native_call_markers().map(str::to_owned));
         markers
     }
 
@@ -106,8 +106,8 @@ impl super::UnifiedParserDescriptor {
                 .iter()
                 .any(|channel| kimi_channel_marker_position(content, "<|open|>", channel).is_some())
         } else {
-            self.native_tool_call_marker
-                .is_some_and(|marker| first_unquoted_marker_position(content, marker).is_some())
+            self.native_call_markers()
+                .any(|marker| first_unquoted_marker_position(content, marker).is_some())
         }
     }
 
@@ -193,20 +193,25 @@ pub fn first_unquoted_marker_position(content: &str, marker: &str) -> Option<usi
 
 /// Infer whether an XTML prompt opened the named reasoning channel.
 pub fn named_channel_prefill(content: &str) -> UnifiedParserStartingState {
-    match (
+    marker_prefill_from_positions(
         kimi_channel_marker_position(content, "<|open|>", "think"),
         kimi_channel_marker_position(content, "<|close|>", "think"),
-    ) {
-        (None, Some(_)) => UnifiedParserStartingState::Reasoning,
-        (Some(open), Some(close)) if close < open => UnifiedParserStartingState::Reasoning,
-        _ => UnifiedParserStartingState::None,
-    }
+    )
 }
 
 pub fn first_unquoted_marker_position_after(
     content: &str,
     marker: &str,
     minimum: usize,
+) -> Option<usize> {
+    first_unquoted_position(content, |offset| {
+        offset >= minimum && content[offset..].starts_with(marker)
+    })
+}
+
+fn first_unquoted_position(
+    content: &str,
+    mut matches_at: impl FnMut(usize) -> bool,
 ) -> Option<usize> {
     let chars: Vec<(usize, char)> = content.char_indices().collect();
     // Whether an unescaped `"`, `'`, or `` ` `` appears anywhere at or after each
@@ -248,7 +253,7 @@ pub fn first_unquoted_marker_position_after(
             quote = Some(character);
             continue;
         }
-        if offset >= minimum && content[offset..].starts_with(marker) {
+        if matches_at(offset) {
             return Some(offset);
         }
     }
@@ -304,31 +309,30 @@ fn later_unescaped_quote_closes(chars: &[(usize, char)]) -> Vec<[bool; 3]> {
 }
 
 pub fn kimi_channel_marker_position(content: &str, prefix: &str, channel: &str) -> Option<usize> {
-    content
-        .match_indices(prefix)
-        .filter_map(|(offset, _)| {
-            let after = offset + prefix.len();
-            let (end, suffix_len) = if prefix == "<|close|>" {
-                let end = after
-                    + content[after..]
-                        .find(['<', '[', '{'])
-                        .unwrap_or(content[after..].len());
-                let suffix_len = if content[end..].starts_with("<|sep|>") {
-                    "<|sep|>".len()
-                } else {
-                    0
-                };
-                (end, suffix_len)
-            } else {
-                (after + content[after..].find("<|sep|>")?, "<|sep|>".len())
-            };
-            if content[after..end].split_whitespace().next() != Some(channel) {
-                return None;
+    const SEPARATOR: &str = "<|sep|>";
+    // Candidate offsets advance, so each separator is visited at most once.
+    let mut separators = content.match_indices(SEPARATOR).peekable();
+    first_unquoted_position(content, |offset| {
+        let Some(header) = content[offset..].strip_prefix(prefix) else {
+            return false;
+        };
+        let after = offset + prefix.len();
+        let end = if prefix == "<|close|>" {
+            header.find(['<', '[', '{']).unwrap_or(header.len())
+        } else {
+            while separators.peek().is_some_and(|(at, _)| *at < after) {
+                separators.next();
             }
-            let marker = &content[offset..end + suffix_len];
-            first_unquoted_marker_position(content, marker)
-        })
-        .min()
+            let Some((separator, _)) = separators.peek() else {
+                return false;
+            };
+            separator - after
+        };
+        header[..end]
+            .trim_start()
+            .strip_prefix(channel)
+            .is_some_and(|tail| tail.chars().next().is_none_or(char::is_whitespace))
+    })
 }
 
 pub fn infer_marker_prefill(
@@ -336,10 +340,17 @@ pub fn infer_marker_prefill(
     opener: &str,
     closer: &str,
 ) -> UnifiedParserStartingState {
-    match (
+    marker_prefill_from_positions(
         first_unquoted_marker_position(content, opener),
         first_unquoted_marker_position(content, closer),
-    ) {
+    )
+}
+
+pub(super) fn marker_prefill_from_positions(
+    open: Option<usize>,
+    close: Option<usize>,
+) -> UnifiedParserStartingState {
+    match (open, close) {
         (None, Some(_)) => UnifiedParserStartingState::Reasoning,
         (Some(open), Some(close)) if close < open => UnifiedParserStartingState::Reasoning,
         _ => UnifiedParserStartingState::None,
@@ -417,5 +428,36 @@ pub fn beam_prompt_open_channel(prompt: &str) -> Option<super::UnifiedParserStar
         Some(State::Reasoning)
     } else {
         Some(State::None)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kimi_channel_markers_keep_quote_and_header_boundaries() {
+        let quoted = r#""<|open|>call<|sep|>""#;
+        let wrong = "<|open|>callback<|sep|>";
+        let call = r#"<|open|> call tool="lookup"<|sep|>"#;
+        let prefix = format!("{quoted} {wrong} é ");
+        let suffix = wrong.repeat(1_000);
+        let input = format!("{prefix}{call}{suffix}");
+        assert_eq!(
+            kimi_channel_marker_position(&input, "<|open|>", "call"),
+            Some(prefix.len())
+        );
+        assert_eq!(
+            kimi_channel_marker_position(&format!("{quoted}{suffix}"), "<|open|>", "call"),
+            None
+        );
+        assert_eq!(
+            named_channel_prefill(r#""<|open|>think<|sep|>" plan<|close|> think <|sep|>"#),
+            UnifiedParserStartingState::Reasoning,
+        );
+        assert_eq!(
+            named_channel_prefill("<|open|> think <|sep|>plan<|close|>think<|sep|>"),
+            UnifiedParserStartingState::None,
+        );
     }
 }

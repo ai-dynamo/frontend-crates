@@ -264,3 +264,83 @@ fn unknown_family_error_explains_how_to_register() {
     assert!(err.contains("register_unified_parser"), "{err}");
     assert!(err.contains("no_such_family"), "{err}");
 }
+
+#[test]
+fn factory_override_keeps_aliases_without_claiming_harmony_capabilities() {
+    use dynamo_parsers_v2::{register_unified_parser, resolve_unified_parser};
+
+    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    assert!(
+        resolve_unified_parser("gpt_oss")
+            .unwrap()
+            .descriptor
+            .token_id_input
+    );
+    register_unified_parser("harmony", vendor_factory);
+    let _restore = Restore("gpt_oss");
+    for selector in ["gpt_oss", "harmony"] {
+        let registration = resolve_unified_parser(selector).unwrap();
+        let descriptor = &registration.descriptor;
+        assert_eq!(descriptor.family, "gpt_oss");
+        assert!(descriptor.text_input);
+        assert!(!descriptor.token_id_input);
+        assert!(!descriptor.continuation);
+        assert!(descriptor.token_prompt_prefix.is_none());
+        let mut parser = registration.create(&[]).unwrap();
+        assert_eq!(
+            parser.push("plain text").unwrap(),
+            [UnifiedParserEvent::Text("plain text".into())]
+        );
+    }
+}
+
+#[test]
+fn loaded_registration_validates_the_entire_batch_before_inserting() {
+    use dynamo_parsers_v2::{
+        BatchPrefill, UnifiedParserDescriptor, UnifiedParserRegistration, resolve_unified_parser,
+        unified::register_loaded_unified_parsers,
+    };
+
+    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    let _restore_valid = Restore("loaded_valid");
+    let _restore_invalid = Restore("loaded_invalid");
+    let mut valid = UnifiedParserDescriptor::new("loaded_valid");
+    valid.guidance.structural_tag = true;
+    let valid = UnifiedParserRegistration::loaded(
+        valid,
+        "valid".into(),
+        Some(std::sync::Arc::new(|_| Ok(None))),
+        None,
+        vendor_factory,
+    );
+    for error in [
+        "marker-pair prefill requires markers",
+        "parser must accept text or token IDs",
+    ] {
+        let mut invalid = UnifiedParserDescriptor::new("loaded_invalid");
+        if error.starts_with("marker") {
+            invalid.batch_prefill = BatchPrefill::MarkerPair;
+        } else {
+            invalid.text_input = false;
+        }
+        let invalid = UnifiedParserRegistration::loaded(
+            invalid,
+            "invalid".into(),
+            None,
+            None,
+            vendor_factory,
+        );
+        assert_eq!(
+            register_loaded_unified_parsers(vec![valid.clone(), invalid])
+                .unwrap_err()
+                .to_string(),
+            error
+        );
+        assert!(resolve_unified_parser("loaded_valid").is_none());
+        assert!(resolve_unified_parser("loaded_invalid").is_none());
+    }
+    register_loaded_unified_parsers(vec![valid]).unwrap();
+    let registration = resolve_unified_parser("loaded_valid").unwrap();
+    assert!(registration.descriptor.guidance.structural_tag);
+    assert!(registration.plugin_guidance().is_some());
+}

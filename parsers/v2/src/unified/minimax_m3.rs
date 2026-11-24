@@ -30,11 +30,11 @@ use std::{collections::HashSet, sync::Arc};
 
 /// The namespace token emitted before every M3 tag.
 const NS: &str = "]<]minimax[>[";
-const BLOCK_START: &str = "]<]minimax[>[<tool_call>";
+pub(super) const BLOCK_START: &str = "]<]minimax[>[<tool_call>";
 const BLOCK_END: &str = "]<]minimax[>[</tool_call>";
 /// Bare `<invoke` (no trailing `>`): matches both `<invoke name="...">` and the
 /// malformed nameless `<invoke>` (whose parse yields no call and is dropped).
-const FUNCTION_START: &str = "]<]minimax[>[<invoke";
+pub(super) const FUNCTION_START: &str = "]<]minimax[>[<invoke";
 const FUNCTION_END: &str = "]<]minimax[>[</invoke>";
 
 fn spec(tools: Arc<[ToolDefinition]>) -> WrappedBlockSpec {
