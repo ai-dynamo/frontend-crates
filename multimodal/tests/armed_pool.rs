@@ -69,6 +69,23 @@ fn ordered_fanout_consumes_in_input_order_and_stops_at_the_first_error() {
     assert_eq!(r, Err(5));
 }
 
+#[test]
+fn ordered_fanout_passes_a_panic_to_the_caller() {
+    execution::init_pool(2).unwrap();
+    let r = std::panic::catch_unwind(|| {
+        execution::try_for_each_ordered(
+            0..8usize,
+            2,
+            |i| {
+                assert_ne!(i, 3);
+                Ok::<_, ()>(i)
+            },
+            |_| Ok(()),
+        )
+    });
+    assert!(r.is_err());
+}
+
 #[cfg(feature = "video-decode")]
 #[test]
 fn armed_decode_matches_the_inline_decode() {
