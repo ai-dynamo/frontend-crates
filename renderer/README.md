@@ -81,6 +81,12 @@ native formatters can attach a state with `with_generation_state`. Equality and
 debug output include this metadata. The enum is non-exhaustive so consumers must
 also handle future variants without assuming a response channel.
 
+## Kimi K3 and K3.1 thinking effort
+
+When thinking is enabled and the request omits the effort, the formatter adds a system message that sets `thinking_effort=max`. To omit that message and keep the thinking turn open, set `"emit_default_thinking_effort": false` in `chat_template_kwargs`. To apply this default to all requests on a Dynamo frontend, start it with `--default-chat-template-kwargs '{"emit_default_thinking_effort":false}'`.
+
+An explicit effort of `low`, `high`, or `max` still produces the effort message. Dynamo clients can send `reasoning_effort` on the request. The renderer also accepts `thinking_effort` or `reasoning_effort` in the template arguments.
+
 ## DeepSeek V4.1
 
 The V4.1 formatter supports text and image messages, tool history, mid-conversation system messages, and numeric reasoning effort. It rejects audio/video content and explicit tool namespace fields; qualified function names are preserved. Generation headers follow the reference encoder. Setting `add_generation_prompt` to `false` suppresses only the final generation prefix and preserves historical transitions. OpenAI effort names match the official chat template: `low` is 50, `medium` is 62, `high` is 75, and `max` is 100; the default is 75. The `xhigh` alias is not supported. Template arguments accept the same names or an integer from 1 to 100. Top-level effort takes precedence over template effort. Set `reasoning_effort` to `none` or the template argument `thinking` to `false` to disable thinking.
