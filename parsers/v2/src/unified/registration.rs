@@ -86,6 +86,8 @@ pub struct UnifiedParserDescriptor {
     pub preserve_special_tokens: bool,
     /// A completed native call may carry argument text that is not strict JSON.
     pub native_completion_authoritative: bool,
+    /// Suppress native tool calls first emitted by the final flush after truncation.
+    pub discard_native_flush_calls_on_truncation: bool,
     pub errors_are_fatal: bool,
     pub native_grammar: NativeGrammar,
     #[serde(skip)]
@@ -184,6 +186,7 @@ impl UnifiedParserDescriptor {
             notify_model_eos: false,
             preserve_special_tokens: false,
             native_completion_authoritative: false,
+            discard_native_flush_calls_on_truncation: false,
             errors_are_fatal: false,
             native_grammar: NativeGrammar::Opaque,
             native_tool_boundary: None,

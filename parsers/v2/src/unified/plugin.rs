@@ -174,6 +174,8 @@ pub struct ManifestV2 {
     pub token_id_input: bool,
     pub continuation: bool,
     #[serde(default)]
+    pub discard_native_flush_calls_on_truncation: bool,
+    #[serde(default)]
     pub forced_tool_guidance: ForcedToolGuidance,
 }
 
@@ -190,6 +192,8 @@ impl ManifestV2 {
         descriptor.text_input = self.text_input;
         descriptor.token_id_input = self.token_id_input;
         descriptor.continuation = self.continuation;
+        descriptor.discard_native_flush_calls_on_truncation =
+            self.discard_native_flush_calls_on_truncation;
         descriptor.notify_model_eos = true;
         descriptor.guidance.forced_tool_choice = self.forced_tool_guidance;
         descriptor
@@ -634,6 +638,7 @@ mod tests {
             text_input: false,
             token_id_input: true,
             continuation: true,
+            discard_native_flush_calls_on_truncation: false,
             forced_tool_guidance: ForcedToolGuidance::Generic,
         }
     }

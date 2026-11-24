@@ -6940,6 +6940,7 @@ unified_registry! {
             legacy_parser: Some("mistral".into()),
         });
         d.native_completion_authoritative = true;
+        d.discard_native_flush_calls_on_truncation = true;
         d.guidance.mistral_lark = true;
     }),
     "gpt_oss" | "harmony" => (harmony::gpt_oss_unified, |d| {
