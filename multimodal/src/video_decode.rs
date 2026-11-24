@@ -2175,6 +2175,93 @@ mod tests {
         assert_eq!(pool_batch(1, 1 << 20, 5, 3), 1);
     }
 
+    /// A 2x2 full-range grey picture: `level` in every RGB byte.
+    fn grey(level: &[u8; 4]) -> Nv12<'_> {
+        Nv12 {
+            width: 2,
+            height: 2,
+            y: level,
+            uv: &[128, 128],
+            y_stride: 2,
+            uv_stride: 2,
+            matrix: Matrix::Bt601,
+            full_range: true,
+        }
+    }
+
+    fn grey_sampler(targets: &[u64], batch: usize) -> Sampler<'_> {
+        Sampler {
+            targets,
+            next: 0,
+            width: 2,
+            height: 2,
+            limits: VideoDecodeLimits::default(),
+            resize: None,
+            conversion: RgbConversion::Float,
+            rgb: Vec::new(),
+            full: Vec::new(),
+            timestamps: Vec::new(),
+            batch,
+            sent: Vec::new(),
+            appended: 0,
+            in_flight: 0,
+            results: mpsc::channel(),
+        }
+    }
+
+    #[test]
+    fn a_full_batch_waits_for_one_frame_and_a_batch_of_one_sends_none() {
+        let targets = [0, 1];
+        let mut two = grey_sampler(&targets, 2);
+        two.push(&grey(&[10; 4]), 0.0, 0).unwrap();
+        assert_eq!(two.in_flight, 1);
+        two.push(&grey(&[20; 4]), 0.0, 1).unwrap();
+        assert_eq!((two.in_flight, two.appended), (1, 1));
+        let mut one = grey_sampler(&targets, 1);
+        one.push(&grey(&[10; 4]), 0.0, 0).unwrap();
+        assert!(one.sent.is_empty());
+    }
+
+    #[test]
+    fn pool_conversions_append_in_the_order_sent() {
+        let targets = [0, 0, 1, 2];
+        // Unarmed, each conversion is back at once. Hand them back last
+        // first, as when the first frame converts slowest.
+        let mut sampler = grey_sampler(&targets, 4);
+        for (index, level) in [(0, 10), (1, 20), (2, 30)] {
+            sampler.push(&grey(&[level; 4]), 0.0, index).unwrap();
+        }
+        let back: Vec<Converted> = (0..3).map(|_| sampler.results.1.recv().unwrap()).collect();
+        for converted in back.into_iter().rev() {
+            sampler.results.0.send(converted).unwrap();
+        }
+        sampler.receive();
+        sampler.receive();
+        assert!(sampler.rgb.is_empty());
+        sampler.receive();
+        assert_eq!(sampler.rgb, [&[10; 24][..], &[20; 12], &[30; 12]].concat());
+    }
+
+    #[test]
+    fn a_pool_conversion_panic_reaches_the_caller_before_earlier_frames() {
+        let mut sampler = grey_sampler(&[0, 1], 4);
+        for index in 0..2 {
+            sampler.push(&grey(&[10; 4]), 0.0, index).unwrap();
+        }
+        for _ in 0..2 {
+            let _ = sampler.results.1.recv().unwrap();
+        }
+        // Frame 0 is still out when the conversion of frame 1 panics.
+        sampler
+            .results
+            .0
+            .send((1, Err(Box::new("conversion failed"))))
+            .unwrap();
+        let panic =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| sampler.flush())).unwrap_err();
+        assert_eq!(panic.downcast_ref::<&str>(), Some(&"conversion failed"));
+    }
+
     #[test]
     fn h264_parameter_sets_come_from_the_avcc_record() {
         let (_, codec, config) = track_of("h264.mp4");
