@@ -51,13 +51,14 @@
 //! > NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 //! > SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::borrow::Cow;
 use std::ffi::{CStr, c_char, c_int, c_long, c_uint, c_void};
 use std::sync::OnceLock;
 
 use super::nvdec::{open, symbol};
-use super::seek::{self, Order};
-use super::{Matrix, Nv12, Sampler, Track, VideoCodec};
-use crate::{MmError, Result};
+use super::seek::{self, Order, Run};
+use super::{Matrix, Nv12, Payload, Sampler, Track, VideoCodec, convert_frame};
+use crate::{MmError, Result, execution};
 
 // ---------------------------------------------------------------------------
 // libvpx ABI (from libvpx v1.14.1; see the module notice)
@@ -236,6 +237,61 @@ impl Decoder {
         Ok(Self { api, ctx })
     }
 
+    /// Decode `data`, a packet that `displays` a frame or not, and return
+    /// the frame it shows, checked against `width` x `height`. The image
+    /// stays valid until the next call.
+    fn frame(
+        &mut self,
+        data: &[u8],
+        displays: bool,
+        width: u32,
+        height: u32,
+    ) -> Result<Option<&Image>> {
+        let len = c_uint::try_from(data.len())
+            .map_err(|_| MmError::invalid_input("video packet too large"))?;
+        // SAFETY: `data` lives until the call returns; libvpx copies what it
+        // keeps between calls.
+        let code = unsafe {
+            (self.api.decode)(&mut *self.ctx, data.as_ptr(), len, std::ptr::null_mut(), 0)
+        };
+        if code != VPX_CODEC_OK {
+            let message = format!("libvpx: {}", self.error_text());
+            // UNSUP_BITSTREAM is also what a broken frame header gets.
+            return Err(match code {
+                VPX_CODEC_INCAPABLE | VPX_CODEC_UNSUP_FEATURE => MmError::unsupported(message),
+                VPX_CODEC_MEM_ERROR => MmError::internal(message),
+                _ => MmError::invalid_input(message),
+            });
+        }
+        // VP8 and VP9 do not reorder: a packet's frame comes out of the call
+        // that decoded it, so it has that packet's timestamp.
+        let mut iter: *const c_void = std::ptr::null();
+        let mut shown = None;
+        loop {
+            // SAFETY: valid context and iterator; the image stays valid until
+            // the next decode call.
+            let image = unsafe { (self.api.get_frame)(&mut *self.ctx, &mut iter) };
+            if image.is_null() {
+                break;
+            }
+            if shown.is_some() || !displays {
+                return Err(MmError::invalid_input(
+                    "libvpx output a frame the packet's headers do not show",
+                ));
+            }
+            // SAFETY: non-null, valid until the next decode call.
+            let image = unsafe { &*image };
+            check_image(image, width, height)?;
+            shown = Some(image);
+        }
+        if shown.is_none() && displays {
+            return Err(MmError::invalid_input(
+                "libvpx output no frame for a packet whose headers show one",
+            ));
+        }
+        Ok(shown)
+    }
+
     /// libvpx's message for the last error, with its detail if any.
     fn error_text(&self) -> String {
         let text = |p: *const c_char| {
@@ -357,12 +413,26 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
         VideoCodec::Vp9 => track.vp9_colour.get()?.unwrap_or((Matrix::Bt601, false)),
         _ => (Matrix::Bt601, false),
     };
-    let mut decoder = Decoder::new(api()?, track.codec)?;
-    let (mut raw, mut framed, mut uv) = (Vec::new(), Vec::new(), Vec::new());
     // Each run starts at a key frame, which libvpx decodes without the
     // references it replaces, so the skipped packets need no reset.
     let order = Order::new(track);
     let runs = seek::plan(track, &order, sampler.targets)?;
+    let threads = execution::threads();
+    if threads > 1 {
+        let parts = seek::split_at_keys(track, &runs)?;
+        if parts.len() > 1 {
+            return decode_parts(
+                track,
+                sampler,
+                &order,
+                &parts,
+                threads,
+                (matrix, full_range),
+            );
+        }
+    }
+    let mut decoder = Decoder::new(api()?, track.codec)?;
+    let (mut raw, mut framed, mut uv) = (Vec::new(), Vec::new(), Vec::new());
     for index in runs.iter().flat_map(|run| run.start..run.end) {
         let packet = &track.packets[index];
         if sampler.done() {
@@ -375,65 +445,98 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
             sampler.height,
             &mut framed,
         )?;
-        let len = c_uint::try_from(data.len())
-            .map_err(|_| MmError::invalid_input("video packet too large"))?;
-        let api = decoder.api;
-        // SAFETY: `data` lives until the call returns; libvpx copies what it
-        // keeps between calls.
-        let code = unsafe {
-            (api.decode)(
-                &mut *decoder.ctx,
-                data.as_ptr(),
-                len,
-                std::ptr::null_mut(),
-                0,
-            )
+        let Some(image) = decoder.frame(data, packet.displays, sampler.width, sampler.height)?
+        else {
+            continue;
         };
-        if code != VPX_CODEC_OK {
-            let message = format!("libvpx: {}", decoder.error_text());
-            // UNSUP_BITSTREAM is also what a broken frame header gets.
-            return Err(match code {
-                VPX_CODEC_INCAPABLE | VPX_CODEC_UNSUP_FEATURE => MmError::unsupported(message),
-                VPX_CODEC_MEM_ERROR => MmError::internal(message),
-                _ => MmError::invalid_input(message),
-            });
+        let Some(shown) = order.shown[index] else {
+            continue;
+        };
+        if !sampler.wants(shown) {
+            continue;
         }
-        // VP8 and VP9 do not reorder: a packet's frame comes out of the call
-        // that decoded it, so it has that packet's timestamp.
-        let mut iter: *const c_void = std::ptr::null();
-        let mut outputs = 0;
-        loop {
-            // SAFETY: valid context and iterator; the image stays valid until
-            // the next decode call.
-            let image = unsafe { (api.get_frame)(&mut *decoder.ctx, &mut iter) };
-            if image.is_null() {
-                break;
-            }
-            outputs += 1;
-            if outputs > 1 || !packet.displays {
-                return Err(MmError::invalid_input(
-                    "libvpx output a frame the packet's headers do not show",
-                ));
-            }
-            // SAFETY: non-null, valid until the next decode call.
-            let image = unsafe { &*image };
-            check_image(image, sampler.width, sampler.height)?;
-            let Some(shown) = order.shown[index] else {
-                continue;
-            };
-            if !sampler.wants(shown) {
-                continue;
-            }
-            let picture = to_nv12(image, matrix, full_range, &mut uv)?;
-            sampler.push(&picture, packet.pts, shown)?;
-        }
-        if outputs == 0 && packet.displays {
-            return Err(MmError::invalid_input(
-                "libvpx output no frame for a packet whose headers show one",
-            ));
-        }
+        let picture = to_nv12(image, matrix, full_range, &mut uv)?;
+        sampler.push(&picture, packet.pts, shown)?;
     }
     Ok(())
+}
+
+/// [`decode`] over `parts`, runs that each start at a key frame, on one
+/// decoder each in the CPU pool. A part converts its sampled frames as they
+/// decode; they reach `sampler` in order, and the parts in flight stay
+/// within the room the output limit leaves.
+pub(super) fn decode_parts(
+    track: &Track<'_>,
+    sampler: &mut Sampler<'_>,
+    order: &Order,
+    parts: &[Run],
+    threads: usize,
+    (matrix, full_range): (Matrix, bool),
+) -> Result<()> {
+    let (codec, width, height) = (track.codec, sampler.width, sampler.height);
+    let (targets, resize, conversion) = (sampler.targets, sampler.resize, sampler.conversion);
+    let sampled =
+        |index: usize| order.shown[index].filter(|shown| targets.binary_search(shown).is_ok());
+    let most = parts
+        .iter()
+        .map(|part| {
+            (part.start..part.end)
+                .filter(|&i| sampled(i).is_some())
+                .count()
+        })
+        .max()
+        .unwrap_or(0);
+    // A part holds its converted frames, and the frame it converts as NV12
+    // and as source-size RGB.
+    let (out_width, out_height) = resize.map_or((width, height), |r| (r.width, r.height));
+    let held = most * out_width as usize * out_height as usize * 3
+        + width as usize * height as usize * 9 / 2;
+    let ahead = (sampler.room / held).clamp(1, threads);
+    let inputs = parts
+        .iter()
+        .map(|part| -> Result<Vec<(usize, Cow<'_, [u8]>)>> {
+            (part.start..part.end)
+                .map(|index| {
+                    let packet = &track.packets[index];
+                    let bytes = match &packet.payload {
+                        Payload::Owned(data) => Cow::Borrowed(&data[..]),
+                        Payload::Source { .. } => {
+                            Cow::Owned(track.packet_bytes(packet, &mut Vec::new())?.to_vec())
+                        }
+                    };
+                    Ok((index, bytes))
+                })
+                .collect()
+        });
+    let (api, packets) = (api()?, &track.packets);
+    execution::try_for_each_ordered(
+        inputs,
+        ahead,
+        |part| {
+            let mut decoder = Decoder::new(api, codec)?;
+            let (mut framed, mut uv, mut full, mut kept) =
+                (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+            for (index, bytes) in part? {
+                let packet = &packets[index];
+                let data = libvpx_input(codec, &bytes, width, height, &mut framed)?;
+                let Some(image) = decoder.frame(data, packet.displays, width, height)? else {
+                    continue;
+                };
+                let Some(shown) = sampled(index) else {
+                    continue;
+                };
+                let picture = to_nv12(image, matrix, full_range, &mut uv)?;
+                let mut rgb = Vec::new();
+                convert_frame(&picture, resize, conversion, &mut full, &mut rgb);
+                kept.push((rgb, packet.pts, shown));
+            }
+            Ok(kept)
+        },
+        |kept| {
+            kept.into_iter()
+                .try_for_each(|(rgb, pts, shown)| sampler.push_rgb(rgb, pts, shown))
+        },
+    )
 }
 
 /// View a libvpx I420 image (see `check_image`) as NV12, interleaving its

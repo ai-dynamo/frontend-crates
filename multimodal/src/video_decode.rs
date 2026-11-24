@@ -651,6 +651,7 @@ fn decode_demuxed(
         rgb: Vec::new(),
         full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
+        room,
         batch: pool_batch(execution::threads(), room, info.width, info.height),
         sent: Vec::new(),
         appended: 0,
@@ -732,6 +733,9 @@ struct Sampler<'t> {
     /// One frame at the source size, when frames are resized.
     full: Vec<u8>,
     timestamps: Vec<f64>,
+    /// Bytes the output limit leaves for frames held between decode and
+    /// `rgb`.
+    room: usize,
     /// Kept frames converted on the CPU pool at a time, while decoding goes
     /// on; 1 converts each frame on the caller as it arrives. It is 1 on a
     /// pool thread, so a caller never waits on the pool from inside it.
@@ -770,14 +774,34 @@ impl Sampler<'_> {
     /// Take shown frame `index`: convert it, and resize it if asked, if it is
     /// the next sampled one (kept again if the index repeats).
     fn push(&mut self, picture: &Nv12<'_>, pts: f64, index: u64) -> Result<()> {
-        if (picture.width, picture.height) != (self.width, self.height) {
-            return Err(MmError::invalid_input(format!(
-                "frame size changed mid-stream from {}x{} to {}x{}",
-                self.width, self.height, picture.width, picture.height
-            )));
+        let copies = self.take(picture.width, picture.height, pts, index)?;
+        if copies > 0 && self.batch == 1 {
+            self.append(picture, copies);
+        } else if copies > 0 {
+            self.send(QueuedPicture::new(picture), copies);
         }
-        if !self.wants(index) {
-            return Ok(());
+        Ok(())
+    }
+
+    /// Take shown frame `index` already converted to `rgb`, if it is the next
+    /// sampled one.
+    fn push_rgb(&mut self, rgb: Vec<u8>, pts: f64, index: u64) -> Result<()> {
+        let copies = self.take(self.width, self.height, pts, index)?;
+        if copies > 0 {
+            self.sent.push((copies, Some(rgb)));
+            self.drain();
+        }
+        Ok(())
+    }
+
+    /// The times shown frame `index` is sampled from here on, 0 if it is not
+    /// the next sampled one, with their timestamps recorded.
+    fn take(&mut self, width: u32, height: u32, pts: f64, index: u64) -> Result<usize> {
+        if (width, height) != (self.width, self.height) {
+            return Err(MmError::invalid_input(format!(
+                "frame size changed mid-stream from {}x{} to {width}x{height}",
+                self.width, self.height
+            )));
         }
         let mut copies = 0;
         while self.targets.get(self.next) == Some(&index) {
@@ -785,45 +809,50 @@ impl Sampler<'_> {
             self.next += 1;
             copies += 1;
         }
-        if self.batch == 1 {
-            let start = self.rgb.len();
-            convert_frame(
-                picture,
-                self.resize,
-                self.conversion,
-                &mut self.full,
-                &mut self.rgb,
-            );
-            let end = self.rgb.len();
-            for _ in 1..copies {
-                self.rgb.extend_from_within(start..end);
-            }
-        } else {
-            let slot = self.sent.len();
-            self.sent.push((copies, None));
-            let (picture, resize, conversion) =
-                (QueuedPicture::new(picture), self.resize, self.conversion);
-            let done = self.results.0.clone();
-            execution::spawn(move || {
-                let rgb = std::panic::catch_unwind(move || {
-                    let mut rgb = Vec::new();
-                    convert_frame(
-                        &picture.view(),
-                        resize,
-                        conversion,
-                        &mut Vec::new(),
-                        &mut rgb,
-                    );
-                    rgb
-                });
-                let _ = done.send((slot, rgb));
-            });
-            self.in_flight += 1;
-            if self.in_flight == self.batch {
-                self.receive();
-            }
+        Ok(copies)
+    }
+
+    /// Convert `picture` on the caller and append it `copies` times.
+    fn append(&mut self, picture: &Nv12<'_>, copies: usize) {
+        let start = self.rgb.len();
+        convert_frame(
+            picture,
+            self.resize,
+            self.conversion,
+            &mut self.full,
+            &mut self.rgb,
+        );
+        let end = self.rgb.len();
+        for _ in 1..copies {
+            self.rgb.extend_from_within(start..end);
         }
-        Ok(())
+    }
+
+    /// Convert `picture` on the pool, waiting for one sent earlier first when
+    /// the batch is full.
+    fn send(&mut self, picture: QueuedPicture, copies: usize) {
+        let slot = self.sent.len();
+        self.sent.push((copies, None));
+        let (resize, conversion) = (self.resize, self.conversion);
+        let done = self.results.0.clone();
+        execution::spawn(move || {
+            let rgb = std::panic::catch_unwind(move || {
+                let mut rgb = Vec::new();
+                convert_frame(
+                    &picture.view(),
+                    resize,
+                    conversion,
+                    &mut Vec::new(),
+                    &mut rgb,
+                );
+                rgb
+            });
+            let _ = done.send((slot, rgb));
+        });
+        self.in_flight += 1;
+        if self.in_flight == self.batch {
+            self.receive();
+        }
     }
 
     fn flush(&mut self) {
@@ -839,6 +868,11 @@ impl Sampler<'_> {
         };
         self.in_flight -= 1;
         self.sent[slot].1 = Some(rgb.unwrap_or_else(|panic| std::panic::resume_unwind(panic)));
+        self.drain();
+    }
+
+    /// Append the frames of `sent` that are back, in order.
+    fn drain(&mut self) {
         while let Some((copies, Some(rgb))) = self.sent.get_mut(self.appended) {
             for _ in 0..*copies {
                 self.rgb.extend_from_slice(rgb);
@@ -2201,6 +2235,7 @@ mod tests {
             rgb: Vec::new(),
             full: Vec::new(),
             timestamps: Vec::new(),
+            room: 0,
             batch,
             sent: Vec::new(),
             appended: 0,
@@ -3395,6 +3430,7 @@ mod tests {
                         rgb: Vec::new(),
                         full: Vec::new(),
                         timestamps: Vec::new(),
+                        room: 0,
                         batch: 1,
                         sent: Vec::new(),
                         appended: 0,
@@ -3611,6 +3647,63 @@ mod tests {
                         assert_eq!(frames.timestamps()[0], whole.timestamps()[original]);
                     }
                     seek::DISABLED.set(false);
+                }
+            }
+        }
+
+        /// [`vpx::decode`] split at every key frame, one decoder per part. The
+        /// parts run inline: the pool is armed only in `tests/armed_pool.rs`.
+        fn vpx_in_parts(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()> {
+            let colour = match track.codec {
+                VideoCodec::Vp9 => track.vp9_colour.get()?.unwrap_or((Matrix::Bt601, false)),
+                _ => (Matrix::Bt601, false),
+            };
+            let order = seek::Order::new(track);
+            let runs = seek::plan(track, &order, sampler.targets)?;
+            let parts = seek::split_at_keys(track, &runs)?;
+            vpx::decode_parts(track, sampler, &order, &parts, 4, colour)
+        }
+
+        #[test]
+        fn cpu_frames_are_the_same_decoded_in_parts() {
+            let limits = VideoDecodeLimits::default();
+            for name in [
+                "gop_vp8.webm",
+                "gop_vp9.webm",
+                "vp9_altref.webm",
+                "vp9_invisible.webm",
+            ] {
+                let bytes = fixture(name);
+                let track = demux(&bytes).unwrap();
+                let whole = [seek::Run {
+                    start: 0,
+                    end: track.packets.len(),
+                    parameter_sets: Vec::new(),
+                }];
+                let parts = seek::split_at_keys(&track, &whole).unwrap();
+                assert!(
+                    !name.starts_with("gop_") || parts.len() > 1,
+                    "{name}: {parts:?}"
+                );
+                let n = track.info().frame_count;
+                for set in [
+                    (0..n).collect(),
+                    sample_indices(n, 4).unwrap(),
+                    vec![0, n - 1],
+                    vec![n / 2, n / 2, n - 1],
+                ] {
+                    let decode = |backend: Backend| {
+                        decode_frames_with(&bytes.as_slice(), &set, None, &limits, backend)
+                            .unwrap_or_else(|e| panic!("{name} {set:?}: {e}"))
+                    };
+                    let (serial, in_parts) = (decode(vpx::decode), decode(vpx_in_parts));
+                    for k in 0..set.len() {
+                        assert!(
+                            in_parts.frame(k) == serial.frame(k),
+                            "{name}: frame {k} of {set:?} differs"
+                        );
+                    }
+                    assert_eq!(in_parts.timestamps(), serial.timestamps(), "{name} {set:?}");
                 }
             }
         }
