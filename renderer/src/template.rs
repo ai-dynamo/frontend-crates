@@ -13,6 +13,7 @@ mod formatters;
 mod minimax_m2;
 mod oai;
 mod tokcfg;
+mod tool_result_order;
 
 use super::{OAIPromptFormatter, PromptFormatter};
 pub use oai::may_be_fix_tool_schema;
@@ -268,6 +269,10 @@ struct HfTokenizerConfigJsonFormatter {
     /// A capable default must not opt an older tool-use variant into native tools.
     default_template_handles_native_tools: bool,
     tool_use_template_handles_native_tools: bool,
+    /// Per selected template variant: true when the template puts each run of
+    /// tool results into call order (GLM-5.3-Flash), so media must follow it.
+    default_template_sorts_tool_results: bool,
+    tool_use_template_sorts_tool_results: bool,
     /// True if the `default` template natively references `reasoning_content`.
     /// When true and rendering through `default`, skip injection — the template
     /// handles it. Tracked separately for `default` and `tool_use` because HF

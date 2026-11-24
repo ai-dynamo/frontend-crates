@@ -828,6 +828,18 @@ fn normalize_system_messages(
 }
 
 impl HfTokenizerConfigJsonFormatter {
+    /// Match render's tool exclusion and variant choice.
+    fn renders_tool_use_template(&self, request: &dyn OAIChatLikeRequest) -> bool {
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && request.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        !exclude
+            && request
+                .tools()
+                .as_ref()
+                .and_then(|tools| tools.len())
+                .is_some_and(|len| len > 0)
+    }
+
     fn template_handles_native_tools(&self, has_tools: bool) -> bool {
         if has_tools {
             self.tool_use_template_handles_native_tools
@@ -1637,16 +1649,19 @@ fn shield_text(
 
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
     fn supports_native_tools(&self, request: &dyn OAIChatLikeRequest) -> bool {
-        // Match render's tool exclusion and variant choice before declaring support.
-        let exclude = self.exclude_tools_when_tool_choice_none
-            && request.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
-        let has_tools = !exclude
-            && request
-                .tools()
-                .as_ref()
-                .and_then(|tools| tools.len())
-                .is_some_and(|len| len > 0);
-        self.template_handles_native_tools(has_tools)
+        self.template_handles_native_tools(self.renders_tool_use_template(request))
+    }
+
+    fn media_message_order(&self, request: &dyn OAIChatLikeRequest) -> Option<Vec<usize>> {
+        let sorts = if self.renders_tool_use_template(request) {
+            self.tool_use_template_sorts_tool_results
+        } else {
+            self.default_template_sorts_tool_results
+        };
+        if !sorts {
+            return None;
+        }
+        super::tool_result_order::media_order(request)
     }
 
     fn supports_add_generation_prompt(&self) -> bool {
