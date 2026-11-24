@@ -507,6 +507,8 @@ Native Kimi progress cases `kimi-9` through `kimi-14` use `write_file(count: int
 
 ### Kimi K3 XTML
 
+`kimi-repeated_think_to_response_handoff` (`kimi-28`) starts K3/K3.1 in `Response` with native output and no tools. Its two chunks end at the think closer and begin at the response opener (`chunk_sizes: [30, 24]`). The complete repeated XTML handoff is consumed and surrounding punctuation yields one text event, `Answer. ..`. Only K3 uses this named XTML channel sequence; the other registered families retain their shared prefilled-response marker cases. `50-prefilled_response_reasoning_markers_literal` remains the companion for preserving standalone markers.
+
 - **`kimi-typed_argument_values`** through **`kimi-guided_native_wrapper`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.
 
 ### Mistral-specific

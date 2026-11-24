@@ -668,6 +668,12 @@ def _context_repo(tmp_path):
     return root
 
 
+def _commit_context_source(root):
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.com",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", "updated source"], check=True)
+
+
 @pytest.mark.parametrize("include_history", [False, True])
 def test_publication_context_survives_tag_creation_and_rejects_tampering(tmp_path, monkeypatch, include_history):
     root = _context_repo(tmp_path)
@@ -823,6 +829,7 @@ def test_capture_provenance_distinguishes_release_from_exact_current_source(tmp_
     assert released["kind"] == "release"
     if workspace_path:
         (root / workspace_path).write_text("# changed workspace build input\n")
+        _commit_context_source(root)
     recorded = version.dynamo_v2_provenance(root)
     assert recorded["kind"] == ("unpublished" if workspace_path else "release")
     assert version.validate_capture_provenance(root, recorded) == version.compact_capture_origin(recorded)
@@ -844,6 +851,7 @@ def test_capture_provenance_rejects_changed_released_parser_source(tmp_path, mon
     source.parent.mkdir(parents=True, exist_ok=True)
     comment = "//" if source.suffix == ".rs" else "#"
     source.write_text((source.read_text() if source.exists() else "") + f"\n{comment} changed parser source\n")
+    _commit_context_source(root)
     monkeypatch.setenv("CONFORMANCE_DYNAMO_V2_LABEL", "current")
     version = ci_publication_cache.dynamo_version
     recorded = version.dynamo_v2_provenance(root)
@@ -852,6 +860,7 @@ def test_capture_provenance_rejects_changed_released_parser_source(tmp_path, mon
         version.validate_capture_provenance(root, recorded)
     manifest = root / "parsers/v2/Cargo.toml"
     manifest.write_text(manifest.read_text().replace('version="1.2.3"', 'version="1.2.4"'))
+    _commit_context_source(root)
     bumped = version.dynamo_v2_provenance(root)
     assert version.validate_capture_provenance(root, bumped) == version.compact_capture_origin(bumped)
 
@@ -871,3 +880,22 @@ def test_unpublished_capture_provenance_rejects_tampering(tmp_path, field, value
     recorded[field] = value
     with pytest.raises(ValueError, match="source identity"):
         version.validate_capture_provenance(root, recorded)
+
+
+@pytest.mark.parametrize("source_path", ["parsers/v2/src/lib.rs", "parsers/v2/Cargo.toml", "Cargo.lock"])
+def test_capture_provenance_binds_fingerprint_to_producing_commit(tmp_path, source_path):
+    root = _context_repo(tmp_path)
+    version = ci_publication_cache.dynamo_version
+    source = root / source_path
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text((source.read_text() if source.exists() else "") + "\n# changed source\n")
+    recorded = version.dynamo_v2_provenance(root)
+    assert recorded["source_sha256"] == version.source_fingerprint(root)
+    with pytest.raises(ValueError, match="Git commit/source fingerprint mismatch"):
+        version.validate_capture_provenance(root, recorded)
+    _commit_context_source(root)
+    # Even after committing, the valid digest cannot be paired with the old revision.
+    with pytest.raises(ValueError, match="Git commit/source fingerprint mismatch"):
+        version.validate_capture_provenance(root, recorded)
+    committed = version.dynamo_v2_provenance(root)
+    assert version.validate_capture_provenance(root, committed) == version.compact_capture_origin(committed)

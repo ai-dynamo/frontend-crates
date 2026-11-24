@@ -3085,6 +3085,24 @@ DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
     "prefilled_reasoning_then_text": "reason_then_content",
 }
 
+KIMI_REPEATED_HANDOFF_CHUNKS = [
+    "Answer. .<|close|>think<|sep|>",
+    "<|open|>response<|sep|>.",
+]
+EDGE.append((
+    "kimi_k3_repeated_think_to_response_handoff",
+    "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.",
+    ["I2", "I3"], [{"kind": "text", "text": "Answer. .."}],
+    {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop", "input_chunks": {"kimi_k3": KIMI_REPEATED_HANDOFF_CHUNKS}},
+    OnlyFamilies({"kimi_k3": (
+        "".join(KIMI_REPEATED_HANDOFF_CHUNKS),
+        D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M,
+    )}),
+    [],
+))
+
+
 KIMI_PROGRESS_FORMS = {
     "k2": ("kimi_k2", '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"', '"}', '<|tool_call_end|>', '<|tool_calls_section_end|>'),
     "k3_typed": ("kimi_k3", '<|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>argument key="count" type="number"<|sep|>7<|close|>argument<|sep|><|open|>argument key="content" type="string"<|sep|>', '<|close|>argument<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'),
