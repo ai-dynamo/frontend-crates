@@ -3534,6 +3534,9 @@ mod tests {
         #[test]
         #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
         fn nvdec_frames_are_the_same_with_seeking() {
+            let _gop_clips = nvdec::GOP_CLIPS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             for name in [
                 "gop_h264.mp4",
                 "gop_frag.mp4",
