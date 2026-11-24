@@ -81,11 +81,11 @@ native formatters can attach a state with `with_generation_state`. Equality and
 debug output include this metadata. The enum is non-exhaustive so consumers must
 also handle future variants without assuming a response channel.
 
-## Kimi K3 and K3.1 thinking effort
+## Default thinking effort
 
-When thinking is enabled and the request omits the effort, the formatter adds a system message that sets `thinking_effort=max`. To omit that message and keep the thinking turn open, set `"emit_default_thinking_effort": false` in `chat_template_kwargs`. To apply this default to all requests on a Dynamo frontend, start it with `--default-chat-template-kwargs '{"emit_default_thinking_effort":false}'`.
+On a renderer that supports `emit_default_thinking_effort`, set the option to `false` to omit the default effort instruction when no effort is supplied. The renderer still applies its usual rules to an explicit effort. Set the option in `chat_template_kwargs` for one request, or start the Dynamo frontend with `--default-chat-template-kwargs '{"emit_default_thinking_effort":false}'` for a deployment-wide default.
 
-An explicit effort of `low`, `high`, or `max` still produces the effort message. Dynamo clients can send `reasoning_effort` on the request. The renderer also accepts `thinking_effort` or `reasoning_effort` in the template arguments.
+Kimi K3 and K3.1 currently support this option. With thinking enabled, both normally add a `thinking_effort=max` system message when the request omits effort. With the option set to `false`, the thinking turn still opens. An explicit `low`, `high`, or `max` still produces the corresponding system message. Dynamo clients can set `reasoning_effort` on the request. The Kimi renderer also accepts `thinking_effort` or `reasoning_effort` in the template arguments.
 
 ## DeepSeek V4.1
 

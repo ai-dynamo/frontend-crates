@@ -1398,6 +1398,11 @@ mod tests {
                 (json!({(emit_default): true}), Some("max"), Reasoning),
                 (json!({(emit_default): false}), None, Reasoning),
                 (
+                    json!({(emit_default): false, "reasoning_effort": "max"}),
+                    Some("max"),
+                    Reasoning,
+                ),
+                (
                     json!({(emit_default): false, "reasoning_effort": "high"}),
                     Some("high"),
                     Reasoning,
