@@ -147,9 +147,10 @@ pub fn in_pool<R: Send>(f: impl FnOnce() -> R + Send) -> R {
 /// Run `produce` on each of `items` and hand the results to `consume` in
 /// input order, on the calling thread. With the pool armed, items are
 /// produced on it, at most `ahead` (and at least one) at a time with the
-/// next one to consume among them; `items` itself is iterated on the caller. Returns the first
-/// error in input order, whether `produce` or `consume` made it; later items
-/// may already have run.
+/// next one to consume among them; `items` itself is iterated on the caller.
+/// Returns the first error in input order, whether `produce` or `consume`
+/// made it. Later items may already have run: the error returns once the
+/// items already started finish, and the items not started are skipped.
 pub fn try_for_each_ordered<T, R, E>(
     items: impl IntoIterator<Item = T>,
     ahead: usize,
