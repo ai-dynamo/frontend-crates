@@ -374,6 +374,28 @@ fn kimi_partial_response_metadata_initializes_unified_parser() {
 }
 
 #[test]
+fn kimi_honors_top_level_effort_when_the_default_is_omitted() {
+    for formatter in [KimiK3Formatter::new(true), KimiK3Formatter::new_k31(true)] {
+        let mut request = user_request();
+        request
+            .args
+            .insert("emit_default_thinking_effort".into(), json!(false));
+        request.effort = Some(json!("max"));
+        let prompt = check(&formatter, &request, GenerationState::Reasoning);
+        assert!(prompt.as_str().contains("`thinking_effort=max`"));
+
+        request.args.insert("reasoning_effort".into(), json!("low"));
+        request.effort = Some(json!("high"));
+        let prompt = check(&formatter, &request, GenerationState::Reasoning);
+        assert!(prompt.as_str().contains("`thinking_effort=high`"));
+
+        request.args.insert("thinking_effort".into(), json!("low"));
+        let prompt = check(&formatter, &request, GenerationState::Reasoning);
+        assert!(prompt.as_str().contains("`thinking_effort=low`"));
+    }
+}
+
+#[test]
 fn deepseek_v4_omits_only_the_default_effort_prefix() {
     let formatter = DeepSeekV4Formatter::new_thinking();
     let mut request = user_request();

@@ -106,8 +106,12 @@ impl KimiK3Formatter {
         // thinking. Make the public function-object form work without requiring
         // clients to know K3-specific chat-template arguments.
         let thinking = named_tool.is_none() && thinking_bool_from_args(args).unwrap_or(true);
+        let request_effort = req.reasoning_effort();
         let thinking_effort = if thinking {
-            resolve_thinking_effort(args)?
+            resolve_thinking_effort(
+                args,
+                request_effort.as_ref().and_then(|value| value.as_str()),
+            )?
         } else {
             None
         };
@@ -344,13 +348,15 @@ fn message_declares_tool(message: &Value, name: &str) -> bool {
         .is_some_and(|tools| contains_tool(tools, name))
 }
 
-fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> Result<Option<&str>> {
+fn resolve_thinking_effort<'a>(
+    args: Option<&'a HashMap<String, Value>>,
+    request_effort: Option<&'a str>,
+) -> Result<Option<&'a str>> {
     let default_effort = crate::emit_default_thinking_effort(args)?.then_some("max");
-    let effort = args.and_then(|args| {
-        args.get("thinking_effort")
-            .or_else(|| args.get("reasoning_effort"))
-            .and_then(Value::as_str)
-    });
+    let effort = match args.and_then(|args| args.get("thinking_effort")) {
+        Some(native) => native.as_str().or(request_effort),
+        None => request_effort.or_else(|| args?.get("reasoning_effort")?.as_str()),
+    };
     Ok(effort.or(default_effort))
 }
 
