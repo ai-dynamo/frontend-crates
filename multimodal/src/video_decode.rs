@@ -638,8 +638,6 @@ fn decode_demuxed(
 
     let room =
         limits.max_output_bytes - out_width as usize * out_height as usize * 3 * targets.len();
-    // A queued picture and its source-size RGB count against the room.
-    let queued = (info.width as usize * info.height as usize).saturating_mul(9) / 2;
 
     let mut sampler = Sampler {
         targets,
@@ -653,7 +651,7 @@ fn decode_demuxed(
         rgb: Vec::new(),
         full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
-        batch: execution::threads().min(room / queued).max(1),
+        batch: pool_batch(execution::threads(), room, info.width, info.height),
         sent: Vec::new(),
         appended: 0,
         in_flight: 0,
@@ -890,14 +888,33 @@ struct QueuedPicture {
 }
 
 impl QueuedPicture {
+    /// The length and count of the luma rows, then of the chroma rows, that
+    /// `new` keeps of a `width` x `height` picture: the visible rows, without
+    /// the decoder's row padding.
+    fn rows(width: u32, height: u32) -> [(usize, usize); 2] {
+        let (width, height) = (width as usize, height as usize);
+        [
+            (width, height),
+            (width.next_multiple_of(2), height.div_ceil(2)),
+        ]
+    }
+
     fn new(picture: &Nv12<'_>) -> Self {
+        let [luma, chroma] = Self::rows(picture.width, picture.height);
+        let keep = |plane: &[u8], stride: usize, (len, count): (usize, usize)| {
+            let mut out = Vec::with_capacity(len * count);
+            for row in 0..count {
+                out.extend_from_slice(&plane[row * stride..][..len]);
+            }
+            out
+        };
         Self {
             width: picture.width,
             height: picture.height,
-            y: picture.y.to_vec(),
-            uv: picture.uv.to_vec(),
-            y_stride: picture.y_stride,
-            uv_stride: picture.uv_stride,
+            y: keep(picture.y, picture.y_stride, luma),
+            uv: keep(picture.uv, picture.uv_stride, chroma),
+            y_stride: luma.0,
+            uv_stride: chroma.0,
             matrix: picture.matrix,
             full_range: picture.full_range,
         }
@@ -915,6 +932,20 @@ impl QueuedPicture {
             full_range: self.full_range,
         }
     }
+}
+
+/// Kept frames converted on the pool at a time: at most one per thread, as
+/// many as `room` holds with each frame's queued picture and source-size RGB,
+/// and at least 1, which converts on the caller.
+fn pool_batch(threads: usize, room: usize, width: u32, height: u32) -> usize {
+    let queued = QueuedPicture::rows(width, height)
+        .iter()
+        .map(|&(len, count)| len * count)
+        .fold(
+            (width as usize * height as usize).saturating_mul(3),
+            usize::saturating_add,
+        );
+    threads.min(room / queued).max(1)
 }
 
 // ---------------------------------------------------------------------------
@@ -2096,6 +2127,52 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn a_queued_picture_keeps_only_the_visible_rows() {
+        // 5x3 with row strides of 8, each plane ending at its last visible
+        // byte as libvpx's do; the padding bytes are 0xFF. The odd column
+        // still needs a U/V pair, so a chroma row is 6 bytes.
+        let y: Vec<u8> = (0..21)
+            .map(|i| if i % 8 < 5 { 16 + i } else { 0xFF })
+            .collect();
+        let uv: Vec<u8> = (0..14)
+            .map(|i| if i % 8 < 6 { 100 + i } else { 0xFF })
+            .collect();
+        let padded = Nv12 {
+            width: 5,
+            height: 3,
+            y: &y,
+            uv: &uv,
+            y_stride: 8,
+            uv_stride: 8,
+            matrix: Matrix::Bt601,
+            full_range: false,
+        };
+        let queued = QueuedPicture::new(&padded);
+        assert_eq!(
+            queued.y,
+            [16, 17, 18, 19, 20, 24, 25, 26, 27, 28, 32, 33, 34, 35, 36]
+        );
+        assert_eq!(
+            queued.uv,
+            [100, 101, 102, 103, 104, 105, 108, 109, 110, 111, 112, 113]
+        );
+        let (mut want, mut got) = (Vec::new(), Vec::new());
+        padded.to_rgb(&mut want, RgbConversion::Float);
+        queued.view().to_rgb(&mut got, RgbConversion::Float);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn the_pool_batch_fits_the_room_and_is_at_least_one() {
+        // A 5x3 frame queues 15 + 12 NV12 bytes and 45 RGB bytes: 72.
+        assert_eq!(pool_batch(8, 0, 5, 3), 1);
+        assert_eq!(pool_batch(8, 143, 5, 3), 1);
+        assert_eq!(pool_batch(8, 144, 5, 3), 2);
+        assert_eq!(pool_batch(8, 1 << 20, 5, 3), 8);
+        assert_eq!(pool_batch(1, 1 << 20, 5, 3), 1);
     }
 
     #[test]
