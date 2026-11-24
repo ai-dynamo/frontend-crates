@@ -122,7 +122,7 @@ fn vendor_factory(_tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
     Ok(Box::new(VendorEverythingIsText))
 }
 
-/// A vendor can implement `UnifiedParser` from outside and have it selected.
+/// The fixture name `acme_v1` becomes selectable only after runtime registration.
 #[test]
 fn vendor_can_register_a_new_family() {
     let _g = SERIALIZE.lock().unwrap_or_else(|e| e.into_inner());

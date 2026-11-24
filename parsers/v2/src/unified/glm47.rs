@@ -3,10 +3,12 @@
 
 //! Unified GLM-4.7/5.x parser wiring.
 
-use crate::tool_calling::glm47::glm47_scanner;
+use crate::tool_calling::glm47::{BLOCK_START, glm47_scanner};
 use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
-use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
+use crate::unified::{
+    GuidedRouted, ScannerUnified, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
+};
 
 pub(crate) fn glm47_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(ScannerUnified::new(
@@ -18,6 +20,36 @@ pub(crate) fn glm47_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
             ..Default::default()
         }),
     )))
+}
+
+/// Ask the grammar owner which source bytes remain uncommitted. A literal tool
+/// closer inside an argument must not hide an unfinished sibling from recovery.
+pub(crate) fn unfinished_native_call_start(input: &str) -> anyhow::Result<Option<usize>> {
+    let mut parser = glm47_unified(&[]);
+    let mut output = UnifiedParserOutput::default();
+    parser.parse_into(input, &mut output)?;
+    let pending = parser.reset();
+    let prefix = input
+        .strip_suffix(&pending)
+        .ok_or_else(|| anyhow::anyhow!("GLM pending input is not a source suffix"))?;
+    // Only prose after the last completed call can quote a pending marker.
+    // Argument quotes belong to the native grammar and cannot span sibling calls.
+    let mut prose = String::new();
+    for event in output.events {
+        match event {
+            UnifiedParserEvent::ToolCall(call) if call.complete => prose.clear(),
+            UnifiedParserEvent::Text(text) | UnifiedParserEvent::Reasoning(text) => {
+                prose.push_str(&text)
+            }
+            _ => {}
+        }
+    }
+    let pending_offset = prose.len();
+    prose.push_str(&pending);
+    Ok(
+        super::prefill::first_unquoted_marker_position_after(&prose, BLOCK_START, pending_offset)
+            .map(|start| prefix.len() + start - pending_offset),
+    )
 }
 
 #[cfg(test)]

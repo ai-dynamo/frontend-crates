@@ -46,6 +46,13 @@ pub use unified::{
     vendor_unified_families,
 };
 
+pub use unified::{
+    AutoSelection, BatchPrefill, Guidance, RequiredVocabularyToken, UnifiedParserDescriptor,
+    UnifiedParserRegistration, register_unified_parser_with_descriptor, resolve_unified_parser,
+    resolve_unified_parser_pair, resolve_unified_parser_pair_in, unified_parser_registrations,
+    validate_auto_unified_pair, validate_auto_unified_pair_in,
+};
+
 #[cfg(test)]
 mod feature_tests {
     #[cfg(feature = "arbitrary-precision")]
@@ -76,10 +83,3 @@ mod feature_tests {
         }
     }
 }
-
-pub use unified::{
-    AutoSelection, BatchPrefill, Guidance, RequiredVocabularyToken, UnifiedParserDescriptor,
-    UnifiedParserRegistration, register_unified_parser_with_descriptor, resolve_unified_parser,
-    resolve_unified_parser_pair, resolve_unified_parser_pair_in, unified_parser_registrations,
-    validate_auto_unified_pair, validate_auto_unified_pair_in,
-};

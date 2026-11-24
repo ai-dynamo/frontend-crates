@@ -47,6 +47,27 @@ pub enum NativeGrammar {
     GlmXml,
 }
 
+/// Recognize call boundaries when parsed events interrupt the raw model stream.
+pub trait NativeToolBoundary: Send {
+    fn observe(&mut self, text: &str);
+    fn outside_call(&self) -> bool;
+    fn can_restart_call(&self) -> bool;
+    fn resolve_opener(&self, held: &str, text: &str) -> Option<bool>;
+    fn partial_opener_suffix_start(&self, text: &str) -> Option<usize>;
+    fn first_call_marker(&self, text: &str) -> Option<usize>;
+}
+
+/// A grammar that consumes a tokenized assistant prefix before generated deltas.
+#[derive(Clone, Copy)]
+pub struct TokenPromptPrefix {
+    pub encode: fn(&str) -> anyhow::Result<Vec<u32>>,
+    pub empty_assistant_prefix: &'static str,
+    pub batch_prefix: fn(&str) -> Option<&'static str>,
+}
+
+pub type NativeResponsePrefix = fn(&str) -> (&str, &'static str);
+pub type UnfinishedNativeCallStart = fn(&str) -> anyhow::Result<Option<usize>>;
+
 /// Immutable integration policy supplied with a parser factory.
 #[derive(Clone, Serialize)]
 pub struct UnifiedParserDescriptor {
@@ -60,12 +81,18 @@ pub struct UnifiedParserDescriptor {
     pub required_tokens: Vec<RequiredVocabularyToken>,
     pub text_input: bool,
     pub token_id_input: bool,
+    pub continuation: bool,
+    pub notify_model_eos: bool,
     pub preserve_special_tokens: bool,
     /// A completed native call may carry argument text that is not strict JSON.
     pub native_completion_authoritative: bool,
     pub errors_are_fatal: bool,
     pub native_grammar: NativeGrammar,
+    #[serde(skip)]
+    pub native_tool_boundary: Option<fn() -> Box<dyn NativeToolBoundary>>,
     pub preserve_message_phases: bool,
+    #[serde(skip)]
+    pub native_response_prefix: Option<NativeResponsePrefix>,
     pub legacy_backend_completion: bool,
     pub reasoning_control: ReasoningControl,
     pub reasoning_mandatory: bool,
@@ -74,6 +101,8 @@ pub struct UnifiedParserDescriptor {
     pub deprecation_note: Option<String>,
     pub reasoning_markers: Option<(&'static str, &'static str)>,
     pub native_tool_call_marker: Option<&'static str>,
+    #[serde(skip)]
+    pub unfinished_native_call_start: Option<UnfinishedNativeCallStart>,
     pub batch_prefill: BatchPrefill,
     pub batch_markers: Option<(&'static str, &'static str)>,
     pub marker_free_batch_response: bool,
@@ -81,6 +110,8 @@ pub struct UnifiedParserDescriptor {
     pub implicit_stream_reasoning: bool,
     pub prompt_style: super::prefill::PromptStyle,
     pub prompt_closure: super::prefill::PromptClosure,
+    #[serde(skip)]
+    pub token_prompt_prefix: Option<TokenPromptPrefix>,
     #[serde(skip)]
     pub structural_tag_builder: Option<&'static StructuralTagBuilder>,
     pub guidance: Guidance,
@@ -106,6 +137,35 @@ pub struct Guidance {
     pub argument_framing: Option<super::ArgumentFraming>,
     pub reject_malformed_calls: bool,
     pub eos_completes_calls: bool,
+    pub forced_tool_choice: ForcedToolGuidance,
+    pub from_reasoning_selector: bool,
+    pub owns_reasoning_boundary: bool,
+    pub frames_structured_output: bool,
+}
+
+/// Constraint needed for a forced tool choice on this parser's wire format.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ForcedToolGuidance {
+    #[default]
+    Generic,
+    Native,
+    PreferTagForNamed,
+    PreferTagForForced,
+    RequireTagForNamed,
+    RequireTagForForced,
+}
+
+impl ForcedToolGuidance {
+    pub fn prefers_tag(self, named: bool) -> bool {
+        self.requires_tag(named)
+            || self == Self::PreferTagForForced
+            || (named && self == Self::PreferTagForNamed)
+    }
+
+    pub fn requires_tag(self, named: bool) -> bool {
+        self == Self::RequireTagForForced || (named && self == Self::RequireTagForNamed)
+    }
 }
 
 impl UnifiedParserDescriptor {
@@ -120,11 +180,15 @@ impl UnifiedParserDescriptor {
             required_tokens: Vec::new(),
             text_input: true,
             token_id_input: false,
+            continuation: false,
+            notify_model_eos: false,
             preserve_special_tokens: false,
             native_completion_authoritative: false,
             errors_are_fatal: false,
             native_grammar: NativeGrammar::Opaque,
+            native_tool_boundary: None,
             preserve_message_phases: false,
+            native_response_prefix: None,
             legacy_backend_completion: false,
             reasoning_control: ReasoningControl::Request,
             reasoning_mandatory: false,
@@ -133,6 +197,7 @@ impl UnifiedParserDescriptor {
             deprecation_note: None,
             reasoning_markers: None,
             native_tool_call_marker: None,
+            unfinished_native_call_start: None,
             batch_prefill: BatchPrefill::ModelOpensChannels,
             batch_markers: None,
             marker_free_batch_response: false,
@@ -140,6 +205,7 @@ impl UnifiedParserDescriptor {
             implicit_stream_reasoning: false,
             prompt_style: super::prefill::PromptStyle::NoPrefill,
             prompt_closure: super::prefill::PromptClosure::Unspecified,
+            token_prompt_prefix: None,
             structural_tag_builder: None,
             guidance: Guidance::default(),
         }

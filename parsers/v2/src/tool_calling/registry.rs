@@ -125,6 +125,7 @@ mod tests {
 
     #[test]
     fn standalone_batch_uses_tool_only_names_and_qualified_aliases() {
+        // Pin the built-in selector spellings and standalone batch eligibility.
         for selector in ["deepseek_v4", "deepseek-v4", "deepseekv4"] {
             assert_eq!(standalone_batch_tool_family(selector), Some("deepseek_v4"));
             assert!(create_tool_parser_for_family(selector, &[]).is_ok());

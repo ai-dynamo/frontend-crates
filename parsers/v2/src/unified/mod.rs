@@ -53,8 +53,9 @@ pub mod plugin;
 pub mod prefill;
 mod registration;
 pub use registration::{
-    AutoSelection, BatchPrefill, Guidance, LoadedGuidance, LoadedPrompt, NativeGrammar,
-    ReasoningControl, RequiredVocabularyToken, UnifiedParserDescriptor, UnifiedParserRegistration,
+    AutoSelection, BatchPrefill, ForcedToolGuidance, Guidance, LoadedGuidance, LoadedPrompt,
+    NativeGrammar, NativeToolBoundary, ReasoningControl, RequiredVocabularyToken,
+    TokenPromptPrefix, UnifiedParserDescriptor, UnifiedParserRegistration,
 };
 
 mod blank_tool_turn;
@@ -6836,6 +6837,7 @@ unified_registry! {
         d.native_tool_call_marker = Some("<|tool_call>");
     }),
     "glm47" => (glm47::glm47_unified, |d| {
+        d.unfinished_native_call_start = Some(glm47::unfinished_native_call_start);
         d.native_grammar = NativeGrammar::GlmXml;
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.prompt_closure = prefill::PromptClosure::ClosedWhenPresent;
@@ -6845,6 +6847,7 @@ unified_registry! {
     }),
     "hermes" => (hermes::hermes_unified, |_| {}),
     "qwen3" | "qwen3_coder" => (qwen3::qwen3_unified, |d| {
+        d.native_tool_boundary = Some(crate::tool_calling::qwen3_coder::native_tool_boundary);
         d.auto_without_tool_selectors.push("qwen3_coder".into());
         d.native_grammar = NativeGrammar::QwenXml;
         d.native_tool_call_marker = Some("<tool_call>");
@@ -6852,6 +6855,7 @@ unified_registry! {
         d.structural_tag_builder = Some(&crate::structural_tag::builders::QWEN3_CODER);
     }),
     "nemotron_v3" | "nemotron3" => (qwen3::nemotron_v3_unified, |d| {
+        d.native_tool_boundary = Some(crate::tool_calling::qwen3_coder::native_tool_boundary);
         d.native_grammar = NativeGrammar::QwenXml;
         d.native_tool_call_marker = Some("<tool_call>");
         d.implicit_stream_reasoning = true;
@@ -6882,6 +6886,10 @@ unified_registry! {
         d.deprecation_note = Some("Muse Spark Open is a different parser: `muse_spark_open`".into());
     }),
     "muse_spark" | "muse_spark_open" => (muse_spark::muse_spark_unified, |d| {
+        d.native_response_prefix = Some(|output| (output.trim_start(), "to="));
+        d.guidance.forced_tool_choice = ForcedToolGuidance::RequireTagForForced;
+        d.guidance.from_reasoning_selector = true;
+        d.guidance.owns_reasoning_boundary = true;
         d.preserve_message_phases = true;
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.reasoning_markers = None;
@@ -6892,6 +6900,7 @@ unified_registry! {
         d.structural_tag_builder = Some(&crate::structural_tag::builders::MUSE_SPARK);
     }),
     "beam" => (beam::beam_unified, |d| {
+        d.guidance.forced_tool_choice = ForcedToolGuidance::Native;
         d.errors_are_fatal = true;
         d.reasoning_mandatory = true;
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
@@ -6906,11 +6915,13 @@ unified_registry! {
         d.structural_tag_builder = Some(&crate::structural_tag::builders::BEAM);
     }),
     "kimi_k2" => (kimi_k2::kimi_k2_unified, |d| {
+        d.guidance.forced_tool_choice = ForcedToolGuidance::PreferTagForForced;
         d.native_tool_call_marker = Some("<|tool_call_begin|>");
         d.aliases.push("kimi_k25".into());
         d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K2);
     }),
     "kimi_k3" | "kimi-k3" => (kimi_k3::kimi_k3_unified, |d| {
+        d.guidance.forced_tool_choice = ForcedToolGuidance::PreferTagForNamed;
         d.prompt_style = prefill::PromptStyle::NamedChannels;
         d.reasoning_markers = None;
         d.batch_prefill = BatchPrefill::NamedChannels;
@@ -6918,6 +6929,7 @@ unified_registry! {
         d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K3);
     }),
     "mistral_4" => (mistral::mistral_unified, |d| {
+        d.native_response_prefix = Some(|output| (output.trim_start_matches([' ', '\r', '\n', '\t']), "[THINK]"));
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.reasoning_markers = Some(("[THINK]", "[/THINK]"));
         d.marker_free_batch_response = false;
@@ -6931,6 +6943,9 @@ unified_registry! {
         d.guidance.mistral_lark = true;
     }),
     "gpt_oss" | "harmony" => (harmony::gpt_oss_unified, |d| {
+        d.continuation = true;
+        d.token_prompt_prefix = Some(harmony::TOKEN_PROMPT_PREFIX);
+        d.guidance.frames_structured_output = true;
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.prompt_style = prefill::PromptStyle::Harmony;
         d.reasoning_markers = None;

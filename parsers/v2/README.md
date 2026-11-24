@@ -114,6 +114,10 @@ The optional `quote-aware-default` feature preserves integrations whose existing
 
 For a native library that can be loaded by an existing host, build a Rust `cdylib` against the versioned `unified::plugin` SDK. Implement `UnifiedParser`, return its startup capabilities from a `Manifest` function, and export the factory with `export_unified_parser_plugin!(manifest, create)`. A plugin can export `hooks = Hooks { ... }` for rendered-prompt inspection and triggered structural tags. Its manifest must declare the callbacks it provides. The ABI passes ordered events and errors as UTF-8 JSON over a C-compatible entry point. The plugin owns its parser handle until the host destroys it. Version 1 accepts decoded text and supports native parser completion, normalized tool policy, and optional triggered structural tags. Build a library for every target platform on which it will run. The host loads it as trusted native code.
 
+Use `export_unified_parser_plugin_v2!` and `ManifestV2` for token input or checkpoints. The host selects `dynamo_parser_plugin_v2` when the library exports it and falls back to the v1 symbol when needed. V2 uses the same C entry signature with version 2 and exchanges `CommandV2` and `ReplyV2` JSON. V2 wrappers around existing commands preserve their payload shape. Pass `PushTokenIds` for token deltas and use `FinishAtEos` only for confirmed model EOS. A checkpoint handle can outlive its parser, each fork returns an independent parser handle, and the host releases the checkpoint with `DropCheckpoint`. A parser that declares both input forms receives decoded text from Dynamo.
+
+`ManifestV2::forced_tool_guidance` can require the structural-tag callback for named or all forced tool choices. When the policy requires a tag, the callback must return a structural tag for that request and the worker must advertise support for that format.
+
 
 ## Parser families
 

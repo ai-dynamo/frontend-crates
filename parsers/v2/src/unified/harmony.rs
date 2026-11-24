@@ -92,6 +92,17 @@ fn harmony_encoding() -> Result<&'static HarmonyEncoding> {
 static GLOBAL_HARMONY_SPECIAL_TOKENS: std::sync::OnceLock<HashSet<&'static str>> =
     std::sync::OnceLock::new();
 
+pub(crate) const TOKEN_PROMPT_PREFIX: super::TokenPromptPrefix = super::TokenPromptPrefix {
+    encode: encode_harmony,
+    empty_assistant_prefix: "<|start|>assistant",
+    batch_prefix: |output| {
+        output
+            .trim_start()
+            .starts_with("to=")
+            .then_some("<|start|>assistant")
+    },
+};
+
 pub fn encode_harmony(text: &str) -> anyhow::Result<Vec<u32>> {
     let encoding = harmony_encoding()?;
     let special =
