@@ -390,12 +390,11 @@ mod tests {
 
     #[test] // TOOLCALLING.batch.7
     fn test_parse_tool_call_parse_pythonic_negative_numbers() {
-        // Python parses `-33.8688` as a unary minus applied to a number
-        // literal, not as a number literal; the argument must still be kept.
         let message = concat!(
             "[quadratic_roots(a=5, b=-8, c=2), ",
             "get_weather(latitude=-33.8688, longitude=151.2093), ",
-            "move(dy=+2, path=[-1, 0.5], big=-9223372036854775808, ",
+            "move(dy=+2, path=[-1, 0.5], opts={'delta': -3}, ",
+            "big=-9223372036854775808, ",
             "huge=-18446744073709551616)]"
         );
         let (result, _) = try_tool_call_parse_pythonic(message, None).unwrap();
@@ -413,6 +412,7 @@ mod tests {
             json!({
                 "dy": 2,
                 "path": [-1, 0.5],
+                "opts": {"delta": -3},
                 "big": i64::MIN,
                 "huge": "-18446744073709551616"
             })
