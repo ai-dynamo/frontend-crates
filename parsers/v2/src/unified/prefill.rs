@@ -442,7 +442,7 @@ mod tests {
         let call = r#"<|open|> call tool="lookup"<|sep|>"#;
         let prefix = format!("{quoted} {wrong} é ");
         let suffix = wrong.repeat(1_000);
-        let input = format!("{prefix}{call}{suffix}");
+        let input = format!("{prefix}{call}{}", call.repeat(1_000));
         assert_eq!(
             kimi_channel_marker_position(&input, "<|open|>", "call"),
             Some(prefix.len())

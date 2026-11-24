@@ -6499,8 +6499,9 @@ static VENDOR_PARSERS: std::sync::LazyLock<
 /// care whether they are shadowing should ask
 /// [`builtin_unified_families`] first.
 ///
-/// Factory-only overrides retain the registered selectors and use default text policy.
-/// Use [`register_unified_parser_with_descriptor`] to supply additional capabilities.
+/// Factory-only overrides retain selector routing. The host can call
+/// [`UnifiedParserRegistration::preserves_special_tokens`] to query the factory.
+/// Use [`register_unified_parser_with_descriptor`] for additional integration policy.
 ///
 /// # Startup-only
 ///
@@ -6517,15 +6518,30 @@ pub fn register_unified_parser(
     family: &str,
     factory: UnifiedParserFactory,
 ) -> Option<UnifiedParserFactory> {
-    register_unified_parser_with_descriptor(UnifiedParserDescriptor::new(family), factory)
+    let mut descriptor = UnifiedParserDescriptor::new(family);
+    if let Some(active) = resolve_unified_parser_pair(Some(family), None) {
+        descriptor.compatible_tool_selectors = active.descriptor.compatible_tool_selectors;
+        descriptor.legacy_configuration_selectors =
+            active.descriptor.legacy_configuration_selectors;
+        descriptor.auto_selection = active.descriptor.auto_selection;
+        descriptor.auto_without_tool_selectors = active.descriptor.auto_without_tool_selectors;
+    }
+    register_linked_unified_parser(descriptor, registration::Factory::LegacyLinked(factory))
         .expect("an existing or default descriptor is valid")
         .and_then(|entry| entry.factory.linked())
 }
 
 /// Register metadata and factory atomically during startup. Aliases may not steal another family.
 pub fn register_unified_parser_with_descriptor(
-    mut descriptor: UnifiedParserDescriptor,
+    descriptor: UnifiedParserDescriptor,
     factory: UnifiedParserFactory,
+) -> Result<Option<UnifiedParserRegistration>> {
+    register_linked_unified_parser(descriptor, registration::Factory::Linked(factory))
+}
+
+fn register_linked_unified_parser(
+    mut descriptor: UnifiedParserDescriptor,
+    factory: registration::Factory,
 ) -> Result<Option<UnifiedParserRegistration>> {
     anyhow::ensure!(
         !descriptor.family.is_empty(),
@@ -6533,36 +6549,52 @@ pub fn register_unified_parser_with_descriptor(
     );
     if let Some(builtin) = builtin_unified_registrations()
         .iter()
-        .find(|entry| entry.descriptor.accepts(&descriptor.family))
+        .find(|entry| {
+            entry
+                .descriptor
+                .claims_configured_selector(&descriptor.family)
+        })
         .cloned()
     {
         descriptor.family = builtin.descriptor.family;
         descriptor.aliases.extend(builtin.descriptor.aliases);
+        descriptor
+            .legacy_configuration_selectors
+            .extend(builtin.descriptor.legacy_configuration_selectors);
     }
     descriptor.guidance.structural_tag = descriptor.structural_tag_builder.is_some();
     descriptor.guidance.whole_turn = descriptor
         .structural_tag_builder
         .is_some_and(|builder| builder.constrains_every_turn());
-    descriptor.aliases.sort();
-    descriptor.aliases.dedup();
     let mut vendors = VENDOR_PARSERS.write().unwrap_or_else(|e| e.into_inner());
-    if let Some(previous) = vendors
-        .values()
-        .find(|entry| entry.descriptor.accepts(&descriptor.family))
-    {
+    if let Some(previous) = vendors.values().find(|entry| {
+        entry
+            .descriptor
+            .claims_configured_selector(&descriptor.family)
+    }) {
         descriptor.family = previous.descriptor.family.clone();
         descriptor
             .aliases
             .extend(previous.descriptor.aliases.clone());
-        descriptor.aliases.sort();
-        descriptor.aliases.dedup();
+        descriptor.legacy_configuration_selectors.extend(
+            previous
+                .descriptor
+                .legacy_configuration_selectors
+                .iter()
+                .cloned(),
+        );
     }
+    descriptor.aliases.sort();
+    descriptor.aliases.dedup();
+    descriptor.legacy_configuration_selectors.sort();
+    descriptor.legacy_configuration_selectors.dedup();
     descriptor.validate()?;
     let builtins = builtin_unified_registrations();
-    for name in std::iter::once(&descriptor.family).chain(&descriptor.aliases) {
+    for name in descriptor.configured_selectors() {
         anyhow::ensure!(!name.is_empty(), "parser alias must not be empty");
         let collision = builtins.iter().chain(vendors.values()).any(|entry| {
-            entry.descriptor.family != descriptor.family && entry.descriptor.accepts(name)
+            entry.descriptor.family != descriptor.family
+                && entry.descriptor.claims_configured_selector(name)
         });
         anyhow::ensure!(
             !collision,
@@ -6574,7 +6606,7 @@ pub fn register_unified_parser_with_descriptor(
         family,
         UnifiedParserRegistration {
             descriptor,
-            factory: registration::Factory::Linked(factory),
+            factory,
             vendor: true,
             plugin_identity: None,
             plugin_guidance: None,
@@ -6591,14 +6623,11 @@ pub fn register_loaded_unified_parsers(entries: Vec<UnifiedParserRegistration>) 
     let mut names: std::collections::HashSet<&str> = builtin_unified_registrations()
         .iter()
         .chain(vendors.values())
-        .flat_map(|entry| {
-            std::iter::once(entry.descriptor.family.as_str())
-                .chain(entry.descriptor.aliases.iter().map(String::as_str))
-        })
+        .flat_map(|entry| entry.descriptor.configured_selectors())
         .collect();
     for entry in &entries {
         entry.descriptor.validate()?;
-        for name in std::iter::once(&entry.descriptor.family).chain(&entry.descriptor.aliases) {
+        for name in entry.descriptor.configured_selectors() {
             anyhow::ensure!(
                 !name.is_empty() && names.insert(name),
                 "invalid or conflicting parser selector '{name}'"
@@ -6618,7 +6647,7 @@ pub fn unregister_unified_parser(family: &str) -> Option<UnifiedParserFactory> {
     let mut vendors = VENDOR_PARSERS.write().unwrap_or_else(|e| e.into_inner());
     let key = vendors
         .values()
-        .find(|entry| entry.descriptor.accepts(family))?
+        .find(|entry| entry.descriptor.claims_configured_selector(family))?
         .descriptor
         .family
         .clone();
@@ -6682,13 +6711,9 @@ fn configured_selector_family<'a>(
     {
         return Some(&entry.descriptor.family);
     }
-    let mut matches = entries.iter().filter(|entry| {
-        entry
-            .descriptor
-            .required_tokens
-            .iter()
-            .any(|token| token.legacy_parser.as_deref() == Some(selector))
-    });
+    let mut matches = entries
+        .iter()
+        .filter(|entry| entry.descriptor.claims_configured_selector(selector));
     let entry = matches.next()?;
     matches.next().is_none().then_some(&entry.descriptor.family)
 }
@@ -6921,10 +6946,12 @@ unified_registry! {
         d.reasoning_control = registration::ReasoningControl::AlwaysParse;
         d.reasoning_markers = Some(("[THINK]", "[/THINK]"));
         d.marker_free_batch_response = false;
+        let legacy_selector = "mistral";
+        d.legacy_configuration_selectors.push(legacy_selector.into());
         d.required_tokens.push(RequiredVocabularyToken {
             token: "[ARGS]".into(),
             tokenizer_description: "Mistral tokenizer v11 or later".into(),
-            legacy_parser: Some("mistral".into()),
+            legacy_parser: Some(legacy_selector.into()),
         });
         d.native_completion_authoritative = true;
         d.discard_native_flush_calls_on_truncation = true;

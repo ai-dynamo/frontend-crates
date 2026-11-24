@@ -4,7 +4,7 @@
 //! Model-family capabilities shared by parser construction and guided decoding.
 
 use crate::structural_tag::StructuralTagBuilder;
-use crate::unified::resolve_unified_parser;
+use crate::unified::builtin_unified_registrations;
 
 use super::debug::{self, DebugToolParser};
 use super::dsml::DeepSeekV4ToolStreamParser;
@@ -75,7 +75,7 @@ fn family_spec(family: &str) -> Option<&'static FamilySpec> {
         .iter()
         .find(|spec| spec.name == family)
         .or_else(|| {
-            let entry = crate::unified::builtin_unified_registrations()
+            let entry = builtin_unified_registrations()
                 .iter()
                 .find(|entry| entry.descriptor.accepts(family))?;
             FAMILY_SPECS
@@ -109,7 +109,9 @@ pub fn structural_tag_builder_for_family(family: &str) -> Option<&'static Struct
     } else {
         family
     };
-    resolve_unified_parser(selector)?
+    builtin_unified_registrations()
+        .iter()
+        .find(|entry| entry.descriptor.accepts(selector))?
         .descriptor
         .structural_tag_builder
 }

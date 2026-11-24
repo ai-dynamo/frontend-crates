@@ -23,7 +23,6 @@ pub enum AutoSelection {
 pub struct RequiredVocabularyToken {
     pub token: String,
     pub tokenizer_description: String,
-    /// Legacy host configuration selector, also used when reporting missing vocabulary.
     pub legacy_parser: Option<String>,
 }
 
@@ -74,6 +73,8 @@ pub type UnfinishedNativeCallStart = fn(&str) -> anyhow::Result<Option<usize>>;
 pub struct UnifiedParserDescriptor {
     pub family: String,
     pub aliases: Vec<String>,
+    /// Legacy host selectors excluded from the direct factory catalog.
+    pub legacy_configuration_selectors: Vec<String>,
     /// Additional tool selectors compatible with this family's reasoning grammar.
     pub compatible_tool_selectors: Vec<String>,
     pub auto_selection: AutoSelection,
@@ -179,6 +180,7 @@ impl UnifiedParserDescriptor {
         Self {
             family: family.into(),
             aliases: Vec::new(),
+            legacy_configuration_selectors: Vec::new(),
             compatible_tool_selectors: Vec::new(),
             auto_selection: AutoSelection::Unified,
             auto_without_tool_selectors: Vec::new(),
@@ -268,6 +270,20 @@ impl UnifiedParserDescriptor {
         self.family == selector || self.aliases.iter().any(|alias| alias == selector)
     }
 
+    pub(super) fn configured_selectors(&self) -> impl Iterator<Item = &str> {
+        std::iter::once(self.family.as_str())
+            .chain(self.aliases.iter().map(String::as_str))
+            .chain(
+                self.legacy_configuration_selectors
+                    .iter()
+                    .map(String::as_str),
+            )
+    }
+
+    pub(super) fn claims_configured_selector(&self, selector: &str) -> bool {
+        self.configured_selectors().any(|name| name == selector)
+    }
+
     /// Resolve a stream's initial channel from rendered prompt evidence and family defaults.
     pub fn stream_starting_state(
         &self,
@@ -318,6 +334,7 @@ type OwnedFactory = dyn Fn(&[Tool]) -> anyhow::Result<Box<dyn UnifiedParser>> + 
 
 #[derive(Clone)]
 pub(crate) enum Factory {
+    LegacyLinked(UnifiedParserFactory),
     Linked(UnifiedParserFactory),
     Loaded(std::sync::Arc<OwnedFactory>),
 }
@@ -325,7 +342,7 @@ pub(crate) enum Factory {
 impl Factory {
     pub(crate) fn linked(&self) -> Option<UnifiedParserFactory> {
         match self {
-            Self::Linked(factory) => Some(*factory),
+            Self::LegacyLinked(factory) | Self::Linked(factory) => Some(*factory),
             Self::Loaded(_) => None,
         }
     }
@@ -406,11 +423,22 @@ impl UnifiedParserRegistration {
         self.vendor
     }
 
+    /// Check token preservation at model admission. Factory-only registrations use
+    /// the parser trait because their registration carries no decoding policy.
+    pub fn preserves_special_tokens(&self) -> anyhow::Result<bool> {
+        match self.factory {
+            Factory::LegacyLinked(_) => self
+                .create(&[])
+                .map(|parser| parser.preserve_special_tokens()),
+            _ => Ok(self.descriptor.preserve_special_tokens),
+        }
+    }
+
     /// Create fresh parser state for one choice using this registration's factory.
     pub fn create(&self, tools: &[Tool]) -> anyhow::Result<Box<dyn UnifiedParser>> {
         let family = &self.descriptor.family;
         let parser = match &self.factory {
-            Factory::Linked(factory) => factory(tools),
+            Factory::LegacyLinked(factory) | Factory::Linked(factory) => factory(tools),
             Factory::Loaded(factory) => factory(tools),
         }?;
         let parser = super::blank_tool_turn::wrap(family, parser);
@@ -480,7 +508,8 @@ mod tests {
         let route = |family: &str, legacy: Option<&str>| {
             let mut entry = super::super::resolve_unified_parser("mistral_4").unwrap();
             entry.descriptor.family = family.into();
-            entry.descriptor.required_tokens[0].legacy_parser = legacy.map(str::to_owned);
+            entry.descriptor.legacy_configuration_selectors =
+                legacy.into_iter().map(str::to_owned).collect();
             entry
         };
         let entries = [route("new", Some("old")), route("other", Some("old"))];

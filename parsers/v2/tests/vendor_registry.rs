@@ -286,6 +286,7 @@ fn factory_override_keeps_aliases_without_claiming_harmony_capabilities() {
         assert!(!descriptor.token_id_input);
         assert!(!descriptor.continuation);
         assert!(descriptor.token_prompt_prefix.is_none());
+        assert!(!registration.preserves_special_tokens().unwrap());
         let mut parser = registration.create(&[]).unwrap();
         assert_eq!(
             parser.push("plain text").unwrap(),
@@ -343,4 +344,111 @@ fn loaded_registration_validates_the_entire_batch_before_inserting() {
     let registration = resolve_unified_parser("loaded_valid").unwrap();
     assert!(registration.descriptor.guidance.structural_tag);
     assert!(registration.plugin_guidance().is_some());
+}
+
+#[test]
+fn legacy_factory_retains_host_and_standalone_compatibility() {
+    use dynamo_parsers_v2::{
+        create_tool_parser_for_family, register_unified_parser, resolve_unified_parser,
+        resolve_unified_parser_pair, structural_tag_builder_for_family,
+    };
+
+    fn with_tokens(_: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
+        struct PreservationProbe;
+        impl UnifiedParser for PreservationProbe {
+            fn preserve_special_tokens(&self) -> bool {
+                true
+            }
+            fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+                output.push_text(delta);
+                Ok(())
+            }
+            fn finish(&mut self) -> Result<UnifiedParserOutput> {
+                Ok(UnifiedParserOutput::default())
+            }
+        }
+        Ok(Box::new(PreservationProbe))
+    }
+
+    fn needs_tools(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
+        anyhow::ensure!(!tools.is_empty(), "tools are required");
+        vendor_factory(tools)
+    }
+
+    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    assert!(
+        resolve_unified_parser("gemma4")
+            .unwrap()
+            .preserves_special_tokens()
+            .unwrap()
+    );
+    register_unified_parser("gemma4", with_tokens);
+    let _restore_gemma = Restore("gemma4");
+    assert!(
+        resolve_unified_parser("gemma4")
+            .unwrap()
+            .preserves_special_tokens()
+            .unwrap()
+    );
+
+    register_unified_parser("nemotron_v3", vendor_factory);
+    let _restore_nemotron = Restore("nemotron_v3");
+    assert_eq!(
+        resolve_unified_parser_pair(Some("qwen3_coder"), Some("nemotron_v3"))
+            .unwrap()
+            .descriptor
+            .family,
+        "nemotron_v3",
+    );
+
+    let builder = structural_tag_builder_for_family("qwen3_coder").unwrap();
+    register_unified_parser("qwen3", needs_tools);
+    let _restore_qwen = Restore("qwen3");
+    let registration = resolve_unified_parser("qwen3_coder").unwrap();
+    assert!(registration.descriptor.structural_tag_builder.is_none());
+    assert_eq!(
+        registration
+            .preserves_special_tokens()
+            .unwrap_err()
+            .to_string(),
+        "tools are required"
+    );
+    assert!(std::ptr::eq(
+        structural_tag_builder_for_family("qwen3_coder").unwrap(),
+        builder
+    ));
+    assert!(create_tool_parser_for_family("qwen3_coder", &[]).is_ok());
+}
+
+#[test]
+fn loaded_plugins_cannot_claim_a_legacy_host_selector() {
+    use dynamo_parsers_v2::{
+        UnifiedParserDescriptor, UnifiedParserRegistration, resolve_unified_parser,
+        resolve_unified_parser_pair, unified::register_loaded_unified_parsers,
+    };
+
+    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    let mut descriptor = UnifiedParserDescriptor::new("mistral");
+    for family in ["mistral", "attempted_override"] {
+        descriptor.family = family.into();
+        if family != "mistral" {
+            descriptor.aliases.push("mistral".into());
+        }
+        let registration = UnifiedParserRegistration::loaded(
+            descriptor.clone(),
+            "test".into(),
+            None,
+            None,
+            vendor_factory,
+        );
+        assert!(register_loaded_unified_parsers(vec![registration]).is_err());
+        assert!(resolve_unified_parser(family).is_none());
+    }
+    assert_eq!(
+        resolve_unified_parser_pair(Some("mistral"), None)
+            .unwrap()
+            .descriptor
+            .family,
+        "mistral_4",
+    );
 }
