@@ -893,6 +893,12 @@ or the existing JSON spec with `audio_token_id`, `audio_start_id` and
 `feature_attention_mask`. Consumers that require PCM16 WAV can use
 `audio::decode::decode_wav_pcm16` with `audio-decode` before processing.
 
+The profile rejects clips longer than 30 seconds. For accepted clips, it pads
+to 30 seconds and counts `ceil(samples / 160)` valid frames, following SGLang's
+Python processor. Hugging Face `AutoProcessor` with `padding=True` can count
+`floor(samples / 160)` frames for a single clip. For example, 160,096 samples
+give 131 audio tokens with this profile and 130 with that AutoProcessor path.
+
 As in [#607](https://github.com/ai-dynamo/frontend-crates/issues/607), metadata
 planning and decoded media processing share the token count and prompt layout.
 `num_media_tokens` and `layout_from_metadata` need the sample count, rate and

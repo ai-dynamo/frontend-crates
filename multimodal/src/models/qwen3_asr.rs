@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Experimental Qwen3-ASR Whisper feature and prompt profile. Mirrors the
-//! SGLang Python Qwen3ASRProcessor contract. The caller provides resolved
-//! special token IDs and selects this profile explicitly.
+//! Experimental Qwen3-ASR profile for mono 16 kHz PCM. This profile rejects
+//! clips longer than 30 seconds. For accepted clips, it follows SGLang's
+//! Python Whisper feature extraction: pad to 30 seconds and count
+//! `ceil(samples / 160)` valid frames. For a single clip, Hugging Face
+//! `AutoProcessor` with `padding=True` can use `floor(samples / 160)` and
+//! produce one fewer audio token at a chunk or stride boundary.
+//! The caller provides resolved special token IDs and selects this profile
+//! explicitly.
 
 use crate::audio::features::{
     CenterPadding, FeatureLimits, FftOutputPrecision, LogMelConfig, LogMelExtractor, MelScale,
@@ -203,6 +208,7 @@ mod tests {
             (HOP * 99, 13),
             (HOP * 100, 13),
             (HOP * 100 + 1, 14),
+            (160_096, 131),
             (MAX_SAMPLES, 390),
         ] {
             assert_eq!(
@@ -262,5 +268,48 @@ mod tests {
         };
         assert_eq!(delta, 0);
         assert_eq!(positions, (0..18).cycle().take(54).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn tone_features_match_the_sglang_whisper_reference() {
+        let processor = Qwen3AsrProcessor::new(Qwen3AsrSpec {
+            audio_token_id: 2,
+            audio_start_id: 1,
+            audio_end_id: 3,
+        })
+        .unwrap();
+        let samples = (0..SAMPLE_RATE)
+            .map(|i| {
+                let phase = std::f64::consts::TAU * 440.0 * f64::from(i) / f64::from(SAMPLE_RATE);
+                (0.5 * phase.sin()) as f32
+            })
+            .collect();
+        let item = processor
+            .process_item(&DecodedMedia::Audio {
+                samples,
+                sample_rate: SAMPLE_RATE,
+                channels: 1,
+            })
+            .unwrap();
+        let TensorData::F32(features) = &item.feature.data else {
+            panic!("expected F32 features")
+        };
+        let frames = MAX_SAMPLES / HOP;
+        // Transformers 5.19 WhisperFeatureExtractor on Torch CPU with SGLang's
+        // 30-second padding. Include the reflected edge and padded silence.
+        for (mel, frame, expected) in [
+            (18, 0, 0.714_360_2),
+            (18, 50, 1.485_354_1),
+            (18, 99, 1.483_988_2),
+            (18, 100, 1.334_928_5),
+            (0, 50, -0.514_645_9),
+            (18, 2000, -0.514_645_9),
+        ] {
+            let got = features[mel * frames + frame];
+            assert!(
+                (got - expected).abs() < 1e-4,
+                "mel {mel}, frame {frame}: got {got}, expected {expected}"
+            );
+        }
     }
 }
