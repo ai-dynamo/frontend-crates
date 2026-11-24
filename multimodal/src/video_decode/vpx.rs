@@ -410,7 +410,7 @@ fn check_image(image: &Image, width: u32, height: u32) -> Result<()> {
 /// `sampler`.
 pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()> {
     // VP8 is always BT.601 limited range; VP9 says in its keyframes.
-    let (matrix, full_range) = match track.codec {
+    let colour = match track.codec {
         VideoCodec::Vp9 => track.vp9_colour.get()?.unwrap_or((Matrix::Bt601, false)),
         _ => (Matrix::Bt601, false),
     };
@@ -421,12 +421,25 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     if execution::threads() > 1 {
         let parts = seek::split_at_keys(track, &runs);
         if parts.len() > 1 {
-            return decode_parts(track, sampler, &order, &parts, (matrix, full_range));
+            return decode_parts(track, sampler, &order, &parts, colour);
         }
     }
+    let packets = runs.iter().flat_map(|run| run.start..run.end);
+    decode_packets(track, sampler, &order, packets, colour)
+}
+
+/// Decode `packets` in order on one decoder on the calling thread, reading
+/// one packet at a time.
+fn decode_packets(
+    track: &Track<'_>,
+    sampler: &mut Sampler<'_>,
+    order: &Order,
+    packets: impl Iterator<Item = usize>,
+    (matrix, full_range): (Matrix, bool),
+) -> Result<()> {
     let mut decoder = Decoder::new(api()?, track.codec)?;
     let (mut raw, mut framed, mut uv) = (Vec::new(), Vec::new(), Vec::new());
-    for index in runs.iter().flat_map(|run| run.start..run.end) {
+    for index in packets {
         let packet = &track.packets[index];
         if sampler.done() {
             break;
@@ -459,15 +472,17 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
 /// does, up to the last sampled frame. A part converts its sampled frames as
 /// they decode, and they reach `sampler` in order. The packets that the
 /// parts in flight read from the source and the frames they convert stay
-/// within the room the output limit leaves, else one part runs at a time;
-/// each part in flight also holds a libvpx decoder.
+/// within the room the output limit leaves; each part in flight also holds a
+/// libvpx decoder, which the room does not count. When fewer than two parts
+/// fit, the packets decode as [`decode`] decodes them on one thread.
 pub(super) fn decode_parts(
     track: &Track<'_>,
     sampler: &mut Sampler<'_>,
     order: &Order,
     parts: &[Run],
-    (matrix, full_range): (Matrix, bool),
+    colour: (Matrix, bool),
 ) -> Result<()> {
+    let (matrix, full_range) = colour;
     let (codec, width, height) = (track.codec, sampler.width, sampler.height);
     let (targets, resize, conversion) = (sampler.targets, sampler.resize, sampler.conversion);
     let sampled =
@@ -503,7 +518,10 @@ pub(super) fn decode_parts(
         .max()
         .unwrap_or(0)
         .saturating_add((width as usize * height as usize).saturating_mul(9) / 2);
-    let ahead = (sampler.room / held).clamp(1, execution::threads());
+    let Some(ahead) = parts_ahead(sampler.room, held, execution::threads()) else {
+        let packets = parts.iter().flat_map(|part| part.clone());
+        return decode_packets(track, sampler, order, packets, colour);
+    };
     // `Track` is not `Sync`, so the caller reads the packets. A failed read
     // is reported in decode order, after the packets before it decode.
     let read = |index: usize| -> Result<Cow<'_, [u8]>> {
@@ -563,6 +581,15 @@ pub(super) fn decode_parts(
     )
 }
 
+/// The parts that run at once: as many as `room` holds at `held` bytes each,
+/// up to `threads`. `None` when fewer than two fit: one part at a time holds a
+/// whole part's packets and frames, where the decode on one thread holds one
+/// packet and one frame.
+fn parts_ahead(room: usize, held: usize, threads: usize) -> Option<usize> {
+    let fit = room / held;
+    (fit >= 2).then(|| fit.min(threads))
+}
+
 /// View a libvpx I420 image (see `check_image`) as NV12, interleaving its
 /// chroma into `uv`.
 fn to_nv12<'a>(
@@ -619,6 +646,14 @@ mod tests {
     fn a_missing_library_is_reported_not_fatal() {
         let err = load(&[c"libdynamo-no-such-vpx.so"]).err().unwrap();
         assert!(err.contains("could not be loaded"), "{err}");
+    }
+
+    #[test]
+    fn parts_run_only_when_two_fit_the_room() {
+        assert_eq!(parts_ahead(199, 100, 8), None);
+        assert_eq!(parts_ahead(200, 100, 8), Some(2));
+        assert_eq!(parts_ahead(10_000, 100, 8), Some(8));
+        assert_eq!(parts_ahead(10_000, 100, 1), Some(1));
     }
 
     /// The first packet of a fixture: a 256x256 VP9 keyframe in vp9.webm, one

@@ -59,7 +59,8 @@
 //! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
 //! at a time, so only its index (sample tables) is held; a libvpx decode on
 //! an armed pool reads the packets of the segments in flight ahead, as many
-//! segments as fit the room `max_output_bytes` leaves and at least one. WebM
+//! segments as fit the room `max_output_bytes` leaves. When fewer than two
+//! segments fit, it decodes one packet at a time. WebM
 //! and Matroska packets are read into memory while the file is demuxed, so
 //! those hold the whole video next to the source. A VP8 or VP9 clip is also
 //! read once in full before decoding, to find which packets display a frame
