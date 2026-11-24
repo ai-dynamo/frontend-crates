@@ -259,7 +259,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
 | per video, Qwen3-VL | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
-| per video, Nemotron 3.5 Super VL | `process_items`, `layout_with_text`; `NemotronVlProcessor::video_layout` from metadata | sampled frames, their source indices and fps, and a `TextEncoder` → features and expanded prompt (§8); needs a `NemotronVlSpec.video` |
+| per video, Nemotron 3.5 Super VL | `rewrite_prompt`, `process_items`, `layout_with_text`; `NemotronVlProcessor::video_layout` from metadata | sampled frames, their source indices and fps, and a `TextEncoder` that can decode → features and expanded prompt (§8); needs a `NemotronVlSpec.video` |
 
 `fit` is optional: `None` keeps the selected frames at the source size;
 `FrameResize` is a fixed size, `models::qwen_vl::Qwen3VlVideoFit` the
@@ -750,6 +750,11 @@ image depends on the number of images in the call. As a result:
   request; a placeholder count that differs from the image count is
   `InvalidInput`. `process_item` returns `Unsupported`: one image alone has
   no request to size it by.
+- With videos, the host first calls `rewrite_prompt(input_ids, modalities,
+  text)` and expands the ids it returns. The chat template writes
+  `video_context_token` (`<video>`) as text, not as one token. The family
+  replaces the first one per video with `<image>` and encodes the text
+  between, as SGLang's text path does. `text` must implement `decode`.
 - A router calls `layout_from_metadata`, which is exact for the request. The
   `Feature` part of each segment holds the feature count of that item, and
   `apply_layout` takes those counts. `NemotronVlProcessor::plan_images` gives

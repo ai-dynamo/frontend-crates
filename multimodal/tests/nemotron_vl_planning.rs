@@ -13,7 +13,9 @@ use std::path::Path;
 use dynamo_multimodal::models::nemotron_vl::{
     NemotronVlImagePlan, NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec, NemotronVlVideoSpec,
 };
-use dynamo_multimodal::processor::{DecodedMedia, MediaMetadata, MmFamilyProcessor};
+use dynamo_multimodal::processor::{
+    DecodedMedia, MediaMetadata, MmFamilyProcessor, Modality, TextEncoder,
+};
 use dynamo_multimodal::registry::{
     ProcessorSpec, build_processor, processor_from_spec, spec_from_hf_configs, spec_from_model_dir,
 };
@@ -103,13 +105,16 @@ fn resolve_files(name: &str, files: &[(&str, &Value)]) -> Result<NemotronVlSpec>
     })
 }
 
-const VIDEO: NemotronVlVideoSpec = NemotronVlVideoSpec {
-    temporal_patch_size: 2,
-    target_num_patches: 1024,
-    maintain_aspect_ratio: true,
-    image_size: 224,
-    pruning_rate: 0.7,
-};
+fn video() -> NemotronVlVideoSpec {
+    NemotronVlVideoSpec {
+        temporal_patch_size: 2,
+        target_num_patches: 1024,
+        maintain_aspect_ratio: true,
+        image_size: 224,
+        pruning_rate: 0.7,
+        placeholder: "<video>".into(),
+    }
+}
 
 /// A fixture spec, which holds the image fields, with `video`.
 fn with_video(spec: &Value, video: NemotronVlVideoSpec) -> NemotronVlSpec {
@@ -128,13 +133,13 @@ fn model_dir_resolves_the_hf_spec_and_sglang_differs_in_three_fields() {
     let fixture = sizes_fixture();
     let [config, pre, tokenizer] = parsed();
     let spec = resolve("hf", &config, &pre, &tokenizer).unwrap();
-    assert_eq!(spec, with_video(&fixture["hf_spec"], VIDEO));
+    assert_eq!(spec, with_video(&fixture["hf_spec"], video()));
 
     // What SGLang's processor resolved under `--context-length 16384`: config.json
     // has no `video_target_num_patches`.
     let sglang_video = NemotronVlVideoSpec {
         target_num_patches: 0,
-        ..VIDEO
+        ..video()
     };
     let sglang = NemotronVlSpec {
         sizing: NemotronVlSizing::Sglang,
@@ -164,7 +169,7 @@ fn model_dir_resolves_the_hf_spec_and_sglang_differs_in_three_fields() {
 fn model_dir_reads_the_processor_file_that_transformers_loads() {
     let fixture = sizes_fixture();
     let [config, pre, tokenizer] = parsed();
-    let hf_spec = with_video(&fixture["hf_spec"], VIDEO);
+    let hf_spec = with_video(&fixture["hf_spec"], video());
     let nested = |image_processor: &Value| {
         json!({
             "audio_hop_length": 160, "audio_sampling_rate": 16000, "audio_subsampling_factor": 8,
@@ -730,5 +735,89 @@ fn rejects_invalid_specs_sizes_and_buffers() {
     assert!(matches!(
         family.layout_from_metadata(&[IMAGE], &[huge]),
         Err(MmError::LimitExceeded { .. })
+    ));
+}
+
+#[test]
+fn video_placeholder_comes_from_config() {
+    let [mut config, pre, mut tokenizer] = parsed();
+    let placeholder = |config: &Value, tokenizer: &Value| {
+        resolve("placeholder", config, &pre, tokenizer)
+            .unwrap()
+            .video
+            .map(|video| video.placeholder)
+    };
+    config["video_context_token"] = "<clip>".into();
+    assert_eq!(placeholder(&config, &tokenizer).as_deref(), Some("<clip>"));
+    config
+        .as_object_mut()
+        .unwrap()
+        .remove("video_context_token");
+    assert_eq!(placeholder(&config, &tokenizer).as_deref(), Some("<video>"));
+    // SGLang splices a placeholder that is one token, and an empty one puts every
+    // video at the prompt start; neither is mirrored.
+    for refused in [Value::Null, "".into(), "<image>".into()] {
+        config["video_context_token"] = refused;
+        assert_eq!(placeholder(&config, &tokenizer), None);
+    }
+    config["video_context_token"] = "<clip>".into();
+    for vocab in [json!({"<clip>": 7}), json!([["<clip>", 0.0]])] {
+        tokenizer["model"]["vocab"] = vocab;
+        assert_eq!(placeholder(&config, &tokenizer), None);
+    }
+}
+
+/// Words of a toy vocabulary, split at whitespace.
+struct Words(&'static [(i32, &'static str)]);
+
+impl TextEncoder for Words {
+    fn encode(&self, text: &str) -> Result<Vec<i32>> {
+        Ok(text
+            .split_whitespace()
+            .map(|word| self.0.iter().find(|(_, w)| *w == word).unwrap().0)
+            .collect())
+    }
+
+    fn decode(&self, ids: &[i32]) -> Result<String> {
+        let word = |id: &i32| self.0.iter().find(|(i, _)| i == id).unwrap().1;
+        Ok(ids.iter().map(word).collect::<Vec<_>>().join(" "))
+    }
+}
+
+/// An encoder that cannot decode.
+struct EncodeOnly;
+
+impl TextEncoder for EncodeOnly {
+    fn encode(&self, _text: &str) -> Result<Vec<i32>> {
+        Ok(Vec::new())
+    }
+}
+
+#[test]
+fn rewrite_prompt_puts_image_at_each_video_placeholder() {
+    let [config, pre, tokenizer] = parsed();
+    let spec = resolve("rewrite", &config, &pre, &tokenizer).unwrap();
+    let image = spec.image_token_id;
+    let processor = NemotronVlProcessor::new(spec).unwrap();
+    let words = Words(&[(1, "<s>"), (2, "hi"), (3, "<video>"), (4, "there")]);
+    let rewrite = |ids: &[i32], media: &[Modality]| processor.rewrite_prompt(ids, media, &words);
+    let two = [Modality::Video, Modality::Video];
+    assert_eq!(
+        rewrite(&[1, 2, 3, 4, 3], &two).unwrap(),
+        Some(vec![1, 2, image, 4, image])
+    );
+    // A placeholder past the request's videos stays text, as in Python.
+    assert_eq!(
+        rewrite(&[1, 2, 3, 4, 3], &[Modality::Video]).unwrap(),
+        Some(vec![1, 2, image, 4, 3])
+    );
+    assert_eq!(
+        rewrite(&[2, 4], &[Modality::Video]).unwrap(),
+        Some(vec![2, 4])
+    );
+    assert_eq!(rewrite(&[1, 2, 3], &[Modality::Image]).unwrap(), None);
+    assert!(matches!(
+        processor.rewrite_prompt(&[1, 3], &[Modality::Video], &EncodeOnly),
+        Err(MmError::Unsupported { .. })
     ));
 }

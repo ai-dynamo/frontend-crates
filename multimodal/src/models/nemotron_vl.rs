@@ -24,7 +24,9 @@
 //! span depends on the request; with `hf` sizing it is the feature tokens and
 //! the two markers.
 //!
-//! A video's placeholder is `<image>` too, as the model sees it. Each group
+//! A video's placeholder is `<image>` too, as the model sees it;
+//! [`MmFamilyProcessor::rewrite_prompt`] turns the chat template's `<video>`
+//! into it. Each group
 //! of `temporal_patch_size` frames expands to its frame label, `<img>`, its
 //! `<image>` run and `</img>`, with the groups joined by a newline. The host
 //! samples the frames. Labels are text, so a video layout needs the host's
@@ -99,6 +101,15 @@ pub struct NemotronVlVideoSpec {
     /// SGLang's `video_pruning_rate`. Above 0, the prompt holds only the
     /// feature tokens that EVS keeps; HF writes them all.
     pub pruning_rate: f64,
+    /// `video_context_token`: the chat template's video text, which is not one
+    /// token. [`MmFamilyProcessor::rewrite_prompt`] replaces it with `<image>`.
+    #[serde(default = "default_video_placeholder")]
+    pub placeholder: String,
+}
+
+/// `NemotronH_Nano_VL_V2_Config`'s `video_context_token`.
+pub(crate) fn default_video_placeholder() -> String {
+    "<video>".to_owned()
 }
 
 impl NemotronVlVideoSpec {
@@ -667,7 +678,8 @@ impl NemotronVlProcessor {
     }
 
     /// The prompt layout of a request whose placeholders are all videos, from
-    /// metadata alone, for both sizings.
+    /// metadata alone, for both sizings. `input_ids` come from
+    /// [`MmFamilyProcessor::rewrite_prompt`].
     pub fn video_layout(
         &self,
         input_ids: &[i32],
@@ -790,6 +802,34 @@ impl MmFamilyProcessor for NemotronVlProcessor {
         Err(MmError::unsupported(
             "nemotron_vl sizes an image by its whole request; call process_items",
         ))
+    }
+
+    /// SGLang's `nano_nemotron_vl.py` text path, taken because `video_context_token`
+    /// is not one token: each span between placeholders encodes alone.
+    fn rewrite_prompt(
+        &self,
+        input_ids: &[i32],
+        modalities: &[Modality],
+        text: &dyn TextEncoder,
+    ) -> Result<Option<Vec<i32>>> {
+        let videos = (modalities.iter())
+            .filter(|&&m| m == Modality::Video)
+            .count();
+        let Some(video) = self.spec.video.as_ref().filter(|_| videos > 0) else {
+            return Ok(None);
+        };
+        let prompt = text.decode(input_ids)?;
+        let mut ids = Vec::with_capacity(input_ids.len());
+        for (index, span) in prompt
+            .splitn(videos + 1, video.placeholder.as_str())
+            .enumerate()
+        {
+            if index > 0 {
+                ids.push(self.spec.image_token_id);
+            }
+            ids.extend(text.encode(span)?);
+        }
+        Ok(Some(ids))
     }
 
     fn process_items(

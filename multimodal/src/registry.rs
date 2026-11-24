@@ -14,6 +14,7 @@ use crate::models::glm5_next::{
 use crate::models::kimi_k3::{KimiK3Processor, KimiK3Spec};
 use crate::models::nemotron_vl::{
     NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec, NemotronVlVideoSpec,
+    default_video_placeholder,
 };
 use crate::models::pixtral::{PixtralProcessor, PixtralSpec};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
@@ -717,6 +718,8 @@ fn resolve_nemotron_vl(
     #[derive(serde::Deserialize)]
     struct Tokenizer {
         added_tokens: Vec<AddedToken>,
+        #[serde(default)]
+        model: Value,
     }
 
     let parse = |name: &str, json: &str| {
@@ -846,7 +849,17 @@ fn resolve_nemotron_vl(
         image_mean: knobs.norm_mean,
         image_std: knobs.norm_std,
         sizing: NemotronVlSizing::Hf,
-        video: resolve_nemotron_vl_video(config, processor, pre),
+        // SGLang splices a placeholder that is one token, and an empty one puts every
+        // video at the prompt start; `rewrite_prompt` mirrors neither, so video stays off.
+        video: resolve_nemotron_vl_video(config, processor, pre).filter(|video| {
+            let text = video.placeholder.as_str();
+            let vocab = &tokenizer.model["vocab"];
+            !(text.is_empty()
+                || (tokenizer.added_tokens.iter()).any(|token| token.content == text)
+                || vocab.get(text).is_some()
+                || (vocab.as_array())
+                    .is_some_and(|pieces| pieces.iter().any(|piece| piece[0] == text)))
+        }),
     })
 }
 
@@ -886,6 +899,10 @@ fn resolve_nemotron_vl_video(
         pruning_rate: match config.get("video_pruning_rate") {
             None => 0.0,
             Some(value) => value.as_f64()?,
+        },
+        placeholder: match config.get("video_context_token") {
+            None => default_video_placeholder(),
+            Some(value) => value.as_str()?.to_owned(),
         },
     })
     .filter(|video| video.validate().is_ok())
