@@ -1595,12 +1595,13 @@ pub(crate) trait InvokeEmitter {
 }
 
 /// Whether quotes in model output can make a reasoning or tool-call marker literal text.
-/// Disabled by default; an explicitly nontruthy setting restores quote-aware parsing.
-fn quote_aware_parsing() -> bool {
+/// The environment overrides the embedding application's compatibility default.
+pub fn quote_aware_parsing() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
     *ENABLED.get_or_init(|| {
         std::env::var_os("DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING")
-            .is_some_and(|value| !value.to_str().is_some_and(is_truthy))
+            .map(|value| !value.to_str().is_some_and(is_truthy))
+            .unwrap_or(cfg!(feature = "quote-aware-default"))
     })
 }
 

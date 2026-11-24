@@ -19,6 +19,7 @@ pub use tool_calling::kimi_k3::KimiK3ToolStreamParser;
 pub use tool_calling::minimax_m2::MiniMaxM2ToolStreamParser;
 pub use tool_calling::minimax_m3::MiniMaxM3ToolStreamParser;
 pub use tool_calling::muse_glimmer::MuseGlimmerToolStreamParser;
+pub use tool_calling::scan::quote_aware_parsing;
 // Expose Spark's parser without changing the existing Glimmer entry point.
 pub use tool_calling::muse_spark::MuseSparkToolStreamParser;
 pub use tool_calling::qwen3_coder::Qwen3CoderToolStreamParser;
@@ -74,3 +75,10 @@ mod feature_tests {
         }
     }
 }
+
+pub use unified::{
+    AutoSelection, BatchPrefill, Guidance, RequiredVocabularyToken, UnifiedParserDescriptor,
+    UnifiedParserRegistration, register_unified_parser_with_descriptor, resolve_unified_parser,
+    resolve_unified_parser_pair, resolve_unified_parser_pair_in, unified_parser_registrations,
+    validate_auto_unified_pair, validate_auto_unified_pair_in,
+};

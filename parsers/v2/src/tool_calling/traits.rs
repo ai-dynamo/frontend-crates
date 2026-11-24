@@ -32,7 +32,7 @@ pub struct Tool {
 
 // Aligned with vLLM Rust `ToolCallDelta`; `complete` is Dynamo's lifecycle extension.
 /// One tool-call update emitted while parsing assistant text.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ToolCallDelta {
     /// Stable parser-local tool index for this call within one assistant turn.
     pub tool_index: usize,

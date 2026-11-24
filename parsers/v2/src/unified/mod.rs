@@ -49,6 +49,14 @@
 //! divergence is stated at the item.
 
 pub mod beam;
+pub mod plugin;
+pub mod prefill;
+mod registration;
+pub use registration::{
+    AutoSelection, BatchPrefill, Guidance, LoadedGuidance, LoadedPrompt, NativeGrammar,
+    ReasoningControl, RequiredVocabularyToken, UnifiedParserDescriptor, UnifiedParserRegistration,
+};
+
 mod blank_tool_turn;
 pub mod deepseek_v4;
 pub mod deepseek_v41;
@@ -97,7 +105,7 @@ use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
 /// Name, variant order and payload shapes are aligned with the peer trait's event
 /// type, so the two translate variant-for-variant under a compiler rather than by
 /// a reader's judgement.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnifiedParserEvent {
     /// Keep commentary separate from final answers when phase preservation is enabled.
     MessageStart(MessagePhase),
@@ -144,7 +152,7 @@ pub enum UnifiedEvent {
 }
 
 /// Assistant-channel state established by the rendered generation prompt.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnifiedParserStartingState {
     /// Use the family default, including implicit reasoning where configured.
     #[default]
@@ -156,7 +164,7 @@ pub enum UnifiedParserStartingState {
 }
 
 /// Tool-call wire format selected for one request.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnifiedToolOutputMode {
     /// Model-native tool-call markup.
     #[default]
@@ -192,7 +200,7 @@ pub enum UnifiedToolOutputMode {
 ///
 /// So streaming is a THIRD contract that callers opt into, and the two existing
 /// ones behave exactly as they did before.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InvalidGuidedPayloadPolicy {
     /// Return a typed error so the serving layer can reject or retry the output.
     #[default]
@@ -220,7 +228,7 @@ pub enum InvalidGuidedPayloadPolicy {
 /// Prompt inspection and backend request resolution happen before this value is
 /// built. Passing one owned object prevents starting state, wire format, and
 /// malformed-payload policy from being initialized through paths that can drift.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnifiedParserInit {
     pub prompt_token_ids: Vec<u32>,
     pub starting_state: UnifiedParserStartingState,
@@ -257,7 +265,7 @@ impl UnifiedParserInit {
 /// What a native parser does with a tool call whose envelope or body is malformed
 /// (missing terminator, header only, unclosed parameter). Not a guided-JSON policy;
 /// see [`InvalidGuidedPayloadPolicy`] for that.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MalformedToolCallPolicy {
     /// Best effort: discard only the bad region and keep parsing (conformance default).
     #[default]
@@ -268,7 +276,8 @@ pub enum MalformedToolCallPolicy {
 }
 
 /// How a native tool body frames argument values.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ArgumentFraming {
     /// A value runs to the first closing tag, as the reference regex does.
     #[default]
@@ -290,7 +299,7 @@ pub enum ArgumentFraming {
 
 /// Request-scoped native tool-call policy. Apply with
 /// [`UnifiedParser::set_tool_call_policy`] before the first push.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ToolCallPolicy {
     pub malformed: MalformedToolCallPolicy,
     pub argument_framing: ArgumentFraming,
@@ -6478,7 +6487,7 @@ pub type UnifiedParserFactory = fn(&[Tool]) -> Result<Box<dyn UnifiedParser>>;
 /// whole process, and unregistering restores it. An add-only registry would force a
 /// vendor who disagrees with one of our families to fork the crate.
 static VENDOR_PARSERS: std::sync::LazyLock<
-    std::sync::RwLock<std::collections::HashMap<String, UnifiedParserFactory>>,
+    std::sync::RwLock<std::collections::HashMap<String, UnifiedParserRegistration>>,
 > = std::sync::LazyLock::new(|| std::sync::RwLock::new(std::collections::HashMap::new()));
 
 /// Register `factory` for `family`, returning whatever it displaced.
@@ -6511,60 +6520,246 @@ pub fn register_unified_parser(
     // the same family silently ran two different parsers depending on how the
     // request was routed. Canonicalizing on both sides is what makes "replace a
     // family this crate ships" true for every name that family answers to.
-    let key = canonical_unified_family(family).unwrap_or(family);
-    let previous = VENDOR_PARSERS
-        .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(key.to_string(), factory);
-    tracing::info!(
-        target: "dynamo_parsers_v2",
-        family = key,
-        requested = family,
-        shadows_builtin = canonical_unified_family(family).is_some(),
-        replaced_vendor = previous.is_some(),
-        "unified parser registered"
-    );
-    previous
+    let mut descriptor = builtin_unified_registrations()
+        .iter()
+        .find(|entry| entry.descriptor.accepts(family))
+        .cloned()
+        .map(|entry| entry.descriptor)
+        .unwrap_or_else(|| UnifiedParserDescriptor::new(family));
+    // Existing registrations preserve their custom alias and policy on factory replacement.
+    if let Some(current) = resolve_unified_parser(family) {
+        descriptor = current.descriptor;
+    }
+    register_unified_parser_with_descriptor(descriptor, factory)
+        .expect("an existing or default descriptor is valid")
+        .and_then(|entry| entry.factory.linked())
 }
 
-/// Remove a vendor registration, returning it. A shadowed built-in becomes
-/// reachable again.
-///
-/// Accepts any alias of the family, matching [`register_unified_parser`], and
-/// inherits its STARTUP-ONLY guidance: a create that read the table before this call
-/// can still finish building the parser it removes, so the returned factory may be used
-/// once more after this returns.
-pub fn unregister_unified_parser(family: &str) -> Option<UnifiedParserFactory> {
-    let key = canonical_unified_family(family).unwrap_or(family);
-    VENDOR_PARSERS
+/// Register metadata and factory atomically during startup. Aliases may not steal another family.
+pub fn register_unified_parser_with_descriptor(
+    mut descriptor: UnifiedParserDescriptor,
+    factory: UnifiedParserFactory,
+) -> Result<Option<UnifiedParserRegistration>> {
+    anyhow::ensure!(
+        !descriptor.family.is_empty(),
+        "parser family must not be empty"
+    );
+    if let Some(builtin) = builtin_unified_registrations()
+        .iter()
+        .find(|entry| entry.descriptor.accepts(&descriptor.family))
+        .cloned()
+    {
+        descriptor.family = builtin.descriptor.family;
+        descriptor.aliases.extend(builtin.descriptor.aliases);
+    }
+    descriptor.guidance.structural_tag = descriptor.structural_tag_builder.is_some();
+    descriptor.guidance.whole_turn = descriptor
+        .structural_tag_builder
+        .is_some_and(|builder| builder.constrains_every_turn());
+    descriptor.aliases.sort();
+    descriptor.aliases.dedup();
+    let mut vendors = VENDOR_PARSERS.write().unwrap_or_else(|e| e.into_inner());
+    if let Some(previous) = vendors
+        .values()
+        .find(|entry| entry.descriptor.accepts(&descriptor.family))
+    {
+        descriptor.family = previous.descriptor.family.clone();
+        descriptor
+            .aliases
+            .extend(previous.descriptor.aliases.clone());
+        descriptor.aliases.sort();
+        descriptor.aliases.dedup();
+    }
+    anyhow::ensure!(
+        descriptor.text_input || descriptor.token_id_input,
+        "parser must accept text or token IDs"
+    );
+    anyhow::ensure!(
+        descriptor.batch_prefill != BatchPrefill::MarkerPair
+            || descriptor
+                .batch_markers
+                .or(descriptor.reasoning_markers)
+                .is_some(),
+        "marker-pair prefill requires markers"
+    );
+    let builtins = builtin_unified_registrations();
+    for name in std::iter::once(&descriptor.family).chain(&descriptor.aliases) {
+        anyhow::ensure!(!name.is_empty(), "parser alias must not be empty");
+        let collision = builtins.iter().chain(vendors.values()).any(|entry| {
+            entry.descriptor.family != descriptor.family && entry.descriptor.accepts(name)
+        });
+        anyhow::ensure!(
+            !collision,
+            "parser selector '{name}' belongs to another family"
+        );
+    }
+    let family = descriptor.family.clone();
+    Ok(vendors.insert(
+        family,
+        UnifiedParserRegistration {
+            descriptor,
+            factory: registration::Factory::Linked(factory),
+            vendor: true,
+            plugin_identity: None,
+            plugin_guidance: None,
+            plugin_prompt: None,
+        },
+    ))
+}
+
+/// Admit all externally loaded parsers together, without shadowing existing selectors.
+pub fn register_loaded_unified_parsers(entries: Vec<UnifiedParserRegistration>) -> Result<()> {
+    let mut vendors = VENDOR_PARSERS
         .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .remove(key)
+        .unwrap_or_else(|error| error.into_inner());
+    let mut names: std::collections::HashSet<&str> = builtin_unified_registrations()
+        .iter()
+        .chain(vendors.values())
+        .flat_map(|entry| {
+            std::iter::once(entry.descriptor.family.as_str())
+                .chain(entry.descriptor.aliases.iter().map(String::as_str))
+        })
+        .collect();
+    for entry in &entries {
+        for name in std::iter::once(&entry.descriptor.family).chain(&entry.descriptor.aliases) {
+            anyhow::ensure!(
+                !name.is_empty() && names.insert(name),
+                "invalid or conflicting parser selector '{name}'"
+            );
+        }
+    }
+    vendors.extend(
+        entries
+            .into_iter()
+            .map(|entry| (entry.descriptor.family.clone(), entry)),
+    );
+    Ok(())
+}
+
+/// Remove a startup registration through its canonical name or alias.
+pub fn unregister_unified_parser(family: &str) -> Option<UnifiedParserFactory> {
+    let mut vendors = VENDOR_PARSERS.write().unwrap_or_else(|e| e.into_inner());
+    let key = vendors
+        .values()
+        .find(|entry| entry.descriptor.accepts(family))?
+        .descriptor
+        .family
+        .clone();
+    vendors
+        .remove(&key)
+        .and_then(|entry| entry.factory.linked())
 }
 
 /// Families currently registered by a vendor, sorted.
 pub fn vendor_unified_families() -> Vec<String> {
-    let mut v: Vec<String> = VENDOR_PARSERS
+    let mut names: Vec<_> = VENDOR_PARSERS
         .read()
         .unwrap_or_else(|e| e.into_inner())
         .keys()
         .cloned()
         .collect();
-    v.sort();
-    v
+    names.sort();
+    names
 }
 
-/// Look up a vendor factory without constructing anything.
-///
-/// Canonicalizes first, so every alias of a built-in family resolves to the same
-/// vendor registration.
-fn vendor_factory(family: &str) -> Option<UnifiedParserFactory> {
-    let key = canonical_unified_family(family).unwrap_or(family);
-    VENDOR_PARSERS
-        .read()
-        .unwrap_or_else(|e| e.into_inner())
-        .get(key)
-        .copied()
+/// Snapshot effective registrations without constructing parser state.
+pub fn unified_parser_registrations() -> Vec<UnifiedParserRegistration> {
+    let vendors = VENDOR_PARSERS.read().unwrap_or_else(|e| e.into_inner());
+    let mut entries = builtin_unified_registrations().to_vec();
+    entries.retain(|entry| !vendors.contains_key(&entry.descriptor.family));
+    entries.extend(vendors.values().cloned());
+    entries.sort_by(|a, b| a.descriptor.family.cmp(&b.descriptor.family));
+    entries
+}
+
+/// Resolve aliases against the same effective factory and metadata snapshot.
+pub fn resolve_unified_parser(selector: &str) -> Option<UnifiedParserRegistration> {
+    let vendors = VENDOR_PARSERS.read().unwrap_or_else(|e| e.into_inner());
+    vendors
+        .values()
+        .find(|entry| entry.descriptor.accepts(selector))
+        .cloned()
+        .or_else(|| {
+            builtin_unified_registrations()
+                .iter()
+                .find(|entry| entry.descriptor.accepts(selector))
+                .cloned()
+        })
+}
+
+/// Resolve compatible selectors, preferring the reasoning grammar when it borrows tool syntax.
+pub fn resolve_unified_parser_pair(
+    tool: Option<&str>,
+    reasoning: Option<&str>,
+) -> Option<UnifiedParserRegistration> {
+    resolve_unified_parser_pair_in(&unified_parser_registrations(), tool, reasoning).cloned()
+}
+
+/// Resolve a selector pair using one host-retained effective catalog.
+pub fn resolve_unified_parser_pair_in<'a>(
+    entries: &'a [UnifiedParserRegistration],
+    tool: Option<&str>,
+    reasoning: Option<&str>,
+) -> Option<&'a UnifiedParserRegistration> {
+    let canonical = |selector| {
+        entries
+            .iter()
+            .find(|entry| entry.descriptor.accepts(selector))
+            .map(|entry| entry.descriptor.family.as_str())
+    };
+    let tool = match tool {
+        Some(selector) => Some(canonical(selector)?),
+        None => None,
+    };
+    let reasoning = match reasoning {
+        Some(selector) => Some(canonical(selector)?),
+        None => None,
+    };
+    entries.iter().find(|entry| {
+        let descriptor = &entry.descriptor;
+        match (tool, reasoning) {
+            (Some(tool), Some(reasoning)) => {
+                descriptor.family == reasoning
+                    && (descriptor.family == tool
+                        || descriptor
+                            .compatible_tool_selectors
+                            .iter()
+                            .any(|selector| canonical(selector) == Some(tool)))
+            }
+            (Some(selector), None) | (None, Some(selector)) => descriptor.family == selector,
+            (None, None) => false,
+        }
+    })
+}
+
+/// Enforce descriptor-owned restrictions before automatic generation selection.
+pub fn validate_auto_unified_pair(tool: Option<&str>, reasoning: Option<&str>) -> Result<()> {
+    validate_auto_unified_pair_in(&unified_parser_registrations(), tool, reasoning)
+}
+
+/// Validate automatic selection against the same retained catalog as pair resolution.
+pub fn validate_auto_unified_pair_in(
+    entries: &[UnifiedParserRegistration],
+    tool: Option<&str>,
+    reasoning: Option<&str>,
+) -> Result<()> {
+    for entry in entries {
+        let descriptor = &entry.descriptor;
+        if descriptor.auto_selection == AutoSelection::RequiresBothSelectors
+            && [tool, reasoning]
+                .into_iter()
+                .flatten()
+                .any(|name| descriptor.accepts(name))
+        {
+            anyhow::ensure!(
+                tool.is_some_and(|name| descriptor.accepts(name))
+                    && reasoning.is_some_and(|name| descriptor.accepts(name)),
+                "family '{}' requires both --dyn-tool-call-parser and --dyn-reasoning-parser to select that family",
+                descriptor.family
+            );
+        }
+    }
+    Ok(())
 }
 
 /// THE built-in registry. One line per family — adding a family is adding a line
@@ -6580,28 +6775,16 @@ fn vendor_factory(family: &str) -> Option<UnifiedParserFactory> {
 /// `qwen3` while the tool-only registry calls it `qwen3_coder`, and callers should
 /// not have to know which name they arrived with.
 macro_rules! unified_registry {
-    ($($family:literal $(| $alias:literal)* => $ctor:path),+ $(,)?) => {
-        /// Every family `create_unified_parser_for_family` accepts, aliases included.
-        /// Tests iterate this, so a family here without conformance coverage fails the
-        /// suite instead of silently skipping.
+    ($($family:literal $(| $alias:literal)* => ($ctor:path, $configure:expr)),+ $(,)?) => {
+        /// Built-in native grammar names, including compatibility aliases.
         pub const REGISTERED_UNIFIED_FAMILIES: &[&str] = &[$($family, $($alias,)*)+];
 
-        /// Every family built INTO this crate, aliases included.
-        ///
-        /// Deliberately excludes vendor registrations: the conformance suite
-        /// iterates this, and a vendor parser has no corpus here to be measured
-        /// against. Ask [`vendor_unified_families`] for those.
+        /// Every built-in selector, excluding vendor registrations.
         pub fn builtin_unified_families() -> &'static [&'static str] {
             REGISTERED_UNIFIED_FAMILIES
         }
 
-        /// The canonical name of a built-in family, given any of its aliases.
-        ///
-        /// `None` for a name this crate does not ship, which is how a vendor family
-        /// keeps its own spelling. Generated from the same list as the constructor,
-        /// so an alias cannot exist for dispatch but be invisible to the vendor
-        /// registry — that split is exactly what made `register_unified_parser`
-        /// shadow one routing name and not its sibling.
+        /// Canonical built-in grammar name. Use `resolve_unified_parser` for vendor discovery.
         pub fn canonical_unified_family(family: &str) -> Option<&'static str> {
             match family {
                 $($family $(| $alias)* => Some($family),)+
@@ -6609,97 +6792,152 @@ macro_rules! unified_registry {
             }
         }
 
-        /// Create the unified parser for a family.
-        ///
-        /// A vendor registration wins over the built-in of the same name — see
-        /// [`register_unified_parser`]. For Nemotron V3, both branches apply the
-        /// tool-only-turn whitespace rule (issue #406): whitespace-only text is dropped
-        /// from a turn that calls tools and shows no visible text. Other families are
-        /// returned unwrapped. Selection is observable through the
-        /// `tracing::debug!` event emitted here, and it reports vendor and built-in
-        /// on the same terms.
-        pub fn create_unified_parser_for_family(
-            family: &str,
-            tools: &[Tool],
-        ) -> Result<Box<dyn UnifiedParser>> {
-            if let Some(factory) = vendor_factory(family) {
-                let key = canonical_unified_family(family).unwrap_or(family);
-                // A vendor parser for Nemotron V3 gets the same tool-only-turn rule as
-                // the built-in it may shadow, so routing never decides the answer.
-                let parser = blank_tool_turn::wrap(key, factory(tools)?);
-                tracing::debug!(
-                    target: "dynamo_parsers_v2",
-                    family = key,
-                    requested = family,
-                    source = "vendor",
-                    "v2 UNIFIED parser active"
-                );
-                if crate::tool_calling::debug::debug_enabled() {
-                    // Owned, NOT leaked. Construction is per REQUEST, so `Box::leak`
-                    // here grew the process without bound for as long as debug mode
-                    // stayed on -- the diagnostic aid became the fault. `DebugToolParser`
-                    // already stores an owned `String`; this now matches it.
-                    return Ok(DebugUnifiedParser::wrap(key, parser));
-                }
-                return Ok(parser);
-            }
+        fn builtin_unified_registrations() -> &'static [UnifiedParserRegistration] {
+            static ENTRIES: std::sync::LazyLock<Vec<UnifiedParserRegistration>> = std::sync::LazyLock::new(|| vec![$(UnifiedParserRegistration {
+                descriptor: UnifiedParserDescriptor::builtin($family, &[$($alias),*], $configure),
+                factory: registration::Factory::Linked(|tools| Ok($ctor(tools))),
+                vendor: false,
+                plugin_identity: None,
+                plugin_guidance: None,
+            plugin_prompt: None,
+            }),+]);
+            &ENTRIES
+        }
 
-            let parser = match family {
-                $($family $(| $alias)* => $ctor(tools),)+
-                other => anyhow::bail!(
-                    "no unified parser for family '{other}'. Built-in: {:?}. \
-                     Vendor-registered: {:?}. To supply your own, call \
-                     dynamo_parsers_v2::register_unified_parser(\"{other}\", your_factory) \
-                     before serving.",
-                    REGISTERED_UNIFIED_FAMILIES,
-                    vendor_unified_families(),
-                ),
-            };
-            // Same helper the vendor branch above uses. A second generated match cost an
-            // arm per family plus an `unreachable!` that existed only because the compiler
-            // cannot see that the `bail!` above already returned.
-            let canonical = canonical_unified_family(family).unwrap_or(family);
-            // Applied here rather than in the scanner: whether whitespace is call
-            // framing depends on the rest of the turn. Only Nemotron V3 is wrapped;
-            // see `blank_tool_turn` for why.
-            let parser = blank_tool_turn::wrap(canonical, parser);
-
-            // Parser construction happens per request, so keep the selection signal
-            // at debug level. Operators can enable the target when diagnosing routing
-            // without adding one production info line for every generation.
-            tracing::debug!(
-                target: "dynamo_parsers_v2",
-                family = canonical,
-                requested = family,
-                "v2 UNIFIED parser active"
-            );
-
-            // Optional stderr instrumentation, same contract as the tool-only
-            // registry: a host WITHOUT a tracing subscriber can still confirm it.
-            if crate::tool_calling::debug::debug_enabled() {
-                return Ok(DebugUnifiedParser::wrap(canonical, parser));
-            }
-            Ok(parser)
+        /// Construct fresh state from the effective startup registration.
+        pub fn create_unified_parser_for_family(family: &str, tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
+            resolve_unified_parser(family)
+                .ok_or_else(|| anyhow::anyhow!("no unified parser for family '{family}'. Built-in: {:?}. Vendor-registered: {:?}. To supply your own, call dynamo_parsers_v2::register_unified_parser(\"{family}\", your_factory) before serving.", REGISTERED_UNIFIED_FAMILIES, vendor_unified_families()))?
+                .create(tools)
         }
     };
 }
 
 unified_registry! {
-    "deepseek_v4" => deepseek_v4::deepseek_v4_unified,
-    "deepseek_v41" => deepseek_v41::deepseek_v41_unified,
-    "gemma4" => gemma4::gemma4_unified,
-    "glm47" => glm47::glm47_unified,
-    "hermes" => hermes::hermes_unified,
-    "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
-    "nemotron_v3" | "nemotron3" => qwen3::nemotron_v3_unified,
-    "minimax_m3" | "minimax-m3" => minimax_m3::minimax_m3_unified,
-    "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
-    "muse_spark" | "muse_spark_open" => muse_spark::muse_spark_unified,
-    "beam" => beam::beam_unified,
-    "kimi_k2"              => kimi_k2::kimi_k2_unified,
-    "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
-    "mistral_4" => mistral::mistral_unified,
-    "gpt_oss" | "harmony"   => harmony::gpt_oss_unified,
+    "deepseek_v4" => (deepseek_v4::deepseek_v4_unified, |d| {
+        d.reasoning_control = registration::ReasoningControl::DeepSeek;
+        d.native_tool_call_marker = Some("<｜DSML｜tool_calls>");
+        d.aliases.extend(["deepseek-v4", "deepseekv4"].map(str::to_owned));
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::DEEPSEEK_DSML);
+    }),
+    "deepseek_v41" => (deepseek_v41::deepseek_v41_unified, |d| {
+        d.legacy_backend_completion = true;
+        d.reasoning_control = registration::ReasoningControl::DeepSeek;
+        d.native_tool_call_marker = Some("<｜DSML｜ calls>");
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::DEEPSEEK_DSML_V41);
+    }),
+    "gemma4" => (gemma4::gemma4_unified, |d| {
+        d.reasoning_control = registration::ReasoningControl::OptInUnlessToolSelected;
+        d.disabled_reasoning_starts_response = true;
+        d.prompt_style = prefill::PromptStyle::PartialThought;
+        d.aliases.push("gemma-4".into());
+        d.reasoning_markers = Some(("<|channel>", "<channel|>"));
+        d.marker_free_batch_response = false;
+        d.native_tool_call_marker = Some("<|tool_call>");
+    }),
+    "glm47" => (glm47::glm47_unified, |d| {
+        d.native_grammar = NativeGrammar::GlmXml;
+        d.reasoning_control = registration::ReasoningControl::AlwaysParse;
+        d.prompt_closure = prefill::PromptClosure::ClosedWhenPresent;
+        d.native_tool_call_marker = Some("<tool_call>");
+        d.aliases.push("glm45".into());
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::GLM47);
+    }),
+    "hermes" => (hermes::hermes_unified, |_| {}),
+    "qwen3" | "qwen3_coder" => (qwen3::qwen3_unified, |d| {
+        d.auto_without_tool_selectors.push("qwen3_coder".into());
+        d.native_grammar = NativeGrammar::QwenXml;
+        d.native_tool_call_marker = Some("<tool_call>");
+        d.auto_selection = AutoSelection::RequiresToolSelector;
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::QWEN3_CODER);
+    }),
+    "nemotron_v3" | "nemotron3" => (qwen3::nemotron_v3_unified, |d| {
+        d.native_grammar = NativeGrammar::QwenXml;
+        d.native_tool_call_marker = Some("<tool_call>");
+        d.implicit_stream_reasoning = true;
+        d.disabled_reasoning_starts_response = true;
+        d.compatible_tool_selectors.extend(["qwen3", "qwen3_coder"].map(str::to_owned));
+        d.auto_selection = AutoSelection::RequiresToolSelector;
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::QWEN3_CODER);
+    }),
+    "minimax_m3" | "minimax-m3" => (minimax_m3::minimax_m3_unified, |d| {
+        d.disabled_reasoning_starts_response = true;
+        d.prompt_style = prefill::PromptStyle::Marker;
+        d.prompt_closure = prefill::PromptClosure::OpenUnlessClosed;
+        d.reasoning_markers = Some(("<mm:think>", "</mm:think>"));
+        d.native_tool_call_marker = Some("]<]minimax[>[<tool_call>");
+        d.native_call_owns_following_markers = true;
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::MINIMAX_M3);
+    }),
+    "muse_glimmer" => (muse_glimmer::muse_glimmer_unified, |d| {
+        d.legacy_backend_completion = true;
+        d.prompt_style = prefill::PromptStyle::RecipientChannels;
+        d.reasoning_markers = None;
+        d.batch_prefill = BatchPrefill::MarkerPair;
+        d.batch_markers = Some(("<|start|>", "<|eom|>"));
+        d.marker_free_batch_response = false;
+        d.native_tool_call_marker = Some("<atem:invoke");
+        d.aliases.push("muse".into());
+        d.deprecated_aliases.push("muse".into());
+        d.deprecation_note = Some("Muse Spark Open is a different parser: `muse_spark_open`".into());
+    }),
+    "muse_spark" | "muse_spark_open" => (muse_spark::muse_spark_unified, |d| {
+        d.preserve_message_phases = true;
+        d.reasoning_control = registration::ReasoningControl::AlwaysParse;
+        d.reasoning_markers = None;
+        d.batch_prefill = BatchPrefill::MarkerPair;
+        d.batch_markers = Some(("<|start|>", "<|eom|>"));
+        d.marker_free_batch_response = false;
+        d.native_tool_call_marker = Some("<atem:invoke");
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::MUSE_SPARK);
+    }),
+    "beam" => (beam::beam_unified, |d| {
+        d.errors_are_fatal = true;
+        d.reasoning_mandatory = true;
+        d.reasoning_control = registration::ReasoningControl::AlwaysParse;
+        d.guidance.argument_framing = Some(ArgumentFraming::SchemaConstrained);
+        d.guidance.reject_malformed_calls = true;
+        d.guidance.eos_completes_calls = true;
+        d.prompt_style = prefill::PromptStyle::WholeTurnChannels;
+        d.reasoning_markers = None;
+        d.batch_prefill = BatchPrefill::HarmonyChannels;
+        d.native_tool_call_marker = Some("<|start|>assistant to=");
+        d.auto_selection = AutoSelection::RequiresBothSelectors;
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::BEAM);
+    }),
+    "kimi_k2" => (kimi_k2::kimi_k2_unified, |d| {
+        d.native_tool_call_marker = Some("<|tool_call_begin|>");
+        d.aliases.push("kimi_k25".into());
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K2);
+    }),
+    "kimi_k3" | "kimi-k3" => (kimi_k3::kimi_k3_unified, |d| {
+        d.prompt_style = prefill::PromptStyle::NamedChannels;
+        d.reasoning_markers = None;
+        d.batch_prefill = BatchPrefill::NamedChannels;
+        d.native_tool_call_marker = Some("<|open|>call");
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::KIMI_K3);
+    }),
+    "mistral_4" => (mistral::mistral_unified, |d| {
+        d.reasoning_control = registration::ReasoningControl::AlwaysParse;
+        d.reasoning_markers = Some(("[THINK]", "[/THINK]"));
+        d.marker_free_batch_response = false;
+        d.aliases.push("mistral".into());
+        d.required_tokens.push(RequiredVocabularyToken {
+            token: "[ARGS]".into(),
+            tokenizer_description: "Mistral tokenizer v11 or later".into(),
+            legacy_parser: Some("mistral".into()),
+        });
+        d.native_completion_authoritative = true;
+        d.guidance.mistral_lark = true;
+    }),
+    "gpt_oss" | "harmony" => (harmony::gpt_oss_unified, |d| {
+        d.reasoning_control = registration::ReasoningControl::AlwaysParse;
+        d.prompt_style = prefill::PromptStyle::Harmony;
+        d.reasoning_markers = None;
+        d.batch_prefill = BatchPrefill::ModelOpensChannels;
+        d.token_id_input = true;
+        d.structural_tag_builder = Some(&crate::structural_tag::builders::HARMONY);
+    }),
 }
 
 /// Stderr instrumentation for the unified path under `DYNAMO_PARSERS_DEBUG`.

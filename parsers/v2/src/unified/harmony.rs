@@ -3663,8 +3663,19 @@ mod tests {
                 InvalidGuidedPayloadPolicy::StreamBestEffort,
                 InvalidGuidedPayloadPolicy::Reject,
             ] {
-                let rejected = policy == InvalidGuidedPayloadPolicy::Reject;
-                let expected = if rejected {
+                let quoted = crate::quote_aware_parsing();
+                let rejected = !quoted && policy == InvalidGuidedPayloadPolicy::Reject;
+                let expected = if quoted {
+                    vec![
+                        UnifiedEvent::Text {
+                            text: input.strip_suffix(payload).unwrap().into(),
+                        },
+                        UnifiedEvent::ToolCall {
+                            name: "get_weather".into(),
+                            arguments: serde_json::json!({"city":"Paris"}),
+                        },
+                    ]
+                } else if rejected {
                     Vec::new()
                 } else {
                     vec![UnifiedEvent::Text {
@@ -3707,7 +3718,11 @@ mod tests {
                     policy,
                     &[
                         UnifiedEvent::Text {
-                            text: "The literal \"".into(),
+                            text: if crate::quote_aware_parsing() {
+                                input.strip_suffix(payload).unwrap().into()
+                            } else {
+                                "The literal \"".into()
+                            },
                         },
                         UnifiedEvent::ToolCall {
                             name: "get_weather".into(),

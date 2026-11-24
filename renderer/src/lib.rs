@@ -43,6 +43,7 @@ pub mod kimi_k3;
 pub mod mistral;
 mod python;
 mod template;
+pub mod thinking;
 
 pub use template::{
     ChatTemplate, ChatTemplateContentFormat, ChatTemplateValue, ContextMixins, MediaPlaceholders,

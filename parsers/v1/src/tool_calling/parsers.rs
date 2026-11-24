@@ -43,43 +43,77 @@ use std::sync::OnceLock;
 
 static PARSER_MAP: OnceLock<HashMap<&'static str, ToolCallConfig>> = OnceLock::new();
 
-// Always update this parsermap when adding a new parser
+static REGISTRATIONS: OnceLock<HashMap<&'static str, (ToolCallConfig, bool)>> = OnceLock::new();
+
+/// Integration capabilities of one legacy tool selector.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct ToolParserDescriptor {
+    pub selector: &'static str,
+    pub preserve_special_tokens: bool,
+    pub structural_tag: bool,
+}
+
+/// Descriptors derived from the same entries as the legacy constructor map.
+pub fn tool_parser_descriptors() -> Vec<ToolParserDescriptor> {
+    let mut entries: Vec<_> = tool_parser_registrations()
+        .iter()
+        .map(|(&selector, (config, preserve))| ToolParserDescriptor {
+            selector,
+            preserve_special_tokens: *preserve,
+            structural_tag: config.structural_tag_builder.is_some(),
+        })
+        .collect();
+    entries.sort_by_key(|entry| entry.selector);
+    entries
+}
+
+/// Legacy constructor map retained for existing callers.
 pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
     PARSER_MAP.get_or_init(|| {
+        tool_parser_registrations()
+            .iter()
+            .map(|(&name, (config, _))| (name, config.clone()))
+            .collect()
+    })
+}
+
+// Always update this parsermap when adding a new parser
+fn tool_parser_registrations() -> &'static HashMap<&'static str, (ToolCallConfig, bool)> {
+    REGISTRATIONS.get_or_init(|| {
         let mut map = HashMap::new();
-        map.insert("hermes", ToolCallConfig::hermes());
-        map.insert("nemotron_deci", ToolCallConfig::nemotron_deci());
-        map.insert("llama3_json", ToolCallConfig::llama3_json());
-        map.insert("mistral", ToolCallConfig::mistral());
-        map.insert("phi4", ToolCallConfig::phi4());
-        map.insert("pythonic", ToolCallConfig::pythonic());
-        map.insert("harmony", ToolCallConfig::harmony());
-        map.insert("deepseek_v3", ToolCallConfig::deepseek_v3());
-        map.insert("deepseek_v3_1", ToolCallConfig::deepseek_v3_1());
-        map.insert("deepseek_v3_2", ToolCallConfig::deepseek_v3_2());
-        map.insert("deepseek_v4", ToolCallConfig::deepseek_v4());
-        map.insert("deepseek-v4", ToolCallConfig::deepseek_v4());
-        map.insert("deepseekv4", ToolCallConfig::deepseek_v4());
-        map.insert("qwen3_coder", ToolCallConfig::qwen3_coder());
-        map.insert("jamba", ToolCallConfig::jamba());
-        map.insert("minimax_m2", ToolCallConfig::minimax_m2());
-        map.insert("minimax_m3", ToolCallConfig::minimax_m3());
-        map.insert("minimax-m3", ToolCallConfig::minimax_m3());
+        map.insert("hermes", (ToolCallConfig::hermes(), false));
+        map.insert("nemotron_deci", (ToolCallConfig::nemotron_deci(), false));
+        map.insert("llama3_json", (ToolCallConfig::llama3_json(), false));
+        map.insert("mistral", (ToolCallConfig::mistral(), false));
+        map.insert("phi4", (ToolCallConfig::phi4(), false));
+        map.insert("pythonic", (ToolCallConfig::pythonic(), false));
+        map.insert("harmony", (ToolCallConfig::harmony(), true));
+        map.insert("deepseek_v3", (ToolCallConfig::deepseek_v3(), false));
+        map.insert("deepseek_v3_1", (ToolCallConfig::deepseek_v3_1(), false));
+        map.insert("deepseek_v3_2", (ToolCallConfig::deepseek_v3_2(), false));
+        map.insert("deepseek_v4", (ToolCallConfig::deepseek_v4(), false));
+        map.insert("deepseek-v4", (ToolCallConfig::deepseek_v4(), false));
+        map.insert("deepseekv4", (ToolCallConfig::deepseek_v4(), false));
+        map.insert("qwen3_coder", (ToolCallConfig::qwen3_coder(), false));
+        map.insert("jamba", (ToolCallConfig::jamba(), false));
+        map.insert("minimax_m2", (ToolCallConfig::minimax_m2(), false));
+        map.insert("minimax_m3", (ToolCallConfig::minimax_m3(), true));
+        map.insert("minimax-m3", (ToolCallConfig::minimax_m3(), true));
         // `_nom` is a legacy Day-0 deployment parser-name alias used by
         // earlier MiniMax M3 Dynamo manifests; public MiniMax M3 artifacts
         // define one tool-call grammar, so behavior is intentionally identical.
-        map.insert("minimax_m3_nom", ToolCallConfig::minimax_m3());
-        map.insert("minimax-m3-nom", ToolCallConfig::minimax_m3());
-        map.insert("glm47", ToolCallConfig::glm47());
-        map.insert("kimi_k2", ToolCallConfig::kimi_k2());
-        map.insert("kimi_k3", ToolCallConfig::kimi_k3());
-        map.insert("kimi-k3", ToolCallConfig::kimi_k3());
-        map.insert("gemma4", ToolCallConfig::gemma4());
-        map.insert("gemma-4", ToolCallConfig::gemma4());
-        map.insert("inkling", ToolCallConfig::inkling());
-        map.insert("default", ToolCallConfig::default());
-        map.insert("nemotron_nano", ToolCallConfig::qwen3_coder()); // nemotron nano follows qwen3_coder format
-        map.insert("qwen25", ToolCallConfig::qwen25()); // qwen2.5 uses the same <tool_call>...</tool_call> format as hermes but never leaks markup; EOF-recovery opt-out is keyed by name in detect_and_parse_tool_call_with_recovery_options
+        map.insert("minimax_m3_nom", (ToolCallConfig::minimax_m3(), true));
+        map.insert("minimax-m3-nom", (ToolCallConfig::minimax_m3(), true));
+        map.insert("glm47", (ToolCallConfig::glm47(), false));
+        map.insert("kimi_k2", (ToolCallConfig::kimi_k2(), true));
+        map.insert("kimi_k3", (ToolCallConfig::kimi_k3(), true));
+        map.insert("kimi-k3", (ToolCallConfig::kimi_k3(), true));
+        map.insert("gemma4", (ToolCallConfig::gemma4(), true));
+        map.insert("gemma-4", (ToolCallConfig::gemma4(), true));
+        map.insert("inkling", (ToolCallConfig::inkling(), true));
+        map.insert("default", (ToolCallConfig::default(), false));
+        map.insert("nemotron_nano", (ToolCallConfig::qwen3_coder(), false)); // nemotron nano follows qwen3_coder format
+        map.insert("qwen25", (ToolCallConfig::qwen25(), false)); // qwen2.5 uses the same <tool_call>...</tool_call> format as hermes but never leaks markup; EOF-recovery opt-out is keyed by name in detect_and_parse_tool_call_with_recovery_options
         map
     })
 }

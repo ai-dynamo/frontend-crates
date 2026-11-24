@@ -24,6 +24,78 @@ use dynamo_parsers_v2::{
 
 static SERIALIZE: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+#[test]
+fn descriptor_and_factory_resolve_atomically_and_remain_pinned() {
+    use dynamo_parsers_v2::{
+        UnifiedParserDescriptor, register_unified_parser_with_descriptor, resolve_unified_parser,
+    };
+    let _guard = SERIALIZE.lock().unwrap_or_else(|e| e.into_inner());
+    let mut descriptor = UnifiedParserDescriptor::new("descriptor_vendor");
+    descriptor.aliases.push("descriptor_alias".into());
+    register_unified_parser_with_descriptor(descriptor, vendor_factory).unwrap();
+    let _restore = Restore("descriptor_vendor");
+    let pinned = resolve_unified_parser("descriptor_alias").unwrap();
+    assert_eq!(pinned.descriptor.family, "descriptor_vendor");
+    let mut stolen = UnifiedParserDescriptor::new("other_vendor");
+    stolen.aliases.push("descriptor_alias".into());
+    assert!(register_unified_parser_with_descriptor(stolen, vendor_factory).is_err());
+    dynamo_parsers_v2::unregister_unified_parser("descriptor_alias").unwrap();
+    assert!(resolve_unified_parser("descriptor_alias").is_none());
+    assert_eq!(
+        pinned
+            .create(&[])
+            .unwrap()
+            .push("retained factory")
+            .unwrap(),
+        vec![UnifiedParserEvent::Text("retained factory".into())]
+    );
+
+    let mut tool = UnifiedParserDescriptor::new("vendor_tool");
+    tool.aliases.push("vendor_tool_alias".into());
+    register_unified_parser_with_descriptor(tool, vendor_factory).unwrap();
+    let _restore_tool = Restore("vendor_tool");
+    let mut reasoner = UnifiedParserDescriptor::new("vendor_reasoner");
+    reasoner
+        .compatible_tool_selectors
+        .push("vendor_tool_alias".into());
+    register_unified_parser_with_descriptor(reasoner, vendor_factory).unwrap();
+    let _restore_reasoner = Restore("vendor_reasoner");
+    for selector in ["vendor_tool", "vendor_tool_alias"] {
+        assert_eq!(
+            dynamo_parsers_v2::resolve_unified_parser_pair(Some(selector), Some("vendor_reasoner"))
+                .unwrap()
+                .descriptor
+                .family,
+            "vendor_reasoner"
+        );
+    }
+
+    let mut replacement = UnifiedParserDescriptor::new("qwen3_coder");
+    replacement.aliases.push("vendor_qwen".into());
+    register_unified_parser_with_descriptor(replacement, vendor_factory).unwrap();
+    let _restore_qwen = Restore("qwen3");
+    assert_eq!(
+        dynamo_parsers_v2::resolve_unified_parser_pair(Some("vendor_qwen"), Some("nemotron_v3"))
+            .unwrap()
+            .descriptor
+            .family,
+        "nemotron_v3"
+    );
+    for alias in ["qwen3", "qwen3_coder", "vendor_qwen"] {
+        let resolved = resolve_unified_parser(alias).unwrap();
+        assert_eq!(resolved.descriptor.family, "qwen3");
+        assert!(!resolved.descriptor.preserve_special_tokens);
+        assert_eq!(
+            resolved
+                .create(&[])
+                .unwrap()
+                .push("<think>literal</think>")
+                .unwrap(),
+            vec![UnifiedParserEvent::Text("<think>literal</think>".into())]
+        );
+    }
+}
+
 /// Removes a registration on drop, including while unwinding from a panic.
 struct Restore(&'static str);
 impl Drop for Restore {
