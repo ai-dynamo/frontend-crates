@@ -80,7 +80,7 @@ prompt length (token costs)         │
 | `video_decode` *(feature)* | `Video` (open once: `info`, `decode`, `decode_sampled`) and the one-shot `probe`, `decode_frames`, `decode_sampled`: MP4 / WebM / Matroska to the RGB frames a caller names, through NVDEC or libvpx, each frame resized by a `Fit` as it is decoded (§2.4) |
 | `video` | per-request video inputs: `VideoOptions` (`fps`, `max_frames`, `num_frames`) → `resolve_num_frames`; `VideoPixelBudget` |
 | `frames` | `VideoFrames`, what a decoder hands over (RGB + timestamps), and `encode_jpeg_frames` for a backend that takes images but not video |
-| `audio/` *(feature)* | transport-independent PCM, bounded waveform/feature planning, configurable CPU kernels; no registered audio model or tokenizer policy |
+| `audio/` *(feature)* | transport-independent PCM, bounded waveform/feature planning, configurable CPU kernels |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -295,9 +295,8 @@ let frames = video.decode(&indices, Some(&fit), &limits)?;
 
 ### 2.5 Generic audio building blocks (experimental)
 
-Audio is a set of composable primitives, not an implementation for a specific
-model. All kernels run synchronously on the caller's thread. No audio family
-is registered, and existing image/video processors still reject audio.
+The audio primitives run synchronously on the caller's thread. The experimental
+Qwen3-ASR family below composes them with model-specific prompt geometry.
 
 1. **Ingress:** `audio::decode::decode(bytes, limits)` (feature `audio-decode`)
    yields owned `DecodedMedia::Audio { samples, sample_rate, channels }`.
@@ -885,15 +884,27 @@ What remains:
 
 ### Video and audio: planned layout
 
-#### Native audio foundation (draft)
+#### Experimental Qwen3-ASR profile
 
-The generic, opt-in audio primitives are implemented in §2.5. A subsequent
-family contribution can compose these kernels with checkpoint/engine policy,
-model-specific feature-token counts, chunking, tensors and prompt layout,
-following [#607](https://github.com/ai-dynamo/frontend-crates/issues/607).
-No model family is selected in this foundation. SGLang owns request admission,
-media fetching, invocation and scheduler adaptation. Future PCM SHM import
-is independent of this crate and of the native RGB SHM PR's merge.
+With the `audio` feature, select `qwen3_asr` using a typed `Qwen3AsrSpec`
+or the existing JSON spec with `audio_token_id`, `audio_start_id` and
+`audio_end_id` taken from the checkpoint. The explicit profile accepts mono
+16 kHz PCM up to 30 seconds and emits Whisper features and the named
+`feature_attention_mask`. Consumers that require PCM16 WAV can use
+`audio::decode::decode_wav_pcm16` with `audio-decode` before processing.
+
+The profile rejects clips longer than 30 seconds. For accepted clips, it pads
+to 30 seconds and counts `ceil(samples / 160)` valid frames, following SGLang's
+Python processor. Hugging Face `AutoProcessor` with `padding=True` can count
+`floor(samples / 160)` frames for a single clip. For example, 160,096 samples
+give 131 audio tokens with this profile and 130 with that AutoProcessor path.
+
+As in [#607](https://github.com/ai-dynamo/frontend-crates/issues/607), metadata
+planning and decoded media processing share the token count and prompt layout.
+`num_media_tokens` and `layout_from_metadata` need the sample count, rate and
+prompt IDs. The engine supplies decoded PCM to compute features and positions.
+The family is experimental and requires explicit selection. Automatic checkpoint
+resolution remains reserved for profiles that meet the bit-exact reference bar.
 
 ```
 src/
