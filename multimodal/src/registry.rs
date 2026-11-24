@@ -12,7 +12,10 @@ use crate::models::glm5_next::{
     Glm5NextSpec,
 };
 use crate::models::kimi_k3::{KimiK3Processor, KimiK3Spec};
-use crate::models::nemotron_vl::{NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec};
+use crate::models::nemotron_vl::{
+    NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec, NemotronVlVideoSpec,
+    default_video_placeholder,
+};
 use crate::models::pixtral::{PixtralProcessor, PixtralSpec};
 use crate::models::qwen_vl::{QwenVlSpec, QwenVlVideoSpec, Resampler};
 #[cfg(feature = "audio")]
@@ -40,7 +43,7 @@ pub enum ProcessorSpec {
     /// Kimi-K3 and K3.1 images. The prompt expansion and its length need
     /// `size_tokens`, which the consumer fills from the model's tokenizer.
     KimiK3(KimiK3Spec),
-    /// Nemotron 3.5 Super VL images; `sizing` names the mirrored reference.
+    /// Nemotron 3.5 Super VL images and videos; `sizing` names the mirrored reference.
     NemotronVl(NemotronVlSpec),
     /// HF `PixtralProcessor` image pipeline (Mistral Large 4).
     Pixtral(PixtralSpec),
@@ -814,13 +817,11 @@ const NEMOTRON_VL_PINNED: &[(&str, Predicate)] = &[
     ("_downsample_factor", |v| v.as_u64() == Some(2)),
 ];
 
-/// Naming knobs, and knobs of the unsupported video path.
-const NEMOTRON_VL_INERT: &[&str] = &[
-    "auto_map",
-    "processor_class",
-    "video_target_num_patches",
-    "video_maintain_aspect_ratio",
-];
+/// Naming knobs.
+const NEMOTRON_VL_INERT: &[&str] = &["auto_map", "processor_class"];
+
+/// Video knobs [`resolve_nemotron_vl_video`] reads.
+const NEMOTRON_VL_VIDEO: &[&str] = &["video_target_num_patches", "video_maintain_aspect_ratio"];
 
 /// The spec of the checkpoint's HF processor. SGLang reads the same geometry
 /// from `config.json`, so the files must agree.
@@ -848,6 +849,8 @@ fn resolve_nemotron_vl(
     #[derive(serde::Deserialize)]
     struct Tokenizer {
         added_tokens: Vec<AddedToken>,
+        #[serde(default)]
+        model: Value,
     }
 
     let parse = |name: &str, json: &str| {
@@ -863,7 +866,8 @@ fn resolve_nemotron_vl(
 
     // transformers loads the `image_processor` object of processor_config.json when
     // there is one. With no flat file, `flat` is that document.
-    let nested = nested.as_ref().unwrap_or(&flat).get("image_processor");
+    let processor = nested.as_ref().unwrap_or(&flat);
+    let nested = processor.get("image_processor");
     let pre = match nested {
         Some(nested) if flat.get("image_processor").is_none() => {
             if let Some(knob) = NEMOTRON_VL_CONSUMED
@@ -886,7 +890,10 @@ fn resolve_nemotron_vl(
         .ok_or_else(|| MmError::invalid_input("preprocessor_config.json is not an object"))?;
     for (knob, value) in knobs {
         let knob = knob.as_str();
-        if NEMOTRON_VL_CONSUMED.contains(&knob) || NEMOTRON_VL_INERT.contains(&knob) {
+        if [NEMOTRON_VL_CONSUMED, NEMOTRON_VL_INERT, NEMOTRON_VL_VIDEO]
+            .iter()
+            .any(|knobs| knobs.contains(&knob))
+        {
             continue;
         }
         match NEMOTRON_VL_PINNED.iter().find(|(name, _)| *name == knob) {
@@ -973,7 +980,63 @@ fn resolve_nemotron_vl(
         image_mean: knobs.norm_mean,
         image_std: knobs.norm_std,
         sizing: NemotronVlSizing::Hf,
+        // SGLang splices a placeholder that is one token, and an empty one puts every
+        // video at the prompt start; `rewrite_prompt` mirrors neither, so video stays off.
+        video: resolve_nemotron_vl_video(config, processor, pre).filter(|video| {
+            let text = video.placeholder.as_str();
+            let vocab = &tokenizer.model["vocab"];
+            !(text.is_empty()
+                || (tokenizer.added_tokens.iter()).any(|token| token.content == text)
+                || vocab.get(text).is_some()
+                || (vocab.as_array())
+                    .is_some_and(|pieces| pieces.iter().any(|piece| piece[0] == text)))
+        }),
     })
+}
+
+/// `None`, so video is off and images still resolve, when a video knob is
+/// malformed or refused, or SGLang would group frames differently.
+fn resolve_nemotron_vl_video(
+    config: &Value,
+    processor: &Value,
+    pre: &Value,
+) -> Option<NemotronVlVideoSpec> {
+    let vision = &config["vision_config"];
+    let count = |value: &Value| value.as_u64().and_then(|value| u32::try_from(value).ok());
+    let temporal_patch_size = match processor.get("video_temporal_patch_dim") {
+        None => 2,
+        Some(value) => count(value)?,
+    };
+    // SGLang reads only this key and defaults it to 1.
+    if count(&vision["video_temporal_patch_size"])? != temporal_patch_size {
+        return None;
+    }
+    let image_size = match vision.get("image_size").or(config.get("force_image_size")) {
+        None => 512,
+        Some(Value::Array(sizes)) => count(sizes.first()?)?,
+        Some(value) => count(value)?,
+    };
+    Some(NemotronVlVideoSpec {
+        temporal_patch_size,
+        target_num_patches: match pre.get("video_target_num_patches") {
+            None => 1024,
+            Some(value) => count(value)?,
+        },
+        maintain_aspect_ratio: match pre.get("video_maintain_aspect_ratio") {
+            None => true,
+            Some(value) => value.as_bool()?,
+        },
+        image_size,
+        pruning_rate: match config.get("video_pruning_rate") {
+            None => 0.0,
+            Some(value) => value.as_f64()?,
+        },
+        placeholder: match config.get("video_context_token") {
+            None => default_video_placeholder(),
+            Some(value) => value.as_str()?.to_owned(),
+        },
+    })
+    .filter(|video| video.validate().is_ok())
 }
 
 fn read_optional_json(dir: &std::path::Path, name: &str) -> Result<Option<Value>> {

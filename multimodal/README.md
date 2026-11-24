@@ -260,6 +260,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
 | per video, Qwen3-VL, Qwen3.5, `qwen4_exp` | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
+| per video, Nemotron 3.5 Super VL | `rewrite_prompt`, `process_items`, `layout_with_text`; `NemotronVlProcessor::video_layout` from metadata | sampled frames, their source indices and fps, and a `TextEncoder` that can decode → features and expanded prompt (§8); needs a `NemotronVlSpec.video` |
 
 `fit` is optional: `None` keeps the selected frames at the source size;
 `FrameResize` is a fixed size, `models::qwen_vl::Qwen3VlVideoFit` the
@@ -407,6 +408,8 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::nemotron_vl::NemotronVlProcessor` with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` → `[1, 3, H, W]` bfloat16 features, expanded ids, item offsets (`feature_ranges`) | **bitwise** for a prompt given as token ids, including the request budget |
 | `models::nemotron_vl::NemotronVlProcessor` with `sizing = hf` | the checkpoint's `image_processing_nemotron_h_omni.py` `_preprocess` sizes and `num_tokens` | exact tile sizes and token counts; no pixel path |
+| `NemotronVlProcessor` video with `sizing = sglang` | SGLang `NanoNemotronVLImageProcessor.process_mm_data_async` with `video_data`, on the frames it sampled → `[frames, 3, H, W]` bfloat16, expanded ids, item offsets | **bitwise**, including the processor's EVS split of the `<image>` counts, which the engine changes after pruning (§8; SGLang 25c1c439 goldens in `tests/fixtures/nemotron_vl_video`) |
+| `NemotronVlProcessor` video with `sizing = hf` | the checkpoint's `processing_nemotron_h_omni.py` with `videos=` and `video_metadata` | exact frame size, token counts and expanded ids; no pixel path |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 | `image::resize::resize_rgba` | `PIL.Image.resize` on an RGBA or LA image (BICUBIC, u8) | **bitwise** against Pillow 12.3 (Pillow resizes premultiplied `RGBa` and divides back with truncation) |
 | `models::kimi_k3::KimiK3Processor::decode_image` | `PIL.Image.open(...)` and `load()`, then `convert("RGBA")` when the mode has alpha or a `transparency` entry and is not RGB, else `convert("RGB")` | no EXIF transpose. JPEG: same pixels (libjpeg-turbo on both sides). PNG, BMP, WebP, GIF: no known difference on the forms the gate accepts; the 8 forms known to differ are an error, and an unknown one would decode with other pixels (§7) |
@@ -715,7 +718,7 @@ CUDA_VISIBLE_DEVICES="" python multimodal/tests/fixtures/kimi_k3/generate.py \
     [--check] <moonshotai/Kimi-K3 dir> <moonshotai/Kimi-K3.1-Pro dir>
 ```
 
-## 8. Nemotron 3.5 Super VL images
+## 8. Nemotron 3.5 Super VL images and videos
 
 `models::nemotron_vl` serves `model_type = "nemotron_h_omni"`
 (NVIDIA-Nemotron-3.5-Super-VL-120B-A12B, BF16 and NVFP4). Each image becomes
@@ -757,6 +760,11 @@ image depends on the number of images in the call. As a result:
   request; a placeholder count that differs from the image count is
   `InvalidInput`. `process_item` returns `Unsupported`: one image alone has
   no request to size it by.
+- With videos, the host first calls `rewrite_prompt(input_ids, modalities,
+  text)` and expands the ids it returns. The chat template writes
+  `video_context_token` (`<video>`) as text, not as one token. The family
+  replaces the first one per video with `<image>` and encodes the text
+  between, as SGLang's text path does. `text` must implement `decode`.
 - A router calls `layout_from_metadata`, which is exact for the request. The
   `Feature` part of each segment holds the feature count of that item, and
   `apply_layout` takes those counts. `NemotronVlProcessor::plan_images` gives
@@ -767,7 +775,7 @@ image depends on the number of images in the call. As a result:
 - `apply_layout` returns `offsets` that span `<img>` to `</img>`. The item
   offsets of SGLang are the `<image>` run, which is `feature_ranges`.
 
-Limits. Video, audio and SGLang's InternVL tile path (`min_num_patches = 0`)
+Limits. Audio and SGLang's InternVL tile path (`min_num_patches = 0`)
 are `Unsupported`, and `downsample_factor` must be 2. `sglang` sizing mirrors
 SGLang's processor for a prompt of token ids. That processor also takes the
 prompt as text, which SGLang's Python chat serving sends for this model, and
@@ -782,6 +790,65 @@ Pillow's decompression-bomb limit for this model. The crate applies the
 decoded buffer above 512 MiB (178,956,970 RGB pixels); JPEG has no such limit.
 GIF has no allocation budget of its own: only the `DecodeLimits` of the driver
 bound the canvas that a GIF header asks for.
+
+Videos. `NemotronVlSpec.video` turns them on; `spec_from_model_dir` resolves
+it from the HF processor files, plus SGLang's `image_size` and
+`video_pruning_rate` from `config.json`, read as SGLang reads them. A video
+knob that is malformed or out of range (`video_pruning_rate` outside [0, 1),
+groups of 1 frame), or a `vision_config.video_temporal_patch_size` that
+is missing (SGLang then groups 1 frame) or differs from HF's, leaves `video`
+unset; images still resolve. The host samples the frames (the
+model card: 2 fps, up to 256 frames; SGLang: 2 fps, up to 128) and passes
+their source indices and the source fps. For `sizing = sglang`, pass the fps
+that SGLang reads, torchcodec's `average_fps`
+(`video_decode::VideoInfo::average_fps`): a small difference can change
+`int(1000 / fps)` and so every timestamp. In the prompt ids, a video's
+placeholder is `<image>`, one id per video, in place of the template's
+`<video>` text, for which the tokenizer has no token. A request holds images
+or videos, not both. With `sizing = hf` it holds at most one video, because
+the HF processor expands only the first `<video>`. With `sizing = sglang`
+and `target_num_patches` above 0, its videos must share one frame size,
+because SGLang sizes every video by the first one. Each group of `temporal_patch_size` frames expands to a
+label such as `Frame 1 sampled at 0.00 seconds and frame 2 sampled at 0.63
+seconds: `, then `<img>`, the `<image>` run and `</img>`; groups are joined
+by a newline, and an odd last group has one frame. A timestamp is
+`index * int(1000 / fps) / 1000`. With fps 0, HF writes `Frame 1 and frame 2`
+and SGLang writes 0.00. The host's `TextEncoder` encodes each label with the
+newline before it. The ids equal the references' when newlines surround the
+placeholder, as the chat template writes them.
+
+The two references differ for videos too:
+
+| | SGLang 25c1c439 | HF remote code |
+| --- | --- | --- |
+| frame size | `video_target_num_patches` from `config.json`'s `vision_config`, which this checkpoint lacks, so one square `image_size` (224) tile per frame | `video_target_num_patches` 1024 with the aspect ratio kept: 672x384 for 16:9 |
+| `<image>` per group | 49, then EVS keeps `max(49, int(49 * groups * (1 - 0.7)))` in all, the remainder in the last group: 24 and 25 for 4 frames | 252 for 16:9, no pruning in the prompt |
+| pixels | PIL bicubic, bfloat16, mirrored bitwise | torch antialias bicubic in float32, not mirrored |
+
+With `sizing = sglang`, set `video.target_num_patches` to the value SGLang
+resolves (0 for these checkpoints). `process_items` returns
+`[frames, 3, H, W]` bfloat16 per video, with `Geometry::FrameGroups`.
+With EVS (`pruning_rate` above 0), the `<image>` count of each group is
+SGLang's provisional split of the kept total, and the expanded ids equal
+its processor's. Its engine then prunes the features and moves the
+`<image>` runs between groups (`redistribute_pruned_frames_placeholders`).
+For that step it needs the expanded ids and, for each video, the number of
+groups and the frame height and width in feature tokens
+(`H / patch_size / 2`, `W / patch_size / 2`).
+`NemotronVlProcessor::video_layout` gives the same layout from the frame
+size, indices and fps alone, for both sizings, and `plan_video` gives the
+frame size and the count of each group. `num_media_tokens` and
+`layout_from_metadata` return `Unsupported` for a video, because its labels
+need the tokenizer. With `sizing = hf`, `process_items` stays
+`Unsupported`.
+
+`tests/nemotron_vl_video_golden.rs` replays
+`tests/fixtures/nemotron_vl_video`, which `generate.py` there records from
+SGLang's processor on the CPU and from the HF remote code, for noise clips
+of 4 aspect ratios, an odd frame count, one frame, no fps, SGLang with
+`video_target_num_patches` 1024, SGLang without EVS, and two videos in one
+SGLang request (two frame sizes; one size with `video_target_num_patches`
+1024).
 
 `tests/fixtures/mm_parity/families/nemotron_vl.py` records both references
 from the config, processor and tokenizer files of the checkpoint, with the
