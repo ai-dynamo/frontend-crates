@@ -89,6 +89,7 @@ CHECKPOINTS = {
 }
 CONFIG_KEYS = ("model_type", "image_token_id", "video_token_id", "vision_start_token_id",
                "vision_end_token_id")
+VISION_KEYS = ("patch_size", "temporal_patch_size")
 # The checkpoints' own bounds: frames under 32 px are scaled up, and the
 # 2-frame 16x16 clip is below the clip minimum.
 CHECKPOINT_CASES = {
@@ -179,6 +180,7 @@ def write_model_dir(name, repo, revision):
     with open(hf_hub_download(repo, "config.json", revision=revision)) as f:
         config = json.load(f)
     trimmed = {k: config[k] for k in CONFIG_KEYS}
+    trimmed["vision_config"] = {k: config["vision_config"][k] for k in VISION_KEYS}
     with open(os.path.join(model_dir, "config.json"), "w") as f:
         json.dump(trimmed, f, indent=1)
         f.write("\n")

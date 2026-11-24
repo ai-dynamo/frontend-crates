@@ -750,6 +750,17 @@ fn resolve_qwen_video(config: &Value, pre: &Value) -> Result<QwenVlVideoSpec> {
             pre["video_processor_type"]
         )));
     }
+    // The vision tower reshapes rows with its own sizes (HF's defaults are 16
+    // and 2): a mismatch fails there or mixes patches.
+    for (knob, default) in [("patch_size", 16), ("temporal_patch_size", 2)] {
+        let tower = config["vision_config"][knob].as_u64().unwrap_or(default);
+        if pre[knob].as_u64() != Some(tower) {
+            return Err(MmError::invalid_input(format!(
+                "video processor {knob} = {} disagrees with vision_config.{knob} = {tower}",
+                pre[knob]
+            )));
+        }
+    }
     let token_id = |field: &str| {
         config[field]
             .as_i64()
@@ -1437,6 +1448,33 @@ mod tests {
             );
             assert!(direct.is_ok(), "{video}");
             assert!(resolve(&qwen35, &video).unwrap().is_none(), "{video}");
+        }
+        let tower14 = qwen35.replacen('{', r#"{"vision_config": {"patch_size": 14},"#, 1);
+        for (config, video) in [
+            (&tower14, QWEN35_SAVED_VIDEO_PREPROCESSOR.to_string()),
+            (
+                &qwen35,
+                QWEN35_SAVED_VIDEO_PREPROCESSOR
+                    .replace(r#""patch_size": 16"#, r#""patch_size": 14"#),
+            ),
+            (
+                &qwen35,
+                QWEN35_SAVED_VIDEO_PREPROCESSOR
+                    .replace(r#""temporal_patch_size": 2"#, r#""temporal_patch_size": 1"#),
+            ),
+        ] {
+            let direct = resolve_qwen_video(
+                &serde_json::from_str(config).unwrap(),
+                &serde_json::from_str(&video).unwrap(),
+            );
+            assert!(
+                matches!(direct, Err(MmError::InvalidInput { .. })),
+                "{config} {video}"
+            );
+            assert!(
+                resolve(config, &video).unwrap().is_none(),
+                "{config} {video}"
+            );
         }
         let direct = resolve_qwen_video(
             &serde_json::from_str(QWEN35_CONFIG).unwrap(),
