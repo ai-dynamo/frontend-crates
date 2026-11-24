@@ -80,7 +80,7 @@ prompt length (token costs)         │
 | `video_decode` *(feature)* | `Video` (open once: `info`, `decode`, `decode_sampled`) and the one-shot `probe`, `decode_frames`, `decode_sampled`: MP4 / WebM / Matroska to the RGB frames a caller names, through NVDEC or libvpx, each frame resized by a `Fit` as it is decoded (§2.4) |
 | `video` | per-request video inputs: `VideoOptions` (`fps`, `max_frames`, `num_frames`) → `resolve_num_frames`; `VideoPixelBudget` |
 | `frames` | `VideoFrames`, what a decoder hands over (RGB + timestamps), and `encode_jpeg_frames` for a backend that takes images but not video |
-| `audio/` *(feature)* | transport-independent PCM, bounded waveform/feature planning, configurable CPU kernels; no registered audio model or tokenizer policy |
+| `audio/` *(feature)* | transport-independent PCM, bounded waveform/feature planning, configurable CPU kernels |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -138,7 +138,8 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 
 `spec_from_model_dir` reads `preprocessor_config.json`, or the nested
 transformers v5 `processor_config.json` when a checkpoint ships only that
-file (GLM-5.3-Flash). A Mistral Large 4 directory resolves from
+file (GLM-5.3-Flash). For Qwen, `spec_from_hf_configs` resolves images
+only. A Mistral Large 4 directory resolves from
 `params.json` and `processor_config.json` to the HF `PixtralProcessor`
 pipeline; a mistral-common engine such as vLLM counts differently (§9).
 
@@ -250,7 +251,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 
 | when | API | in → out |
 | --- | --- | --- |
-| boot, per model | `serde_json::from_str::<Qwen3VlVideo>` | `video_preprocessor_config.json` → the Qwen3-VL / Cosmos3 sizing rule |
+| boot, per model | `registry::spec_from_model_dir` (Qwen3-VL, Qwen3.5, `qwen4_exp`), or `serde_json::from_str::<Qwen3VlVideo>` | model dir → `QwenVlSpec.video`, or `None` when the video config cannot be honored (`capabilities()` then reports no video); `video_preprocessor_config.json` → the Qwen3-VL / Cosmos3 sizing rule |
 | boot | `VideoDecodeLimits::default()` | operator caps: 8192² frames, 512 MiB output, 512 MiB WebM / Matroska file |
 | per video | `video_decode::Video::open` | `&bytes` or any `ByteSource` (a file, a ranged download) + limits → the demuxed video; `info()` gives `VideoInfo` (codec, size, duration, fps, torchcodec's `average_fps`, frame count) without decoding |
 | per video | `video::resolve_num_frames` | request `VideoOptions` (`fps` / `max_frames` / `num_frames`) + duration + frame count → frames to keep |
@@ -258,7 +259,7 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 | per video, no rule | `Video::decode_sampled` | `num_frames` + limits → evenly spaced frames at source size (`sample_indices` gives the same indices for `decode`) |
 | one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
 | image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
-| per video, Qwen3-VL | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
+| per video, Qwen3-VL, Qwen3.5, `qwen4_exp` | `process_item(DecodedMedia::Video)`, `layout_with_text`, `positions_with_features` | sampled frames, their source indices and fps, and a `TextEncoder` → features, grid, expanded prompt and M-RoPE; needs a `QwenVlSpec.video` |
 | per video, Nemotron 3.5 Super VL | `rewrite_prompt`, `process_items`, `layout_with_text`; `NemotronVlProcessor::video_layout` from metadata | sampled frames, their source indices and fps, and a `TextEncoder` that can decode → features and expanded prompt (§8); needs a `NemotronVlSpec.video` |
 
 `fit` is optional: `None` keeps the selected frames at the source size;
@@ -276,6 +277,16 @@ the decode. NVDEC needs the driver's `libnvcuvid.so.1`: in a container,
 `NVIDIA_DRIVER_CAPABILITIES` must include `video` (the NVIDIA Container
 Toolkit's default, for an image that does not set it, is `compute,utility`),
 e.g. `-e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`.
+
+A successful decode keeps its NVDEC decoder on that GPU for the next video
+with the same codec, size and number of decode surfaces, because destroying a
+decoder can take 200 ms. At most 8 decoders stay idle, and the oldest goes
+first. Their NV12 decode surfaces stay under 1 GiB; the driver allocates more
+than the surfaces (two idle 8192x4320 HEVC decoders hold 1.1 GiB on an RTX
+6000 Ada). When the driver cannot create a new decoder, the idle decoders are
+destroyed and the creation is tried once more. No timer frees idle decoders:
+one holds its GPU 0 memory until a newer one pushes it out of the list, a new
+decoder cannot be created, or the process exits.
 
 ```rust
 use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};
@@ -296,9 +307,8 @@ let frames = video.decode(&indices, Some(&fit), &limits)?;
 
 ### 2.5 Generic audio building blocks (experimental)
 
-Audio is a set of composable primitives, not an implementation for a specific
-model. All kernels run synchronously on the caller's thread. No audio family
-is registered, and existing image/video processors still reject audio.
+The audio primitives run synchronously on the caller's thread. The experimental
+Qwen3-ASR family below composes them with model-specific prompt geometry.
 
 1. **Ingress:** `audio::decode::decode(bytes, limits)` (feature `audio-decode`)
    yields owned `DecodedMedia::Audio { samples, sample_rate, channels }`.
@@ -374,14 +384,14 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 
 | this crate | on-par Python API | parity |
 | --- | --- | --- |
-| `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation |
+| `registry::spec_from_hf_configs` / `spec_from_model_dir` | `AutoProcessor.from_pretrained` (config parsing + processor selection) | selection semantics; unknown knobs → `Err`, never approximation. For Qwen3-VL, Qwen3.5 and `qwen4_exp`, only `spec_from_model_dir` reads the video processor config, in transformers v5's order: the `video_processor` entry of `processor_config.json`, then `video_preprocessor_config.json` (HF's last fallback, the image `preprocessor_config.json`, is not read). A video config it cannot honor leaves `video` off (`capabilities()` reports no video) instead of failing the image spec |
 | `registry::processor_from_spec` | building the processor from already-resolved kwargs | selection semantics |
 | `MmFamilyProcessor::num_media_tokens` | `_get_num_multimodal_tokens(…)` | exact token counts from typed image/video/audio metadata, no pixel or feature-extraction work; for a family that sizes media by the whole request, the span of the item alone (§8) |
 | `image::resize::resize_rgb(Pil(_))` | `PIL.Image.resize` (LANCZOS/BICUBIC, u8) | **bitwise** (PIL's i32 fixed-point kernels, and Pillow 12.3's pass order: images taller than 100× their width shrink vertically first) |
 | `image::resize::resize_rgb(AtenU8)` | `torchvision resize(BICUBIC, antialias=True)` on uint8 | **bitwise** (ATen's per-axis i16 weight precision) |
 | `image::resize::resize_rgb(AtenF32Bilinear)` | torchvision v1 `transforms.functional.resize(BILINEAR)` on a uint8 tensor (f32 antialias, then round); torchvision v2 runs it only under x86 DEFAULT dispatch, because v2 keeps uint8 on AVX2, AVX-512 and aarch64 | **bitwise** against torch's x86 DEFAULT CPU dispatch (`ATEN_CPU_CAPABILITY=default`, no FMA) for outputs at least 2 pixels wide and downscales below 1,000,000x; builds that fuse multiply-adds (x86 AVX2, and ARM even under DEFAULT) can differ by one |
-| `QwenVlProcessor::process_item(Video)` | `Qwen3VLVideoProcessor` with `do_sample_frames=False` (resize, or none with `pre_resized` as `do_resize=False`, normalize, last frame repeated to a whole temporal patch, patchify) | **bitwise** (transformers 5.19.0 goldens in `tests/fixtures/qwen3_vl_video`) |
-| `QwenVlProcessor::layout_with_text` / `positions_with_features` | `Qwen3VLProcessor.__call__` (`replace_video_token`, `_calculate_timestamps`) and `Qwen3VLModel.get_rope_index` | **bitwise** ids and positions when a special token precedes each video placeholder, as in Qwen's chat template (transformers 5.19.0 goldens with the model's tokenizer) |
+| `QwenVlProcessor::process_item(Video)` | `Qwen3VLVideoProcessor` with `do_sample_frames=False` (resize, or none with `pre_resized` as `do_resize=False`, normalize, last frame repeated to a whole temporal patch, patchify) | **bitwise** (transformers 5.19.0 goldens in `tests/fixtures/qwen3_vl_video`; the Qwen3.5-0.8B and Qwen3.8-Flash-Next cases take their spec from `spec_from_model_dir`) |
+| `QwenVlProcessor::layout_with_text` / `positions_with_features` | `Qwen3VLProcessor.__call__` (`replace_video_token`, `_calculate_timestamps`) and `get_rope_index` of `Qwen3VLModel`, `Qwen3_5Model` and `Qwen4ExpModel` (one rule) | **bitwise** ids and positions when a special token precedes each video placeholder, as in Qwen's chat template (transformers 5.19.0 goldens with the model's tokenizer) |
 | `video_decode::Video::decode_with(.., RgbConversion::Swscale)` | torchcodec 0.17.0 `VideoDecoder` on an x86-64 CPU (FFmpeg 6.1 swscale) | **bitwise** on the BT.601 and BT.709 VP9 fixtures (`swscale_conversion_matches_torchcodec`); frames of odd height are refused |
 | `video_decode::VideoInfo::average_fps` | torchcodec's `metadata.average_fps` | WebM / Matroska from the packet scan; MP4 gives `fps` (the gaps are in its rustdoc) |
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
@@ -952,15 +962,27 @@ What remains:
 
 ### Video and audio: planned layout
 
-#### Native audio foundation (draft)
+#### Experimental Qwen3-ASR profile
 
-The generic, opt-in audio primitives are implemented in §2.5. A subsequent
-family contribution can compose these kernels with checkpoint/engine policy,
-model-specific feature-token counts, chunking, tensors and prompt layout,
-following [#607](https://github.com/ai-dynamo/frontend-crates/issues/607).
-No model family is selected in this foundation. SGLang owns request admission,
-media fetching, invocation and scheduler adaptation. Future PCM SHM import
-is independent of this crate and of the native RGB SHM PR's merge.
+With the `audio` feature, select `qwen3_asr` using a typed `Qwen3AsrSpec`
+or the existing JSON spec with `audio_token_id`, `audio_start_id` and
+`audio_end_id` taken from the checkpoint. The explicit profile accepts mono
+16 kHz PCM up to 30 seconds and emits Whisper features and the named
+`feature_attention_mask`. Consumers that require PCM16 WAV can use
+`audio::decode::decode_wav_pcm16` with `audio-decode` before processing.
+
+The profile rejects clips longer than 30 seconds. For accepted clips, it pads
+to 30 seconds and counts `ceil(samples / 160)` valid frames, following SGLang's
+Python processor. Hugging Face `AutoProcessor` with `padding=True` can count
+`floor(samples / 160)` frames for a single clip. For example, 160,096 samples
+give 131 audio tokens with this profile and 130 with that AutoProcessor path.
+
+As in [#607](https://github.com/ai-dynamo/frontend-crates/issues/607), metadata
+planning and decoded media processing share the token count and prompt layout.
+`num_media_tokens` and `layout_from_metadata` need the sample count, rate and
+prompt IDs. The engine supplies decoded PCM to compute features and positions.
+The family is experimental and requires explicit selection. Automatic checkpoint
+resolution remains reserved for profiles that meet the bit-exact reference bar.
 
 ```
 src/

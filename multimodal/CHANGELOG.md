@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.18](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.17...dynamo-multimodal-v0.2.18) - 2026-11-24
+
+### Performance
+
+- *(multimodal)* Decode VP8/VP9 key-frame segments in parallel (DIS-3528) ([#643](https://github.com/ai-dynamo/frontend-crates/pull/643))
+
+## [0.2.17](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.16...dynamo-multimodal-v0.2.17) - 2026-11-24
+
+### Performance
+
+- *(multimodal)* Reuse NVDEC decoders between videos (DIS-3529) ([#642](https://github.com/ai-dynamo/frontend-crates/pull/642))
+- *(multimodal)* Convert and resize sampled video frames on the pool (DIS-3530) ([#641](https://github.com/ai-dynamo/frontend-crates/pull/641))
+
+## [0.2.16](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.15...dynamo-multimodal-v0.2.16) - 2026-11-24
+
+### Features
+
+- *(multimodal)* Add an experimental Qwen3-ASR profile (DIS-3555) ([#660](https://github.com/ai-dynamo/frontend-crates/pull/660))
+
 ## [0.2.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.14...dynamo-multimodal-v0.2.15) - 2026-11-20
 
 ### Features

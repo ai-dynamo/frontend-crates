@@ -1060,7 +1060,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
         f"31-{number}" for number in range(31, 41)
     }
     mistral_scenarios = {entry[0] for entry in EDGE if entry[0].startswith("mistral_")}
-    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS)
+    assert len(UNIFIED_TAX) == 274 + len(G.OPEN_PARAMETER_BOUNDARY_SCENARIOS) + len(G.K3_RESPONSE_CASES) + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + len(OVERFLOW_SIBLING_VARIANTS) + 9 + len(GPT_OSS_RECOVERY_ORACLES) + len(mistral_scenarios) + len(G.DEFAULT_STRUCTURAL_QUOTE_CASES) + len(G.ISSUE595_SCENARIOS) + len(G.GLM47_STREAMING_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1751,11 +1751,16 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
             name = header[1]
             at = cursor + header.end()
             arguments = {}
+            duplicate_key = False
             while raw.startswith("<arg_key>", at):
                 key_end = raw.find("</arg_key>", at)
                 assert key_end >= 0, (family, "unterminated argument key", raw)
                 key = raw[at + len("<arg_key>"):key_end]
                 value_start = key_end + len("</arg_key>")
+                if raw.startswith("<arg_key>", value_start):
+                    # A missing middle value does not consume the next pair.
+                    at = value_start
+                    continue
                 assert raw.startswith("<arg_value>", value_start), (
                     family, "missing argument value", raw,
                 )
@@ -1763,9 +1768,11 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
                 value_end = raw.find("</arg_value>", value_start)
                 if value_end < 0:
                     break
+                duplicate_key |= key in arguments
                 arguments[key] = raw[value_start:value_end]
                 at = value_end + len("</arg_value>")
-            calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
+            if not duplicate_key:
+                calls.append({"kind": "tool_call", "name": name, "arguments": arguments})
             outer_end = raw.find("</tool_call>", at)
             if outer_end < 0:
                 return calls

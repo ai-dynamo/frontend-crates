@@ -1,0 +1,114 @@
+{
+ "model_dir": "models/qwen3_5",
+ "media": [
+  {
+   "kind": "video",
+   "shape": [
+    5,
+    24,
+    40
+   ],
+   "seed": 1272,
+   "resized_blake3": "bc3656949766edbf89bfa2d1a21aba1cd414dd023e8d486992eeec94424f5455",
+   "frame_indices": [
+    0,
+    6,
+    12,
+    18,
+    24
+   ],
+   "fps": 12.0
+  }
+ ],
+ "prompt_ids": [
+  13839,
+  220,
+  248053,
+  248057,
+  248054,
+  3219,
+  13
+ ],
+ "timestamp_ids": {
+  "<0.2 seconds>": [
+   27,
+   15,
+   13,
+   17,
+   6283,
+   29
+  ],
+  "<1.2 seconds>": [
+   27,
+   16,
+   13,
+   17,
+   6283,
+   29
+  ],
+  "<2.0 seconds>": [
+   27,
+   17,
+   13,
+   15,
+   6283,
+   29
+  ]
+ },
+ "input_ids": [
+  13839,
+  220,
+  248053,
+  27,
+  15,
+  13,
+  17,
+  6283,
+  29,
+  248053,
+  248057,
+  248057,
+  248054,
+  27,
+  16,
+  13,
+  17,
+  6283,
+  29,
+  248053,
+  248057,
+  248057,
+  248054,
+  27,
+  17,
+  13,
+  15,
+  6283,
+  29,
+  248053,
+  248057,
+  248057,
+  248054,
+  248054,
+  3219,
+  13
+ ],
+ "video_grids": [
+  [
+   3,
+   2,
+   4
+  ]
+ ],
+ "mrope_delta": 0,
+ "pixel_values_videos_blake3": "a6091710a7bf835ce0068920694d05f1ac8eaf4bd62e60a7e3d8742aef48ba5d",
+ "mrope_blake3": "f495543843b4d2234902513ee25ed923ffcc91a131f6cfc5d4a44ade952d440a",
+ "provenance": {
+  "generator": "multimodal/tests/fixtures/qwen3_vl_video/generate.py",
+  "tokenizer": "Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17",
+  "transformers": "5.19.0",
+  "torch": "2.14.1+cu130",
+  "torchvision": "0.29.2+cu132",
+  "numpy": "2.3.5"
+ }
+}

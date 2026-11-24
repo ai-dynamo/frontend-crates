@@ -66,6 +66,15 @@ fn wav_pcm_frame_bytes(params: &AudioCodecParameters) -> Result<usize> {
 }
 
 pub fn decode(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
+    decode_inner(data, limits, false)
+}
+
+/// Limit the same decoder to WAV carrying signed 16-bit PCM.
+pub fn decode_wav_pcm16(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
+    decode_inner(data, limits, true)
+}
+
+fn decode_inner(data: &[u8], limits: &DecodeLimits, wav_pcm16: bool) -> Result<DecodedMedia> {
     if data.len() > limits.max_bytes {
         return Err(MmError::limit_exceeded(
             "audio: encoded byte limit exceeded",
@@ -102,6 +111,9 @@ pub fn decode(data: &[u8], limits: &DecodeLimits) -> Result<DecodedMedia> {
         .as_ref()
         .and_then(|p| p.audio())
         .ok_or_else(|| MmError::unsupported("audio: missing codec parameters"))?;
+    if wav_pcm16 && (!is_wav || params.codec != codecs::CODEC_ID_PCM_S16LE) {
+        return Err(MmError::invalid_input("audio: expected PCM16 WAV"));
+    }
     let streamed_wav_frame_bytes = if is_wav && declared_frames.is_none() {
         Some(wav_pcm_frame_bytes(params)?)
     } else {

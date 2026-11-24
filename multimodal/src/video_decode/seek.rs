@@ -218,6 +218,35 @@ pub(super) fn plan(track: &Track<'_>, order: &Order, targets: &[u64]) -> Result<
     Ok(runs)
 }
 
+/// `runs` cut at each packet inside them that the container marks a keyframe
+/// and the bitstream confirms. A VP8 or VP9 key frame resets the decoder
+/// state, so each part decodes on a fresh decoder to the frames the run
+/// decodes there. A packet that cannot be read is no cut: its decode reports
+/// the error, in decode order.
+pub(super) fn split_at_keys(track: &Track<'_>, runs: &[Run]) -> Vec<Run> {
+    let mut nal = NalReader::new(track);
+    let mut parts = Vec::new();
+    for run in runs {
+        let mut start = run.start;
+        for index in run.start + 1..run.end {
+            if track.packets[index].sync && nal.is_key(index).unwrap_or(false) {
+                parts.push(Run {
+                    start,
+                    end: index,
+                    parameter_sets: Vec::new(),
+                });
+                start = index;
+            }
+        }
+        parts.push(Run {
+            start,
+            end: run.end,
+            parameter_sets: Vec::new(),
+        });
+    }
+    parts
+}
+
 /// The H.264 / HEVC parameter set NAL units seen so far, each kept once, in
 /// the order of its last appearance (a later one replaces an earlier one with
 /// the same id, so the decoder must see it last).
@@ -560,6 +589,7 @@ mod tests {
             "gop_hev1.mp4",
             "gop_vp8.webm",
             "gop_vp9.webm",
+            "gop_vp9.mp4",
             "gop_av1.mp4",
         ] {
             let bytes = fixture(name);
