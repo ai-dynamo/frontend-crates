@@ -140,7 +140,7 @@ def _prompt_token_ids(case, family):
     init = case.get("init") or {}
     if family == "beam":
         prefix = "<|start|>assistant"
-        channel = {"Reasoning": "redacted", "Response": "final"}.get(init.get("starting_state"))
+        channel = {"Reasoning": "analysis", "Response": "final"}.get(init.get("starting_state"))
         if channel:
             prefix += f"<|channel|>{channel}<|message|>"
         return capture_tokenizer(family).encode(prefix)

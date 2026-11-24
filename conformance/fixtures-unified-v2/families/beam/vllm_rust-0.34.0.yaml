@@ -8979,6 +8979,89 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: analysis "
+        - kind: text
+          text: Answer"
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analysis "
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: Answer"
+        - expected: []
+        capture_input:
+          input: analysis "<|end|><|start|>assistant<|channel|>final<|message|>Answer"<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: analysis "
+          - delta_text: <
+          - delta_text: '|end|>'
+          - delta_text: <|start|>assistant<|channel|>final<|message|>Answer"<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   UNIFIED.40-native_raw_string_before_reasoning_closer:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -8989,6 +9072,89 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Use re.split(r'(\s)', text). Let's final.
+        - kind: text
+          text: The code prints ['a', ' ', 'b'].
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Use re.split(r'(\s)', text). Let's final.
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The code prints ['a', ' ', 'b'].
+        - expected: []
+        capture_input:
+          input: Use re.split(r'(\s)', text). Let's final.<|end|><|start|>assistant<|channel|>final<|message|>The code prints ['a', ' ', 'b'].<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: Use re.split(r'(\s)', text). Let's final.
+          - delta_text: <
+          - delta_text: '|end|>'
+          - delta_text: <|start|>assistant<|channel|>final<|message|>The code prints ['a', ' ', 'b'].<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   UNIFIED.8-native_quoted_complete_call_default:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -9489,6 +9655,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, I should run this command "grep -v '
+        - kind: text
+          text: ''' ..."'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, I should run this command "grep -v '
+          - kind: text
+            text: ''' ..."'
+        - expected: []
+        capture_input:
+          input: Let me think, I should run this command "grep -v '<|end|><|start|>assistant<|channel|>final<|message|>' ..."<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, I should run this command "grep -v '<|end|><|start|>assistant<|channel|>final<|message|>' ..."<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   conditional_schema_number_types:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -9529,6 +9730,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, the year is 80s'
+        - kind: text
+          text: 'Yes'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, the year is 80s'
+          - kind: text
+            text: 'Yes'
+        - expected: []
+        capture_input:
+          input: Let me think, the year is 80s'<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, the year is 80s'<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   decade_apostrophe_before_reasoning_closer_leading_apostrophe:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -9539,6 +9775,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: '''90s'
+        - kind: text
+          text: '''Answer'''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '''90s'
+          - kind: text
+            text: '''Answer'''
+        - expected: []
+        capture_input:
+          input: '''90s<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '''90s<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   decade_apostrophe_before_reasoning_closer_mixed_quotes:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -9549,6 +9820,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, the reference is 80s' music
+        - kind: text
+          text: '''Yes'''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, the reference is 80s' music
+          - kind: text
+            text: '''Yes'''
+        - expected: []
+        capture_input:
+          input: Let me think, the reference is 80s' music<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, the reference is 80s' music<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   deepseek_v41_mixed_control_text_in_string:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10179,6 +10485,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, the TV size is 40"
+        - kind: text
+          text: 'Yes'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, the TV size is 40"
+          - kind: text
+            text: 'Yes'
+        - expected: []
+        capture_input:
+          input: Let me think, the TV size is 40"<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, the TV size is 40"<|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   inch_mark_before_reasoning_closer_quoted_answer:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10189,6 +10530,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: 27"
+        - kind: text
+          text: '"Answer"'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 27"
+          - kind: text
+            text: '"Answer"'
+        - expected: []
+        capture_input:
+          input: 27"<|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: 27"<|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   interrupted_reasoning_then_response:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10249,6 +10625,49 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: f'" OR x -- '
+        - kind: text
+          text: '"Answer"'
+        - kind: reasoning
+          text: ''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: f'" OR x -- '
+          - kind: text
+            text: '"Answer"'
+        - expected:
+          - kind: reasoning
+            text: ''
+        capture_input:
+          input: 'f''" OR x -- ''
+
+            <|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: 'f''" OR x -- ''
+
+              <|end|><|start|>assistant<|channel|>final<|message|>"Answer"<|return|>'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   narrated_calls:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10269,6 +10688,95 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The literal "<|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected:
+          - kind: reasoning
+            text: <|start|>
+        - expected:
+          - kind: reasoning
+            text: assistant to=get_weather
+        - expected:
+          - kind: reasoning
+            text: <|channel|>
+        - expected:
+          - kind: reasoning
+            text: '" marker is part of the explanation.'
+        - expected: []
+        capture_input:
+          input: The literal "<|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The literal "
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: '" marker is part of the explanation.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   native_quoted_control_in_response:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10309,6 +10817,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The special "
+        - kind: text
+          text: '" marker is used to delineate parser paths'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The special "
+          - kind: text
+            text: '" marker is used to delineate parser paths'
+        - expected: []
+        capture_input:
+          input: The special "<|end|><|start|>assistant<|channel|>final<|message|>" marker is used to delineate parser paths<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: The special "<|end|><|start|>assistant<|channel|>final<|message|>" marker is used to delineate parser paths<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   native_quoted_reasoning_closer_then_answer:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10319,6 +10862,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: ''''
+        - kind: text
+          text: '''Answer'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: ''''
+          - kind: text
+            text: '''Answer'
+        - expected: []
+        capture_input:
+          input: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|return|><|end|><|start|>assistant<|channel|>final<|message|>Answer<|return|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '''<|end|><|start|>assistant<|channel|>final<|message|>''<|return|><|end|><|start|>assistant<|channel|>final<|message|>Answer<|return|>'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   native_reasoning_closer_in_quoted_sentence:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10329,6 +10907,45 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, "The marker
+        - kind: text
+          text: is a special marker"
+        - kind: reasoning
+          text: ''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, "The marker
+          - kind: text
+            text: is a special marker"
+        - expected:
+          - kind: reasoning
+            text: ''
+        capture_input:
+          input: Let me think, "The marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker"<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, "The marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker"<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   native_single_quote_contraction_reasoning:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10339,6 +10956,95 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|start|>assistant to=get_weather<|channel|> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected:
+          - kind: reasoning
+            text: ' <|start|>'
+        - expected:
+          - kind: reasoning
+            text: assistant to=get_weather
+        - expected:
+          - kind: reasoning
+            text: <|channel|>
+        - expected:
+          - kind: reasoning
+            text: ' marker'' stays quoted.'
+        - expected: []
+        capture_input:
+          input: The literal 'doesn't <|start|>assistant to=get_weather<|channel|> marker' stays quoted.
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'The literal ''doesn''t '
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: ' marker'' stays quoted.'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   native_single_quote_contraction_response:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10379,6 +11085,45 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, the marker
+        - kind: text
+          text: is a special marker
+        - kind: reasoning
+          text: ''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, the marker
+          - kind: text
+            text: is a special marker
+        - expected:
+          - kind: reasoning
+            text: ''
+        capture_input:
+          input: Let me think, the marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, the marker <|end|><|start|>assistant<|channel|>final<|message|> is a special marker<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   native_unquoted_reasoning_closer_in_sentence_then_closer:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10389,6 +11134,45 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, user is asking if
+        - kind: text
+          text: is specialYes
+        - kind: reasoning
+          text: ''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, user is asking if
+          - kind: text
+            text: is specialYes
+        - expected:
+          - kind: reasoning
+            text: ''
+        capture_input:
+          input: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|return|><|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, user is asking if <|end|><|start|>assistant<|channel|>final<|message|> is special<|return|><|end|><|start|>assistant<|channel|>final<|message|>Yes<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   not_keyword_type_complement:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10439,6 +11223,141 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: <|start|>assistant<|channel|>analysis<|message|>checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <|start|>
+        - expected:
+          - kind: reasoning
+            text: assistant
+        - expected:
+          - kind: reasoning
+            text: <|channel|>
+        - expected:
+          - kind: reasoning
+            text: analysis
+        - expected:
+          - kind: reasoning
+            text: <|message|>
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"London"}'
+        - expected: []
+        capture_input:
+          input: '<|start|>assistant<|channel|>analysis<|message|>checking weather<|end|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            London
+
+            </rfl:parameter><|call|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: analysis
+          - delta_text: <|message|>
+          - delta_text: checking weather
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              London
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   prefilled_reasoning_then_text:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10449,6 +11368,99 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: no tool needed
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        - expected: []
+        capture_input:
+          input: no tool needed<|end|><|start|>assistant<|channel|>final<|message|>The answer is 42.<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: no tool needed
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: The answer is 42.
+          - delta_text: <|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   prefilled_reasoning_then_text_then_tool:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10459,6 +11471,139 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found:'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found:'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+        - expected: []
+        capture_input:
+          input: 'weighing options<|end|><|start|>assistant<|channel|>final<|message|>Here''s what I found: <|return|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: weighing options
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant
+          - delta_text: <|channel|>
+          - delta_text: final
+          - delta_text: <|message|>
+          - delta_text: 'Here''s what I found: '
+          - delta_text: <|return|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   prefilled_reasoning_truncated:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10469,6 +11614,112 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analyzing data
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{}'
+        capture_input:
+          input: 'analyzing data<|end|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Par'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: length
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: analyzing data
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Par'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   prefilled_reasoning_with_guided_json:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10489,6 +11740,121 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+        - expected: []
+        capture_input:
+          input: 'checking weather<|end|><|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            Paris
+
+            </rfl:parameter><|call|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: checking weather
+          - delta_text: <|end|>
+          - delta_text: <|start|>
+          - delta_text: assistant to=get_weather
+          - delta_text: <|channel|>
+          - delta_text: 'analysis '
+          - delta_text: <|constrain|>
+          - delta_text: xml
+          - delta_text: <|message|>
+          - delta_text: <rfl:parameter name="city">
+          - delta_text: '
+
+              Paris
+
+              '
+          - delta_text: </rfl:parameter>
+          - delta_text: <|call|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   prefilled_response_reasoning_markers_literal:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -10509,6 +11875,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: '`name`''s path.'
+        - kind: text
+          text: '''Answer'''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '`name`''s path.'
+          - kind: text
+            text: '''Answer'''
+        - expected: []
+        capture_input:
+          input: '`name`''s path.<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '`name`''s path.<|end|><|start|>assistant<|channel|>final<|message|>''Answer''<|return|>'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   reason_after_tool:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -11839,6 +13240,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, this SQL fragment is '1'='1
+        - kind: text
+          text: '''Yes'''
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, this SQL fragment is '1'='1
+          - kind: text
+            text: '''Yes'''
+        - expected: []
+        capture_input:
+          input: Let me think, this SQL fragment is '1'='1<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, this SQL fragment is '1'='1<|end|><|start|>assistant<|channel|>final<|message|>'Yes'<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   structured_response_after_reasoning:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -12039,6 +13475,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: '`name'
+        - kind: text
+          text: '`Answer`'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '`name'
+          - kind: text
+            text: '`Answer`'
+        - expected: []
+        capture_input:
+          input: '`name<|end|><|start|>assistant<|channel|>final<|message|>`Answer`<|return|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '`name<|end|><|start|>assistant<|channel|>final<|message|>`Answer`<|return|>'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   unclosed_command_backtick_before_reasoning_closer:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -12049,6 +13520,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, I should try `pytest -x
+        - kind: text
+          text: Run pytest
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, I should try `pytest -x
+          - kind: text
+            text: Run pytest
+        - expected: []
+        capture_input:
+          input: Let me think, I should try `pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run pytest<|return|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, I should try `pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run pytest<|return|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   unclosed_command_backtick_before_reasoning_closer_later_backticks:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -12059,6 +13565,41 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: '`pytest -x'
+        - kind: text
+          text: Run `pytest`
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '`pytest -x'
+          - kind: text
+            text: Run `pytest`
+        - expected: []
+        capture_input:
+          input: '`pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run `pytest`<|return|>'
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: '`pytest -x<|end|><|start|>assistant<|channel|>final<|message|>Run `pytest`<|return|>'
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   unclosed_command_quote_before_reasoning_closer:
     vllm_rust_capture_provenance:
       implementation: vllm_rust
@@ -12069,6 +13610,39 @@ metadata_changes:
       adapter_sha256: e93e9be80a046c8f247320c4d7cac7c3cd4544946cfbfacba344617ab1b21c9e
       job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
       results_sha256: fcdbd5a157dbfcf40bf68055a30f4d1ac761ecfbc664f018791de4b635d9498e
+    verified_recapture:
+      result:
+        assembled:
+        - kind: reasoning
+          text: Let me think, I should run this command "grep -v '<|end|>
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Let me think, I should run this command "grep -v '
+        - expected:
+          - kind: reasoning
+            text: <|end|>
+        capture_input:
+          input: Let me think, I should run this command "grep -v '<|end|>
+          init:
+            starting_state: Reasoning
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools: []
+          chunks:
+          - delta_text: Let me think, I should run this command "grep -v '<|end|>
+          - delta_text: ‹finish›
+      provenance:
+        implementation: vllm_rust
+        version: 0.34.0
+        git_commit: 62d4bc3c7e33b1b6c906e233e6af2d3506c482ca
+        status: executed
+        source_sha256: 90e17ff3474fa72c341c46e0a0bcb8bf282fd1ee4a7816581fcda19fb1b3f393
+        adapter_sha256: 57137c27f7772d84ea9d8c62b4b5d64783ffd934a393901be144aec220fb79d8
+        job_sha256: 8973f617d63d4e293cb886ad1bc349ec998c308aaf166f6e59f5fdc4fbe5b919
+        results_sha256: a61a8783f8ee64c3587a2f6599744d7af7dd8927424b65f19b95fff7c9746c63
+      resolution: fresh_execution
   unused_reference_graph_parameter_types:
     vllm_rust_capture_provenance:
       implementation: vllm_rust

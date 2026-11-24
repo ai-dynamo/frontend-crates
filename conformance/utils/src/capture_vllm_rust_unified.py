@@ -395,7 +395,7 @@ fn make_parser(family: &str, tools: &[Tool], tok: DynTokenizer) -> (Box<dyn Unif
 
 fn prompt_token_ids(case: &Case, tok: &DynTokenizer) -> Vec<u32> {
     let prompt = match (case.family.as_str(), case.init.starting_state.as_str()) {
-        ("beam", "Reasoning") => "<|start|>assistant<|channel|>redacted<|message|>",
+        ("beam", "Reasoning") => "<|start|>assistant<|channel|>analysis<|message|>",
         ("beam", "Response") => "<|start|>assistant<|channel|>final<|message|>",
         ("beam", _) => "<|start|>assistant",
         ("kimi_k3", "Reasoning") => "<|open|>think<|sep|>",

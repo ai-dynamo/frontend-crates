@@ -329,6 +329,7 @@ def test_vllm_request_preserves_family_reasoning_initialization(family, state):
 @pytest.mark.parametrize("family, marker", [
     ("minimax_m3", "<mm:think>"), ("qwen3", "<think>"),
     ("kimi_k3", "<|open|>think<|sep|>"), ("gemma4", "<|channel>"),
+    ("beam", None),
 ])
 def test_vllm_prefilled_reasoning_uses_family_marker(family, marker):
     # Existing corpus rows exercise this state; this pins the adapter's prompt-token projection.
@@ -338,11 +339,18 @@ def test_vllm_prefilled_reasoning_uses_family_marker(family, marker):
     namespace = {"vllm_tokenizer_markers": vllm_tokenizer_markers, "capture_tokenizer": capture_tokenizer}
     exec(compile(ast.Module(body=functions, type_ignores=[]), "capture_vllm_unified.py", "exec"), namespace)
     tokenizer = capture_tokenizer(family)
+    if family == "beam":
+        fields = tokenizer.response_template["fields"]
+        marker = "<|start|>assistant" + fields["thinking"]["open"]
     tokens = namespace["_prompt_token_ids"]({"init": {"starting_state": "Reasoning"}}, family)
     assert tokens == tokenizer.encode(marker, add_special_tokens=False)
     assert tokens
     for state in (None, "Response"):
-        assert namespace["_prompt_token_ids"]({"init": {"starting_state": state}}, family) is None
+        expected = None
+        if family == "beam":
+            prefix = "<|start|>assistant" + (fields["content"]["open"] if state == "Response" else "")
+            expected = tokenizer.encode(prefix)
+        assert namespace["_prompt_token_ids"]({"init": {"starting_state": state}}, family) == expected
 
 
 def test_vllm_request_rejection_is_recorded_without_aborting_later_cases():
