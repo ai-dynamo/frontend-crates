@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 Major versions are selected manually; minor releases may include API changes.
+## [0.1.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-decisions-v0.1.1...dynamo-decisions-v0.1.2) - 2026-11-24
+
+### Refactoring
+
+- *(decisions)* Move Dialect into its own module ([#665](https://github.com/ai-dynamo/frontend-crates/pull/665))
+
 ## [0.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-decisions-v0.1.0...dynamo-decisions-v0.1.1) - 2026-10-27
 
 ### Bug fixes
