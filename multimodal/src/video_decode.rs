@@ -828,7 +828,6 @@ impl Sampler<'_> {
         Ok(())
     }
 
-    /// Wait for every frame sent to the pool.
     fn flush(&mut self) {
         while self.in_flight > 0 {
             self.receive();
