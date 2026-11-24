@@ -65,9 +65,11 @@
 // Decoding is Linux-only; elsewhere the decode path is compiled out.
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
 
+use crate::execution;
 use crate::frames::{VideoFrames, VideoTiming};
 use crate::image::resize::{Resample, resize_rgb};
 use crate::{MmError, Result};
+use std::sync::mpsc;
 
 mod matroska;
 mod mp4;
@@ -634,6 +636,9 @@ fn decode_demuxed(
         .filter(|n| *n <= limits.max_output_bytes)
         .ok_or_else(too_big)?;
 
+    let room =
+        limits.max_output_bytes - out_width as usize * out_height as usize * 3 * targets.len();
+
     let mut sampler = Sampler {
         targets,
         next: 0,
@@ -646,8 +651,14 @@ fn decode_demuxed(
         rgb: Vec::new(),
         full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
+        batch: pool_batch(execution::threads(), room, info.width, info.height),
+        sent: Vec::new(),
+        appended: 0,
+        in_flight: 0,
+        results: std::sync::mpsc::channel(),
     };
     backend(track, &mut sampler)?;
+    sampler.flush();
     if let Some(missing) = sampler.targets.get(sampler.next) {
         return Err(MmError::invalid_input(format!(
             "frame {missing} of the {} the video declares did not decode",
@@ -721,7 +732,20 @@ struct Sampler<'t> {
     /// One frame at the source size, when frames are resized.
     full: Vec<u8>,
     timestamps: Vec<f64>,
+    /// Kept frames converted on the CPU pool at a time, while decoding goes
+    /// on; 1 converts each frame on the caller as it arrives. It is 1 on a
+    /// pool thread, so a caller never waits on the pool from inside it.
+    batch: usize,
+    /// Each kept frame sent to the pool: its repeat count, and its RGB once back.
+    sent: Vec<(usize, Option<Vec<u8>>)>,
+    /// The frames of `sent` already in `rgb`.
+    appended: usize,
+    in_flight: usize,
+    results: (mpsc::Sender<Converted>, mpsc::Receiver<Converted>),
 }
+
+/// A frame converted on the pool: its index in `Sampler::sent` and its RGB.
+type Converted = (usize, std::thread::Result<Vec<u8>>);
 
 impl Sampler<'_> {
     fn done(&self) -> bool {
@@ -730,9 +754,12 @@ impl Sampler<'_> {
 
     /// Forget every frame, for a decode that starts over.
     fn restart(&mut self) {
+        self.flush();
         self.next = 0;
         self.rgb.clear();
         self.timestamps.clear();
+        self.sent.clear();
+        self.appended = 0;
     }
 
     /// Whether shown frame `index` is the next sampled one.
@@ -752,33 +779,173 @@ impl Sampler<'_> {
         if !self.wants(index) {
             return Ok(());
         }
-        let start = self.rgb.len();
-        match self.resize {
-            None => picture.to_rgb(&mut self.rgb, self.conversion),
-            Some(r) => {
-                self.full.clear();
-                picture.to_rgb(&mut self.full, self.conversion);
-                let resized = resize_rgb(
-                    &self.full,
-                    self.height as usize,
-                    self.width as usize,
-                    r.height as usize,
-                    r.width as usize,
-                    r.filter,
-                );
-                self.rgb.extend_from_slice(&resized);
-            }
-        }
-        let end = self.rgb.len();
-        self.timestamps.push(pts);
-        self.next += 1;
+        let mut copies = 0;
         while self.targets.get(self.next) == Some(&index) {
-            self.rgb.extend_from_within(start..end);
             self.timestamps.push(pts);
             self.next += 1;
+            copies += 1;
+        }
+        if self.batch == 1 {
+            let start = self.rgb.len();
+            convert_frame(
+                picture,
+                self.resize,
+                self.conversion,
+                &mut self.full,
+                &mut self.rgb,
+            );
+            let end = self.rgb.len();
+            for _ in 1..copies {
+                self.rgb.extend_from_within(start..end);
+            }
+        } else {
+            let slot = self.sent.len();
+            self.sent.push((copies, None));
+            let (picture, resize, conversion) =
+                (QueuedPicture::new(picture), self.resize, self.conversion);
+            let done = self.results.0.clone();
+            execution::spawn(move || {
+                let rgb = std::panic::catch_unwind(move || {
+                    let mut rgb = Vec::new();
+                    convert_frame(
+                        &picture.view(),
+                        resize,
+                        conversion,
+                        &mut Vec::new(),
+                        &mut rgb,
+                    );
+                    rgb
+                });
+                let _ = done.send((slot, rgb));
+            });
+            self.in_flight += 1;
+            if self.in_flight == self.batch {
+                self.receive();
+            }
         }
         Ok(())
     }
+
+    fn flush(&mut self) {
+        while self.in_flight > 0 {
+            self.receive();
+        }
+    }
+
+    /// Wait for one converted frame, then append the frames now back in order.
+    fn receive(&mut self) {
+        let Ok((slot, rgb)) = self.results.1.recv() else {
+            unreachable!("the sampler holds a sender");
+        };
+        self.in_flight -= 1;
+        self.sent[slot].1 = Some(rgb.unwrap_or_else(|panic| std::panic::resume_unwind(panic)));
+        while let Some((copies, Some(rgb))) = self.sent.get_mut(self.appended) {
+            for _ in 0..*copies {
+                self.rgb.extend_from_slice(rgb);
+            }
+            *rgb = Vec::new();
+            self.appended += 1;
+        }
+    }
+}
+
+/// Append `picture` as RGB, resized if asked; `full` holds the source-size
+/// frame meanwhile.
+fn convert_frame(
+    picture: &Nv12<'_>,
+    resize: Option<FrameResize>,
+    conversion: RgbConversion,
+    full: &mut Vec<u8>,
+    out: &mut Vec<u8>,
+) {
+    match resize {
+        None => picture.to_rgb(out, conversion),
+        Some(r) => {
+            full.clear();
+            picture.to_rgb(full, conversion);
+            out.extend_from_slice(&resize_rgb(
+                full,
+                picture.height as usize,
+                picture.width as usize,
+                r.height as usize,
+                r.width as usize,
+                r.filter,
+            ));
+        }
+    }
+}
+
+/// A kept [`Nv12`] picture copied out of the decoder, for a later conversion.
+struct QueuedPicture {
+    width: u32,
+    height: u32,
+    y: Vec<u8>,
+    uv: Vec<u8>,
+    y_stride: usize,
+    uv_stride: usize,
+    matrix: Matrix,
+    full_range: bool,
+}
+
+impl QueuedPicture {
+    /// The length and count of the luma rows, then of the chroma rows, that
+    /// `new` keeps of a `width` x `height` picture: the visible rows, without
+    /// the decoder's row padding.
+    fn rows(width: u32, height: u32) -> [(usize, usize); 2] {
+        let (width, height) = (width as usize, height as usize);
+        [
+            (width, height),
+            (width.next_multiple_of(2), height.div_ceil(2)),
+        ]
+    }
+
+    fn new(picture: &Nv12<'_>) -> Self {
+        let [luma, chroma] = Self::rows(picture.width, picture.height);
+        let keep = |plane: &[u8], stride: usize, (len, count): (usize, usize)| {
+            let mut out = Vec::with_capacity(len * count);
+            for row in 0..count {
+                out.extend_from_slice(&plane[row * stride..][..len]);
+            }
+            out
+        };
+        Self {
+            width: picture.width,
+            height: picture.height,
+            y: keep(picture.y, picture.y_stride, luma),
+            uv: keep(picture.uv, picture.uv_stride, chroma),
+            y_stride: luma.0,
+            uv_stride: chroma.0,
+            matrix: picture.matrix,
+            full_range: picture.full_range,
+        }
+    }
+
+    fn view(&self) -> Nv12<'_> {
+        Nv12 {
+            width: self.width,
+            height: self.height,
+            y: &self.y,
+            uv: &self.uv,
+            y_stride: self.y_stride,
+            uv_stride: self.uv_stride,
+            matrix: self.matrix,
+            full_range: self.full_range,
+        }
+    }
+}
+
+/// Kept frames converted on the pool at a time: at most one per thread, as
+/// many as `room` holds with each frame's queued picture and source-size RGB,
+/// and at least 1, which converts on the caller.
+fn pool_batch(threads: usize, room: usize, width: u32, height: u32) -> usize {
+    let queued = QueuedPicture::rows(width, height)
+        .iter()
+        .map(|&(len, count)| len * count)
+        .fold(
+            (width as usize * height as usize).saturating_mul(3),
+            usize::saturating_add,
+        );
+    threads.min(room / queued).max(1)
 }
 
 // ---------------------------------------------------------------------------
@@ -1119,20 +1286,22 @@ impl Nv12<'_> {
         }
     }
 
-    fn convert(&self, out: &mut Vec<u8>, pixel: impl Fn(u8, u8, u8) -> [u8; 3]) {
-        out.reserve(self.width as usize * self.height as usize * 3);
-        for row in 0..self.height as usize {
-            let y_row = &self.y[row * self.y_stride..];
+    fn convert(&self, out: &mut Vec<u8>, pixel: impl Fn(u8, u8, u8) -> [u8; 3] + Sync) {
+        let width = self.width as usize;
+        let start = out.len();
+        out.resize(start + width * self.height as usize * 3, 0);
+        execution::for_chunks_mut(&mut out[start..], width * 3, |row, rgb| {
+            let y_row = &self.y[row * self.y_stride..][..width];
             let uv_row = &self.uv[(row / 2) * self.uv_stride..];
-            for (col, &luma) in y_row[..self.width as usize].iter().enumerate() {
+            for (col, (&luma, px)) in y_row.iter().zip(rgb.chunks_exact_mut(3)).enumerate() {
                 let c = (col / 2) * 2;
-                out.extend_from_slice(&pixel(luma, uv_row[c], uv_row[c + 1]));
+                px.copy_from_slice(&pixel(luma, uv_row[c], uv_row[c + 1]));
             }
-        }
+        });
     }
 }
 
-fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] {
+fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] + Sync {
     // (Kr, Kb) per ITU-R BT.601 / BT.709.
     let (kr, kb) = match matrix {
         Matrix::Bt601 => (0.299_f32, 0.114_f32),
@@ -1158,7 +1327,7 @@ fn float_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 
 
 /// `yuv420_rgb24_ssse3` (FFmpeg 6.1 `libswscale/x86/yuv_2_rgb.asm`): each
 /// product keeps its high 16 bits (`pmulhw`) before the sums.
-fn swscale_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] {
+fn swscale_pixel(matrix: Matrix, full_range: bool) -> impl Fn(u8, u8, u8) -> [u8; 3] + Sync {
     // FFmpeg 6.1 `ff_yuv2rgb_c_init_tables` at default brightness, contrast
     // and saturation, read from its tables.
     let [yc, yo, vr, ub, vg, ug] = match (matrix, full_range) {
@@ -1958,6 +2127,139 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn a_queued_picture_keeps_only_the_visible_rows() {
+        // 5x3 with row strides of 8, each plane ending at its last visible
+        // byte as libvpx's do; the padding bytes are 0xFF. The odd column
+        // still needs a U/V pair, so a chroma row is 6 bytes.
+        let y: Vec<u8> = (0..21)
+            .map(|i| if i % 8 < 5 { 16 + i } else { 0xFF })
+            .collect();
+        let uv: Vec<u8> = (0..14)
+            .map(|i| if i % 8 < 6 { 100 + i } else { 0xFF })
+            .collect();
+        let padded = Nv12 {
+            width: 5,
+            height: 3,
+            y: &y,
+            uv: &uv,
+            y_stride: 8,
+            uv_stride: 8,
+            matrix: Matrix::Bt601,
+            full_range: false,
+        };
+        let queued = QueuedPicture::new(&padded);
+        assert_eq!(
+            queued.y,
+            [16, 17, 18, 19, 20, 24, 25, 26, 27, 28, 32, 33, 34, 35, 36]
+        );
+        assert_eq!(
+            queued.uv,
+            [100, 101, 102, 103, 104, 105, 108, 109, 110, 111, 112, 113]
+        );
+        let (mut want, mut got) = (Vec::new(), Vec::new());
+        padded.to_rgb(&mut want, RgbConversion::Float);
+        queued.view().to_rgb(&mut got, RgbConversion::Float);
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn the_pool_batch_fits_the_room_and_is_at_least_one() {
+        // A 5x3 frame queues 15 + 12 NV12 bytes and 45 RGB bytes: 72.
+        assert_eq!(pool_batch(8, 0, 5, 3), 1);
+        assert_eq!(pool_batch(8, 143, 5, 3), 1);
+        assert_eq!(pool_batch(8, 144, 5, 3), 2);
+        assert_eq!(pool_batch(8, 1 << 20, 5, 3), 8);
+        assert_eq!(pool_batch(1, 1 << 20, 5, 3), 1);
+    }
+
+    /// A 2x2 full-range grey picture: `level` in every RGB byte.
+    fn grey(level: &[u8; 4]) -> Nv12<'_> {
+        Nv12 {
+            width: 2,
+            height: 2,
+            y: level,
+            uv: &[128, 128],
+            y_stride: 2,
+            uv_stride: 2,
+            matrix: Matrix::Bt601,
+            full_range: true,
+        }
+    }
+
+    fn grey_sampler(targets: &[u64], batch: usize) -> Sampler<'_> {
+        Sampler {
+            targets,
+            next: 0,
+            width: 2,
+            height: 2,
+            limits: VideoDecodeLimits::default(),
+            resize: None,
+            conversion: RgbConversion::Float,
+            rgb: Vec::new(),
+            full: Vec::new(),
+            timestamps: Vec::new(),
+            batch,
+            sent: Vec::new(),
+            appended: 0,
+            in_flight: 0,
+            results: mpsc::channel(),
+        }
+    }
+
+    #[test]
+    fn a_full_batch_waits_for_one_frame_and_a_batch_of_one_sends_none() {
+        let targets = [0, 1];
+        let mut two = grey_sampler(&targets, 2);
+        two.push(&grey(&[10; 4]), 0.0, 0).unwrap();
+        assert_eq!(two.in_flight, 1);
+        two.push(&grey(&[20; 4]), 0.0, 1).unwrap();
+        assert_eq!((two.in_flight, two.appended), (1, 1));
+        let mut one = grey_sampler(&targets, 1);
+        one.push(&grey(&[10; 4]), 0.0, 0).unwrap();
+        assert!(one.sent.is_empty());
+    }
+
+    #[test]
+    fn pool_conversions_append_in_the_order_sent() {
+        let targets = [0, 0, 1, 2];
+        // Unarmed, each conversion is back at once. Hand them back last
+        // first, as when the first frame converts slowest.
+        let mut sampler = grey_sampler(&targets, 4);
+        for (index, level) in [(0, 10), (1, 20), (2, 30)] {
+            sampler.push(&grey(&[level; 4]), 0.0, index).unwrap();
+        }
+        let back: Vec<Converted> = (0..3).map(|_| sampler.results.1.recv().unwrap()).collect();
+        for converted in back.into_iter().rev() {
+            sampler.results.0.send(converted).unwrap();
+        }
+        sampler.receive();
+        sampler.receive();
+        assert!(sampler.rgb.is_empty());
+        sampler.receive();
+        assert_eq!(sampler.rgb, [&[10; 24][..], &[20; 12], &[30; 12]].concat());
+    }
+
+    #[test]
+    fn a_pool_conversion_panic_reaches_the_caller_before_earlier_frames() {
+        let mut sampler = grey_sampler(&[0, 1], 4);
+        for index in 0..2 {
+            sampler.push(&grey(&[10; 4]), 0.0, index).unwrap();
+        }
+        for _ in 0..2 {
+            let _ = sampler.results.1.recv().unwrap();
+        }
+        // Frame 0 is still out when the conversion of frame 1 panics.
+        sampler
+            .results
+            .0
+            .send((1, Err(Box::new("conversion failed"))))
+            .unwrap();
+        let panic =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| sampler.flush())).unwrap_err();
+        assert_eq!(panic.downcast_ref::<&str>(), Some(&"conversion failed"));
     }
 
     #[test]
@@ -3093,6 +3395,11 @@ mod tests {
                         rgb: Vec::new(),
                         full: Vec::new(),
                         timestamps: Vec::new(),
+                        batch: 1,
+                        sent: Vec::new(),
+                        appended: 0,
+                        in_flight: 0,
+                        results: std::sync::mpsc::channel(),
                     };
                     let _ = vpx::decode(&track, &mut sampler);
                 }
@@ -3227,6 +3534,9 @@ mod tests {
         #[test]
         #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
         fn nvdec_frames_are_the_same_with_seeking() {
+            let _gop_clips = nvdec::GOP_CLIPS
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             for name in [
                 "gop_h264.mp4",
                 "gop_frag.mp4",

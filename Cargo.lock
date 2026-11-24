@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-multimodal"
-version = "0.2.15"
+version = "0.2.17"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.13"
+version = "11.0.15"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1247,7 +1247,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.10.9"
+version = "0.10.11"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",

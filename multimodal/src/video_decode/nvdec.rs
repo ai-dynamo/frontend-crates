@@ -37,7 +37,7 @@
 //! decoder (`CUVIDPICPARAMS`) are passed through as opaque pointers.
 
 use std::ffi::{CStr, c_char, c_int, c_uint, c_void};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock, PoisonError};
 
 use super::seek::{self, Leading, Order, Run};
 use super::{Matrix, Nv12, Sampler, Track, VideoCodec, check_size};
@@ -77,6 +77,7 @@ const PKT_TIMESTAMP: TcuUlong = 0x02;
 
 /// `CUVIDDECODECAPS`.
 #[repr(C)]
+#[derive(Clone, Copy)]
 struct DecodeCaps {
     codec_type: c_uint,
     chroma_format: c_uint,
@@ -108,7 +109,7 @@ struct Rect32 {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 struct Rect16 {
     left: i16,
     top: i16,
@@ -435,8 +436,14 @@ fn codec_type(codec: VideoCodec) -> Result<c_uint> {
     }
 }
 
-/// What this GPU's NVDEC can decode for `codec` in 8-bit 4:2:0.
+/// What this GPU's NVDEC can decode for `codec` in 8-bit 4:2:0. Cached per
+/// codec: a query takes milliseconds.
 fn caps(api: &Api, codec: c_uint) -> Result<DecodeCaps> {
+    static KNOWN: Mutex<Vec<DecodeCaps>> = Mutex::new(Vec::new());
+    let mut known = KNOWN.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(caps) = known.iter().find(|caps| caps.codec_type == codec) {
+        return Ok(*caps);
+    }
     // SAFETY: an all-zero `DecodeCaps` is valid (integers only).
     let mut caps: DecodeCaps = unsafe { std::mem::zeroed() };
     caps.codec_type = codec;
@@ -447,6 +454,7 @@ fn caps(api: &Api, codec: c_uint) -> Result<DecodeCaps> {
         unsafe { (api.get_decoder_caps)(&mut caps) },
         "cuvidGetDecoderCaps",
     )?;
+    known.push(caps);
     Ok(caps)
 }
 
@@ -490,8 +498,75 @@ fn h273_matrix(codec: VideoCodec, code: u8) -> Result<Matrix> {
     }
 }
 
+/// What a decoder is created with, besides constants: codec, decoder size,
+/// decode surfaces and display area. A decoder decodes any stream of its key.
+type DecoderKey = (c_uint, (u32, u32), c_uint, Rect16);
+
+/// Decoders of finished decodes, kept for the next video of the same key:
+/// destroying a decoder can take 200 ms. One holds its GPU 0 memory until
+/// `admit` pushes it out, a new decoder cannot be created (`drop_idle`), or the
+/// process exits.
+/// Addresses, so the list is `Send`.
+static IDLE: Mutex<Vec<(DecoderKey, usize)>> = Mutex::new(Vec::new());
+/// Most idle decoders, and most bytes of decode surfaces they hold on the GPU.
+const IDLE_DECODERS: usize = 8;
+const IDLE_BYTES: u64 = 1 << 30;
+
+/// The NV12 decode surfaces of a decoder of `key`: most of its GPU memory,
+/// which also holds the driver's alignment and other buffers.
+fn surface_bytes(&(_, (width, height), surfaces, _): &DecoderKey) -> u64 {
+    u64::from(width) * u64::from(height) * 3 / 2 * u64::from(surfaces)
+}
+
+fn take_idle(key: &DecoderKey) -> Option<CuVideoDecoder> {
+    let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+    let at = idle.iter().rposition(|(k, _)| k == key)?;
+    #[cfg(test)]
+    TAKEN
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .push(*key);
+    Some(idle.remove(at).1 as CuVideoDecoder)
+}
+
+/// Add `decoder` to `idle` and return the decoders to destroy: the oldest
+/// past either limit, or `decoder` alone when it is over `IDLE_BYTES`.
+fn admit(idle: &mut Vec<(DecoderKey, usize)>, key: DecoderKey, decoder: usize) -> Vec<usize> {
+    if surface_bytes(&key) > IDLE_BYTES {
+        return vec![decoder];
+    }
+    idle.push((key, decoder));
+    let mut evicted = Vec::new();
+    while idle.len() > IDLE_DECODERS
+        || idle.iter().map(|(key, _)| surface_bytes(key)).sum::<u64>() > IDLE_BYTES
+    {
+        evicted.push(idle.remove(0).1);
+    }
+    evicted
+}
+
+/// Destroy every idle decoder and return how many there were. A context
+/// must be current.
+fn drop_idle(api: &Api) -> usize {
+    let idle = std::mem::take(&mut *IDLE.lock().unwrap_or_else(PoisonError::into_inner));
+    let count = idle.len();
+    destroy(api, idle.into_iter().map(|(_, decoder)| decoder));
+    count
+}
+
+fn destroy(api: &Api, decoders: impl IntoIterator<Item = usize>) {
+    for decoder in decoders {
+        // SAFETY: created by cuvidCreateDecoder, idle (in no decode), and
+        // destroyed once, as it left the list.
+        unsafe {
+            (api.destroy_decoder)(decoder as CuVideoDecoder);
+        }
+    }
+}
+
 /// What the sequence header said, once the decoder exists.
 struct Surface {
+    key: DecoderKey,
     coded: (u32, u32),
     /// The display area: left, top, right, bottom.
     crop: (c_int, c_int, c_int, c_int),
@@ -741,6 +816,7 @@ impl State<'_, '_, '_, '_> {
             right: edge(i64::from(area.left) + i64::from(target_width))?,
             bottom: edge(i64::from(area.top) + i64::from(target_height))?,
         };
+        let key = (self.codec_type, decoder_size, surfaces, display_area);
         let mut info = DecodeCreateInfo {
             width: TcuUlong::from(decoder_size.0),
             height: TcuUlong::from(decoder_size.1),
@@ -765,12 +841,22 @@ impl State<'_, '_, '_, '_> {
             enable_decode_features: 0,
             reserved2: [0; 3],
         };
-        // SAFETY: valid out-pointer and create info; a context is current.
-        check(
-            unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) },
-            "cuvidCreateDecoder",
-        )?;
+        match take_idle(&key) {
+            Some(decoder) => self.decoder = decoder,
+            None => {
+                // SAFETY: valid out-pointer and create info; a context is current.
+                let mut create =
+                    || unsafe { (self.api.create_decoder)(&mut self.decoder, &mut info) };
+                let mut code = create();
+                // Idle decoders can hold the GPU memory a new one needs.
+                if code != CUDA_SUCCESS && drop_idle(self.api) > 0 {
+                    code = create();
+                }
+                check(code, "cuvidCreateDecoder")?;
+            }
+        }
         self.surface = Some(Surface {
+            key,
             coded,
             crop,
             width,
@@ -956,6 +1042,18 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
             &mut buffer,
         )?;
     }
+    // SAFETY: as above. The parsers are gone, so the decoder is idle; the
+    // context is current for the idle decoders it pushes out.
+    unsafe {
+        let state = &mut *state.0;
+        if let Some(surface) = &state.surface {
+            let decoder = std::mem::replace(&mut state.decoder, std::ptr::null_mut());
+            let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+            let evicted = admit(&mut idle, surface.key, decoder as usize);
+            drop(idle);
+            destroy(api, evicted);
+        }
+    }
     Ok(())
 }
 
@@ -1055,9 +1153,115 @@ fn decode_run(
     Ok(())
 }
 
+/// Held by each test that decodes the `gop_*` fixtures on NVDEC, so that a
+/// test can count the idle decoders of their keys: no other fixture is 160x160.
+#[cfg(test)]
+pub(super) static GOP_CLIPS: Mutex<()> = Mutex::new(());
+
+/// The key of each decoder `take_idle` hands out, in order.
+#[cfg(test)]
+static TAKEN: Mutex<Vec<DecoderKey>> = Mutex::new(Vec::new());
+
 #[cfg(test)]
 mod tests {
+    use super::super::{ByteSource, Payload, VideoDecodeLimits, decode_frames_with, demux, probe};
     use super::*;
+
+    fn fixture(name: &str) -> Vec<u8> {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/video_decode");
+        std::fs::read(dir.join(name)).unwrap()
+    }
+
+    /// The idle decoders of `codec` at 160x160, the size of the `gop_*` fixtures.
+    fn idle_gop(codec: c_uint) -> Vec<usize> {
+        let idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+        let gop = idle
+            .iter()
+            .filter(|(key, _)| key.0 == codec && key.1 == (160, 160));
+        gop.map(|&(_, decoder)| decoder).collect()
+    }
+
+    /// Destroy the decoders that `idle_gop(codec)` lists.
+    fn drop_gop(codec: c_uint) {
+        let api = api().unwrap();
+        let _context = Context::new(api).unwrap();
+        let mut idle = IDLE.lock().unwrap_or_else(PoisonError::into_inner);
+        let (gop, rest): (Vec<_>, Vec<_>) = std::mem::take(&mut *idle)
+            .into_iter()
+            .partition(|(key, _)| key.0 == codec && key.1 == (160, 160));
+        *idle = rest;
+        drop(idle);
+        destroy(api, gop.into_iter().map(|(_, decoder)| decoder));
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn a_decoder_handed_between_clips_decodes_like_a_fresh_one() {
+        let _only = GOP_CLIPS.lock().unwrap_or_else(PoisonError::into_inner);
+        let limits = VideoDecodeLimits::default();
+        // The same frames in closed and open GOPs: two streams, one decoder key.
+        let clips = ["gop_h264.mp4", "gop_h264_open.mp4"].map(fixture);
+        let decode_all = |bytes: &Vec<u8>| {
+            let all: Vec<u64> = (0..probe(bytes).unwrap().frame_count).collect();
+            decode_frames_with(&bytes.as_slice(), &all, None, &limits, decode).unwrap()
+        };
+        let fresh = clips.each_ref().map(|bytes| {
+            drop_gop(CODEC_H264);
+            decode_all(bytes)
+        });
+        let taken = || {
+            let taken = TAKEN.lock().unwrap_or_else(PoisonError::into_inner);
+            let gop = taken
+                .iter()
+                .filter(|key| key.0 == CODEC_H264 && key.1 == (160, 160));
+            gop.count()
+        };
+        let before = taken();
+        for (bytes, want) in clips.iter().zip(&fresh).cycle().take(4) {
+            let got = decode_all(bytes);
+            assert!(got.rgb() == want.rgb());
+            assert_eq!(got.timestamps(), want.timestamps());
+        }
+        // Each decode can take the decoder the one before left, unless the
+        // decoders of parallel tests push it out of the list first; a pool
+        // that never hands one out fails here.
+        assert!(taken() > before);
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn a_failed_decode_does_not_keep_its_decoder() {
+        /// Fails every read that touches `self.1`.
+        struct FailsIn(Vec<u8>, std::ops::Range<u64>);
+        impl ByteSource for FailsIn {
+            fn len(&self) -> u64 {
+                self.0.len() as u64
+            }
+            fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+                if offset < self.1.end && self.1.start < offset + buf.len() as u64 {
+                    return Err(std::io::Error::other("read failed"));
+                }
+                (&self.0[..]).read_at(offset, buf)
+            }
+        }
+        let _only = GOP_CLIPS.lock().unwrap_or_else(PoisonError::into_inner);
+        let bytes = fixture("gop_av1.mp4");
+        let limits = VideoDecodeLimits::default();
+        let all: Vec<u64> = (0..probe(&bytes).unwrap().frame_count).collect();
+        decode_frames_with(&bytes.as_slice(), &all, None, &limits, decode).unwrap();
+        assert_eq!(idle_gop(CODEC_AV1).len(), 1);
+        // Packet 20 cannot be read, so the decode fails after it took the
+        // idle decoder.
+        let Payload::Source { offset, len } = demux(&bytes.as_slice()).unwrap().packets[20].payload
+        else {
+            unreachable!("MP4 packets stay in the source")
+        };
+        let failing = FailsIn(bytes, offset..offset + len as u64);
+        let r = decode_frames_with(&failing, &all, None, &limits, decode);
+        assert!(matches!(r, Err(MmError::Internal { .. })), "{r:?}");
+        assert_eq!(idle_gop(CODEC_AV1), Vec::<usize>::new());
+    }
 
     #[test]
     fn missing_driver_libraries_are_reported_not_fatal() {
@@ -1097,6 +1301,23 @@ mod tests {
         assert_eq!(h273_matrix(VideoCodec::Av1, 6).unwrap(), Matrix::Bt601);
         assert!(h273_matrix(VideoCodec::H264, 0).is_err(), "identity (RGB)");
         assert!(h273_matrix(VideoCodec::Av1, 9).is_err(), "BT.2020");
+    }
+
+    #[test]
+    fn idle_decoders_stay_within_both_limits_oldest_out_first() {
+        let key = |side, surfaces| (CODEC_H264, (side, side), surfaces, Rect16::default());
+        let mut idle = Vec::new();
+        for decoder in 1..=IDLE_DECODERS {
+            assert!(admit(&mut idle, key(64, 4), decoder).is_empty());
+        }
+        assert_eq!(admit(&mut idle, key(64, 4), 9), [1]);
+        // 8192x8192 with 4 surfaces is 384 MiB: the third is over 1 GiB.
+        assert_eq!(admit(&mut idle, key(8192, 4), 10), [2]);
+        assert_eq!(admit(&mut idle, key(8192, 4), 11), [3]);
+        assert_eq!(admit(&mut idle, key(8192, 4), 12), [4, 5, 6, 7, 8, 9, 10]);
+        // A decoder over the limit by itself is not kept; the others stay.
+        assert_eq!(admit(&mut idle, key(8192, 12), 13), [13]);
+        assert_eq!(idle.iter().map(|&(_, d)| d).collect::<Vec<_>>(), [11, 12]);
     }
 
     #[test]

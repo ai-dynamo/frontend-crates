@@ -20,7 +20,9 @@ fn init_pool_arms_fanout_and_pins_the_thread_count() {
     // broadcast returns only after every worker has run it.
     execution::in_pool(|| rayon::broadcast(|_| ()));
 
-    let named: Vec<String> = std::fs::read_dir("/proc/self/task")
+    // A thread that a worker starts, such as CUDA's in the decode test below,
+    // inherits the worker's name.
+    let named: std::collections::BTreeSet<String> = std::fs::read_dir("/proc/self/task")
         .expect("procfs")
         .filter_map(|entry| {
             let comm = entry.ok()?.path().join("comm");
@@ -40,4 +42,57 @@ fn init_pool_arms_fanout_and_pins_the_thread_count() {
         execution::init_pool(3),
         Err(MmError::InvalidInput { .. })
     ));
+}
+
+#[cfg(feature = "video-decode")]
+#[test]
+fn armed_decode_matches_the_inline_decode() {
+    use dynamo_multimodal::image::resize::Resample;
+    use dynamo_multimodal::video_decode::{
+        Fit, FrameResize, VideoDecodeLimits, decode_frames, probe, sample_indices,
+    };
+    execution::init_pool(2).unwrap();
+    let limits = VideoDecodeLimits::default();
+    // NVDEC decodes these where it can, else libvpx: CUDA_VISIBLE_DEVICES=
+    // runs the libvpx path on a GPU host.
+    for name in [
+        "gop_vp8.webm",
+        "gop_vp9.webm",
+        "vp9_altref.webm",
+        "vp9_invisible.webm",
+    ] {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/video_decode")
+            .join(name);
+        let bytes = std::fs::read(&path).unwrap();
+        let info = probe(&bytes).unwrap();
+        let n = info.frame_count;
+        let half = FrameResize {
+            width: info.width / 2,
+            height: info.height / 2,
+            filter: Resample::AtenU8,
+        };
+        for resize in [None, Some(half)] {
+            for set in [
+                (0..n).collect(),
+                sample_indices(n, 4).unwrap(),
+                vec![n / 2, n / 2, n - 1],
+            ] {
+                let decode = || {
+                    let fit = resize.as_ref().map(|r| r as &dyn Fit);
+                    decode_frames(&bytes, &set, fit, &limits).unwrap()
+                };
+                let armed = decode();
+                // On a pool thread the decode sends no frame to the pool.
+                let inline = execution::in_pool(decode);
+                for k in 0..set.len() {
+                    assert!(
+                        armed.frame(k) == inline.frame(k),
+                        "{name} {resize:?}: frame {k} of {set:?}"
+                    );
+                }
+                assert_eq!(armed.timestamps(), inline.timestamps(), "{name} {set:?}");
+            }
+        }
+    }
 }
