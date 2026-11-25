@@ -1,15 +1,15 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"63bae26dc711c29b468b9eb2a92f5196f83098199e3da7bc08b469e72f57d026","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"4943840d288522b1b9891602f5ea460f4b63d317f05cdaafcd59419ddce106eb","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_7234b84b51e026f2
+  origin: origin_8f1c66af611efbe4
 origins:
-  origin_7234b84b51e026f2:
+  origin_8f1c66af611efbe4:
     crate_version: 0.10.12
-    source_sha256: 68e028b03eb201199628cf958a5fc52466ef8fe3bd477ebc1839895acdb8078e
-    git_commit: c8b35510b66a5b2cda94e2b7ad62954851fd7291
+    source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
+    git_commit: 22f615cef3f604e703127b878a060cc2efea110c
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -99,6 +99,31 @@ records:
       - expected:
         - kind: text
           text: '".'
+      - expected: []
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    producer: producer_11a15c58d1b173a4
+    request: 7716da088c7e14a9f902dbd207e816fa1c2acba4be21f67252045d46bb21ac1f
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"a": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"b": "2"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"a": "1"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: g
+          arguments: '{"b": "2"}'
+          complete: true
+      - expected: []
       - expected: []
   arg_array_quoted_parameter_close:
     case_key: UNIFIED.7-tool-argument-text-preservation-arg_array_quoted_parameter_close
@@ -9271,6 +9296,39 @@ records:
           text: ' After.'
       - expected: []
       - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    producer: producer_11a15c58d1b173a4
+    request: 953da65eb25ca296139bcccf868a94e1f67987359efabae333fd736ea0a09a3e
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x": "1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"x": "2"}'
+      - kind: tool_call
+        name: h
+        arguments: '{"x": "3"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": "1"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: g
+          arguments: '{"x": "2"}'
+          complete: true
+        - kind: tool_call
+          name: h
+          arguments: '{"x": "3"}'
+          complete: true
+      - expected: []
+      - expected: []
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4-tool_block_never_closed_then_text
     request: adb95899fb773fc3eed0ab042e41f57aa24d519e0f18e30fb97267c10a217364
@@ -10021,62 +10079,4 @@ records:
           name: null
           arguments: '}'
           complete: true
-      - expected: []
-  adjacent_calls_partial_header:
-    case_key: UNIFIED.2-adjacent_calls_partial_header
-    producer: producer_11a15c58d1b173a4
-    request: 7716da088c7e14a9f902dbd207e816fa1c2acba4be21f67252045d46bb21ac1f
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"a": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"b": "2"}'
-      chunks:
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"a": "1"}'
-          complete: true
-      - expected:
-        - kind: tool_call
-          name: g
-          arguments: '{"b": "2"}'
-          complete: true
-      - expected: []
-      - expected: []
-  three_calls_partial_header:
-    case_key: UNIFIED.2-three_calls_partial_header
-    producer: producer_11a15c58d1b173a4
-    request: 953da65eb25ca296139bcccf868a94e1f67987359efabae333fd736ea0a09a3e
-    output:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: '{"x": "1"}'
-      - kind: tool_call
-        name: g
-        arguments: '{"x": "2"}'
-      - kind: tool_call
-        name: h
-        arguments: '{"x": "3"}'
-      chunks:
-      - expected: []
-      - expected:
-        - kind: tool_call
-          name: f
-          arguments: '{"x": "1"}'
-          complete: true
-      - expected:
-        - kind: tool_call
-          name: g
-          arguments: '{"x": "2"}'
-          complete: true
-        - kind: tool_call
-          name: h
-          arguments: '{"x": "3"}'
-          complete: true
-      - expected: []
       - expected: []
