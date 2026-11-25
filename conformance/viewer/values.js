@@ -19,18 +19,27 @@ export function yamlTemporal(source, kind = null) {
   let text;
   if (temporalKind === 'date') text = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   else {
-    if (Number(zoneHour || 0) * 60 + Number(zoneMinute || 0) >= 24 * 60) throw new Error('invalid YAML timestamp offset');
-    const offset = ((Number(zoneHour || 0) * 60 + Number(zoneMinute || 0)) * 60000) * (sign === '-' ? -1 : 1);
-    date.setTime(date.getTime() - offset);
-    text = date.toISOString().replace(/\.\d{3}Z$/, '') + `.${fraction.slice(0, 6).padEnd(6, '0')}` + (zone ? '+00:00' : '');
+    const minutes = Number(zoneHour || 0) * 60 + Number(zoneMinute || 0);
+    if (minutes >= 24 * 60) throw new Error('invalid YAML timestamp offset');
+    const offset = !zone ? '' : minutes === 0 ? '+00:00'
+      : sign + String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
+    // Preserve the original zone for typed snapshot hashes. Display and key
+    // comparison still normalize aware datetimes to UTC in temporalText.
+    text = date.toISOString().replace(/\.\d{3}Z$/, '') + `.${fraction.slice(0, 6).padEnd(6, '0')}` + offset;
   }
   return Uint16Array.from(`${temporalKind}:${text}`, (char) => char.charCodeAt(0));
 }
 
-export function temporalText(value) {
+function temporalSource(value) {
   const text = String.fromCharCode(...value);
   if (!/^(?:date|datetime):/.test(text)) throw new Error('unknown typed YAML scalar');
   return text.slice(text.indexOf(':') + 1);
+}
+
+export function temporalText(value) {
+  const source = temporalSource(value);
+  if (!/[+-]\d{2}:\d{2}$/.test(source) || source.endsWith('+00:00')) return source;
+  return new Date(source).toISOString().replace(/\.\d{3}Z$/, '') + source.slice(-13, -6) + '+00:00';
 }
 
 // Python's sort_keys orders Unicode scalar values, not UTF-16 code units.
@@ -110,6 +119,7 @@ export function sameValue(left, right) {
   if (left === right) return true;
   if (typeof left === 'number') return Number.isNaN(left) && Number.isNaN(right);
   if (!left || !right || typeof left !== 'object') return false;
+  if (left instanceof Uint16Array && right instanceof Uint16Array) return temporalText(left) === temporalText(right);
   if (ArrayBuffer.isView(left) || ArrayBuffer.isView(right)) return left.constructor === right.constructor && left.length === right.length && left.every((unit, index) => unit === right[index]);
   if (left instanceof Map || right instanceof Map) {
     if (!(left instanceof Map) || !(right instanceof Map) || left.size !== right.size) return false;
@@ -162,6 +172,31 @@ export function stringifyValue(value, indent = 2, sortKeys = false) {
 }
 
 export function canonicalJson(value) { return stringifyValue(value, 0, true); }
+
+// The history writer hashes viewer_codec.canonical_typed, which distinguishes
+// integers from floats and sorts mappings by their encoded keys.
+export function canonicalTyped(value) {
+  function encode(item) {
+    if (item === null) return ['null'];
+    if (typeof item === 'boolean') return ['bool', item];
+    if (typeof item === 'string') return ['str', item];
+    if (typeof item === 'bigint') return ['int', String(item)];
+    if (typeof item === 'number') {
+      const repr = Number.isFinite(item) ? floatText(item) : Number.isNaN(item) ? 'nan' : item > 0 ? 'inf' : '-inf';
+      return ['float', repr];
+    }
+    if (item instanceof Uint16Array) {
+      const text = temporalSource(item);
+      return [text.includes('T') ? 'datetime' : 'date', text.replace(/\.000000(?=[+-]|$)/, '')];
+    }
+    if (item instanceof Uint8Array) return ['binary', btoa(Array.from(item, byte => String.fromCharCode(byte)).join(''))];
+    if (Array.isArray(item)) return ['array', item.map(encode)];
+    const entries = mappingEntries(item).map(([key, value]) => [encode(key), encode(value)]);
+    entries.sort(([a], [b]) => compareText(JSON.stringify(a), JSON.stringify(b)));
+    return ['object', entries];
+  }
+  return JSON.stringify(encode(value));
+}
 
 // Arguments compare mathematical decimal values, without constructing a binary
 // float or expanding an exponent. Keep this separate from display/YAML types.
@@ -276,7 +311,7 @@ function mappingKeyFingerprint(key) {
   }
   if (typeof key === 'string') return `string:${key}`;
   if (key instanceof Uint8Array) return `binary:${Array.from(key).join(',')}`;
-  if (key instanceof Uint16Array) return `temporal:${Array.from(key).join(',')}`;
+  if (key instanceof Uint16Array) return `temporal:${temporalText(key)}`;
   if (key === null) return 'null';
   throw new Error('invalid typed mapping key');
 }

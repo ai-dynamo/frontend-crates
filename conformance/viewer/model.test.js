@@ -281,6 +281,12 @@ const expanded = { ...folded, rows: [
 ] };
 validateUnifiedKnownDivergences({ tabs: [expanded] }, registry, ['qwen3', 'deepseek_v3'], aliases, ['v1_split_parallel_tool_calls']);
 assert.throws(() => validateUnifiedKnownDivergences({ tabs: [expanded] }, registry, ['qwen3', 'deepseek_v3'], aliases), /empty=.*v1_split_parallel_tool_calls/);
+const unimplemented = structuredClone(expanded);
+unimplemented.rows[1].cells.folded.variants[2].tooltip.candidates[0].block.unavailable = 'No parser for deepseek_v3';
+validateUnifiedKnownDivergences({tabs: [unimplemented]}, registry, ['qwen3','deepseek_v3'], aliases, [], ['qwen3']);
+assert.throws(() => validateUnifiedKnownDivergences({tabs: [unimplemented]}, registry, ['qwen3','deepseek_v3'], aliases), /empty=.*v1_split_parallel_tool_calls/);
+unimplemented.rows[1].cells.folded.variants[2].tooltip.candidates[0].block.unavailable = 'Output not yet captured';
+assert.throws(() => validateUnifiedKnownDivergences({tabs: [unimplemented]}, registry, ['qwen3','deepseek_v3'], aliases, [], ['qwen3']), /empty=.*v1_split_parallel_tool_calls/);
 assert.throws(() => validateUnifiedKnownDivergences({ tabs: [folded] }, {}, ['qwen3'], aliases), /differs from known divergences/);
 assert.throws(() => validateUnifiedKnownDivergences({ tabs: [folded] }, { unknown: {} }, ['qwen3'], aliases), /unknown families/);
 folded.rows[0].cells.folded.variants[1] = leaf('union', true);
