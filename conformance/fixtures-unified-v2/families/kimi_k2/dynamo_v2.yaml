@@ -1,15 +1,15 @@
-capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"45ee7ae67b5f5924fe158790e94b7b27bf8fca3307aa1582ab0c19898ba3755b","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k2","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"64f5c37ba8d9ee8d25415e83c527326e7acdc81c3346bc942aa9a5ddcf3d8c21","source":"conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_07a003f8660f826e
+  origin: origin_2bf55717b648d631
 origins:
-  origin_07a003f8660f826e:
+  origin_2bf55717b648d631:
     crate_version: 0.10.12
     source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
-    git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+    git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
