@@ -453,9 +453,11 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
     jobs = workflow["jobs"]
-    assert jobs["conformance-table"]["if"] == "${{ always() }}"
+    assert jobs["conformance-table"]["if"] == "${{ always() && needs.prepare.outputs.conformance != 'false' }}"
+    for name in ("pages-build", "conformance-fixtures"):
+        assert jobs[name]["if"] == "${{ needs.prepare.outputs.conformance != 'false' }}", name
     for name, job in jobs.items():
-        if name not in {"conformance-table", "deploy-pages", "finalize-publication"}:
+        if name not in {"conformance-table", "deploy-pages", "finalize-publication", "pages-build", "conformance-fixtures"}:
             assert "if" not in job, name
     assert workflow["env"] == {"CONFORMANCE_INCLUDE_HISTORY": "true", "CONFORMANCE_COVERAGE": "exhaustive"}
     assert jobs["conformance-fixtures"]["needs"] == "prepare"
