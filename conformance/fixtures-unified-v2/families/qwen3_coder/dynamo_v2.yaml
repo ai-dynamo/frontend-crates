@@ -1,15 +1,15 @@
-capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v2","lineage":[{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.6.yaml","version":"0.10.6"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"880c22c9b58b3e925a87916800bd5e439c1af88fb5cdea15069c8799ef62359b","source":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v2","lineage":[{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.13.yaml","version":"0.10.13"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.6.yaml","version":"0.10.6"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"583c8b0ba9e542de136052cf22ee5f84679b83479a7788fcfd82400f816f52e6","source":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.13.yaml","surface":"unified","version":"0.10.13"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_8f1c66af611efbe4
+  origin: origin_f45c58335771b433
 origins:
-  origin_8f1c66af611efbe4:
-    crate_version: 0.10.12
-    source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
-    git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+  origin_f45c58335771b433:
+    crate_version: 0.10.13
+    source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
+    git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
   origin_6bfdab078ceeecc5:
     crate_version: 0.10.6
     source_sha256: ceea4408160a3c17849525b03508ada3a6f7f54bb1a3d375675b6e4001fafc14
@@ -32,7 +32,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_0165c06981101b8a:
+  context_40b198d521d08a23:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -112,11 +112,11 @@ contexts:
 
                 </tool_call>'
         provenance:
-          crate_version: 0.10.12
-          source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
-          git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+          crate_version: 0.10.13
+          source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
+          git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
           implementation: dynamo_v2
-          version: 0.10.12
+          version: 0.10.13
           adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
         resolution: fresh_execution
@@ -287,8 +287,18 @@ contexts:
           adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
         resolution: fresh_execution
+      - result_ref: 6195a2558bc9a1d00f61bd16b4ed6177c4d1cf39021ea5432bf24e0932d29993
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
+          git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml
+  member: conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.13.yaml
   producer: producer_7fc319cb3947da5f
   context: context_cdf0b3c0134ec96f
 records:
@@ -1411,7 +1421,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    context: context_0165c06981101b8a
+    context: context_40b198d521d08a23
     request: 35182c26d396b2a362752963a084e6f9a3e22ccdb79a7b6f16f21e980acb815a
     output:
       assembled:

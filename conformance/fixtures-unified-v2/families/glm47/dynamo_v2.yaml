@@ -1,15 +1,15 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"9e15072c8eda172cfd6e735ec1348fe54eae27173911cc3b1111dfe88ac297d6","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.13.yaml","version":"0.10.13"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"20d5df482b5f93ee8bd342f752ab09b6f20efdc01e1f54c4c51353b9536019f8","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.13.yaml","surface":"unified","version":"0.10.13"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_8f1c66af611efbe4
+  origin: origin_f45c58335771b433
 origins:
-  origin_8f1c66af611efbe4:
-    crate_version: 0.10.12
-    source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
-    git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+  origin_f45c58335771b433:
+    crate_version: 0.10.13
+    source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
+    git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -48,7 +48,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_939e9a598297699c:
+  context_af459341a6aabad7:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -157,11 +157,11 @@ contexts:
             - delta_text: </tool_call>
             - delta_text: ‹finish›
         provenance:
-          crate_version: 0.10.12
-          source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
-          git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+          crate_version: 0.10.13
+          source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
+          git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
           implementation: dynamo_v2
-          version: 0.10.12
+          version: 0.10.13
           adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
         resolution: fresh_execution
@@ -176,8 +176,18 @@ contexts:
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
           job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
         resolution: fresh_execution
+      - result_ref: b42c03c38ec09a88754dd4f588d0886fada4e45cbb0fac85fd8b9e88953e0ed7
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
+          git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml
+  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.13.yaml
   producer: producer_aad5f6f536370a6c
   context: context_cdf0b3c0134ec96f
 records:
@@ -2354,7 +2364,7 @@ records:
       - expected: []
   glm47_parameterless_call_shape_inside_argument:
     case_key: UNIFIED.glm5-parameterless_call_shape_inside_argument
-    context: context_939e9a598297699c
+    context: context_af459341a6aabad7
     request: df259a37fa01485d58e1f5509e33107a2fd40c601d3c01c76473df1e2f1cb384
     output:
       assembled:
