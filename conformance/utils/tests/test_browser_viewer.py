@@ -1119,6 +1119,37 @@ def test_historical_legacy_slug_is_resolved_before_latest_controls_normalize(his
         server.server_close()
 
 
+def test_mixed_case_v1_jail_permalink_preserves_comparison(published_viewer):
+    catalog = _published_catalog(published_viewer)
+    jail_families = {capture["family"] for capture in catalog["capture_generation"]["current"]
+                     if capture["implementation"] == "dynamo_v1_jail"}
+    assert {"hermes", "jamba", "llama3_json", "mistral", "phi4", "pythonic", "qwen25"} <= jail_families
+    server, _requests = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        query = "slots_tab-unified=sglang_python%400.5.23%2CDynamo_v1_jail%40Latest%2Cnone&focus_tab-unified=difference"
+        driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
+        for visit in range(2):
+            settle(driver, "tab-unified", history_ready=True)
+            selection, families = driver.execute_script("""
+                const panel = document.getElementById('tab-unified');
+                return [window.__conformanceController.selection(panel).selected,
+                        window.__conformanceModel.rows.map(row => row.family)];
+            """)
+            assert selection == ["sglang_python@0.5.23", "dynamo_v1_jail@Latest"]
+            assert jail_families <= set(families)
+            difference = driver.find_element("css selector", "[data-focus='difference'][aria-pressed='true']")
+            assert difference.is_displayed()
+            slots = dict(parse_qsl(urlsplit(driver.current_url).query))["slots_tab-unified"]
+            assert slots == "sglang_python@0.5.23,dynamo_v1_jail@Latest,none"
+            if visit == 0:
+                driver.refresh()
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 @pytest.mark.parametrize("stale_failure", [False, True])
 def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer, stale_failure):
     server, _requests = _server(root=published_viewer)
