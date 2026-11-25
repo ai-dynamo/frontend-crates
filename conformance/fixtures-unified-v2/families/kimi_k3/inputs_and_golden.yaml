@@ -10599,6 +10599,16 @@ requests:
     - 20
     - 79
     finish_step: true
+  cf61df066ddce55d877e8fe1137b8d1fe8048d13ab0da4a68fb3a6c9becc7545:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: Answer. .<|close|>think<|sep|><|open|>response<|sep|>.
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    - 24
   cf70226391b4e25a8f7109ff05f9c3db42f2cd385d1ffd6fc97dd5ec33e543b3:
     input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_84aaff47dfbac1c3
@@ -11009,6 +11019,16 @@ requests:
     tools: tools_14bcb316cd445c47
     chunk_sizes:
     - 204
+    finish_step: true
+  e3f2418468aeddf58b8a7d9d4f7261438d358f438065a90674e6f527f372e2c4:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: plan<|close|>think><|open|>response<|sep|>answer
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 48
     finish_step: true
   e4b7f3db2c8704dacec7a52c4dbd838ded417b49e1be500c32a1138d8c06781a:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
