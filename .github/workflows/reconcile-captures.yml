@@ -1,0 +1,136 @@
+name: Reconcile Dynamo captures
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reconcile-dynamo-captures
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    environment: automated-release
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Generate capture app token
+        id: capture-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: read
+          permission-pull-requests: read
+
+      - name: Checkout main
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.capture-token.outputs.token }}
+
+      - name: Resolve capture bot identity
+        id: capture-bot
+        env:
+          GH_TOKEN: ${{ steps.capture-token.outputs.token }}
+          CAPTURE_APP_SLUG: ${{ steps.capture-token.outputs.app-slug }}
+        run: |
+          capture_bot_id=$(gh api "users/${CAPTURE_APP_SLUG}[bot]" --jq .id)
+          printf 'id=%s\n' "$capture_bot_id" >> "$GITHUB_OUTPUT"
+
+      - name: Retain evidence from the pending bot PR
+        env:
+          GH_TOKEN: ${{ steps.capture-token.outputs.token }}
+          CAPTURE_APP_SLUG: ${{ steps.capture-token.outputs.app-slug }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          repository = os.environ['GITHUB_REPOSITORY']
+          pending = json.loads(subprocess.run([
+              'gh', 'pr', 'list', '--repo', repository, '--state', 'open',
+              '--head', 'automation/dynamo-captures', '--json', 'author,headRefOid',
+          ], check=True, capture_output=True, text=True).stdout)
+          if len(pending) > 1:
+              raise SystemExit('Multiple matching capture PRs')
+          if pending:
+              request = pending[0]
+              slug = os.environ['CAPTURE_APP_SLUG']
+              if not request['author']['is_bot'] or request['author']['login'] not in {slug + '[bot]', 'app/' + slug}:
+                  raise SystemExit('Capture PR is not owned by the capture app')
+              head = request['headRefOid']
+              subprocess.run(['git', 'fetch', 'origin', head], check=True)
+              base = subprocess.run(['git', 'merge-base', 'HEAD', head], check=True, capture_output=True, text=True).stdout.strip()
+              paths = subprocess.run(['git', 'diff', '--name-only', base, head], check=True, capture_output=True, text=True).stdout.splitlines()
+              if any(not (path.startswith('conformance/fixtures-unified-v2/') or path == 'conformance/dynamo-capture-inventory.yaml') for path in paths):
+                  raise SystemExit('Capture PR contains files outside capture ownership')
+              patch = Path(os.environ['RUNNER_TEMP']) / 'pending-capture.patch'
+              patch.write_bytes(subprocess.run(['git', 'diff', '--binary', base, head], check=True, capture_output=True).stdout)
+              if patch.stat().st_size:
+                  subprocess.run(['git', 'apply', '--3way', str(patch)], check=True)
+          PY
+
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Install capture dependencies
+        run: python3 -m pip install -r conformance/utils/publication-requirements.in packaging
+
+      - name: Reconcile published releases
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/capture-target
+          TMPDIR: ${{ runner.temp }}
+        run: python3 conformance/utils/src/reconcile_dynamo_captures.py --work "$RUNNER_TEMP/capture-reconciliation" --workers 4
+
+      - name: Generate fresh publication token
+        id: capture-pr-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Prepare or update the capture PR
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
+        with:
+          token: ${{ steps.capture-pr-token.outputs.token }}
+          branch: automation/dynamo-captures
+          base: main
+          sign-commits: true
+          signoff: true
+          committer: '${{ steps.capture-token.outputs.app-slug }}[bot] <${{ steps.capture-bot.outputs.id }}+${{ steps.capture-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          add-paths: |
+            conformance/dynamo-capture-inventory.yaml
+            conformance/fixtures-unified-v2/
+          commit-message: 'chore(conformance): reconcile published Dynamo captures'
+          title: 'chore(conformance): capture published Dynamo releases'
+          body: |
+            Retain all captured releases, add qualified measurements for missing published Dynamo versions, and refresh current v1 snapshots. Unchanged observations reuse the existing history storage while each executed release retains its receipt.
+
+            This update requires normal review and current-head CI before merge. Use the normal `/ok to test` approval flow; this workflow does not merge the PR.
+
+      - name: Retain capture accounting and failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dynamo-capture-reconciliation
+          path: |
+            ${{ runner.temp }}/capture-reconciliation/reconciliation.json
+            ${{ runner.temp }}/capture-reconciliation/discovered-inventory.yaml
+            ${{ runner.temp }}/capture-reconciliation/registry/*.json
+            ${{ runner.temp }}/capture-reconciliation/run/run-status.json
+            ${{ runner.temp }}/capture-reconciliation/run/run.json
+            ${{ runner.temp }}/capture-reconciliation/run/coverage.json
+          if-no-files-found: warn

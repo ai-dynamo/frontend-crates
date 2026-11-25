@@ -4,6 +4,7 @@
 //! DeepSeek V4 native prompt formatting
 //!
 //! Native Rust port of DeepSeek V4's chat encoding (encoding_dsv4.py).
+//! V4.1 reuses this encoder; `Encoding` holds the rules where the two differ.
 //!
 //! Reference: DeepSeek-V4-Pro/encoding/encoding_dsv4.py
 
@@ -32,6 +33,81 @@ pub(super) enum Encoding {
 impl Encoding {
     fn is_v41(self) -> bool {
         matches!(self, Self::V41 { .. })
+    }
+
+    /// In V4.1, mid-conversation system messages count as user turns. As in the reference
+    /// encoder, user messages containing only tool results do not start a new turn.
+    fn find_last_user_index(self, messages: &[JsonValue]) -> Option<usize> {
+        if !self.is_v41() {
+            return find_last_user_index(messages);
+        }
+        messages.iter().enumerate().rposition(|(index, message)| {
+            let role = message.get("role").and_then(JsonValue::as_str);
+            if !(role == Some("user") || (role == Some("system") && index > 0)) {
+                return false;
+            }
+            match message.get("content_blocks").and_then(JsonValue::as_array) {
+                Some(blocks) if !blocks.is_empty() => blocks.iter().any(|block| {
+                    matches!(
+                        block.get("type").and_then(JsonValue::as_str),
+                        Some("text" | "image" | "image_url")
+                    )
+                }),
+                _ => true,
+            }
+        })
+    }
+
+    fn drop_thinking_messages(self, mut messages: Vec<JsonValue>) -> Vec<JsonValue> {
+        if !self.is_v41() {
+            return drop_thinking_messages(messages);
+        }
+        if let Some(last_user) = self.find_last_user_index(&messages) {
+            for message in &mut messages[..last_user] {
+                if message.get("role").and_then(JsonValue::as_str) == Some("assistant") {
+                    message.as_object_mut().unwrap().remove("reasoning_content");
+                }
+            }
+        }
+        messages
+    }
+
+    fn encode_arguments(self, tool_call: &JsonValue) -> Result<String> {
+        if !self.is_v41() {
+            return encode_arguments_to_dsml(tool_call);
+        }
+        let original = tool_call
+            .get("arguments")
+            .context("Missing tool arguments")?;
+        let mut arguments = original.clone();
+        for _ in 0..2 {
+            let Some(text) = arguments.as_str() else {
+                break;
+            };
+            let Ok(decoded) = serde_json::from_str(text) else {
+                break;
+            };
+            arguments = decoded;
+        }
+        if !arguments.is_object() {
+            arguments = serde_json::json!({"arguments": original});
+        }
+        let parameters = arguments
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(name, value)| {
+                let content = value
+                    .as_str()
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| to_json(value));
+                format!(
+                    "<｜DSML｜ parameter name=\"{name}\" string=\"{}\">{content}</｜DSML｜ parameter>",
+                    value.is_string()
+                )
+            })
+            .collect::<Vec<_>>();
+        Ok(parameters.join("\n"))
     }
 
     fn tag(self, v4: &'static str, v41: &'static str) -> &'static str {
@@ -221,11 +297,7 @@ fn render_message(
                         .get("name")
                         .and_then(|n| n.as_str())
                         .context("Missing tool call name")?;
-                    let arguments = if encoding.is_v41() {
-                        super::v41::encode_arguments(fn_obj)?
-                    } else {
-                        encode_arguments_to_dsml(fn_obj)?
-                    };
+                    let arguments = encoding.encode_arguments(fn_obj)?;
                     write!(
                         prompt,
                         "<{}{} name=\"{}\">\n{}\n</{}{}>",
@@ -408,18 +480,10 @@ pub(super) fn encode_owned_messages(
     let effective_drop_thinking = drop_thinking && !has_tools;
 
     if thinking_mode == ThinkingMode::Thinking && effective_drop_thinking {
-        full = if encoding.is_v41() {
-            super::v41::drop_thinking_messages(full)
-        } else {
-            drop_thinking_messages(full)
-        };
+        full = encoding.drop_thinking_messages(full);
     }
 
-    let last_user_idx = if encoding.is_v41() {
-        super::v41::find_last_user_index(&full)
-    } else {
-        find_last_user_index(&full)
-    };
+    let last_user_idx = encoding.find_last_user_index(&full);
     for idx in 0..full.len() {
         state = render_message(
             &mut prompt,
@@ -507,8 +571,13 @@ impl crate::OAIPromptFormatter for DeepSeekV4Formatter {
             .map(|value| serde_json::to_value(value).context("serialize reasoning_effort"))
             .transpose()?
             .or_else(|| args.and_then(|args| args.get("reasoning_effort").cloned()));
+        let emit_default = crate::emit_default_thinking_effort(args)?;
         let (disable_thinking, reasoning_effort) =
-            Self::resolve_reasoning_effort(effort_value.as_ref());
+            if !emit_default && effort_value.as_ref().is_none_or(JsonValue::is_null) {
+                (false, None)
+            } else {
+                Self::resolve_reasoning_effort(effort_value.as_ref())
+            };
         let mut thinking_mode = super::common::resolve_thinking_mode(args, self.thinking_mode);
         if disable_thinking {
             thinking_mode = ThinkingMode::Chat;

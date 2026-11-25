@@ -42,6 +42,7 @@ from numeric_cases import (
     OVERFLOW_SIBLING_VARIANTS,
     SCHEMA_DIRECTED_FAMILIES,
     NumericLiteral,
+    json_with_numeric_literals,
     applicable,
     arguments_json,
     numeric_description,
@@ -57,7 +58,17 @@ from unified_tools import unified_tools
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
 # row there rather than editing three lists that had to agree.
-_MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"]
+_REGISTRY = yaml.safe_load(markers.parser_families_path().read_text())
+_MANIFEST = _REGISTRY["unified"]
+NATIVE_SCENARIO_PARENTS = {
+    "qwen25": "hermes",
+    "qwen3_coder": "qwen3",
+    "nemotron_nano": "qwen3",
+    "deepseek_v3_2": "deepseek_v4",
+    "harmony": "gpt_oss",
+    "harmony_text": "gpt_oss",
+    "minimax_m2": "qwen3",
+}
 FAMILIES = sorted(f for f, row in _MANIFEST.items() if row.get("scenario_profile") != "native")
 TEMPLATE_FAMILIES = sorted(
     f for f, row in _MANIFEST.items()
@@ -73,22 +84,14 @@ DOTTED_NAME_SCENARIOS = frozenset({
     "dotted_name_multiple_segments",
     "dotted_name_shared_prefix",
 })
-DOTTED_NAME_FAMILIES = frozenset({
-    "beam",
-    "deepseek_v4",
-    "deepseek_v41",
-    "gemma4",
-    "glm47",
-    "gpt_oss",
-    "hermes",
-    "kimi_k2",
-    "kimi_k3",
-    "minimax_m3",
-    "mistral_4",
-    "muse_glimmer",
-    "muse_spark",
-    "nemotron_v3",
-    "qwen3",
+DOTTED_NAME_FAMILIES = frozenset(_MANIFEST) - {"pythonic"}
+# The Pythonic public call grammar requires a simple identifier, not attributes.
+DOTTED_NAME_EXCLUSIONS = {("pythonic", name) for name in DOTTED_NAME_SCENARIOS}
+JSON_BODY_FAMILIES = frozenset({
+    "deepseek_v3", "deepseek_v3_1", "deepseek_v3_2", "deepseek_v4", "deepseek_v41",
+    "gpt_oss", "harmony", "harmony_text", "hermes", "inkling", "jamba",
+    "kimi_k2", "kimi_k3", "llama3_json", "mistral", "mistral_4",
+    "nemotron_deci", "phi4", "qwen25",
 })
 _REGISTRY_UNIFIED_FAMILIES = {row.get("registry", family) for family, row in _MANIFEST.items()}
 MUSE_FAMILIES = {"muse_glimmer", "muse_spark"}
@@ -269,18 +272,6 @@ def r_tool(fam, name, key, val, idx):
     return r_tool_arguments(fam, name, {key: val}, idx)
 
 
-def _json_with_numeric_literals(value):
-    if isinstance(value, NumericLiteral):
-        return str(value)
-    if isinstance(value, dict):
-        return "{" + ",".join(
-            json.dumps(key, ensure_ascii=False) + ":" + _json_with_numeric_literals(item)
-            for key, item in value.items()
-        ) + "}"
-    if isinstance(value, list):
-        return "[" + ",".join(_json_with_numeric_literals(item) for item in value) + "]"
-    return json.dumps(value, ensure_ascii=False)
-
 
 def _contains_numeric_literal(value):
     if isinstance(value, NumericLiteral):
@@ -297,14 +288,14 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     # Raw spellings preserve published stimuli independently of the typed oracle.
     raw = raw_arguments if raw_arguments is not None else {
         key: str(value) if isinstance(value, NumericLiteral)
-        else value if isinstance(value, str) else _json_with_numeric_literals(value)
+        else value if isinstance(value, str) else json_with_numeric_literals(value)
         for key, value in arguments.items()
     }
     if fam == "hermes":
-        call = _json_with_numeric_literals({"name": name, "arguments": arguments})
+        call = json_with_numeric_literals({"name": name, "arguments": arguments})
         return f"<tool_call>{call}</tool_call>"
     if fam == "gpt_oss":
-        args = (_json_with_numeric_literals(arguments)
+        args = (json_with_numeric_literals(arguments)
                 if _contains_numeric_literal(arguments)
                 else json.dumps(arguments, ensure_ascii=False))
         return (f"<|start|>assistant<|channel|>commentary to=functions.{name} "
@@ -358,12 +349,12 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         return k3_tools(k3_call(name, idx + 1, params))
     if fam == "mistral_4":
         # mistral-common writes the arguments with `json.dumps(..., ensure_ascii=False)`.
-        args = (_json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
+        args = (json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
                 else json.dumps(arguments, ensure_ascii=False))
         return f"[TOOL_CALLS]{name}[ARGS]{args}"
     if fam != "kimi_k2":
         return native_call_wire(fam, name, arguments, raw, r_tool_arguments)
-    args = (_json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
+    args = (json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
             else json.dumps(arguments, ensure_ascii=False))
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
             f"<|tool_call_argument_begin|>{args}<|tool_call_end|><|tool_calls_section_end|>")
@@ -577,6 +568,20 @@ GRAMMAR_EXCLUSIONS = {
 }
 
 
+for _family in ("llama3_json", "phi4", "pythonic"):
+    GRAMMAR_EXCLUSIONS.setdefault(_family, {}).update({
+        scenario: "This grammar has no independent tool close marker; the retained opener/payload scenario owns this request."
+        for scenario in (
+            "guided_json_tool_close_after_payload", "guided_json_orphan_tool_close_before_payload",
+            "guided_json_wrapped_in_tool_markup", "guided_json_schema_error_not_a_call_trailing_close",
+            "guided_json_schema_error_nameless_element_trailing_close", "guided_json_gt_in_argument_trailing_close",
+        )
+    })
+GRAMMAR_EXCLUSIONS.setdefault("inkling", {})["guided_json_orphan_tool_close_before_payload"] = (
+    "Reasoning and tool channels share the same end_message closer; the orphan reasoning-close case owns these bytes."
+)
+
+
 def _call_is_followed(segs):
     """Whether text or reasoning follows a call in a clean scenario."""
     kinds = [seg[0] for seg in segs]
@@ -619,10 +624,17 @@ def every_family(input_text, vllm, dynamo, *rest):
     }
 
 
+
+class FamilyInputs(dict):
+    def __init__(self, render):
+        self.render = render
+        super().__init__((family, render(family)) for family in TEMPLATE_FAMILIES)
+
+
 def by_family(render, vllm, dynamo, *rest):
     """`render(fam) -> input` for the scenarios where only the reasoning envelope
     around an otherwise identical payload is grammar-specific."""
-    return {fam: (render(fam), vllm, dynamo, *rest) for fam in TEMPLATE_FAMILIES}
+    return FamilyInputs(lambda fam: (render(fam), vllm, dynamo, *rest))
 
 
 # A family whose tool block opener spans more than its first control token, mapped to
@@ -653,6 +665,12 @@ def stray_tool_close(fam):
     return _STRAY_TOOL_CLOSE.get(fam, control_tokens(fam)[3])
 
 
+def argument_control_marker(family):
+    reason_open, reason_close, tool_open, tool_close = control_tokens(family)
+    return next(token for token in (reason_close, tool_close, tool_open) if token)
+
+
+@cache
 def control_tokens(fam):
     """Bare control tokens for `fam`, DERIVED from the renderers the corpus already
     uses (`r_reason` / `r_tool`) rather than a second grammar table — a parallel
@@ -667,6 +685,23 @@ def control_tokens(fam):
 
     Returns `(reason_open, reason_close, tool_open, tool_close)`.
     """
+    if fam in {"harmony", "harmony_text"}:
+        return *r_reason(fam, "\0").split("\0"), "<|call|>", "<|call|>"
+    if _MANIFEST[fam].get("scenario_profile") == "native":
+        reason = (r_reason(fam, "\0").split("\0")
+                  if _MANIFEST[fam].get("reasoning_grammar") != "none" else ("", ""))
+        call = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
+        declaration = _REGISTRY["markers"].get(fam, {})
+        pair = next(((left, right) for left, right in declaration.get("pairs", [])
+                     if left in call and right in call), None)
+        if pair:
+            opener, closer = pair
+            # Inkling's tool-kind delimiter follows its routed recipient; the
+            # outer opener includes both, just as the ATEM header does.
+            return *reason, call[:call.index(opener) + len(opener)], closer
+        singletons = declaration.get("singletons", []) + declaration.get("leak", [])
+        opener = next((token for token in singletons if call.startswith(token)), "")
+        return *reason, opener, ""
     if fam == "minimax_m3":
         return "<mm:think>", "</mm:think>", "]<]minimax[>[<tool_call>", "]<]minimax[>[</tool_call>"
     if fam == "gpt_oss":
@@ -695,7 +730,7 @@ def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
     if fam == "hermes":
         return ""
-    if fam == "gpt_oss":
+    if fam in {"gpt_oss", "harmony", "harmony_text"}:
         return ""
     if fam == "kimi_k3":
         return '<|open|>call tool="'
@@ -724,8 +759,11 @@ def guided_invoke_prefix(fam):
 
 def guided_named_invoke_prefix(fam):
     fam = unified_grammar_family(fam)
-    if fam == "gpt_oss":
+    if fam in {"gpt_oss", "harmony", "harmony_text"}:
         return ""
+    if _MANIFEST[fam].get("scenario_profile") == "native":
+        wire = r_tool(fam, "get_weather", "city", "Paris", 0)
+        return wire[:wire.index("get_weather") + len("get_weather")]
     return {
         # Beam routes on the recipient in the message header, before the channel marker.
         "beam": "<|start|>assistant to=get_weather",
@@ -776,15 +814,11 @@ def guided_surroundings(render, dynamo_note, fill=None):
         "no native unified parser in this build, so the split path ignores `init` "
         "and cannot honour a guided request mode",
     )
-    return {
-        fam: (
-            render(fam),
-            GUIDED_UNSUPPORTED,
-            {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
-            *( (fill(fam),) if fill else () ),
-        )
-        for fam in TEMPLATE_FAMILIES
-    }
+    return FamilyInputs(lambda fam: (
+        render(fam), GUIDED_UNSUPPORTED,
+        {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
+        *((fill(fam),) if fill else ()),
+    ))
 
 
 # Guided payloads, written once. `named` is what a NAMED choice emits (that
@@ -1673,9 +1707,9 @@ EDGE = [
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      guided_surroundings(
          lambda fam: json.dumps(
-             [{"name": "log", "arguments": {"note": control_tokens(fam)[1]}}], ensure_ascii=False),
+             [{"name": "log", "arguments": {"note": argument_control_marker(fam)}}], ensure_ascii=False),
          "a marker inside a started payload stays argument data",
-         lambda fam: control_tokens(fam)[1])),
+         lambda fam: argument_control_marker(fam))),
 
     ("guided_json_tool_open_before_payload",
      "A native tool OPENER precedes the constrained payload. Guided decoding delivers the call as JSON, so leading markup is stray: it must be stripped, not carried into the payload buffer where it breaks the parse and costs the call.",
@@ -2920,6 +2954,13 @@ def _init_is_request_scoped(init):
     return (init.get("tool_output_mode", "Native") != "Native"
             or init.get("starting_state", "None") != "None"
             or init.get("structural_tag") is not None)
+
+def _dynamo_entry_for_init(spec, family, init):
+    if family not in UNIFIED_FAMILIES and _init_is_request_scoped(init):
+        return D("UNSUPPORTED", "no native unified parser in this build, so the split path cannot honour this request mode")
+    return spec
+
+
 def _vllm_entry(spec, fam):
     """`_entry` for the vLLM column, annotating a family no released vLLM can parse.
 
@@ -3292,6 +3333,31 @@ def _deepseek_v41_input(segments):
 PARALLEL_BOUNDARY_CASES = json.loads(
     Path(__file__).with_name("unified_parallel_boundary_cases.json").read_text()
 )
+for _scenario, _rows in PARALLEL_BOUNDARY_CASES.items():
+    _count = 2 if _scenario == "adjacent_calls_partial_header" else 3
+    for _family in _MANIFEST:
+        if _family in _rows:
+            continue
+        _names = list("fgh"[:_count])
+        _keys = list("ab") if _count == 2 else ["x"] * 3
+        _arguments = [{key: str(index + 1)} for index, key in enumerate(_keys)]
+        _wires = [r_tool_arguments(_family, name, arguments, index)
+                  for index, (name, arguments) in enumerate(zip(_names, _arguments))]
+        _last = _count - 1
+        _sentinel = r_tool_arguments(_family, "BOUNDARY_NAME", _arguments[_last], _last)
+        _cut = _sentinel.index("BOUNDARY_NAME") + 1
+        _chunks = ["".join(_wires[:_last]) + _wires[_last][:_cut], _wires[_last][_cut:], ""]
+        if _count == 3:
+            _chunks.insert(0, "")
+        _rows[_family] = {
+            "input_chunks": _chunks,
+            "golden": [{"kind": "tool_call", "name": name, "arguments": arguments}
+                       for name, arguments in zip(_names, _arguments)],
+            "tools": [{"name": name, "parameters": {"type": "object",
+                       "properties": {key: {"type": "string"}}, "required": [key]}}
+                      for name, key in zip(_names, _keys)],
+        }
+
 UNIFIED_PARALLEL_BOUNDARY_FAMILIES = frozenset(
     family for cases in PARALLEL_BOUNDARY_CASES.values() for family in cases
 )
@@ -3365,12 +3431,12 @@ EDGE += [
                 else r_tool(family, "get_weather", "city", value, 0),
                 D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
             )
-            for family in TEMPLATE_FAMILIES
+            for family in sorted(set(_MANIFEST) - set(NATIVE_SCENARIO_PARENTS) | {"harmony", "harmony_text"})
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}] for family in TEMPLATE_FAMILIES},
+        }}] for family in sorted(set(_MANIFEST) - set(NATIVE_SCENARIO_PARENTS) | {"harmony", "harmony_text"})},
     )
     for scenario, label, schema, value, detail in (
         ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
@@ -3393,9 +3459,9 @@ EDGE.append((
         "<arg_key>note</arg_key><arg_value>null</arg_value>"
         "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>") if family == "glm47"
         else r_tool_arguments(family, "set_labels", MIXED_LABELS_ARGS, 0), M, M,
-    ) for family in NATIVE_INPUT_FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+    ) for family in sorted(_MANIFEST)}),
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
-     for family in NATIVE_INPUT_FAMILIES if family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+     for family in sorted(_MANIFEST)},
 ))
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.
@@ -3821,10 +3887,10 @@ EDGE += [
                              VLLM_UNCAPTURABLE.get(family, M), M,
                              [{"kind": "tool_call", "name": "get_weather",
                                 "arguments": arguments_json(unified_numeric_expected(family, label, raw, expected))}])
-                   for family in NATIVE_INPUT_FAMILIES if applicable(family, label)}),
+                   for family in sorted(_MANIFEST) if applicable(family, label)}),
      {family: [{"name": "get_weather", "parameters": {
          "type": "object", "properties": {"value": numeric_schema(family, label, schema)}}}]
-      for family in NATIVE_INPUT_FAMILIES if applicable(family, label)})
+      for family in sorted(_MANIFEST) if applicable(family, label)})
     for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
 ]
 
@@ -3859,8 +3925,8 @@ EDGE.append((
         r_tool_arguments(family, "inspect", _NESTED_NUMERIC_ARGUMENTS, 0),
         VLLM_UNCAPTURABLE.get(family, M), M,
         [{"kind": "tool_call", "name": "inspect", "arguments": _NESTED_NUMERIC_GOLDEN}],
-    ) for family in NATIVE_INPUT_FAMILIES}),
-    {family: _NESTED_NUMERIC_SCHEMA for family in NATIVE_INPUT_FAMILIES},
+    ) for family in sorted(_MANIFEST)}),
+    {family: _NESTED_NUMERIC_SCHEMA for family in sorted(_MANIFEST)},
 ))
 
 
@@ -3884,8 +3950,8 @@ for variant, token in OVERFLOW_SIBLING_VARIANTS:
             r_tool_arguments(family, "echo", arguments, 0),
             VLLM_UNCAPTURABLE.get(family, M), M,
             [{"kind": "tool_call", "name": "echo", "arguments": golden}],
-        ) for family in NATIVE_INPUT_FAMILIES}),
-        {family: tools for family in NATIVE_INPUT_FAMILIES},
+        ) for family in sorted(_MANIFEST)}),
+        {family: tools for family in sorted(_MANIFEST)},
     ))
 EDGE.extend(OVERFLOW_SIBLING_CASES)
 
@@ -3907,6 +3973,10 @@ _NATIVE_QUOTED_CONTROL = {
 }
 
 _NATIVE_QUOTED_CONTROL["muse_spark"] = _NATIVE_QUOTED_CONTROL["muse_glimmer"]
+for _family in _MANIFEST:
+    if _family not in _NATIVE_QUOTED_CONTROL:
+        _NATIVE_QUOTED_CONTROL[_family] = control_tokens(_family)[2]
+
 
 
 def _native_quoted_control_cases():
@@ -3922,6 +3992,10 @@ def _native_quoted_control_cases():
     ):
         families = {}
         for family, marker in _NATIVE_QUOTED_CONTROL.items():
+            if family == "pythonic" and scenario != "native_unmatched_quote_then_call":
+                continue
+            if state == "Reasoning" and _MANIFEST[family].get("reasoning_grammar") == "none":
+                continue
             if exclusion_note(family, scenario):
                 continue
             if scenario == "native_single_quoted_word_control":
@@ -4525,7 +4599,9 @@ for _scenario, _description, _calls in (
         [{"kind": "tool_call", "name": name, "arguments": arguments} for name, arguments in _calls],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop", "single_chunk_families": ["gpt_oss"], "finish_step": True},
-        OnlyFamilies(by_family(lambda family: _dotted_native_input(family, _calls), M, M)),
+        OnlyFamilies({family: (_dotted_native_input(family, _calls), M, M)
+                      for family in _MANIFEST
+                      if (family, _scenario) not in DOTTED_NAME_EXCLUSIONS}),
         [{"name": name, "parameters": {
             "type": "object", "properties": {key: {"type": "string"} for key in arguments},
             "required": list(arguments), "additionalProperties": False,
@@ -4561,7 +4637,8 @@ for _probe in XML_COMPATIBILITY_CASES:
             r_tool_arguments(_family, "schema_probe", {"value": _probe["value"]}, 0,
                              {"value": _probe["raw"]}),
             D("UNSUPPORTED", "No peer capture recorded for this quote compatibility probe."), M,
-        ) for _family in (TEMPLATE_FAMILIES if _probe["schema"]["type"] == "string" else ["qwen3"])}),
+        ) for _family in (sorted(set(_MANIFEST) - set(NATIVE_SCENARIO_PARENTS))
+                         if _probe["schema"]["type"] == "string" else ["qwen3"])}),
         schema_tools(_probe),
     ))
 
@@ -4685,7 +4762,7 @@ DEFAULT_REASONING_CASES = [
 # Excluded: DeepSeek V4/V4.1 own their call framing (the `dsml-*` cases above keep
 # non-separator whitespace as content). GPT-OSS renders each run as a `final` message.
 _BLANK_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
-_BLANK_FAMILIES = [f for f in TEMPLATE_FAMILIES if f not in ("deepseek_v4", "deepseek_v41")]
+_BLANK_FAMILIES = [f for f in _MANIFEST if f not in ("deepseek_v3_2", "deepseek_v4", "deepseek_v41")]
 _BLANK_CALL = ("tool", "get_weather", "city", "Paris")
 _BLANK_SECOND_CALL = ("tool", "get_weather", "city", "Tokyo")
 BLANK_FRAMING = [
@@ -4712,7 +4789,7 @@ BLANK_FRAMING = [
     ("blank_output_without_call",
      "Whitespace-only output with no call is visible content and is kept unchanged by every family.",
      ["P8", "I1"], [("text", "\n\n")],
-     [("text", "\n\n")], {"finish_reason": "stop"}, TEMPLATE_FAMILIES),
+     [("text", "\n\n")], {"finish_reason": "stop"}, sorted(_MANIFEST)),
 ]
 # A family that inherits a grammar copies that grammar's built cases (`build_cases`),
 # so a behavior that differs only in the inheriting family's parser is declared here:
@@ -4726,7 +4803,9 @@ for _scenario, _before, _after, _alternative in ISSUE595_REASONING_CASES:
 for _scenario, _description, _policy, _segments, _nemotron_golden, _stream, _families in BLANK_FRAMING:
     EDGE.append((
         _scenario, _description, _policy, golden_of(_segments), _BLANK_INIT, _stream,
-        OnlyFamilies({f: (render_input(f, _segments), M, M) for f in _families}),
+        OnlyFamilies({f: (render_input(f, _segments), M, M) for f in _families
+                      if not (any(segment[0] == "reason" for segment in _segments)
+                              and _MANIFEST[f].get("reasoning_grammar") == "none")}),
     ))
     if golden_of(_nemotron_golden) != golden_of(_segments):
         INHERITED_GOLDEN[(_scenario, "nemotron_v3")] = golden_of(_nemotron_golden)
@@ -5001,6 +5080,20 @@ _GPT_OSS_RECOVERY_CASES = (
 )
 
 
+def _json_body_whitespace(family, arguments):
+    if family == "deepseek_v3_2":
+        return _dsml_json_tool("deepseek_v4", "get_weather", ' \n\t' + json.dumps(arguments)).replace("DSML｜tool_calls>", "DSML｜function_calls>")
+    wire = r_tool_arguments(family, "get_weather", arguments, 0)
+    # Wrap the outer JSON envelope as well as scalar arguments; arrays are valid
+    # JSON roots in Jamba, Mistral, Deci and Phi, with native framing outside it.
+    positions = [index for index in (wire.find("{"), wire.find("[")) if index >= 0]
+    if family in {"mistral", "phi4"}:
+        start = wire.index("[", len("[TOOL_CALLS]") if family == "mistral" else 0)
+    else:
+        start = min(positions)
+    return wire[:start] + " \n\t" + wire[start:]
+
+
 _GPT_OSS_REVIEW_CASES = (
     ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
      '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
@@ -5113,6 +5206,8 @@ def _native_review_variants(scenario):
         arguments = {"city": "Paris"}
         golden = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
         return {
+            **{family: (_json_body_whitespace(family, arguments), golden, M)
+               for family in JSON_BODY_FAMILIES - {"gpt_oss", "deepseek_v4", "deepseek_v41", "hermes", "kimi_k2", "kimi_k3", "mistral_4"}},
             **{family: (_dsml_json_tool(family, "get_weather", ' \n\t' + json.dumps(arguments) + '\t \n'), golden, M)
                for family in ("deepseek_v4", "deepseek_v41")},
             "hermes": (r_tool_arguments("hermes", "get_weather", arguments, 0)
@@ -5136,8 +5231,8 @@ def _native_review_variants(scenario):
         # while complete names with malformed argument bodies retain P3's empty
         # arguments. The valid XML forms retain their actual wire value bytes.
         def structural_golden(family):
-            if family in {"qwen3", "glm47"}:
-                arguments = {"q": r"\nx\n" if family == "qwen3" else "x"}
+            if family in {"qwen3", "qwen3_coder", "glm47"}:
+                arguments = {"q": "x" if family == "glm47" else r"\nx\n"}
             elif family in {"gemma4", "kimi_k2"}:
                 arguments = {}
             else:
@@ -5234,6 +5329,67 @@ _TEMPLATE_EDGE_NAMES = frozenset(spec[0] for spec in EDGE)
 FAMILIES = sorted(_MANIFEST)
 
 
+@cache
+def _native_scenario_entries(family):
+    call = r_tool(family, "get_weather", "city", "Paris", 0)
+    declarations = _REGISTRY["markers"].get(family, {})
+    pairs = declarations.get("pairs", [])
+    # Select a tool fence that actually occurs in this native invocation.
+    pair = next(((left, right) for left, right in pairs if left in call and right in call), None)
+    marker = pair[1] if pair else next(iter(declarations.get("singletons", [])), ")]" )
+    value = "git log " + marker + " --oneline"
+    mixed = "雪 " + marker + " " + (r_reason(family, "literal")
+             if _MANIFEST[family].get("reasoning_grammar") != "none" else marker)
+    entries = {
+        "arg_marker_in_string": (r_tool(family, "run", "cmd", value, 0), M, M, value),
+        "deepseek_v41_mixed_control_text_in_string": (r_tool(family, "f", "x", mixed, 0), M, M, mixed),
+        "tool_block_never_closed_then_text": (
+            call[:call.index("Paris")] + "still thinking about it", M, M, []),
+    }
+    unknown = {"kind": "tool_call", "name": "unknown_tool", "arguments": {"value": "123"}}
+    empty = {"kind": "tool_call", "name": "empty_tool", "arguments": {}}
+    entries["gpt_oss_multiple_unknown_and_empty_tools"] = (
+        r_tool_arguments(family, unknown["name"], unknown["arguments"], 0)
+        + r_tool_arguments(family, empty["name"], {}, 1), M, M, [unknown, empty])
+    for scenario, value in (
+        ("arg_object_quoted_parameter_close", {"note": marker}),
+        ("arg_array_quoted_parameter_close", [marker]),
+    ):
+        arguments = {"value": value}
+        entries[scenario] = (r_tool_arguments(family, "get_weather", arguments, 0), M, M,
+                             [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}])
+    if pair:
+        entries["orphan_close_after_prose"] = (r_text(family, "I will check that. ") + pair[1], M, M)
+        entries["tool_markup_only_emits_nothing"] = (pair[1], M, M)
+        if family == "deepseek_v3_2":
+            wire = call[:call.rindex("</｜DSML｜invoke>")]
+            expected = []
+        else:
+            wire = call.removesuffix(pair[1])
+            expected = [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
+        entries["tool_no_close"] = (wire, M, M, expected)
+    if family == "inkling":
+        response = r_text(family, "recovered")
+        lookup = r_tool(family, "lookup", "q", "unfinished", 0)
+        completed = {"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}
+        entries["gpt_oss_truncated_tool_resynchronizes_at_next_message"] = (
+            lookup.removesuffix("<|end_message|>") + response, M, M,
+            [completed, {"kind": "text", "text": "recovered"}])
+        entries["interrupted_reasoning_then_response"] = (
+            r_reason(family, "checking").removesuffix("<|end_message|>") + r_text(family, "done"), M, M,
+            [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}])
+        entries["gpt_oss_quoted_truncated_tool_then_final"] = (
+            lookup[:lookup.index("unfinished")] + "abc" + r_text(family, "Answer"), M, M,
+            [{"kind": "text", "text": "Answer"}])
+        literal = "<|end_message|>" + r_text(family, "literal")
+        entries["gpt_oss_quoted_message_header_literal"] = (
+            r_tool(family, "lookup", "q", literal, 0), M, M,
+            [{"kind": "tool_call", "name": "lookup", "arguments": {"q": literal}}])
+    return entries
+
+
+
+
 def _registered_native_cases(fam):
     cases = {}
     for name, desc, policy, segments, _vllm, _dynamo in CLEAN:
@@ -5302,7 +5458,7 @@ def _registered_native_cases(fam):
             "prefilled_reasoning_truncated": ("checking" + closer + call[:call.index("Paris")], [reason], prefilled),
             "prefilled_reasoning_with_guided_json": ("checking" + closer + GUIDED_ONE_CALL, [reason, weather], {**prefilled, "tool_output_mode": "GuidedJson"}),
         }
-        if _MANIFEST[fam].get("reasoning_grammar") == "think":
+        if _MANIFEST[fam].get("reasoning_grammar") != "none":
             literal = r_reason(fam, "literal")
             reasoning_cases["prefilled_response_reasoning_markers_literal"] = (
                 literal, [{"kind": "text", "text": literal}], {**native, "starting_state": "Response"})
@@ -5345,7 +5501,20 @@ def _registered_native_cases(fam):
                     case["expect"]["dynamo"] = D("UNSUPPORTED", "No native Unified parser is registered; this authored request is unmeasured by the current native v2 executor.")
             cases.update(authored)
             continue
-        if _MANIFEST[fam].get("shared_scenarios") and fam in mapping:
+        if f"UNIFIED.{edge[0]}.{fam}" in cases and not _MANIFEST[fam].get("shared_scenarios"):
+            continue
+        if isinstance(mapping, FamilyInputs) and init.get("tool_output_mode", "Native") != "Native":
+            if fam == "pythonic":
+                continue
+            if (_MANIFEST[fam].get("reasoning_grammar") == "none"
+                    and ("reason" in edge[0] or init.get("starting_state") == "Reasoning")):
+                continue
+            if fam in {"harmony", "harmony_text"} and edge[0] in HARMONY_INAPPLICABLE_EDGE_CASES:
+                continue
+            mapping[fam] = mapping.render(fam)
+            cases.update(_build_edge_cases(fam, [edge]))
+            continue
+        if fam in mapping:
             cases.update(_build_edge_cases(fam, [edge]))
             continue
         if edge[0] not in _TEMPLATE_EDGE_NAMES and not isinstance(mapping, OnlyFamilies) and fam not in mapping:
@@ -5353,7 +5522,7 @@ def _registered_native_cases(fam):
         if init.get("tool_output_mode", "Native") == "Native" or isinstance(mapping, OnlyFamilies):
             continue
         if not isinstance(mapping, dict) or set(mapping) not in (
-            set(_TEMPLATE_FAMILIES), set(NATIVE_INPUT_FAMILIES)
+            set(_TEMPLATE_FAMILIES), set(NATIVE_INPUT_FAMILIES), set(_MANIFEST)
         ):
             continue
         inputs = {entry[0] for entry in mapping.values()}
@@ -5403,6 +5572,32 @@ for _index, _edge in enumerate(EDGE):
         _parts.append({"gpt_oss": []})
     _parts[-1].update({family: [] for family in _new})
     EDGE[_index] = tuple(_parts)
+
+
+for _family in FAMILIES:
+    if _MANIFEST[_family].get("scenario_profile") != "native" or _MANIFEST[_family].get("shared_scenarios"):
+        continue
+    _native_entries = _native_scenario_entries(_family)
+    for _edge in EDGE:
+        if _edge[0] in _native_entries:
+            _edge_case_family_policy(_edge)[_family] = _native_entries[_edge[0]]
+            if isinstance(_edge[2], dict):
+                _edge[2][_family] = ["I2"]
+            if isinstance(_edge[1], dict):
+                _edge[1][_family] = "An unfinished native reasoning channel is interrupted by a framed response; preserve reasoning and visible text in order."
+            if len(_edge) == 8 and isinstance(_edge[-1], dict):
+                if _edge[0] == "gpt_oss_multiple_unknown_and_empty_tools":
+                    _edge[-1][_family] = []
+                elif _edge[0].startswith("gpt_oss_"):
+                    _edge[-1][_family] = [{"name": "lookup", "parameters": {
+                        "type": "object", "properties": {"q": {"type": "string"}},
+                    }}]
+                else:
+                    _type = "object" if _edge[0] == "arg_object_quoted_parameter_close" else "array"
+                    _edge[-1][_family] = [{"name": "get_weather", "parameters": {
+                        "type": "object", "properties": {"value": {"type": _type}},
+                        "required": ["value"],
+                    }}]
 
 
 # Mistral calls end at their JSON value and the block never closes, so these pin
@@ -5666,6 +5861,28 @@ EDGE += [
 ]
 
 
+
+def _native_parent_value(family, value):
+    if isinstance(value, dict):
+        return {key: _native_parent_value(family, item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_native_parent_value(family, item) for item in value]
+    if not isinstance(value, str):
+        return value
+    if family == "deepseek_v3_2":
+        return value.replace("DSML｜tool_calls>", "DSML｜function_calls>")
+    if family == "minimax_m2":
+        value = value.replace("<tool_call>", "<minimax:tool_call>").replace("</tool_call>", "</minimax:tool_call>")
+        value = re.sub(r"<function=([^>]+)>", r'<invoke name="\1">', value)
+        value = re.sub(r"<parameter=([^>]+)>", r'<parameter name="\1">', value)
+        # Truncated headers are still native syntax, including at EOF and in
+        # guided recovery requests that never reach their closing angle bracket.
+        return (value.replace("</function>", "</invoke>")
+                .replace("<function=", '<invoke name="')
+                .replace("<parameter=", '<parameter name="'))
+    return value
+
+
 def build_cases(fam):
     grammar = _MANIFEST[fam].get("grammar")
     if grammar is None:
@@ -5690,6 +5907,27 @@ def build_cases(fam):
         _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
         cases = _apply_unified_numeric_goldens(cases, fam)
+    if fam in NATIVE_SCENARIO_PARENTS:
+        parent = NATIVE_SCENARIO_PARENTS[fam]
+        for key, case in build_cases(parent).items():
+            scenario = key.removeprefix("UNIFIED.").rsplit(".", 1)[0]
+            target = f"UNIFIED.{scenario}.{fam}"
+            # Generation constraints require a registered builder, independently
+            # of whether the parser accepts the same native call grammar.
+            if scenario == "structured_response_after_reasoning" or target in cases:
+                continue
+            inherited = _native_parent_value(fam, case)
+            parent_name, child_name = {
+                "qwen25": ("Hermes", "Qwen 2.5"),
+                "qwen3_coder": ("Qwen", "Qwen3 Coder"),
+                "nemotron_nano": ("Qwen", "Nemotron Nano"),
+                "deepseek_v3_2": ("DeepSeek V4", "DeepSeek V3.2"),
+                "minimax_m2": ("Qwen", "MiniMax M2"),
+                "harmony": ("GPT-OSS", "Harmony"),
+                "harmony_text": ("GPT-OSS", "HarmonyText"),
+            }[fam]
+            inherited["description"] = inherited["description"].replace(parent_name, child_name).replace("published EOF", "EOF")
+            cases[target] = inherited
     if fam == "kimi_k2":
         case = cases[f"UNIFIED.tool_call_ids_unique.{fam}"]
         # K2 IDs are part of its model protocol. A valid parallel-call message
@@ -5704,12 +5942,18 @@ def build_cases(fam):
     if _MANIFEST[fam].get("shared_scenarios"):
         for case in cases.values():
             case.setdefault("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
+    elif _MANIFEST[fam].get("scenario_profile") == "native":
+        for case in cases.values():
+            case.setdefault("input_chunks", [case["input"]])
+    for case in cases.values():
+        case["expect"]["dynamo"] = _dynamo_entry_for_init(case["expect"]["dynamo"], fam, case["init"])
+        case["expect"]["vllm"] = _vllm_entry(case["expect"]["vllm"], fam)
     return {
         key: case
         for key, case in cases.items()
         if key.rsplit(".", 1)[0].removeprefix("UNIFIED.") not in _MANIFEST[fam].get("scenario_exclusions", {})
         and (key.rsplit(".", 1)[0].removeprefix("UNIFIED.") not in DOTTED_NAME_SCENARIOS
-             or fam in DOTTED_NAME_FAMILIES)
+             or (fam in DOTTED_NAME_FAMILIES and (fam, key.rsplit(".", 1)[0].removeprefix("UNIFIED.")) not in DOTTED_NAME_EXCLUSIONS))
     }
 
 
@@ -5968,12 +6212,7 @@ def _build_edge_cases(fam, specs):
         # false `match` never fails; it just tells a reader two engines handle
         # request modes they cannot see. One gate every case passes through is the
         # only way an authoring shortcut cannot route around it.
-        if fam not in UNIFIED_FAMILIES and _init_is_request_scoped(init):
-            dynamo = D(
-                "UNSUPPORTED",
-                "no native unified parser in this build, so the split path ignores "
-                "`init` and cannot honour this request mode",
-            )
+        dynamo = _dynamo_entry_for_init(dynamo, fam, init)
         case = {
             "description": _entry(desc, fam),
             "policy": _entry(policy, fam),
@@ -6019,7 +6258,7 @@ def _template_scenario_families(scenario):
     if original != scenario and original in GPT_OSS_PR424_REQUEST_VARIANTS:
         return frozenset({"gpt_oss"}) if GPT_OSS_PR424_REQUEST_VARIANTS[original] else frozenset()
     if scenario in DOTTED_NAME_SCENARIOS:
-        return DOTTED_NAME_FAMILIES
+        return DOTTED_NAME_FAMILIES - {family for family, name in DOTTED_NAME_EXCLUSIONS if name == scenario}
     if scenario in V1_SPLIT_SCENARIOS:
         return V1_SPLIT_FAMILIES
     for name, *_rest in CLEAN:

@@ -9,6 +9,7 @@ use minijinja::Environment;
 use super::PromptContextMixin;
 
 mod context;
+mod effort;
 mod formatters;
 mod minimax_m2;
 mod oai;
@@ -242,6 +243,8 @@ impl SystemNormalization {
 /// - Context mixins for template customization
 #[derive(Debug)]
 struct HfTokenizerConfigJsonFormatter {
+    default_effort_template: Option<effort::EffortTemplate>,
+    tool_use_effort_template: Option<effort::EffortTemplate>,
     env: Environment<'static>,
     config: ChatTemplate,
     /// The model's control-token spellings. They are shielded in request text

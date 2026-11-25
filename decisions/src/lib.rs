@@ -4,6 +4,7 @@
 //! Runtime-independent decision API contracts and numerical reduction.
 
 mod canonical;
+mod dialect;
 mod distribution;
 mod error;
 mod openai_validation;
@@ -14,6 +15,7 @@ mod strict_json;
 mod text;
 
 pub use canonical::*;
+pub use dialect::Dialect;
 pub use distribution::{choice_confidence, reduce_vocab_logprobs, score_confidence};
 pub use dynamo_protocols::types::decisions::{self as protocols, ChoiceValue};
 pub use error::DecisionError;

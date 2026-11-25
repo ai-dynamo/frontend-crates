@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.22](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.21...dynamo-multimodal-v0.2.22) - 2026-11-24
+
+### Features
+
+- *(multimodal)* Add bilinear resize that mirrors torch AVX2 dispatch (DIS-3550) ([#652](https://github.com/ai-dynamo/frontend-crates/pull/652))
+
+## [0.2.21](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.20...dynamo-multimodal-v0.2.21) - 2026-11-24
+
+### Features
+
+- *(multimodal)* Add GLM-5.3-Flash video preprocessing (DIS-3548) ([#650](https://github.com/ai-dynamo/frontend-crates/pull/650))
+
+## [0.2.20](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.19...dynamo-multimodal-v0.2.20) - 2026-11-24
+
+### Features
+
+- *(multimodal)* Add Nemotron 3.5 Super VL video preprocessing (DIS-3549) ([#651](https://github.com/ai-dynamo/frontend-crates/pull/651))
+
+## [0.2.19](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.18...dynamo-multimodal-v0.2.19) - 2026-11-24
+
+### Features
+
+- *(multimodal)* Resolve Qwen3.5 and qwen4_exp video from a model dir (DIS-3547) ([#649](https://github.com/ai-dynamo/frontend-crates/pull/649))
+
+## [0.2.18](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.17...dynamo-multimodal-v0.2.18) - 2026-11-24
+
+### Performance
+
+- *(multimodal)* Decode VP8/VP9 key-frame segments in parallel (DIS-3528) ([#643](https://github.com/ai-dynamo/frontend-crates/pull/643))
+
+## [0.2.17](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.16...dynamo-multimodal-v0.2.17) - 2026-11-24
+
+### Performance
+
+- *(multimodal)* Reuse NVDEC decoders between videos (DIS-3529) ([#642](https://github.com/ai-dynamo/frontend-crates/pull/642))
+- *(multimodal)* Convert and resize sampled video frames on the pool (DIS-3530) ([#641](https://github.com/ai-dynamo/frontend-crates/pull/641))
+
+## [0.2.16](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.15...dynamo-multimodal-v0.2.16) - 2026-11-24
+
+### Features
+
+- *(multimodal)* Add an experimental Qwen3-ASR profile (DIS-3555) ([#660](https://github.com/ai-dynamo/frontend-crates/pull/660))
+
 ## [0.2.15](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-multimodal-v0.2.14...dynamo-multimodal-v0.2.15) - 2026-11-20
 
 ### Features

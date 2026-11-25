@@ -146,14 +146,27 @@
     }
   },
   "nativeReviewFamilies": {
+    "customXml": ["minimax_m2", "nemotron_nano", "nemotron_v3", "qwen3", "qwen3_coder"],
     "whitespace": [
+      "deepseek_v3",
+      "deepseek_v3_1",
+      "deepseek_v3_2",
       "deepseek_v4",
       "deepseek_v41",
       "gpt_oss",
+      "harmony",
+      "harmony_text",
       "hermes",
+      "inkling",
+      "jamba",
       "kimi_k2",
       "kimi_k3",
-      "mistral_4"
+      "llama3_json",
+      "mistral",
+      "mistral_4",
+      "nemotron_deci",
+      "phi4",
+      "qwen25"
     ],
     "structured": [
       "beam",
@@ -169,20 +182,35 @@
     ],
     "dotted": [
       "beam",
+      "deepseek_v3",
+      "deepseek_v3_1",
+      "deepseek_v3_2",
       "deepseek_v4",
       "deepseek_v41",
       "gemma4",
       "glm47",
       "gpt_oss",
+      "harmony",
+      "harmony_text",
       "hermes",
+      "inkling",
+      "jamba",
       "kimi_k2",
       "kimi_k3",
+      "llama3_json",
+      "minimax_m2",
       "minimax_m3",
+      "mistral",
       "mistral_4",
       "muse_glimmer",
       "muse_spark",
+      "nemotron_deci",
+      "nemotron_nano",
       "nemotron_v3",
-      "qwen3"
+      "phi4",
+      "qwen25",
+      "qwen3",
+      "qwen3_coder"
     ]
   }
 }

@@ -438,16 +438,15 @@ fn structural_tag_failure_cannot_be_recorded_as_parser_output() {
 }
 
 #[test]
-fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
+fn numeric_raw_arguments_match_authored_tokens_for_every_native_family() {
     let dir = common::ensure_unified_golden();
-    let mut checked = 0usize;
-    for entry in std::fs::read_dir(&dir).unwrap() {
-        let path = entry.unwrap().path();
-        if path.extension().and_then(|extension| extension.to_str()) != Some("yaml") {
-            continue;
-        }
+    let families = common::unified_families();
+    for (family, spec) in families.iter().filter(|(_, spec)| spec.native) {
+        let path = dir.join(&spec.golden_spec);
         let file: GoldenFile = serde_yaml::from_str(&std::fs::read_to_string(&path).unwrap())
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        assert_eq!(file.family, *family, "{}", path.display());
+        let mut checked = 0usize;
         for (id, case) in file.cases {
             if !id
                 .strip_prefix("UNIFIED.")
@@ -512,8 +511,11 @@ fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
             );
             checked += 1;
         }
+        assert!(
+            checked > 0,
+            "{family}: no authored numeric cases were checked"
+        );
     }
-    assert!(checked > 0, "no authored numeric cases were checked");
 }
 
 /// One streaming chunk: the delta text fed, and the RAW per-chunk deltas Dynamo

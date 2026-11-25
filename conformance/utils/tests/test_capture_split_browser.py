@@ -68,7 +68,11 @@ def test_latest_html_alone_compares_and_downloads_without_external_data(publishe
             visible_captures.update(available)
             for descriptor in (item for item in descriptors if item['key'] in available):
                 implementation, version = descriptor['identity'].split('@')
-                assert version == versions[implementation][-1]
+                if implementation in {"dynamo_v1", "dynamo_v1_jail"}:
+                    assert version == descriptor['release_choice'] == 'Latest'
+                    assert descriptor['version'] == versions[implementation][-1]
+                else:
+                    assert version == versions[implementation][-1]
                 Select(driver.find_element('css selector', "[data-slot-capture='0']")).select_by_value(descriptor['key'])
                 _ready(driver, 'tab-unified')
                 assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == [descriptor['key']]
@@ -82,7 +86,11 @@ def test_latest_html_alone_compares_and_downloads_without_external_data(publishe
                 key = "dynamo" if candidate["version"] == newest else f"dynamo@{candidate['version']}"
             else:
                 key = policy["historical_control_aliases"].get(identity, identity)
-            assert (key in visible_captures) == (candidate["version"] == newest), key
+            if candidate["implementation"] in {"dynamo_v1", "dynamo_v1_jail"}:
+                assert f"{candidate['implementation']}@Latest" in visible_captures
+                assert key not in visible_captures
+            else:
+                assert (key in visible_captures) == (candidate["version"] == newest), key
         cell = driver.find_element("css selector", "#tab-unified .matrix-cell[data-ttip-id]")
         cell.click()
         popup = WebDriverWait(driver, 15).until(lambda page: next((item for item in page.find_elements("css selector", ".ttip-pinned") if item.is_displayed()), None))

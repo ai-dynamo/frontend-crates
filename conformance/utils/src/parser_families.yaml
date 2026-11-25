@@ -838,7 +838,7 @@ unified_display:
     deepseek: 'Single Family Test: DeepSeek V4.1 DSML invocation bodies'
     deepseek_v41: 'Single Family Test: DeepSeek V4.1-specific tests'
     kimi_k2: 'Single Family Test: Kimi K2-specific tests'
-    qwen3: 'Family-specific tests: Qwen3 and Nemotron v3 XML'
+    qwen3: 'Family-specific tests: Qwen3-compatible XML'
     nemotron_v3: 'Single Family Test: Nemotron v3 default reasoning'
     kimi: 'Single Family Test: Kimi K3 XTML'
     minimax_m3: 'Single Family Test: MiniMax M3 native recovery'

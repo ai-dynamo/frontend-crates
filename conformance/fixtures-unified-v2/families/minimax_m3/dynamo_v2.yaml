@@ -1,4 +1,4 @@
-capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"23edc069bdfb993954254a4d1e4f2c4b9d99208b5b9e3d527479f8ab4338624e","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"minimax_m3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"31473af89d1c6904738c727d4a0ecc216ffe5950c8ba389674c194fdfca350c1","source":"conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
@@ -14,11 +14,19 @@ origins:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
     git_commit: 731c488a763345d2940794be01d3a5d7c89ebc3a
+  origin_6ab68040434adff2:
+    crate_version: 0.10.7
+    source_sha256: 8cbe85cda4fbb66d5cde7bb4d09367633a19ba18b57a0a7bd3198c42d565df81
+    git_commit: 7f1faf65f72849bc2d78a9b1b1ff1a6ce0345daf
 producers:
   producer_446828e67b23fad3:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_883f78c28b7d2088
+  producer_11a15c58d1b173a4:
+    captured_with:
+      dynamo_v2: 0.10.7
+    capture_origin: origin_6ab68040434adff2
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
@@ -26869,4 +26877,62 @@ records:
           name: schema_probe
           arguments: '{"value":"{''a'':1}"}'
           complete: true
+      - expected: []
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    producer: producer_11a15c58d1b173a4
+    request: 2e24c1ff2809ff88ec658e64b27e56824697a5c987cb7982040e2731b24ab902
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"a":"1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"b":"2"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"a":"1"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: g
+          arguments: '{"b":"2"}'
+          complete: true
+      - expected: []
+      - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    producer: producer_11a15c58d1b173a4
+    request: 64b089617e81de305a8c0fadef8896d5c6be1d690fb449f8878f03fc9b0079b6
+    output:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments: '{"x":"1"}'
+      - kind: tool_call
+        name: g
+        arguments: '{"x":"2"}'
+      - kind: tool_call
+        name: h
+        arguments: '{"x":"3"}'
+      chunks:
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: f
+          arguments: '{"x":"1"}'
+          complete: true
+      - expected:
+        - kind: tool_call
+          name: g
+          arguments: '{"x":"2"}'
+          complete: true
+        - kind: tool_call
+          name: h
+          arguments: '{"x":"3"}'
+          complete: true
+      - expected: []
       - expected: []

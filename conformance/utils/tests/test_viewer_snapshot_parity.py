@@ -22,7 +22,7 @@ from verify_publication_transport import read_index
 from conformance.utils.tests.test_execution_manifests import compact_store
 import hashlib
 from fixture_test_support import native_snapshots, runtime_catalog, snapshot_bytes
-from test_unified_history import _store
+from test_unified_history import _store, _write_capture, _change
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -186,6 +186,32 @@ def _assert_retained_dataset_descriptor(datasets):
     assert datasets == [{"id": "retained", "root": "conformance/history-datasets/retained"}], "retained dataset namespace differs"
 
 
+@pytest.mark.parametrize("fault", [None, "missing", "corrupt"])
+def test_routed_history_parity_admits_original_archive_members(tmp_path, fault):
+    root = tmp_path / "source"
+    store = _store(root / capture_sources.STORE)
+    _write_capture(store, "0.5.3", {"text_only": _change("new")})
+    unified_history.archive_versions(store)
+    archive = store / "versions/dynamo-0.5.0.tar.gz"
+    assert archive.is_file()
+    assert not (store / "families/gemma4/dynamo_v2-0.5.0.yaml").exists()
+    catalog = {"sources": {"unified": viewer_catalog._unified_records(root),
+                           "candidates": [{"mode": "unified", "implementation": "dynamo_v2", "version": version}
+                                          for version in ("0.5.0", "0.5.2", "0.5.3")]},
+               "metadata": {"unified_capture_policy": {"dynamo_v2": {"mode": "stream"}}}}
+    site = tmp_path / "site"
+    published = native_snapshots(root, site, catalog)
+    if fault == "missing":
+        archive.unlink()
+    elif fault == "corrupt":
+        archive.write_bytes(archive.read_bytes()[:-1])
+    if fault:
+        with pytest.raises(ValueError):
+            _assert_routed_history_parity(root, site, published)
+    else:
+        _assert_routed_history_parity(root, site, published)
+
+
 @pytest.mark.parametrize("fault", ["id", "root", "extra"])
 def test_retained_parity_rejects_wrong_dataset_namespace(fault):
     datasets = [{"id": "retained", "root": "conformance/history-datasets/retained"}]
@@ -238,7 +264,7 @@ def _assert_routed_history_parity(source, site, published):
                     value["stimulus"]["inline"] = deepcopy(store.families[family].cases[case]["request"])
                 assert typed_equal(records[case]["value"], value), (family, resource["version"], case)
                 expected_member = f"{prefix}/{members[case]}" if prefix else members[case]
-                assert (source / expected_member).is_file(), expected_member
+                assert members[case].removeprefix(capture_sources.STORE + "/") in store.resources, expected_member
                 assert records[case]["member"] == expected_member
                 checked += 1
     assert checked > 0

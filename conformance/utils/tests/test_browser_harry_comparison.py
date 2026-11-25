@@ -12,7 +12,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index, _published_capture
+from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index, _published_capture, _published_catalog
 
 
 def counts(driver):
@@ -540,6 +540,13 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             before = counts(driver)
             _choose_engine(driver, 1, "sglang")
             _ready(driver, "tab-unified")
+            compared = counts(driver)
+            for status, value in before["dynamo"].items():
+                if status not in {"total", "unsupported"}:
+                    assert compared["dynamo"][status] == value
+            added = compared["dynamo"]["total"] - before["dynamo"]["total"]
+            assert added >= 0
+            assert compared["dynamo"]["unsupported"] - before["dynamo"]["unsupported"] == added
             stacked = driver.find_element("css selector", "[data-layout='stacked']")
             assert stacked.is_displayed()
             assert stacked.text == ("Stacked columns" if vertical else "Stacked rows")
@@ -549,9 +556,10 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
                 assert headings
                 assert all("matches GOLDEN" not in heading.text and "cases" not in heading.text for heading in headings)
             driver.find_element("css selector", "[data-layout='split']").click()
-            assert counts(driver)["dynamo"] == before["dynamo"]
+            assert counts(driver) == compared
             _clear_slot(driver, 1)
             _ready(driver, "tab-unified")
+            assert counts(driver) == before
             assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
         elif correction == "categories":
             assert not driver.find_elements("css selector", ".category-chips")
@@ -782,15 +790,22 @@ def test_errors_and_all_green_results_follow_focus(published_viewer):
 
 
 @pytest.mark.parametrize('vertical', [False, True])
-def test_stacked_dynamo_labels_include_generation(published_viewer, vertical):
+def test_stacked_dynamo_labels_include_generation(historical_published_viewer, vertical):
     implementations = ['dynamo_v2', 'dynamo_v1', 'dynamo_v1_jail']
-    versions = {impl: _published_capture(published_viewer, impl)['version'] for impl in implementations}
+    catalog = _published_catalog(historical_published_viewer)
+    versions = {'dynamo_v2': _published_capture(historical_published_viewer, 'dynamo_v2')['version']}
+    for implementation in implementations[1:]:
+        assert any(candidate['implementation'] == implementation and candidate['version'] == '9.2.10'
+                   and 'gpt_oss' in candidate.get('capture_families', [])
+                   for candidate in catalog['sources']['candidates'])
+        versions[implementation] = '9.2.10'
+    keys = [f"dynamo_v2@{versions['dynamo_v2']}", 'dynamo_v1@9.x', 'dynamo_v1_jail@9.x']
     query = urlencode({'tab': 'tab-unified', 'vertical': int(vertical), 'layout_tab-unified': 'stacked',
                        'search_tab-unified': 'model:gpt_oss AND "tool_only"',
-                       'slots_tab-unified': ','.join(impl + '@' + versions[impl] for impl in implementations)})
+                       'slots_tab-unified': ','.join(keys)})
     expected = ['Dynamo v2 ' + versions['dynamo_v2'], 'Dynamo v1 ' + versions['dynamo_v1'],
                 'Dynamo v1 ' + versions['dynamo_v1_jail']]
-    server, _ = _server(root=published_viewer)
+    server, _ = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/?{query}')
@@ -1137,7 +1152,7 @@ def test_reference_url_same_engine_and_stale_request(historical_published_viewer
         duplicate = driver.find_element("css selector","[data-slot-capture='0'] option[value='dynamo@0.7.18']")
         assert not duplicate.is_enabled()
         before = counts(driver)
-        Select(driver.find_element("css selector","[data-slot-capture='0']")).select_by_value("dynamo_v1@5.1.3")
+        Select(driver.find_element("css selector","[data-slot-capture='0']")).select_by_value("dynamo_v1@5.x")
         assert started.wait(20)
         assert counts(driver) == before
         Select(driver.find_element("css selector","[data-slot-capture='0']")).select_by_value("dynamo")

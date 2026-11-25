@@ -49,7 +49,8 @@ Clips:
   eight, for keyframe seeking (see `write_gops`): closed-GOP H.264 with
   B-frames (and gop_frag.mp4, the same remuxed as a fragmented MP4),
   open-GOP H.264 and HEVC, HEVC with in-band parameter sets (gop_hev1.mp4),
-  VP8, VP9 and AV1;
+  VP8, VP9 (and gop_vp9.mp4, the same remuxed into MP4, whose packets are
+  read from the source as they decode) and AV1;
 * h264_quad.mp4 is one 96x64 frame of four coloured quadrants (`QUADRANTS`);
   h264_quad.rgb is its exact RGB: a software decoder's YUV planes converted
   with BT.601 limited range and nearest chroma, the conversion the crate
@@ -241,7 +242,8 @@ def write_gops(here: Path, size=160, count=40) -> None:
     Frame i is the moving texture with its left 32 columns at grey level
     `gop_grey(i)`, so a frame decoded from the wrong references shows. Each
     clip has a keyframe every 8 frames; gop_frag.mp4 is gop_h264.mp4 remuxed
-    as a fragmented MP4 (keyframes from `trun` flags rather than `stss`).
+    as a fragmented MP4 (keyframes from `trun` flags rather than `stss`), and
+    gop_vp9.mp4 is gop_vp9.webm remuxed into MP4.
     """
     # Smoother than texture_frames(), to keep the clips small; 160 px is above
     # NVDEC's HEVC minimum of 144.
@@ -271,6 +273,11 @@ def write_gops(here: Path, size=160, count=40) -> None:
         ["ffmpeg", "-v", "error", "-y", "-i", str(here / "gop_h264.mp4"), "-c", "copy",
          "-movflags", "frag_keyframe+empty_moov+default_base_moof",
          str(here / "gop_frag.mp4")],
+        check=True,
+    )
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(here / "gop_vp9.webm"), "-c", "copy",
+         str(here / "gop_vp9.mp4")],
         check=True,
     )
 

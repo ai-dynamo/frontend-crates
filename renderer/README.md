@@ -81,6 +81,23 @@ native formatters can attach a state with `with_generation_state`. Equality and
 debug output include this metadata. The enum is non-exhaustive so consumers must
 also handle future variants without assuming a response channel.
 
+## Default thinking effort
+
+On a renderer that supports `emit_default_thinking_effort`, set the option to `false` to omit the default effort instruction when no effort is supplied. The renderer still applies its usual rules to an explicit effort. Set the option in `chat_template_kwargs` for one request, or start the Dynamo frontend with `--default-chat-template-kwargs '{"emit_default_thinking_effort":false}'` for a deployment-wide default.
+
+Thinking mode and the assistant generation prompt follow the model's usual rules. Dynamo clients can supply an explicit `reasoning_effort` on the request. With the option set to `false`, Muse Glimmer uses that effort when `reasoning_strength` is absent.
+
+| Renderer or stock chat template | Default effort | Template argument for an explicit effort | Implementation |
+| --- | --- | --- | --- |
+| Kimi K3 and K3.1 | `max` | `thinking_effort` or `reasoning_effort` | [Native formatter](src/kimi_k3.rs) |
+| DeepSeek V4 | `high` | `reasoning_effort` | [Native formatter](src/deepseek/v4.rs) |
+| GPT-OSS | `medium` | `reasoning_effort` | [Chat template](https://huggingface.co/openai/gpt-oss-120b/blob/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/chat_template.jinja#L203) |
+| GLM-5.2 and GLM-5.3 | `max` | `reasoning_effort` | [5.2 template](https://huggingface.co/zai-org/GLM-5.2/blob/cf457fa734ab149ffef225f80893eb38c6ff5cdc/chat_template.jinja#L2), [5.3 template](https://huggingface.co/zai-org/GLM-5.3/blob/ba32f8c19c8738e2c57c71798c601d477a7bf844/chat_template.jinja#L2) |
+| Beam | `512` | `reasoning_effort` | [Chat template](https://huggingface.co/reflection/Beam-1.0-501B-A23B/blob/877a5d6973c6ae6a55335483002c06717662d23c/chat_template.jinja#L282) |
+| Muse Glimmer | `high` | `reasoning_strength` | [Chat template](https://huggingface.co/meta-models/Muse-Glimmer-30B/blob/1297fd7dfeac4598948a5d15886968435c81c2b7/chat_template.jinja#L83) |
+
+For example, with the option set to `false`, a Kimi request that omits effort opens the thinking turn without an effort message. A request that explicitly sets `reasoning_effort=max` opens the same turn and includes the `thinking_effort=max` message. GPT-OSS, GLM, Beam, and Muse Glimmer support the option through their stock template blocks. A custom chat template can read the option directly.
+
 ## DeepSeek V4.1
 
 The V4.1 formatter supports text and image messages, tool history, mid-conversation system messages, and numeric reasoning effort. It rejects audio/video content and explicit tool namespace fields; qualified function names are preserved. Generation headers follow the reference encoder. Setting `add_generation_prompt` to `false` suppresses only the final generation prefix and preserves historical transitions. OpenAI effort names match the official chat template: `low` is 50, `medium` is 62, `high` is 75, and `max` is 100; the default is 75. The `xhigh` alias is not supported. Template arguments accept the same names or an integer from 1 to 100. Top-level effort takes precedence over template effort. Set `reasoning_effort` to `none` or the template argument `thinking` to `false` to disable thinking.

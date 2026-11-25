@@ -375,7 +375,8 @@ pub fn index_cached(root: &Path, workers: &str, cache: Option<&Path>) -> Result<
         }
     }
     let context_path = root.join("conformance/catalog-conversion-context.json");
-    if snapshots.is_empty() && context_path.is_file() {
+    if context_path.is_file() {
+        snapshots.clear();
         let context: Value = serde_json::from_slice(&source::read(
             &root,
             "conformance/catalog-conversion-context.json",
@@ -460,18 +461,21 @@ pub fn index_cached(root: &Path, workers: &str, cache: Option<&Path>) -> Result<
                             reuse: true,
                         },
                     )?;
-                    Ok(converted["snapshots"]
+                    converted["snapshots"]
                         .take()
                         .as_array()
                         .context("missing converted checkpoints")?
                         .iter()
-                        .map(|row| {
+                        .map(|row| -> Result<Value> {
                             let mut summary = row["summary"].clone();
                             summary["fragment"] = row["fragment"].clone();
-                            summary["capture"] = row["capture"].clone();
-                            summary
+                            let metadata = &row["capture"];
+                            let key = sha256(&crate::codec::json_bytes(metadata)?);
+                            crate::conversion_cache::write(directory, &key, metadata)?;
+                            summary["capture_fragment"] = json!(key);
+                            Ok(summary)
                         })
-                        .collect())
+                        .collect::<Result<Vec<_>>>()
                 })
                 .collect::<Result<Vec<_>>>()
         })?;
