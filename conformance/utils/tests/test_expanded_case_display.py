@@ -29,6 +29,12 @@ def test_related_case_names_preserve_previous_aliases(scenario, previous, expect
 
 def test_every_active_display_identity_matches_its_taxonomy_and_history() -> None:
     store = history.load_authored_store(ROOT / "conformance/fixtures-unified-v2")
+    # These families used the original IDs before the expanded labels shipped.
+    previously_published = {
+        "beam", "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
+        "hermes", "kimi_k2", "kimi_k3", "minimax_m3", "mistral_4", "muse_glimmer",
+        "muse_spark", "nemotron_v3", "qwen3",
+    }
     direct_descriptive_scenarios = {
         "schema_enum_inferred_integer",
         "schema_const_numeric_bare",
@@ -47,7 +53,12 @@ def test_every_active_display_identity_matches_its_taxonomy_and_history() -> Non
                 continue
             previous = f"UNIFIED.{taxonomy.tax(scenario)[0]}-{taxonomy.original_case_description(scenario)}"
             if previous != case["display_id"]:
-                assert previous in case["historical_ids"]
+                # Restored historical-only families were first authored with the
+                # expanded IDs and have no previously published aliases to retain.
+                if family in previously_published:
+                    assert previous in case["historical_ids"]
+                else:
+                    assert case["historical_ids"] == []
                 for label in (previous, case["display_id"]):
                     assert taxonomy.scenario_for_label(label, scenario=scenario) == scenario
 

@@ -6,9 +6,12 @@ import argparse
 import sys
 from collections import Counter
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
+import tarfile
+import tomllib
 import yaml
 from impls import (
     BATCH_SOURCE_BLOCKERS,
@@ -141,26 +144,86 @@ def fetch(url):
         return json.load(response)
 
 
-def freeze(output: Path, snapshots: Path, retained: Path):
+def published_v2_identity(target):
+    """Read producer identities from the checksum-verified published archive."""
+    version = target["version"]
+    request = urllib.request.Request(
+        f"https://static.crates.io/crates/dynamo-parsers-v2/dynamo-parsers-v2-{version}.crate",
+        headers={"User-Agent": "frontend-crates-conformance/1.0"},
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        artifact = response.read()
+    if hashlib.sha256(artifact).hexdigest() != target["checksum"]:
+        raise ValueError(f"published v2 artifact checksum mismatch: {version}")
+    prefix = f"dynamo-parsers-v2-{version}/"
+    with tarfile.open(fileobj=io.BytesIO(artifact), mode="r:gz") as archive:
+        contents = {}
+        for name in (".cargo_vcs_info.json", "Cargo.lock"):
+            members = [member for member in archive.getmembers() if member.name == prefix + name]
+            if len(members) != 1 or not members[0].isfile():
+                raise ValueError(f"published v2 artifact lacks one regular {name}: {version}")
+            contents[name] = archive.extractfile(members[0]).read()
+    commit = json.loads(contents[".cargo_vcs_info.json"])["git"]["sha1"]
+    if not isinstance(commit, str) or re.fullmatch(r"[0-9a-f]{40}", commit) is None:
+        raise ValueError(f"published v2 artifact has invalid commit: {version}")
+    packages = tomllib.loads(contents["Cargo.lock"].decode())["package"]
+    reasoning = [package for package in packages if package["name"] == "dynamo-parsers"]
+    if not reasoning:
+        request = urllib.request.Request(
+            f"https://raw.githubusercontent.com/ai-dynamo/frontend-crates/{commit}/Cargo.toml",
+            headers={"User-Agent": "frontend-crates-conformance/1.0"},
+        )
+        with urllib.request.urlopen(request, timeout=60) as response:
+            manifest = response.read()
+        dependency = tomllib.loads(manifest.decode())["workspace"]["dependencies"]["dynamo-parsers"]
+        reasoning_version = dependency["version"] if isinstance(dependency, dict) else dependency
+        if not isinstance(reasoning_version, str) or not re.fullmatch(r"\d+\.\d+\.\d+", reasoning_version):
+            raise ValueError(f"published v2 source lacks an exact reasoning dependency: {version}")
+        return {"git_commit": commit, "reasoning_version": reasoning_version,
+                "reasoning_source_sha256": hashlib.sha256(manifest).hexdigest()}
+    if len(reasoning) != 1 or not re.fullmatch(r"\d+\.\d+\.\d+", reasoning[0]["version"]):
+        raise ValueError(f"published v2 artifact lacks an exact reasoning dependency: {version}")
+    return {"git_commit": commit, "reasoning_version": reasoning[0]["version"]}
+
+
+def discover_dynamo_releases(previous, snapshots: Path, *, v1_minimum="11.0.0"):
+    """Retain existing evidence and discover stable non-yanked producer releases."""
     snapshots.mkdir(parents=True, exist_ok=True)
-    targets = []
-    previous = yaml.safe_load(retained.read_text())["targets"]
-    identities = {(item["implementation"], item["version"]): item for item in previous}
+    identities = {(target["implementation"], target["version"]): dict(target) for target in previous}
+    if len(identities) != len(previous):
+        raise ValueError("duplicate retained release identity")
     for implementation, package in (("dynamo_v1", "dynamo-parsers"), ("dynamo_v2", "dynamo-parsers-v2")):
         document = fetch(f"https://crates.io/api/v1/crates/{package}")
-        (snapshots / f"{package}.json").write_text(json.dumps(document, sort_keys=True))
+        (snapshots / f"{package}.json").write_text(json.dumps(document, sort_keys=True) + "\n")
         for release in document["versions"]:
             version = release["num"]
+            key = (implementation, version)
             if not re.fullmatch(r"\d+\.\d+\.\d+", version):
                 continue
+            if key in identities:
+                retained = identities[key]
+                if retained["source_kind"] != "crate" or retained["checksum"] != release["checksum"]:
+                    raise ValueError(f"published artifact conflicts with retained identity: {implementation} {version}")
+                if "yanked" in retained or release["yanked"]:
+                    retained["yanked"] = release["yanked"]
+                continue
+            if release["yanked"] or (implementation == "dynamo_v1" and Version(version) < Version(v1_minimum)):
+                continue
             target = {"implementation": implementation, "version": version, "source_kind": "crate",
-                      "crate": package, "checksum": release["checksum"], "yanked": release["yanked"],
+                      "crate": package, "checksum": release["checksum"], "yanked": False,
                       "published_at": release["created_at"]}
-            target.update(identities.get((implementation, version), {}))
-            if implementation == "dynamo_v2" and "reasoning_version" not in target:
-                raise ValueError(f"release lacks a reviewed matching reasoning adapter: {version}")
-            targets.append(target)
-    targets.extend(item for item in previous if item["source_kind"] == "git")
+            if implementation == "dynamo_v2":
+                target.update(published_v2_identity(target))
+            identities[key] = target
+    return sorted(identities.values(), key=lambda target: (target["implementation"], Version(target["version"])))
+
+
+def freeze(output: Path, snapshots: Path, retained: Path):
+    snapshots.mkdir(parents=True, exist_ok=True)
+    previous = yaml.safe_load(retained.read_text())["targets"]
+    targets = discover_dynamo_releases(
+        [target for target in previous if target["implementation"] in {"dynamo_v1", "dynamo_v2"}], snapshots,
+    )
     for package, repository in (("vllm", "vllm-project/vllm"), ("sglang", "sgl-project/sglang")):
         document = fetch(f"https://pypi.org/pypi/{package}/json")
         (snapshots / f"{package}.json").write_text(json.dumps(document, sort_keys=True))

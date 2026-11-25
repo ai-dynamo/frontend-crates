@@ -357,7 +357,7 @@ def test_conversion_preserves_derived_inheritance_overrides(tmp_path, override):
     actual = history.resolve('dynamo_v2-1.1.0', view_capture_id='dynamo_v2-1.2.0')
     assert unified_history.typed_equal(actual, expected)
     assert ('text_only' in history.snapshot_suppressed_inheritance['dynamo_v2-1.1.0']) == (override is None)
-    rewritten = unified_history._store_documents(unified_history.load_store(complete))
+    rewritten = unified_history._store_documents(unified_history.load_store(complete), complete_snapshots=True)
     converted = rewritten[history.capture_path('dynamo_v2-1.1.0')]
     if override is None:
         assert converted['records']['text_only']['suppress_inherited_from'] is True
@@ -384,11 +384,14 @@ def test_complete_snapshot_updates_keep_and_clear_projection_markers(tmp_path):
     history.capture_paths[later] = history.family.path.parent / (later + '.yaml')
     original = history.resolve(first)
     unified_history._set_capture_snapshot(history, later, original, original)
+    history.complete_snapshot(later)
     assert history.snapshot_suppressed_inheritance[later] == {'text_only'}
     assert 'inherited_from' not in history.resolve(later, view_capture_id='dynamo_v2-1.2.0')['text_only']['document']
     changed = history.resolve(first)
     changed['text_only']['observation'] = {'value': {'assembled': [{'kind': 'text', 'text': 'new'}]}}
     unified_history._set_capture_snapshot(history, first, changed, {})
+    history.complete_snapshot(first)
     assert history.snapshot_suppressed_inheritance[first] == set()
     unified_history._set_capture_snapshot(history, later, {}, original)
+    history.complete_snapshot(later)
     assert history.snapshot_suppressed_inheritance[later] == set()

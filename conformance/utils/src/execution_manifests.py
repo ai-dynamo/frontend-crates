@@ -133,6 +133,19 @@ def compact(document, *, family, implementation, version, receipt_documents=None
             **({"receipts": {digest: sorted(cases) for digest, cases in sorted(memberships.items())}} if memberships else {})}
 
 
+def historical_evidence(manifest, *, family, implementation, version, receipt_documents):
+    expanded = expand(manifest, family=family, implementation=implementation, version=version,
+                      receipt_documents=receipt_documents)
+    return {"kind": "execution_manifest", "schema_version": 1,
+            "family": family, "implementation": implementation, "version": version,
+            "checkpoint": copy.deepcopy(manifest["checkpoint"]), "cases": copy.deepcopy(manifest["cases"]),
+            "defaults": copy.deepcopy(manifest["defaults"]), "exceptions": copy.deepcopy(manifest["exceptions"]),
+            "metadata_changes": expanded["metadata_changes"],
+            "receipt_membership": [{"members": copy.deepcopy(members), "body": copy.deepcopy(receipt_documents[reference])}
+                                   for reference, members in sorted(manifest.get("receipts", {}).items())],
+            **({"execution_proof": expanded["execution_proof"]} if "execution_proof" in expanded else {})}
+
+
 def expand(manifest, *, family, implementation, version, receipt_documents=None):
     if not isinstance(manifest, dict) or set(manifest) - {"receipts", "proof"} != FIELDS or type(manifest["schema_version"]) is not int or manifest["schema_version"] != 1:
         raise ValueError("invalid execution manifest fields or schema")
