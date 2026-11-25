@@ -1,0 +1,298 @@
+{
+ "checkpoint": {
+  "config": {
+   "model_type": "glm5_next",
+   "image_token_id": 154854,
+   "video_token_id": 154855,
+   "image_start_token_id": 154830,
+   "image_end_token_id": 154831,
+   "video_start_token_id": 154832,
+   "video_end_token_id": 154833,
+   "vision_config": {
+    "patch_size": 14,
+    "spatial_merge_size": 2,
+    "temporal_patch_size": 2
+   }
+  },
+  "processor_config": {
+   "image_processor": {
+    "do_rescale": true,
+    "patch_expand_factor": 1,
+    "merge_size": 2,
+    "image_mean": [
+     0.48145466,
+     0.4578275,
+     0.40821073
+    ],
+    "image_std": [
+     0.26862954,
+     0.26130258,
+     0.27577711
+    ],
+    "temporal_patch_size": 2,
+    "patch_size": 14,
+    "min_image_tokens": 16,
+    "max_image_tokens": 8000,
+    "image_processor_type": "Glm5NextImageProcessor"
+   },
+   "video_processor": {
+    "do_rescale": true,
+    "video_processor_type": "Glm5NextVideoProcessor",
+    "patch_expand_factor": 1,
+    "merge_size": 2,
+    "image_mean": [
+     0.48145466,
+     0.4578275,
+     0.40821073
+    ],
+    "image_std": [
+     0.26862954,
+     0.26130258,
+     0.27577711
+    ],
+    "temporal_patch_size": 2,
+    "patch_size": 14,
+    "min_image_tokens": 16,
+    "max_image_tokens": 240000,
+    "fps": 2
+   },
+   "processor_class": "Glm5NextProcessor"
+  }
+ },
+ "spec": {
+  "family": "glm5_next",
+  "image_token_id": 154854,
+  "video_token_id": 154855,
+  "patch_size": 14,
+  "merge_size": 2,
+  "temporal_patch_size": 2,
+  "patch_expand_factor": 1,
+  "min_image_tokens": 16,
+  "max_image_tokens": 8000,
+  "image_mean": [
+   0.48145466,
+   0.4578275,
+   0.40821073
+  ],
+  "image_std": [
+   0.26862954,
+   0.26130258,
+   0.27577711
+  ],
+  "resample": "aten_u8",
+  "video": {
+   "image_start_token_id": 154830,
+   "image_end_token_id": 154831,
+   "fps": 2,
+   "max_frames": 2048,
+   "patch_size": 14,
+   "merge_size": 2,
+   "temporal_patch_size": 2,
+   "patch_expand_factor": 1,
+   "min_image_tokens": 16,
+   "max_image_tokens": 240000,
+   "image_mean": [
+    0.48145466,
+    0.4578275,
+    0.40821073
+   ],
+   "image_std": [
+    0.26862954,
+    0.26130258,
+    0.27577711
+   ]
+  }
+ },
+ "media": [
+  {
+   "kind": "video",
+   "shape": [
+    60,
+    70,
+    30
+   ],
+   "seed": 964,
+   "fps": 29.97002997002997
+  }
+ ],
+ "prompt_ids": [
+  154832,
+  154855,
+  154833,
+  10845,
+  13
+ ],
+ "timestamp_ids": {
+  "0.0 seconds": [
+   15,
+   13,
+   15,
+   6486
+  ],
+  "1.0 seconds": [
+   16,
+   13,
+   15,
+   6486
+  ]
+ },
+ "sglang": {
+  "sampled": [
+   [
+    0,
+    15,
+    30,
+    45
+   ]
+  ],
+  "input_ids": [
+   154832,
+   154830,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154831,
+   15,
+   13,
+   15,
+   6486,
+   154830,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154831,
+   16,
+   13,
+   15,
+   6486,
+   154833,
+   10845,
+   13
+  ],
+  "video_grids": [
+   [
+    2,
+    10,
+    4
+   ]
+  ],
+  "video_spans": [
+   [
+    [
+     2,
+     11
+    ],
+    [
+     18,
+     27
+    ]
+   ]
+  ],
+  "pixel_values_videos_blake3": "90533793262aeb391b40b157bf2d4e8da413c92322a735c9bbd212d0aa563da2",
+  "pixel_values_videos_shape": [
+   80,
+   1176
+  ],
+  "mrope_blake3": "0e45bddb13c7efab73c74de6b9bc0207a1dd121e5ac4ae1744a432fff1385770",
+  "mrope_delta": -10
+ },
+ "hf": {
+  "sampled": [
+   [
+    0,
+    15,
+    30,
+    45
+   ]
+  ],
+  "input_ids": [
+   154832,
+   154830,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154831,
+   15,
+   13,
+   15,
+   6486,
+   154830,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154854,
+   154831,
+   16,
+   13,
+   15,
+   6486,
+   154833,
+   10845,
+   13
+  ],
+  "video_grids": [
+   [
+    2,
+    10,
+    4
+   ]
+  ],
+  "video_spans": [
+   [
+    [
+     2,
+     11
+    ],
+    [
+     18,
+     27
+    ]
+   ]
+  ],
+  "pixel_values_videos_blake3": "90a70f894b05ef822539522fe556e9ea11320ab7ae14af89091f1e49b644bfcb",
+  "pixel_values_videos_shape": [
+   80,
+   1176
+  ]
+ },
+ "sglang_differs": [
+  "pixel_values_videos_blake3"
+ ],
+ "provenance": {
+  "generator": "multimodal/tests/fixtures/glm5_next_video/generate.py",
+  "checkpoint": "zai-org/GLM-5.3-Flash@46a050bec13002ad29ee795c16e61cf4fa3c4a9c",
+  "config_mrope_section": false,
+  "sglang": "0.0.0.dev1+g25c1c4394 (25c1c43942)",
+  "transformers": "5.19.0",
+  "torch": "2.14.1+cu130",
+  "torchvision": "0.29.2+cu132",
+  "numpy": "2.3.5"
+ }
+}

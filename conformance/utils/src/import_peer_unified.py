@@ -20,7 +20,7 @@ from impls import BATCH_SOURCE_BLOCKERS, UNIFIED_BATCH_IMPLS
 from capture_stimulus import assemble_stream
 import unified_history
 import execution_manifests
-from viewer_codec import typed_equal
+from viewer_codec import canonical_typed, typed_equal
 
 
 def digest(path: Path) -> str:
@@ -31,6 +31,37 @@ def _execution_proof(family, provenance):
     return {"receipt": copy.deepcopy(provenance),
             "requests": {key: unified_history._request_digest(case["request"])
                          for key, case in family.cases.items() if case.get("lifecycle", "active") != "retired"}}
+
+
+def _measurement_metadata(metadata):
+    result = copy.deepcopy(metadata)
+    for owner, key in list(execution_manifests._receipt_slots(result)):
+        owner.pop(key)
+    result.pop("verified_recapture", None)
+    result.pop("verified_recaptures", None)
+    return result
+
+
+def _archive_changed_proof(history, capture_id, target):
+    checkpoint = history.captures[capture_id]
+    proof = checkpoint.get("execution_proof")
+    if proof is None:
+        return
+    requests = {key: unified_history._request_digest(record["stimulus"]["inline"] if "inline" in record["stimulus"]
+                                                   else history.family.cases[key]["request"])
+                for key, record in target.items() if history.family.cases[key]["lifecycle"] != "retired"}
+    if typed_equal(proof["requests"], requests):
+        return
+    receipts = {}
+    manifest = execution_manifests.compact(checkpoint, family=history.family.name,
+        implementation=history.implementation, version=checkpoint["runtime_version"],
+        receipt_documents=receipts, receipt_names={})
+    evidence = execution_manifests.historical_evidence(manifest, family=history.family.name,
+        implementation=history.implementation, version=checkpoint["runtime_version"], receipt_documents=receipts)
+    archived = checkpoint.setdefault("historical_evidence", [])
+    if not any(typed_equal(evidence, previous) for previous in archived):
+        archived.append(evidence)
+    checkpoint.pop("execution_proof")
 
 
 def import_capture(store_root: Path, job_path: Path, capture_path: Path, provenance: dict, *, implementation="sglang_python", backfill_only=False, proof_only=False, selected_cases: set[str] | None = None, transaction_store=None, transaction_snapshots=None) -> list[Path]:
@@ -139,9 +170,10 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
                 return history.resolve(identity)
             return snapshots["targets"].get(identity, snapshots["original"].get(identity, {}))
         existing = resolve(capture_id) if history and capture_id in history.captures else {}
+        can_inherit_measurement = (not existing or history.captures[capture_id]["provenance"] == {"status": "captured", "origin": origin})
         target = copy.deepcopy(existing)
         previous_ids = [key for key in history.ordered_capture_ids() if unified_history._capture_release_sort_key(history.captures[key]["runtime_version"]) < unified_history._capture_release_sort_key(version)] if history else []
-        previous = resolve(previous_ids[-1]) if batch and previous_ids else {}
+        previous = resolve(previous_ids[-1]) if execution and previous_ids else {}
         for case_id, case in fam.cases.items():
             if case.get("lifecycle", "active") == "retired":
                 continue
@@ -154,7 +186,10 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
             document = {"mode": "unified", "captured_with": {implementation: version}}
             if execution and before is not None:
                 root_origin = history.captures[capture_id]["provenance"].get("origin", {})
-                known = all(root_origin.get(key) == provenance.get(key) for key in ("source_sha256", "adapter_sha256", "job_sha256"))
+                record_origin = before["document"].get("capture_origin", {})
+                known = any(candidate.get("crate_version") == version and all(candidate.get(key) == provenance.get(key)
+                            for key in ("source_sha256", "adapter_sha256", "job_sha256"))
+                            for candidate in (root_origin, record_origin))
                 stimulus, observation, _metadata = unified_history._legacy_state(result, b"", case_id, {}, case["request"])
                 if known and typed_equal(before["stimulus"], stimulus) and typed_equal(before["observation"], observation):
                     continue
@@ -203,23 +238,28 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
                 document["capture_origin"] = origin
             after = {"case_key": case_id, "stimulus": stimulus, "observation": observation, "document": document}
             if before is not None and (
-                not typed_equal(unified_history._capture_semantic(before, case_id), unified_history._capture_semantic(after, case_id))
+                not unified_history._capture_semantics_equal(before, after, case_id)
             ):
                 raise ValueError(f"bound {"SGLang" if implementation == "sglang_python" else implementation} observation is immutable: {family}/{case_id}")
             prior = previous.get(case_id)
-            if execution and prior is not None and typed_equal(prior["stimulus"], after["stimulus"]) and typed_equal(prior["observation"], after["observation"]) and typed_equal(prior["document"].get("record_metadata"), after["document"].get("record_metadata")):
+            if (execution and can_inherit_measurement and prior is not None and typed_equal(prior["stimulus"], after["stimulus"])
+                    and typed_equal(prior["observation"], after["observation"])
+                    and "unavailable" not in after["observation"]
+                    and typed_equal(_measurement_metadata(prior["document"].get("record_metadata", {})),
+                                    _measurement_metadata(after["document"].get("record_metadata", {})))):
                 after = copy.deepcopy(prior)
                 after["document"]["inherited_from"] = prior["document"]["captured_with"][implementation]
             target[case_id] = after
         def retain_dropped_receipt(checkpoint):
-            if ("results_sha256" not in provenance
+            if ("results_sha256" not in provenance or source_unavailable or not verified_execution
                     or not any(outcome in {"executed", "parser_error"} for outcome in outcomes)):
                 return
             proof = checkpoint.get("execution_proof")
             if proof is not None and typed_equal(proof["receipt"], provenance):
                 return
-            if any(typed_equal(owner[key], provenance) for record in target.values()
-                   for owner, key in execution_manifests._receipt_slots(record["document"].get("record_metadata", {}))):
+            if all(any(typed_equal(owner[key], provenance)
+                       for owner, key in execution_manifests._receipt_slots(target[case_id]["document"].get("record_metadata", {})))
+                   for case_id in active_cases if selected_cases is None or case_id in selected_cases):
                 return
             if proof is not None or checkpoint["provenance"] != {"status": "captured", "origin": origin}:
                 raise ValueError("sealed execution receipt cannot be retained without changing checkpoint provenance")
@@ -240,6 +280,7 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
         if origin is not None and not existing:
             history.captures[capture_id]["provenance"] = {"status": "captured", "origin": origin}
         history.capture_paths[capture_id] = fam.path.parent / f"{capture_id}.yaml"
+        _archive_changed_proof(history, capture_id, target)
         retain_dropped_receipt(history.captures[capture_id])
         if snapshots is None:
             unified_history._replace_capture_snapshot(history, capture_id, target)
@@ -249,7 +290,7 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
     if transaction_store is not None:
         mutate(transaction_store)
         return []
-    return unified_history._mutate_store(store_root, mutate)
+    return unified_history._mutate_store(store_root, mutate, allow_empty_history=True)
 
 
 def import_captures(store_root: Path, captures: list[tuple[Path, Path, dict]], *, implementation="sglang_python", backfill_only=False) -> list[Path]:
@@ -259,6 +300,7 @@ def import_captures(store_root: Path, captures: list[tuple[Path, Path, dict]], *
 
 def import_capture_groups(store_root: Path, groups: dict[str, list[tuple[Path, Path, dict]]], *, backfill_only=False, proof_only=False, compact_executions=None, expected_inventory=None) -> list[Path]:
     """Publish separate implementation histories in one validated generation."""
+    preserve_captures = set()
     def mutate(store):
         snapshots = {}
         for implementation, captures in groups.items():
@@ -267,24 +309,48 @@ def import_capture_groups(store_root: Path, groups: dict[str, list[tuple[Path, P
                 key = (family, implementation)
                 if key not in snapshots:
                     history = store.histories.get(key)
-                    snapshots[key] = {"original": dict(history.iter_resolved_snapshots()) if history else {},
+                    original = dict(history.iter_resolved_snapshots(include_members=True)) if history else {}
+                    snapshots[key] = {"original": original,
+                                      "preceding": dict(zip(history.ordered_capture_ids(), [None, *history.ordered_capture_ids()[:-1]])) if history else {},
+                                      "capture_hashes": {identity: hashlib.sha256(canonical_typed(capture).encode()).hexdigest()
+                                                         for identity, capture in history.captures.items()
+                                                         if identity not in history.resolved_snapshots} if history else {},
+                                      "members": copy.deepcopy(history.snapshot_members) if history else {},
+                                      "suppressed": copy.deepcopy(history.snapshot_suppressed_inheritance) if history else {},
                                       "targets": {}}
             for job, capture, provenance in sorted(captures, key=lambda entry: (unified_history._capture_release_sort_key(entry[2]["version"]), str(entry[0]))):
-                import_capture(store_root, job, capture, provenance, implementation=implementation,
-                               backfill_only=backfill_only, proof_only=proof_only, transaction_store=store, transaction_snapshots=snapshots)
+                try:
+                    import_capture(store_root, job, capture, provenance, implementation=implementation,
+                                   backfill_only=backfill_only, proof_only=proof_only, transaction_store=store, transaction_snapshots=snapshots)
+                except Exception as error:
+                    error.add_note(f"capture import: family={job.stem}, implementation={implementation}, version={provenance['version']}")
+                    raise
         for key, pending in snapshots.items():
-            if not pending["targets"]:
-                continue
             history = store.histories[key]
             previous = {}
             cursor = unified_history._HistoryCursor(history)
-            for identity in history.ordered_capture_ids():
+            for identity in history.ordered_capture_ids() if pending["targets"] else ():
                 target = pending["targets"].get(identity, pending["original"].get(identity, {}))
-                unified_history._set_capture_snapshot(history, identity, target, previous, cursor=cursor)
+                original = pending["original"].get(identity, {})
+                retained = {case for case, record in target.items() if case in original
+                            and unified_history._capture_semantics_equal(record, original[case], case)}
+                members = {case: member for case, member in pending["members"].get(identity, {}).items() if case in retained}
+                suppressed = pending["suppressed"].get(identity, set()) & retained
+                unified_history._set_capture_snapshot(history, identity, target, previous, cursor=cursor,
+                                                       members=members if original else None,
+                                                       suppressed=suppressed if original else None)
                 previous = target
+            ordered = history.ordered_capture_ids()
+            preceding = dict(zip(ordered, [None, *ordered[:-1]]))
+            for identity, digest in pending["capture_hashes"].items():
+                if (identity in history.captures and preceding[identity] == pending["preceding"][identity]
+                        and hashlib.sha256(canonical_typed(history.captures[identity]).encode()).hexdigest() == digest):
+                    preserve_captures.add(history.capture_path(identity))
+        return set(snapshots)
 
     return unified_history._mutate_store(store_root, mutate, compact_executions=compact_executions,
-                                        expected_inventory=expected_inventory)
+                                        expected_inventory=expected_inventory, allow_empty_history=True,
+                                        preserve_untouched_histories=True, preserve_captures=preserve_captures)
 
 
 def main() -> None:

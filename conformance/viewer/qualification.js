@@ -12,7 +12,7 @@ initializeDevelopmentParser();
 import { expandFamily, expandSnapshot, isNormalized } from './normalization.js';
 import { FixtureResources } from './resources.js';
 import { buildTab, pageMetadata } from './presentation.js';
-import { selectedCellOutcome, selectedUnifiedFamilies, tabCandidates } from './model.js';
+import { familyCaptureSource, selectedCellOutcome, selectedUnifiedFamilies, tabCandidates } from './model.js';
 import { leafCells, isApplicableCell, validateCaseCell } from './model.js';
 import { canonicalUnifiedLabel } from './resources.js';
 
@@ -208,7 +208,13 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const known = options.knownDivergences ? await reader.parser.parseYaml(await readFile(options.knownDivergences), { path: options.knownDivergences }) : null;
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
     for (const spec of selected) {
-      const tab = await buildTab(catalog, reader, spec.id);
+      let rowFamilies = null;
+      if (options.models?.length && !options.knownDivergences) {
+        const candidates = tabCandidates(catalog, spec).filter(({ source }) => source.implementation !== 'golden');
+        const rows = [...selectedUnifiedFamilies(catalog, candidates)].sort().map(family => ({ family }));
+        rowFamilies = new Set(selectRows({ id: spec.id, rows }, options.models).map(row => row.family));
+      }
+      const tab = await buildTab(catalog, reader, spec.id, { rowFamilies });
       if (options.knownDivergences && tab.id === 'tab-unified') {
         const displayFamilies = [...selectedUnifiedFamilies(catalog, tabCandidates(catalog, spec))];
         validateUnifiedKnownDivergences({ tabs: [tab] }, known, displayFamilies, catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
@@ -533,7 +539,7 @@ function validateTab(tab, loadedKeys = null) {
     const prior = sources.get(owner);
     if (prior) assert.ok(compareVersions(prior, descriptor.source.version) >= 0);
     sources.set(owner, descriptor.source.version);
-    assert.ok(descriptor.control.label.includes(descriptor.source.version));
+    assert.ok(descriptor.control.label.includes(descriptor.source.release_choice || descriptor.source.version));
     assert.ok(!descriptor.control.label.includes('+source.'));
     if (spec.mode === 'stream') assert.ok(!descriptor.source.version.match(/\.patch\d+$/));
   }
@@ -617,7 +623,7 @@ async function checkUnifiedSelections(original, reader, loadedKeys) {
       const selected = await buildTab(catalog, reader, original.id, { selected: [key], reference: null });
       const expectedFamilies = descriptor.source.implementation === 'dynamo_v2'
         ? currentNativeFamilies.filter(family => !descriptor.source.capture_families || descriptor.source.capture_families.includes(family))
-        : descriptor.source.capture_families;
+        : descriptor.source.family_versions ? [...new Set(catalog.sources.unified.filter(resource => resource.kind === 'inputs-and-golden').flatMap(resource => resource.families || [resource.family]))].sort() : descriptor.source.capture_families;
       assert.deepEqual(selected.rows.map(row => row.family), expectedFamilies,
         `${key}: historical observations retain the current native family scope`);
       for (const row of selected.rows) {
@@ -640,7 +646,7 @@ const unifiedSpec = catalog.metadata.tabs.find(spec => spec.suite === 'unified')
 assert.ok(unifiedSpec);
 const allUnifiedDescriptors = tabCandidates(catalog, unifiedSpec).filter(item => item.source.version);
 const selectedResources = args[4] ? JSON.parse(await readFile(args[4])) : null;
-const unifiedDescriptors = allUnifiedDescriptors.filter(item => !selectedResources || selectedResources.some(resource => resource.implementation === item.source.implementation && resource.version === item.source.version));
+const unifiedDescriptors = allUnifiedDescriptors.filter(item => !selectedResources || selectedResources.some(resource => resource.implementation === item.source.implementation && (item.source.family_versions ? Object.values(item.source.family_versions).includes(resource.version) : resource.version === item.source.version)));
 const defaultKey = allUnifiedDescriptors.find(item => item.control.default_bucket === 'A').control.key;
 const defaultDescriptor = allUnifiedDescriptors.find(item => item.control.key === defaultKey);
 if (!unifiedDescriptors.includes(defaultDescriptor)) unifiedDescriptors.push(defaultDescriptor);
@@ -699,7 +705,7 @@ async function checkRebaseContracts(tab, reader) {
       warnGoldenDifference(cell, defaultKey, `${row.family}/${scenario}`);
     }
   }
-  assert.equal(groups.get('unified_gqwen3').label, 'Family-specific tests: Qwen3 and Nemotron v3 XML');
+  assert.equal(groups.get('unified_gqwen3').label, 'Family-specific tests: Qwen3-compatible XML');
   for (const quotes of ['single', 'double']) {
     const custom = columns.get(`xml_custom_type_${quotes}_quoted_object`);
     const string = columns.get(`xml_string_type_${quotes}_quoted_object`);
@@ -709,8 +715,8 @@ async function checkRebaseContracts(tab, reader) {
     for (const row of tab.rows.filter(row => !row.section)) {
       const cell = leafCells(row).get(custom.sub);
       assert.equal(cell.case_id, `UNIFIED.7-tool-argument-declared-types-${custom.sub}`);
-      assert.equal(cell.status === 'na', !['qwen3', 'nemotron_v3'].includes(row.family));
-      if (['qwen3', 'nemotron_v3'].includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
+      assert.equal(cell.status === 'na', !modelContracts.nativeReviewFamilies.customXml.includes(row.family));
+      if (modelContracts.nativeReviewFamilies.customXml.includes(row.family)) warnGoldenDifference(cell, defaultKey, `${row.family}/${custom.sub}`);
     }
   }
   assert.equal(columns.get('arg_marker_in_string').group_key, 'unified_g7_text');
@@ -760,12 +766,12 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
       const golden = cell.tooltip.candidates.find(item => item.key === 'golden');
       assert.deepEqual(canonicalUnifiedEvents(golden.block.events), canonicalUnifiedEvents(expected), `${family}/${scenario}: authored dotted tool names and argument values`);
       const candidate = warnGoldenDifference(cell, defaultKey, `${family}/${scenario}`);
-      assert.equal(cell.cmp[defaultKey].na, 0);
+      assert.equal(cell.cmp[defaultKey].na, candidate.block.unavailable ? 1 : 0);
       for (const other of cell.tooltip.candidates.filter(item => loadedKeys.has(item.key) && /^(dynamo_v1(?:_jail)?@|vllm_python_batch@0\.26\.0$)/.test(item.key))) {
         const descriptor = allUnifiedDescriptors.find(item => item.control.key === other.key);
-        const { source } = descriptor;
+        const source = familyCaptureSource(descriptor.source, family);
         const { id, input } = authored.get(scenario);
-        const { records } = capturesFamily(source, family)
+        const { records } = source && capturesFamily(source, family)
           ? await reader.unified(family, source.implementation, source.version, document) : { records: new Map() };
         const record = records.get(id);
         if (record) {
@@ -785,7 +791,7 @@ async function checkDottedNameContracts(tab, loadedKeys, reader) {
           } else {
             assert.ok(Array.isArray(other.block.events), `${family}/${scenario}/${other.key}: compatible source record is measured`);
           }
-        } else if (!capturesFamily(source, family)) {
+        } else if (source && !capturesFamily(source, family)) {
           assert.equal(other.block.unavailable, `No parser for ${family}`);
           assert.equal(Object.hasOwn(other.block, 'events'), false);
         } else {

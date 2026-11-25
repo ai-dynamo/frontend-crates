@@ -11,9 +11,11 @@ mod common;
 use std::path::Path;
 
 use dynamo_multimodal::models::nemotron_vl::{
-    NemotronVlImagePlan, NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec,
+    NemotronVlImagePlan, NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec, NemotronVlVideoSpec,
 };
-use dynamo_multimodal::processor::{DecodedMedia, MediaMetadata, MmFamilyProcessor};
+use dynamo_multimodal::processor::{
+    DecodedMedia, MediaMetadata, MmFamilyProcessor, Modality, TextEncoder,
+};
 use dynamo_multimodal::registry::{
     ProcessorSpec, build_processor, processor_from_spec, spec_from_hf_configs, spec_from_model_dir,
 };
@@ -31,6 +33,7 @@ const CONFIG: &str = r#"{
     "norm_std": [0.26862954, 0.26130258, 0.27577711],
     "patch_size": 16, "sound_config": null, "use_thumbnail": false,
     "video_context_token": "<video>", "video_context_token_id": null,
+    "video_pruning_rate": 0.7,
     "vision_config": {
         "image_size": 224, "max_num_patches": 13312, "min_num_patches": 1024,
         "model_type": "radio", "patch_size": 16, "video_temporal_patch_size": 2
@@ -102,30 +105,49 @@ fn resolve_files(name: &str, files: &[(&str, &Value)]) -> Result<NemotronVlSpec>
     })
 }
 
+fn video() -> NemotronVlVideoSpec {
+    NemotronVlVideoSpec {
+        temporal_patch_size: 2,
+        target_num_patches: 1024,
+        maintain_aspect_ratio: true,
+        image_size: 224,
+        pruning_rate: 0.7,
+        placeholder: "<video>".into(),
+    }
+}
+
+/// A fixture spec, which holds the image fields, with `video`.
+fn with_video(spec: &Value, video: NemotronVlVideoSpec) -> NemotronVlSpec {
+    NemotronVlSpec {
+        video: Some(video),
+        ..serde_json::from_value(spec.clone()).unwrap()
+    }
+}
+
 fn parsed() -> [Value; 3] {
     [CONFIG, PREPROCESSOR, TOKENIZER].map(|json| serde_json::from_str(json).unwrap())
 }
 
 #[test]
-fn model_dir_resolves_the_hf_spec_and_sglang_differs_in_two_fields() {
+fn model_dir_resolves_the_hf_spec_and_sglang_differs_in_three_fields() {
     let fixture = sizes_fixture();
     let [config, pre, tokenizer] = parsed();
     let spec = resolve("hf", &config, &pre, &tokenizer).unwrap();
-    assert_eq!(
-        spec,
-        serde_json::from_value(fixture["hf_spec"].clone()).unwrap()
-    );
+    assert_eq!(spec, with_video(&fixture["hf_spec"], video()));
 
-    // What SGLang's processor resolved under `--context-length 16384`.
+    // What SGLang's processor resolved under `--context-length 16384`: config.json
+    // has no `video_target_num_patches`.
+    let sglang_video = NemotronVlVideoSpec {
+        target_num_patches: 0,
+        ..video()
+    };
     let sglang = NemotronVlSpec {
         sizing: NemotronVlSizing::Sglang,
         max_model_len: 16384,
+        video: Some(sglang_video.clone()),
         ..spec.clone()
     };
-    assert_eq!(
-        sglang,
-        serde_json::from_value(fixture["sglang_spec"].clone()).unwrap()
-    );
+    assert_eq!(sglang, with_video(&fixture["sglang_spec"], sglang_video));
     assert!(build_processor(ProcessorSpec::NemotronVl(sglang)).is_ok());
 
     // The NVFP4 checkpoint's preprocessor_config.json adds one key.
@@ -147,7 +169,7 @@ fn model_dir_resolves_the_hf_spec_and_sglang_differs_in_two_fields() {
 fn model_dir_reads_the_processor_file_that_transformers_loads() {
     let fixture = sizes_fixture();
     let [config, pre, tokenizer] = parsed();
-    let hf_spec: NemotronVlSpec = serde_json::from_value(fixture["hf_spec"].clone()).unwrap();
+    let hf_spec = with_video(&fixture["hf_spec"], video());
     let nested = |image_processor: &Value| {
         json!({
             "audio_hop_length": 160, "audio_sampling_rate": 16000, "audio_subsampling_factor": 8,
@@ -259,6 +281,87 @@ fn refuses_knobs_it_cannot_honor() {
             "{knob}"
         );
     }
+}
+
+/// Video knobs are read as SGLang reads them, and one that SGLang would read
+/// another way turns video off without failing images.
+#[test]
+fn video_knobs_never_fail_images() {
+    let [config, pre, tokenizer] = parsed();
+    let images = |spec: &NemotronVlSpec| NemotronVlSpec {
+        video: None,
+        ..spec.clone()
+    };
+    let spec = resolve("video", &config, &pre, &tokenizer).unwrap();
+    let vision = |edit: &dyn Fn(&mut Value)| {
+        let mut config = config.clone();
+        edit(&mut config);
+        resolve("video-knob", &config, &pre, &tokenizer).unwrap()
+    };
+    let image_size = |spec: NemotronVlSpec| spec.video.unwrap().image_size;
+    assert_eq!(
+        image_size(vision(
+            &|c| c["vision_config"]["image_size"] = json!([256, 256])
+        )),
+        256
+    );
+    // SGLang falls back to force_image_size, then to its default 512.
+    let forced = vision(&|c| {
+        c["vision_config"]
+            .as_object_mut()
+            .unwrap()
+            .remove("image_size");
+        c["force_image_size"] = json!(448);
+    });
+    assert_eq!(image_size(forced), 448);
+    let neither = vision(&|c| {
+        c["vision_config"]
+            .as_object_mut()
+            .unwrap()
+            .remove("image_size");
+        c.as_object_mut().unwrap().remove("force_image_size");
+    });
+    assert_eq!(image_size(neither.clone()), 512);
+    assert_eq!(images(&neither), images(&spec));
+    // SGLang defaults a missing temporal size to 1 and would pair frames differently.
+    let edits: [fn(&mut Value); 6] = [
+        |c| {
+            let vision = c["vision_config"].as_object_mut().unwrap();
+            vision.remove("video_temporal_patch_size");
+        },
+        |c| c["vision_config"]["video_temporal_patch_size"] = json!(3),
+        |c| c["vision_config"]["image_size"] = json!("224"),
+        |c| c["video_pruning_rate"] = Value::Null,
+        |c| c["video_pruning_rate"] = json!(1.0),
+        |c| c["video_pruning_rate"] = json!(-0.1),
+    ];
+    for edit in edits {
+        let resolved = vision(&edit);
+        assert_eq!(resolved, images(&spec));
+        assert!(build_processor(ProcessorSpec::NemotronVl(resolved)).is_ok());
+    }
+    // Both files agree on 1-frame groups, which the processor refuses.
+    let mut one = config.clone();
+    one["vision_config"]["video_temporal_patch_size"] = json!(1);
+    let processor = json!({"image_processor": pre, "video_temporal_patch_dim": 1});
+    let resolved = resolve_files(
+        "video-t1",
+        &[
+            ("config.json", &one),
+            ("preprocessor_config.json", &pre),
+            ("processor_config.json", &processor),
+            ("tokenizer.json", &tokenizer),
+        ],
+    )
+    .unwrap();
+    assert_eq!(resolved, images(&spec));
+    assert!(build_processor(ProcessorSpec::NemotronVl(resolved)).is_ok());
+    let mut odd = pre.clone();
+    odd["video_target_num_patches"] = json!("many");
+    assert_eq!(
+        resolve("video-pre", &config, &odd, &tokenizer).unwrap(),
+        images(&spec)
+    );
 }
 
 /// SGLang sizes from config.json and HF from preprocessor_config.json, so a
@@ -632,5 +735,89 @@ fn rejects_invalid_specs_sizes_and_buffers() {
     assert!(matches!(
         family.layout_from_metadata(&[IMAGE], &[huge]),
         Err(MmError::LimitExceeded { .. })
+    ));
+}
+
+#[test]
+fn video_placeholder_comes_from_config() {
+    let [mut config, pre, mut tokenizer] = parsed();
+    let placeholder = |config: &Value, tokenizer: &Value| {
+        resolve("placeholder", config, &pre, tokenizer)
+            .unwrap()
+            .video
+            .map(|video| video.placeholder)
+    };
+    config["video_context_token"] = "<clip>".into();
+    assert_eq!(placeholder(&config, &tokenizer).as_deref(), Some("<clip>"));
+    config
+        .as_object_mut()
+        .unwrap()
+        .remove("video_context_token");
+    assert_eq!(placeholder(&config, &tokenizer).as_deref(), Some("<video>"));
+    // SGLang splices a placeholder that is one token, and an empty one puts every
+    // video at the prompt start; neither is mirrored.
+    for refused in [Value::Null, "".into(), "<image>".into()] {
+        config["video_context_token"] = refused;
+        assert_eq!(placeholder(&config, &tokenizer), None);
+    }
+    config["video_context_token"] = "<clip>".into();
+    for vocab in [json!({"<clip>": 7}), json!([["<clip>", 0.0]])] {
+        tokenizer["model"]["vocab"] = vocab;
+        assert_eq!(placeholder(&config, &tokenizer), None);
+    }
+}
+
+/// Words of a toy vocabulary, split at whitespace.
+struct Words(&'static [(i32, &'static str)]);
+
+impl TextEncoder for Words {
+    fn encode(&self, text: &str) -> Result<Vec<i32>> {
+        Ok(text
+            .split_whitespace()
+            .map(|word| self.0.iter().find(|(_, w)| *w == word).unwrap().0)
+            .collect())
+    }
+
+    fn decode(&self, ids: &[i32]) -> Result<String> {
+        let word = |id: &i32| self.0.iter().find(|(i, _)| i == id).unwrap().1;
+        Ok(ids.iter().map(word).collect::<Vec<_>>().join(" "))
+    }
+}
+
+/// An encoder that cannot decode.
+struct EncodeOnly;
+
+impl TextEncoder for EncodeOnly {
+    fn encode(&self, _text: &str) -> Result<Vec<i32>> {
+        Ok(Vec::new())
+    }
+}
+
+#[test]
+fn rewrite_prompt_puts_image_at_each_video_placeholder() {
+    let [config, pre, tokenizer] = parsed();
+    let spec = resolve("rewrite", &config, &pre, &tokenizer).unwrap();
+    let image = spec.image_token_id;
+    let processor = NemotronVlProcessor::new(spec).unwrap();
+    let words = Words(&[(1, "<s>"), (2, "hi"), (3, "<video>"), (4, "there")]);
+    let rewrite = |ids: &[i32], media: &[Modality]| processor.rewrite_prompt(ids, media, &words);
+    let two = [Modality::Video, Modality::Video];
+    assert_eq!(
+        rewrite(&[1, 2, 3, 4, 3], &two).unwrap(),
+        Some(vec![1, 2, image, 4, image])
+    );
+    // A placeholder past the request's videos stays text, as in Python.
+    assert_eq!(
+        rewrite(&[1, 2, 3, 4, 3], &[Modality::Video]).unwrap(),
+        Some(vec![1, 2, image, 4, 3])
+    );
+    assert_eq!(
+        rewrite(&[2, 4], &[Modality::Video]).unwrap(),
+        Some(vec![2, 4])
+    );
+    assert_eq!(rewrite(&[1, 2, 3], &[Modality::Image]).unwrap(), None);
+    assert!(matches!(
+        processor.rewrite_prompt(&[1, 3], &[Modality::Video], &EncodeOnly),
+        Err(MmError::Unsupported { .. })
     ));
 }

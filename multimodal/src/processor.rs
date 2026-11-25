@@ -128,6 +128,14 @@ pub enum Geometry {
         grid: [u32; 3],
         timestamps: Vec<f64>,
     },
+    /// A video whose prompt labels each group of frames: the placeholder
+    /// count of each group as the prompt holds it, and the timestamp, in
+    /// seconds, of each frame. With token pruning, the engine moves the
+    /// counts between groups after it prunes the features.
+    FrameGroups {
+        tokens: Vec<u32>,
+        timestamps: Vec<f64>,
+    },
 }
 
 /// One processed media item and the metadata needed for prompt preparation.
@@ -221,10 +229,20 @@ pub enum PositionOutput {
     MRope { positions: Vec<i64>, delta: i64 },
 }
 
-/// Token ids for literal text a layout inserts, such as video timestamps.
-/// The host supplies its tokenizer; a family never tokenizes on its own.
+/// Token ids for literal text, without special tokens: text a layout inserts,
+/// such as video timestamps, or the spans of a rewritten prompt. The host
+/// supplies its tokenizer; a family never tokenizes on its own.
 pub trait TextEncoder {
     fn encode(&self, text: &str) -> crate::Result<Vec<i32>>;
+
+    /// The text of `ids`, special tokens kept. Only a family that rewrites the
+    /// prompt text calls it ([`MmFamilyProcessor::rewrite_prompt`]).
+    fn decode(&self, ids: &[i32]) -> crate::Result<String> {
+        let _ = ids;
+        Err(crate::MmError::unsupported(
+            "this text encoder cannot decode",
+        ))
+    }
 }
 
 /// The per-model-family hooks: implement in `src/models/<model>.rs` and add a
@@ -278,6 +296,20 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// equivalent (resize/tile/normalize/patchify) — into tensors plus the
     /// geometry `layout`/`positions` will need.
     fn process_item(&self, media: &DecodedMedia) -> crate::Result<ProcessedItem>;
+
+    /// The prompt ids to expand, when the family's processor rewrites the prompt
+    /// text before it splices media; `None` keeps `input_ids`. `modalities` are
+    /// the request's items. A host calls this first and passes the result to
+    /// every later call.
+    fn rewrite_prompt(
+        &self,
+        input_ids: &[i32],
+        modalities: &[Modality],
+        text: &dyn TextEncoder,
+    ) -> crate::Result<Option<Vec<i32>>> {
+        let _ = (input_ids, modalities, text);
+        Ok(None)
+    }
 
     /// Preprocess every media item of one request, in prompt order, given the
     /// unexpanded prompt. A family whose geometry depends on the whole request

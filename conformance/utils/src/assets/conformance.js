@@ -1546,6 +1546,8 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
       const rightGeneration = /^dynamo_v1(?:_|@)/.test(right.key) ? 1 : 2;
       if (leftGeneration !== rightGeneration) return rightGeneration - leftGeneration;
     }
+    if (left.release_choice === 'Latest' && right.release_choice !== 'Latest') return -1;
+    if (right.release_choice === 'Latest' && left.release_choice !== 'Latest') return 1;
     return compareVersions(left, right)
       || (left.key < right.key ? -1 : left.key > right.key ? 1 : 0);
   };
@@ -1555,7 +1557,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     byKey.clear(); byIdentity.clear();
     for (const item of candidates) {
       byKey.set(item.key, item);
-      for (const identity of [item.key, item.source_id, item.identity].filter(Boolean)) byIdentity.set(identity, item.key);
+      for (const identity of [item.key, item.source_id, item.identity, ...(item.identities || [])].filter(Boolean)) byIdentity.set(identity, item.key);
     }
     available.splice(0, available.length, ...candidates.filter(item => {
       const families = item.capture_families || item.native_unified_families;
@@ -1586,6 +1588,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
       if (!latestByLine.has(key)) latestByLine.set(key, item.version);
     }
     return choices.filter(item => {
+      if (item.release_choice) return true;
       if (linkedChoices.has(item.key)) return true;
       const producer = item.key.split('@')[0];
       const isV2 = isDynamoV2Choice(item);

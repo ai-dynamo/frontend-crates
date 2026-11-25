@@ -371,6 +371,25 @@ def publication_inputs_digest(root: Path, *, include_history: bool, history_sour
     return digest((json.dumps(value, separators=(",", ":"), ensure_ascii=False) + "\n").encode())
 
 
+def merge_retained_unified(selected: dict, resources: list[dict]) -> None:
+    for row in resources:
+        if not row["path"].endswith("/inputs_and_golden.yaml") or row["path"] not in selected:
+            selected[row["path"]] = row
+
+
+def logical_unified_inventory(root: Path) -> list[dict]:
+    datasets = json.loads(read(root, DATASETS)) if (root / DATASETS).is_file() else []
+    resources = {}
+    for source in [*(root / relative(dataset["root"]) for dataset in datasets), root]:
+        rows = [{key: row[key] for key in ("path", "sha256", "size")}
+                for row in unified_archives.inventory(source / STORE)]
+        if source == root:
+            resources.update({row["path"]: row for row in rows})
+        else:
+            merge_retained_unified(resources, rows)
+    return [resources[name] for name in sorted(resources)]
+
+
 def stage_history(root: Path, destination: Path, history: Path, *, separate: bool = True) -> dict:
     evidence = verify(history, history_pin(root, history))
     if evidence["schema"] == 2:
@@ -442,17 +461,7 @@ def stage_history(root: Path, destination: Path, history: Path, *, separate: boo
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
     # The combined manifest is generated privately; baseline interpretation stays immutable.
-    resources = {row["path"]: {key: row[key] for key in ("path", "sha256", "size")}
-                 for row in unified_archives.inventory(destination / STORE)}
-    updates = dict(resources)
-    if (destination / DATASETS).is_file():
-        for dataset in json.loads(read(destination, DATASETS)):
-            prefix = relative(dataset["root"])
-            for row in unified_archives.inventory(destination / prefix / STORE):
-                if not row["path"].endswith("/inputs_and_golden.yaml"):
-                    resources[row["path"]] = {key: row[key] for key in ("path", "sha256", "size")}
-        resources.update(updates)
-    resources = [resources[name] for name in sorted(resources)]
+    resources = logical_unified_inventory(destination)
     combined_digest = digest(json.dumps(resources, sort_keys=True, separators=(",", ":")).encode())
     size = sum(row["size"] for row in resources)
     for shard in manifest["shards"]:
@@ -539,13 +548,7 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
     if include_history and pin["schema"] == 2:
         # The publication inventory describes the selected logical union, while
         # the source guard below retains the unchanged physical evidence hashes.
-        resources = {row["path"].removeprefix(STORE + "/"): {"path": row["path"].removeprefix(STORE + "/"),
-                     "size": row["size"], "sha256": row["sha256"]}
-                     for row in verify(history_source, pin)["files"] if row["path"].startswith(STORE + "/")}
-        for path in (destination / STORE / "families").glob("*/*.yaml"):
-            name = path.relative_to(destination / STORE).as_posix()
-            resources[name] = identity(name, path.read_bytes())
-        rows = [resources[name] for name in sorted(resources)]
+        rows = logical_unified_inventory(destination)
         for shard in manifest["shards"]:
             if shard.get("format") == "unified-history":
                 shard.update(sha256=digest(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()),

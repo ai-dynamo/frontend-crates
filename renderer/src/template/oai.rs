@@ -871,6 +871,7 @@ impl HfTokenizerConfigJsonFormatter {
         // message rewrites or field normalization.
         let (
             template_name,
+            effort_template,
             template_handles_tool_calls_args_string,
             template_handles_reasoning,
             template_requires_reasoning_string,
@@ -879,6 +880,7 @@ impl HfTokenizerConfigJsonFormatter {
         ) = if has_tools {
             (
                 "tool_use",
+                self.tool_use_effort_template,
                 self.tool_use_template_handles_tool_calls_arguments_string,
                 self.tool_use_template_handles_reasoning,
                 self.tool_use_template_requires_reasoning_string,
@@ -888,6 +890,7 @@ impl HfTokenizerConfigJsonFormatter {
         } else {
             (
                 "default",
+                self.default_effort_template,
                 self.default_template_handles_tool_calls_arguments_string,
                 self.default_template_handles_reasoning,
                 self.default_template_requires_reasoning_string,
@@ -1083,6 +1086,10 @@ impl HfTokenizerConfigJsonFormatter {
             ctx
         };
 
+        let ctx = match effort_template {
+            Some(effort) => effort.context(req, ctx)?,
+            None => ctx,
+        };
         let rendered = tmpl.render(&ctx)?;
         if literals.values.is_empty() {
             return Ok(crate::RenderedPrompt::text(rendered));

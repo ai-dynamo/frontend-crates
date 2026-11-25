@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from impls import unified_grammar_family
+from numeric_cases import NumericLiteral, json_with_numeric_literals
 
 
 SCHEMA_PATH = Path(__file__).with_name("glm47_schema_cases.json")
@@ -171,7 +172,18 @@ def schema_arguments(family: str, case: dict[str, Any]) -> dict[str, Any]:
 
 
 def _json(value: object) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return json_with_numeric_literals(value)
+
+
+
+def _python_value(value):
+    if isinstance(value, NumericLiteral):
+        return str(value)
+    if isinstance(value, dict):
+        return "{" + ", ".join(f"{key!r}: {_python_value(item)}" for key, item in value.items()) + "}"
+    if isinstance(value, list):
+        return "[" + ", ".join(_python_value(item) for item in value) + "]"
+    return repr(value)
 
 
 def native_call_wire(family: str, name: str, values: dict[str, Any], raw_values: dict[str, str], renderer: Callable[..., str]) -> str:
@@ -204,7 +216,7 @@ def native_call_wire(family: str, name: str, values: dict[str, Any], raw_values:
     if family == "phi4":
         return f"functools[{call}]"
     if family == "pythonic":
-        return f"[{name}({', '.join(f'{key}={value!r}' for key, value in values.items())})]"
+        return f"[{name}({', '.join(f'{key}={_python_value(value)}' for key, value in values.items())})]"
     if family in ("qwen3_coder", "nemotron_nano"):
         params = "\n".join(f"<parameter={key}>\n{value}\n</parameter>" for key, value in raw_values.items())
         return f"<tool_call>\n<function={name}>\n{params}\n</function>\n</tool_call>"

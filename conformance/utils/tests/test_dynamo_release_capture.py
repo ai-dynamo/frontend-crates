@@ -17,12 +17,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import capture_dynamo_unified
 import capture_dynamo_unified_batch
+import capture_sources
 from capture_dynamo_versions import coverage_inventory, freeze_adapters, validate_adapter_binding, validate_frozen_adapters, validate_source_identity
 import gen_unified_golden as golden
 import unified_history
+from v1_capture_retention import selected_targets
 import generation_workers
 from viewer_catalog import _index_unified_families
-from capture_stimulus import select_peer_observation
+from capture_stimulus import execution_outcome, select_peer_observation
+from replay_latest import latest_records
+from viewer_codec import typed_equal
 from capture_unified_job import build_job
 from import_peer_unified import digest, import_capture, import_captures, import_capture_groups
 from conformance.utils.tests.test_unified_history import _change, _request, _write_capture, _write_family
@@ -124,13 +128,17 @@ def test_frozen_inventory_has_all_release_artifacts_and_separate_retained_anchor
     inventory = yaml.safe_load((ROOT / "conformance/dynamo-capture-inventory.yaml").read_text())
     targets = inventory["targets"]
     published = [target for target in targets if target["implementation"] == "dynamo_v2" and target["source_kind"] == "crate"]
-    assert len(published) == 67
-    assert len({target["version"] for target in published}) == 67
+    baseline = yaml.safe_load((ROOT / "conformance/all-capture-inventory.yaml").read_text())["targets"]
+    retained = {(target["version"], target["checksum"]) for target in baseline
+                if target["implementation"] == "dynamo_v2" and target["source_kind"] == "crate"}
+    assert len(retained) == 67
+    assert retained <= {(target["version"], target["checksum"]) for target in published}
+    assert len({target["version"] for target in published}) == len(published)
     assert all(len(target["checksum"]) == 64 for target in published)
     anchors = {target["version"]: target for target in targets if target["source_kind"] == "git"}
-    assert set(anchors) == {"0.7.9", "0.7.16"}
+    assert {"0.7.9", "0.7.16"} <= set(anchors)
     assert all(len(target["git_commit"]) == 40 and len(target["source_sha256"]) == 64 for target in anchors.values())
-    assert {target["version"] for target in targets if target["implementation"] == "dynamo_v1"} == {"10.0.7", "10.0.6"}
+    assert {f"11.0.{patch}" for patch in range(14)} <= {target["version"] for target in targets if target["implementation"] == "dynamo_v1"}
 
 
 def test_all_engine_inventory_retains_stable_releases_yanks_and_source_blockers():
@@ -148,6 +156,51 @@ def test_all_engine_inventory_retains_stable_releases_yanks_and_source_blockers(
             assert target["git_commit"] is not None or target["source_blocker"]
             assert target["artifacts"] or target["artifact_blocker"]
             assert all(len(artifact["sha256"]) == 64 and isinstance(artifact["yanked"], bool) for artifact in target["artifacts"])
+
+
+def test_v1_history_covers_registered_families_and_refreshes_current_snapshots():
+    store = ROOT / "conformance/fixtures-unified-v2"
+    registry = yaml.safe_load((ROOT / "conformance/utils/src/parser_families.yaml").read_text())["unified"]
+    legacy_families = {
+        family for family, entry in registry.items()
+        if entry["native"] is False
+        and not (store / "families" / family / "dynamo_v2.yaml").exists()
+    }
+    families = {path.parent.name for path in (store / "families").glob("*/inputs_and_golden.yaml")}
+    assert families == set(registry)
+    inventory = yaml.safe_load((ROOT / "conformance/dynamo-capture-inventory.yaml").read_text())
+    versions = {target["version"] for target in selected_targets(inventory["targets"]) if target["implementation"] == "dynamo_v1"}
+    assert {"llama3_json", "qwen25"} <= legacy_families
+    assert len(versions) == 1
+    implementations = {"dynamo_v1", "dynamo_v1_jail"}
+    for path in (store / "families").glob("*/dynamo_v1*.yaml"):
+        identity = unified_history.source_identity(path.relative_to(store).as_posix())
+        if identity["implementation"] in implementations:
+            assert int(identity["version"].split(".")[0]) < 11, path
+    newest, = versions
+    current = capture_sources.current(ROOT)
+    assert {(row["family"], row["implementation"], row["version"]) for row in current["captures"]
+            if row["implementation"] in implementations} == {
+        (family, implementation, newest) for family in families for implementation in implementations
+    }
+    for family in sorted(families):
+        authored = unified_history.load_yaml(store / "families" / family / "inputs_and_golden.yaml")
+        active = {key: case for key, case in authored["cases"].items() if case["lifecycle"] == "active"}
+        if family in legacy_families:
+            assert {case["scenario"] for case in active.values()} == {
+                case_id[len("UNIFIED."):].rsplit(".", 1)[0] for case_id in golden.build_cases(family)
+            }
+        for implementation in implementations:
+            version, records = latest_records(ROOT, family, implementation, catalog=current)
+            assert version == newest
+            assert records.keys() == active.keys()
+            for key, record in records.items():
+                assert typed_equal(record["capture_input"], active[key]["request"])
+                origin = record.get("producer_origin") or record[f"{implementation}_capture_provenance"]
+                assert origin["version"] == version
+                assert origin["implementation"] == implementation
+                assert len(origin["results_sha256"]) == 64
+                assert execution_outcome(record, "batch")[0] != "source_build_blocker"
 
 
 def test_wrong_published_artifact_is_rejected_before_unpacking(monkeypatch, tmp_path):

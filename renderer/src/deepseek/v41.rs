@@ -5,13 +5,10 @@
 
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
-use std::fmt::Write;
 
-use super::common::{ThinkingMode, push_dsml, reasoning_text, resolve_thinking_mode, to_json};
-use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
-use crate::{PromptBuilder, RenderedPrompt};
-
-pub(super) const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
+use super::common::{ThinkingMode, reasoning_text, resolve_thinking_mode};
+use super::v4::{Encoding, IMAGE_PLACEHOLDER, encode_owned_messages as encode_v4_messages};
+use crate::RenderedPrompt;
 
 fn validate_text(text: &str) -> Result<&str> {
     ensure!(
@@ -19,74 +16,6 @@ fn validate_text(text: &str) -> Result<&str> {
         "Images must be supplied as image content blocks, not literal image placeholders"
     );
     Ok(text)
-}
-
-/// Mid-conversation system messages count as user turns. As in the reference
-/// encoder, user messages containing only tool results do not start a new turn.
-pub(super) fn find_last_user_index(messages: &[Value]) -> Option<usize> {
-    messages.iter().enumerate().rposition(|(index, message)| {
-        let role = message.get("role").and_then(Value::as_str);
-        if !(role == Some("user") || (role == Some("system") && index > 0)) {
-            return false;
-        }
-        match message.get("content_blocks").and_then(Value::as_array) {
-            Some(blocks) if !blocks.is_empty() => blocks.iter().any(|block| {
-                matches!(
-                    block.get("type").and_then(Value::as_str),
-                    Some("text" | "image" | "image_url")
-                )
-            }),
-            _ => true,
-        }
-    })
-}
-
-pub(super) fn drop_thinking_messages(mut messages: Vec<Value>) -> Vec<Value> {
-    if let Some(last_user) = find_last_user_index(&messages) {
-        for message in &mut messages[..last_user] {
-            if message.get("role").and_then(Value::as_str) == Some("assistant") {
-                message.as_object_mut().unwrap().remove("reasoning_content");
-            }
-        }
-    }
-    messages
-}
-
-pub(super) fn encode_arguments(prompt: &mut PromptBuilder, tool_call: &Value) -> Result<()> {
-    let original = tool_call
-        .get("arguments")
-        .context("Missing tool arguments")?;
-    let mut arguments = original.clone();
-    for _ in 0..2 {
-        let Some(text) = arguments.as_str() else {
-            break;
-        };
-        let Ok(decoded) = serde_json::from_str(text) else {
-            break;
-        };
-        arguments = decoded;
-    }
-    if !arguments.is_object() {
-        arguments = serde_json::json!({"arguments": original});
-    }
-    for (index, (name, value)) in arguments.as_object().unwrap().iter().enumerate() {
-        if index > 0 {
-            prompt.push('\n');
-        }
-        let content = value
-            .as_str()
-            .map(str::to_owned)
-            .unwrap_or_else(|| to_json(value));
-        push_dsml(prompt, "<");
-        write!(
-            prompt,
-            " parameter name=\"{name}\" string=\"{}\">{content}",
-            value.is_string()
-        )?;
-        push_dsml(prompt, "</");
-        prompt.push_str(" parameter>");
-    }
-    Ok(())
 }
 
 enum OrderMessage<'a> {

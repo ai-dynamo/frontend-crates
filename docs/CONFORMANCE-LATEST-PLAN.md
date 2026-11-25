@@ -4,7 +4,7 @@
 
 The base is `4a161dffe7749dbde417df81614bc018e627d53d`. The latest store contains 77 complete versionless YAML files across 12 families. Each family/implementation file contains complete records, sealed request bindings, and original producer provenance separate from selection metadata. Stream, batch, and jail-buffer identities remain distinct; missing measurements remain explicit.
 
-Direct Git-blob comparison preserves all 804 baseline evidence paths: 713 versioned capture YAMLs, 12 authored input/GOLDEN documents, 77 archives, and two Beam YAMLs. Existing evidence stays at its original path. Backfill, versioned-v2 removal, historical moves, archive expansion, and new compression remain deferred.
+Direct Git-blob comparison preserves all 804 baseline evidence paths: 713 versioned capture YAMLs, 12 authored input/GOLDEN documents, 77 archives, and two Beam YAMLs. Existing evidence stays at its original path. PR #560 extends retained history through the existing shared delta writer and reconciles stable Dynamo releases. Versionless latest snapshots remain complete and independent of history. For v1 3.x through 10.x, the viewer offers one choice per represented major and selects each family’s newest measured stable release for the selected capture mode; archives include parent capture sources and execution receipts. Latest defaults to the versionless current captures, which are the only physical current v1 sources. Applicable GOLDEN remains visible when a selected major has no capture for a family. V2 and peer retention is unchanged.
 
 ## Active workflow
 

@@ -78,6 +78,24 @@ fn lossless_containers_and_pcm_feed_the_same_generic_pipeline() {
 }
 
 #[test]
+fn restricted_wav_decode_shares_the_pcm16_path() {
+    let limits = decode::DecodeLimits::default();
+    let wav = include_bytes!("fixtures/audio/stereo.wav");
+    let DecodedMedia::Audio {
+        samples,
+        sample_rate,
+        channels,
+    } = decode::decode_wav_pcm16(wav, &limits).unwrap()
+    else {
+        panic!("expected decoded PCM")
+    };
+    assert_eq!((samples.len(), sample_rate, channels), (8192, 22050, 2));
+    let flac = include_bytes!("fixtures/audio/stereo.flac");
+    assert!(decode::decode_wav_pcm16(flac, &limits).is_err());
+    assert!(decode::decode(flac, &limits).is_ok());
+}
+
+#[test]
 fn lossy_codecs_preserve_gapless_length_and_channels() {
     for (bytes, reference) in [
         (

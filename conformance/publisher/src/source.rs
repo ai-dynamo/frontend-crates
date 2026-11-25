@@ -1060,7 +1060,13 @@ fn capture_with_proof_requests(
             "metadata_changes",
             "document_overrides",
         ],
-        &["parent", "execution_proof"],
+        &[
+            "parent",
+            "execution_proof",
+            "member_changes",
+            "inheritance_changes",
+            "historical_evidence",
+        ],
     )?;
     let provenance = node.field("provenance")?;
     capture_provenance(provenance, implementation, version)?;
@@ -1123,6 +1129,22 @@ fn capture_with_proof_requests(
             }
         }
     }
+    if let Some(members) = node.get("member_changes") {
+        for (case_id, member) in members.mapping()? {
+            cases.field(case_id.string()?)?;
+            member_identity(member.string()?, None, implementation, version)?;
+        }
+    }
+    if let Some(inheritance) = node.get("inheritance_changes") {
+        for (case_id, suppressed) in inheritance.mapping()? {
+            cases.field(case_id.string()?)?;
+            ensure!(
+                matches!(suppressed, Node::Bool(_)),
+                "inheritance change must be boolean"
+            );
+        }
+    }
+    historical_evidence(node, authored, None, implementation, version, None)?;
     if let Some(proof) = node.get("execution_proof") {
         fields(proof, &["receipt", "requests"], &[])?;
         let receipt = proof.field("receipt")?;
@@ -1183,6 +1205,468 @@ fn capture_with_proof_requests(
     Ok(())
 }
 
+fn historical_current_snapshot(
+    evidence: &Node,
+    authored: &Node,
+    family: &str,
+    implementation: &str,
+    version: &str,
+    base: Option<&Node>,
+) -> Result<Option<Node>> {
+    let Some(source) = evidence.get("source_snapshot") else {
+        ensure!(
+            [
+                "changes",
+                "member_changes",
+                "inheritance_changes",
+                "document_members"
+            ]
+            .iter()
+            .all(|key| evidence.get(key).is_none()),
+            "historical snapshot changes require source identity"
+        );
+        return Ok(None);
+    };
+    fields(
+        source,
+        &["path", "sha256", "semantic_sha256", "capture_selection"],
+        &[],
+    )?;
+    ensure!(
+        source.field("path")?.string()?
+            == format!("{STORE}/families/{family}/{implementation}.yaml"),
+        "historical current snapshot path mismatch"
+    );
+    for key in ["sha256", "semantic_sha256"] {
+        ensure!(
+            hex(source.field(key)?.string()?, 64),
+            "invalid historical current snapshot {key}"
+        );
+    }
+    let member = format!("{STORE}/families/{family}/{implementation}-{version}.yaml");
+    let selection = source.field("capture_selection")?;
+    for (key, expected) in [
+        ("surface", "unified"),
+        ("family", family),
+        ("implementation", implementation),
+        ("version", version),
+        ("source", member.as_str()),
+    ] {
+        ensure!(
+            selection.field(key)?.string()? == expected,
+            "historical current snapshot selection mismatch"
+        );
+    }
+    let cases = evidence
+        .field("cases")?
+        .array()?
+        .iter()
+        .map(Node::string)
+        .collect::<Result<BTreeSet<_>>>()?;
+    for key in ["member_changes", "inheritance_changes"] {
+        let names = evidence
+            .field(key)?
+            .mapping()?
+            .iter()
+            .map(|(name, _)| name.string())
+            .collect::<Result<BTreeSet<_>>>()?;
+        ensure!(
+            names == cases,
+            "historical current snapshot membership mismatch"
+        );
+    }
+    let document_members = evidence.field("document_members")?;
+    let document_cases = document_members
+        .mapping()?
+        .iter()
+        .map(|(key, _)| key.string())
+        .collect::<Result<BTreeSet<_>>>()?;
+    ensure!(
+        document_cases == cases,
+        "historical current snapshot document membership mismatch"
+    );
+    for (_, fields) in document_members.mapping()? {
+        let names = fields
+            .array()?
+            .iter()
+            .map(Node::string)
+            .collect::<Result<Vec<_>>>()?;
+        ensure!(
+            names.iter().collect::<BTreeSet<_>>().len() == names.len(),
+            "duplicate historical snapshot document field"
+        );
+    }
+    for (_, value) in evidence.field("member_changes")?.mapping()? {
+        ensure!(
+            value.string()? == member,
+            "historical current snapshot source member mismatch"
+        );
+    }
+    for (_, value) in evidence.field("inheritance_changes")?.mapping()? {
+        ensure!(
+            matches!(value, Node::Bool(_)),
+            "historical current snapshot inheritance must be boolean"
+        );
+    }
+    evidence.field("changes")?.mapping()?;
+    let mut document = evidence.field("checkpoint")?.clone();
+    fields(
+        &document,
+        &["provenance", "document", "document_overrides"],
+        &[],
+    )?;
+    for key in [
+        "changes",
+        "metadata_changes",
+        "member_changes",
+        "inheritance_changes",
+    ] {
+        document.set(key, evidence.field(key)?.clone())?;
+    }
+    if let Some(proof) = evidence.get("execution_proof") {
+        document.set("execution_proof", proof.clone())?;
+    }
+    capture_with_proof_requests(&document, authored, implementation, version, None, true)?;
+    let Some(base) = base else {
+        return Ok(None);
+    };
+    let mut initial = document.clone();
+    let mut changes = Node::map();
+    for case in &cases {
+        if let Some(previous) = base.get(case) {
+            let value = previous.field("value")?;
+            let mut change = Node::map();
+            for key in ["case_key", "stimulus", "observation"] {
+                change.set(key, value.field(key)?.clone())?;
+            }
+            changes.set(case, change)?;
+        }
+    }
+    initial.set("changes", changes)?;
+    for key in [
+        "metadata_changes",
+        "document_overrides",
+        "member_changes",
+        "inheritance_changes",
+    ] {
+        initial.set(key, Node::map())?;
+    }
+    initial.remove("execution_proof")?;
+    let identity = format!("{implementation}-{version}");
+    let history = History {
+        implementation: implementation.into(),
+        captures: vec![
+            Capture {
+                id: identity.clone(),
+                version: version.into(),
+                member: member.clone(),
+                document: initial,
+                resolved_records: None,
+            },
+            Capture {
+                id: identity,
+                version: version.into(),
+                member,
+                document,
+                resolved_records: None,
+            },
+        ],
+    };
+    let mut cursor = crate::history::Cursor::default();
+    cursor.apply(&history, 0)?;
+    cursor.apply(&history, 1)?;
+    let resolved = cursor.records(&history, version)?;
+    let mut records = Node::map();
+    for (key, wrapped) in resolved.mapping()? {
+        let key = key.string()?;
+        let mut wrapped = wrapped.clone();
+        let mut value = wrapped.field("value")?.clone();
+        let mut document = value.field("document")?.clone();
+        let members = document_members
+            .field(key)?
+            .array()?
+            .iter()
+            .map(Node::string)
+            .collect::<Result<BTreeSet<_>>>()?;
+        let removed = document
+            .mapping()?
+            .iter()
+            .map(|(field, _)| Ok(field.string()?.to_string()))
+            .collect::<Result<Vec<_>>>()?;
+        for field in removed {
+            if !members.contains(field.as_str()) {
+                document.remove(&field)?;
+            }
+        }
+        let overrides = evidence
+            .field("checkpoint")?
+            .field("document_overrides")?
+            .field(key)?;
+        for field in members {
+            if document.get(field).is_none() {
+                let restored = match field {
+                    "record_metadata" => evidence.field("metadata_changes")?.field(key)?,
+                    "parser_path" => overrides.field(field)?,
+                    _ => overrides.field("capture_provenance")?.field(field)?,
+                };
+                document.set(field, restored.clone())?;
+            }
+        }
+        value.set("document", document)?;
+        wrapped.set("value", value)?;
+        records.set(key, wrapped)?;
+    }
+    let restored_cases = records
+        .mapping()?
+        .iter()
+        .map(|(key, _)| key.string())
+        .collect::<Result<BTreeSet<_>>>()?;
+    ensure!(
+        restored_cases == cases,
+        "historical current snapshot case membership mismatch"
+    );
+    let mut snapshot = Node::map();
+    snapshot.set("schema_version", Node::Int(2.into()))?;
+    for key in ["provenance", "document"] {
+        snapshot.set(key, evidence.field("checkpoint")?.field(key)?.clone())?;
+    }
+    snapshot.set("records", records)?;
+    if let Some(proof) = evidence.get("execution_proof") {
+        snapshot.set("execution_proof", proof.clone())?;
+    }
+    resolved_snapshot(&snapshot, authored, family, implementation, version)?;
+    ensure!(
+        sha256(&serde_json::to_vec(&snapshot.canonical_typed()?)?)
+            == source.field("semantic_sha256")?.string()?,
+        "historical current snapshot semantic identity mismatch"
+    );
+    Ok(Some(snapshot))
+}
+
+fn historical_evidence(
+    node: &Node,
+    authored: &Node,
+    family: Option<&str>,
+    implementation: &str,
+    version: &str,
+    records: Option<&Node>,
+) -> Result<()> {
+    if let Some(Node::Array(evidence_items)) = node.get("historical_evidence") {
+        for evidence in evidence_items {
+            fields(
+                evidence,
+                &[
+                    "kind",
+                    "schema_version",
+                    "family",
+                    "implementation",
+                    "version",
+                    "checkpoint",
+                    "cases",
+                    "defaults",
+                    "exceptions",
+                    "metadata_changes",
+                    "receipt_membership",
+                ],
+                &[
+                    "execution_proof",
+                    "source_snapshot",
+                    "changes",
+                    "member_changes",
+                    "inheritance_changes",
+                    "document_members",
+                ],
+            )?;
+            let evidence_family = evidence.field("family")?.string()?;
+            component(evidence_family)?;
+            ensure!(
+                evidence.field("kind")?.string()? == "execution_manifest"
+                    && evidence.field("schema_version")? == &Node::Int(1.into())
+                    && family.is_none_or(|expected| evidence_family == expected)
+                    && evidence.field("implementation")?.string()? == implementation
+                    && evidence.field("version")?.string()? == version,
+                "historical execution evidence identity mismatch"
+            );
+            evidence.field("checkpoint")?.mapping()?;
+            evidence.field("defaults")?.mapping()?;
+            evidence.field("exceptions")?.mapping()?;
+            let case_ids = evidence
+                .field("cases")?
+                .array()?
+                .iter()
+                .map(Node::string)
+                .collect::<Result<Vec<_>>>()?;
+            let unique_cases = case_ids.iter().copied().collect::<BTreeSet<_>>();
+            ensure!(
+                unique_cases.len() == case_ids.len(),
+                "duplicate historical evidence case"
+            );
+            for case_id in &case_ids {
+                authored.field("cases")?.field(case_id)?;
+            }
+            let metadata = evidence.field("metadata_changes")?.mapping()?;
+            let metadata_cases = metadata
+                .iter()
+                .map(|(key, _)| key.string())
+                .collect::<Result<BTreeSet<_>>>()?;
+            ensure!(
+                metadata_cases == unique_cases,
+                "historical evidence metadata membership mismatch"
+            );
+            for (_, value) in metadata {
+                value.mapping()?;
+            }
+            let restored = historical_current_snapshot(
+                evidence,
+                authored,
+                evidence_family,
+                implementation,
+                version,
+                records,
+            )?;
+            let evidence_records = restored
+                .as_ref()
+                .map(|snapshot| snapshot.field("records"))
+                .transpose()?
+                .or(records);
+            for receipt in evidence.field("receipt_membership")?.array()? {
+                fields(receipt, &["members", "body"], &[])?;
+                let members = receipt
+                    .field("members")?
+                    .array()?
+                    .iter()
+                    .map(Node::string)
+                    .collect::<Result<Vec<_>>>()?;
+                ensure!(
+                    members.iter().collect::<BTreeSet<_>>().len() == members.len(),
+                    "duplicate historical receipt case"
+                );
+                for case_id in members {
+                    authored.field("cases")?.field(case_id)?;
+                }
+                receipt.field("body")?.mapping()?;
+            }
+            if let Some(proof) = evidence.get("execution_proof") {
+                let requests = proof.field("requests")?.mapping()?;
+                let mut expected = Node::map();
+                for (case_id, _) in requests {
+                    let case_id = case_id.string()?;
+                    let case = authored.field("cases")?.field(case_id)?;
+                    if let Some(records) = evidence_records {
+                        let stimulus = records
+                            .field(case_id)
+                            .context("historical proof request has no retained record")?
+                            .field("value")?
+                            .field("stimulus")?;
+                        let request = if let Some(inline) = stimulus.get("inline") {
+                            inline
+                        } else {
+                            ensure!(
+                                stimulus.get("ref").is_some(),
+                                "historical proof requires a complete retained request"
+                            );
+                            case.field("request")?
+                        };
+                        expected.set(case_id, Node::Str(request_digest(request)?))?;
+                    }
+                }
+                let original_checkpoint = evidence.field("checkpoint")?;
+                fields(
+                    original_checkpoint,
+                    &["provenance", "document", "document_overrides"],
+                    &[],
+                )?;
+                let mut checkpoint = original_checkpoint.clone();
+                checkpoint.set("changes", Node::map())?;
+                checkpoint.set(
+                    "metadata_changes",
+                    evidence.field("metadata_changes")?.clone(),
+                )?;
+                checkpoint.set("execution_proof", proof.clone())?;
+                capture_with_proof_requests(
+                    &checkpoint,
+                    authored,
+                    implementation,
+                    version,
+                    evidence_records.map(|_| &expected),
+                    evidence_records.is_none(),
+                )?;
+                let mut members = BTreeSet::new();
+                for receipt in evidence.field("receipt_membership")?.array()? {
+                    if receipt.field("body")?.equivalent(proof.field("receipt")?) {
+                        for member in receipt.field("members")?.array()? {
+                            members.insert(member.string()?);
+                        }
+                    }
+                }
+                let proof_members = requests
+                    .iter()
+                    .map(|(key, _)| key.string())
+                    .collect::<Result<BTreeSet<_>>>()?;
+                ensure!(
+                    members == proof_members,
+                    "historical proof receipt membership mismatch"
+                );
+            }
+        }
+    } else if node.get("historical_evidence").is_some() {
+        anyhow::bail!("historical_evidence must be a list");
+    }
+    Ok(())
+}
+
+fn member_identity(
+    member: &str,
+    family: Option<&str>,
+    implementation: &str,
+    version: &str,
+) -> Result<()> {
+    relative(member)?;
+    let (source_family, name) = member
+        .strip_prefix(&format!("{STORE}/families/"))
+        .and_then(|name| name.split_once('/'))
+        .context("invalid snapshot source member")?;
+    component(source_family)?;
+    ensure!(
+        family.is_none_or(|expected| source_family == expected),
+        "source member family mismatch"
+    );
+    let source_version = name
+        .strip_prefix(&format!("{implementation}-"))
+        .and_then(|name| name.strip_suffix(".yaml"))
+        .context("source member producer mismatch")?;
+    ensure!(
+        Release::parse(source_version)? <= Release::parse(version)?,
+        "source member is newer than its checkpoint"
+    );
+    Ok(())
+}
+
+fn admitted_member(
+    member: &str,
+    family: &str,
+    implementation: &str,
+    version: &str,
+    index: &BTreeMap<String, &Value>,
+) -> Result<()> {
+    member_identity(member, Some(family), implementation, version)?;
+    let source = index
+        .get(member)
+        .context("source member is outside catalog inventory")?;
+    ensure!(
+        source["kind"] == "history"
+            && source["family"] == family
+            && source["implementation"] == implementation
+            && Release::parse(
+                source["version"]
+                    .as_str()
+                    .context("source member has no version")?
+            )? <= Release::parse(version)?,
+        "source member has inconsistent inventory identity"
+    );
+    Ok(())
+}
+
 pub fn resolved_snapshot<'a>(
     node: &'a Node,
     authored: &Node,
@@ -1224,11 +1708,7 @@ pub fn resolved_snapshot<'a>(
             );
         }
         let member = wrapped.field("member")?.string()?;
-        ensure!(
-            member.starts_with(&format!("{STORE}/families/{family}/")) && member.ends_with(".yaml"),
-            "invalid snapshot source member"
-        );
-        relative(member)?;
+        member_identity(member, Some(family), implementation, version)?;
         let value = wrapped.field("value")?;
         fields(
             value,
@@ -1240,19 +1720,13 @@ pub fn resolved_snapshot<'a>(
         observation(value.field("observation")?)?;
         let record_document = value.field("document")?;
         record_document.mapping()?;
-        let source_name = member
-            .strip_prefix(&format!("{STORE}/families/{family}/{implementation}-"))
-            .and_then(|name| name.strip_suffix(".yaml"))
-            .context("snapshot source member has inconsistent producer identity")?;
-        let source_version = Release::parse(source_name)?;
         let producer_name = record_document
             .field("captured_with")?
             .field(implementation)?
             .string()?;
         // Document overrides describe the producer independently of observation lineage.
         ensure!(
-            source_version <= Release::parse(version)?
-                && Release::parse_provenance(producer_name)? <= Release::parse(version)?,
+            Release::parse_provenance(producer_name)? <= Release::parse(version)?,
             "snapshot source or producer is newer than its checkpoint"
         );
         if let Some(record_origin) = record_document.get("capture_origin") {
@@ -1287,83 +1761,14 @@ pub fn resolved_snapshot<'a>(
             false,
         )?;
     }
-    if let Some(Node::Array(evidence_items)) = node.get("historical_evidence") {
-        for evidence in evidence_items {
-            fields(
-                evidence,
-                &[
-                    "kind",
-                    "schema_version",
-                    "family",
-                    "implementation",
-                    "version",
-                    "checkpoint",
-                    "cases",
-                    "defaults",
-                    "exceptions",
-                    "metadata_changes",
-                    "receipt_membership",
-                ],
-                &["execution_proof"],
-            )?;
-            ensure!(
-                evidence.field("kind")?.string()? == "execution_manifest"
-                    && evidence.field("schema_version")? == &Node::Int(1.into())
-                    && evidence.field("family")?.string()? == family
-                    && evidence.field("implementation")?.string()? == implementation
-                    && evidence.field("version")?.string()? == version,
-                "historical execution evidence identity mismatch"
-            );
-            evidence.field("checkpoint")?.mapping()?;
-            evidence.field("defaults")?.mapping()?;
-            evidence.field("exceptions")?.mapping()?;
-            let case_ids = evidence
-                .field("cases")?
-                .array()?
-                .iter()
-                .map(Node::string)
-                .collect::<Result<Vec<_>>>()?;
-            let unique_cases = case_ids.iter().copied().collect::<BTreeSet<_>>();
-            ensure!(
-                unique_cases.len() == case_ids.len(),
-                "duplicate historical evidence case"
-            );
-            for case_id in &case_ids {
-                authored.field("cases")?.field(case_id)?;
-            }
-            let metadata = evidence.field("metadata_changes")?.mapping()?;
-            let metadata_cases = metadata
-                .iter()
-                .map(|(key, _)| key.string())
-                .collect::<Result<BTreeSet<_>>>()?;
-            ensure!(
-                metadata_cases == unique_cases,
-                "historical evidence metadata membership mismatch"
-            );
-            for (_, value) in metadata {
-                value.mapping()?;
-            }
-            for receipt in evidence.field("receipt_membership")?.array()? {
-                fields(receipt, &["members", "body"], &[])?;
-                let members = receipt
-                    .field("members")?
-                    .array()?
-                    .iter()
-                    .map(Node::string)
-                    .collect::<Result<Vec<_>>>()?;
-                ensure!(
-                    members.iter().collect::<BTreeSet<_>>().len() == members.len(),
-                    "duplicate historical receipt case"
-                );
-                for case_id in members {
-                    authored.field("cases")?.field(case_id)?;
-                }
-                receipt.field("body")?.mapping()?;
-            }
-        }
-    } else if node.get("historical_evidence").is_some() {
-        anyhow::bail!("historical_evidence must be a list");
-    }
+    historical_evidence(
+        node,
+        authored,
+        Some(family),
+        implementation,
+        version,
+        Some(records),
+    )?;
     Ok(records)
 }
 
@@ -1410,20 +1815,13 @@ pub fn load_history(
                 .with_context(|| member.to_string())?;
             for (_, record) in records.mapping()? {
                 let source_path = record.field("member")?.string()?;
-                let source = admission
-                    .index
-                    .get(source_path)
-                    .context("resolved snapshot source member is outside catalog inventory")?;
-                let source_version = source["version"]
-                    .as_str()
-                    .context("resolved snapshot source has no version")?;
-                ensure!(
-                    source["kind"] == "history"
-                        && source["family"] == family
-                        && source["implementation"] == implementation
-                        && Release::parse(source_version)? <= Release::parse(version)?,
-                    "resolved snapshot source member has inconsistent identity"
-                );
+                admitted_member(
+                    source_path,
+                    family,
+                    implementation,
+                    version,
+                    admission.index,
+                )?;
             }
             remaining = remaining
                 .checked_sub(raw.heap_bytes())
@@ -1439,7 +1837,17 @@ pub fn load_history(
             continue;
         }
         let mut document = if let Some(execution) = raw.get("execution") {
-            fields(&raw, &["execution"], &["parent", "changes"])?;
+            fields(
+                &raw,
+                &["execution"],
+                &[
+                    "parent",
+                    "changes",
+                    "member_changes",
+                    "inheritance_changes",
+                    "historical_evidence",
+                ],
+            )?;
             let digest = source_reference(execution.string()?, "executions")?;
             ensure!(
                 resource["execution"] == digest,
@@ -1502,9 +1910,35 @@ pub fn load_history(
             document.remove("parent")?;
             document
         };
-        if let Some(parent) = raw.get("parent") {
-            document.set("parent", parent.clone())?;
+        for field in [
+            "parent",
+            "member_changes",
+            "inheritance_changes",
+            "historical_evidence",
+        ] {
+            if let Some(value) = raw.get(field) {
+                document.set(field, value.clone())?;
+            }
         }
+        if let Some(members) = document.get("member_changes") {
+            for (_, source) in members.mapping()? {
+                admitted_member(
+                    source.string()?,
+                    family,
+                    implementation,
+                    version,
+                    admission.index,
+                )?;
+            }
+        }
+        historical_evidence(
+            &document,
+            authored,
+            Some(family),
+            implementation,
+            version,
+            None,
+        )?;
         capture_with_proof_requests(&document, authored, implementation, version, None, true)
             .with_context(|| member.to_string())?;
         remaining = remaining
@@ -1526,11 +1960,23 @@ pub fn load_history(
     let sparse_proof = history.captures.iter().any(|capture| {
         capture.resolved_records.is_none() && capture.document.get("execution_proof").is_some()
     });
-    if batch || sparse_proof {
+    let archived_proof = history.captures.iter().any(|capture| {
+        matches!(capture.document.get("historical_evidence"), Some(Node::Array(items))
+            if items.iter().any(|item| item.get("execution_proof").is_some() || item.get("source_snapshot").is_some()))
+    });
+    if batch || sparse_proof || archived_proof {
         let mut cursor = crate::history::Cursor::default();
         for (index, capture) in history.captures.iter().enumerate() {
             cursor.apply(&history, index)?;
             let records = cursor.records(&history, &capture.version)?;
+            historical_evidence(
+                &capture.document,
+                authored,
+                Some(family),
+                implementation,
+                &capture.version,
+                Some(&records),
+            )?;
             if capture.resolved_records.is_none()
                 && capture.document.get("execution_proof").is_some()
             {
@@ -1538,7 +1984,14 @@ pub fn load_history(
                 let mut executed = Node::map();
                 for (id, wrapped) in records.mapping()? {
                     let case = authored.field("cases")?.field(id.string()?)?;
-                    if case.field("lifecycle")?.string()? == "retired" {
+                    if case.field("lifecycle")?.string()? == "retired"
+                        && capture
+                            .document
+                            .field("execution_proof")?
+                            .field("requests")?
+                            .get(id.string()?)
+                            .is_none()
+                    {
                         continue;
                     }
                     let stimulus = wrapped.field("value")?.field("stimulus")?;
@@ -1565,6 +2018,20 @@ pub fn load_history(
             }
             if batch {
                 batch_records(&records)?;
+                if let Some(Node::Array(items)) = capture.document.get("historical_evidence") {
+                    for evidence in items {
+                        if let Some(snapshot) = historical_current_snapshot(
+                            evidence,
+                            authored,
+                            family,
+                            implementation,
+                            &capture.version,
+                            Some(&records),
+                        )? {
+                            batch_records(snapshot.field("records")?)?;
+                        }
+                    }
+                }
             }
         }
     }
@@ -1688,6 +2155,195 @@ mod tests {
     use super::*;
 
     #[test]
+    fn sparse_member_identity_and_historical_evidence_admission() -> Result<()> {
+        let authored = yaml::load_str("cases: {one: {}}")?;
+        let member = format!("{STORE}/families/sample/dynamo_v1-11.0.0.yaml");
+        let descriptor = serde_json::json!({"kind":"history","family":"sample","implementation":"dynamo_v1","version":"11.0.0"});
+        let index = BTreeMap::from([(member.clone(), &descriptor)]);
+        admitted_member(&member, "sample", "dynamo_v1", "11.0.1", &index)?;
+        for invalid in [
+            member.replace("sample", "other"),
+            member.replace("dynamo_v1-", "dynamo_v1_jail-"),
+            member.replace("11.0.0", "11.0.2"),
+            member.replace("11.0.0", "10.0.0"),
+            member.replace("sample", "../sample"),
+        ] {
+            assert!(
+                admitted_member(&invalid, "sample", "dynamo_v1", "11.0.1", &index).is_err(),
+                "{invalid}"
+            );
+        }
+        let base = serde_json::json!({
+            "provenance":{"status":"legacy","captured_with":{"dynamo_v1":"11.0.1"}},
+            "document":{},"changes":{},"metadata_changes":{},"document_overrides":{},
+            "member_changes":{"one":member},"inheritance_changes":{"one":false},
+            "historical_evidence":[{"kind":"execution_manifest","schema_version":1,"family":"sample","implementation":"dynamo_v1","version":"11.0.1","checkpoint":{},"cases":["one"],"defaults":{},"exceptions":{},"metadata_changes":{"one":{}},"receipt_membership":[{"members":["one"],"body":{}}]}]
+        });
+        let node = yaml::load_str(&base.to_string())?;
+        capture(&node, &authored, "dynamo_v1", "11.0.1")?;
+        historical_evidence(
+            &node,
+            &authored,
+            Some("sample"),
+            "dynamo_v1",
+            "11.0.1",
+            None,
+        )?;
+        for field in [
+            "member_unknown",
+            "member_type",
+            "inheritance_unknown",
+            "inheritance_type",
+            "family",
+            "version",
+            "implementation",
+            "cases",
+            "metadata",
+            "receipts",
+            "evidence_type",
+        ] {
+            let mut value = base.clone();
+            match field {
+                "member_unknown" => value["member_changes"] = serde_json::json!({"unknown":member}),
+                "member_type" => value["member_changes"]["one"] = serde_json::json!(17),
+                "inheritance_unknown" => {
+                    value["inheritance_changes"] = serde_json::json!({"unknown":false})
+                }
+                "inheritance_type" => value["inheritance_changes"]["one"] = serde_json::json!(0),
+                "family" => value["historical_evidence"][0]["family"] = serde_json::json!("other"),
+                "version" => {
+                    value["historical_evidence"][0]["version"] = serde_json::json!("11.0.0")
+                }
+                "implementation" => {
+                    value["historical_evidence"][0]["implementation"] =
+                        serde_json::json!("dynamo_v1_jail")
+                }
+                "cases" => {
+                    value["historical_evidence"][0]["cases"] = serde_json::json!(["one", "one"])
+                }
+                "metadata" => {
+                    value["historical_evidence"][0]["metadata_changes"] = serde_json::json!({})
+                }
+                "receipts" => {
+                    value["historical_evidence"][0]["receipt_membership"][0]["members"] =
+                        serde_json::json!(["one", "one"])
+                }
+                "evidence_type" => value["historical_evidence"] = serde_json::json!({}),
+                _ => unreachable!(),
+            }
+            let invalid = yaml::load_str(&value.to_string())?;
+            assert!(
+                capture(&invalid, &authored, "dynamo_v1", "11.0.1")
+                    .and_then(|_| historical_evidence(
+                        &invalid,
+                        &authored,
+                        Some("sample"),
+                        "dynamo_v1",
+                        "11.0.1",
+                        None
+                    ))
+                    .is_err(),
+                "{field}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn archived_proofs_use_sealed_receipts_and_retained_request_bindings() -> Result<()> {
+        let request = serde_json::json!({"input":"old request","init":{},"finish_reason":"stop","tools":[],"chunks":[{"delta_text":"old request"}]});
+        let authored = yaml::load_str(
+            &serde_json::json!({"cases":{"id":{"request":request},"absent":{"request":request}}})
+                .to_string(),
+        )?;
+        let digest = request_digest(authored.field("cases")?.field("id")?.field("request")?)?;
+        let receipt = serde_json::json!({"implementation":"dynamo_v1","version":"11.0.7","source_sha256":"a".repeat(64),"adapter_sha256":"b".repeat(64),"job_sha256":"c".repeat(64),"results_sha256":"d".repeat(64)});
+        let checkpoint = serde_json::json!({"provenance":{"status":"captured","origin":{"crate_version":"11.0.7","source_sha256":"a".repeat(64),"adapter_sha256":"b".repeat(64),"job_sha256":"c".repeat(64)}},"document":{},"document_overrides":{}});
+        let base = serde_json::json!({"historical_evidence":[{"kind":"execution_manifest","schema_version":1,"family":"sample","implementation":"dynamo_v1","version":"11.0.7","checkpoint":checkpoint,"cases":["id"],"defaults":{},"exceptions":{},"metadata_changes":{"id":{}},"receipt_membership":[{"members":["id"],"body":receipt}],"execution_proof":{"receipt":receipt,"requests":{"id":digest}}}]});
+        let records = serde_json::json!({"id":{"value":{"stimulus":{"inline":request}}}});
+        for resolved in [false, true] {
+            let node = yaml::load_str(&base.to_string())?;
+            let retained = yaml::load_str(&records.to_string())?;
+            historical_evidence(
+                &node,
+                &authored,
+                Some("sample"),
+                "dynamo_v1",
+                "11.0.7",
+                resolved.then_some(&retained),
+            )?;
+        }
+        for corruption in [
+            "proof_field",
+            "missing_hash",
+            "producer",
+            "root",
+            "unknown_request",
+            "absent_record",
+            "digest",
+            "receipt_members",
+            "receipt_body",
+            "partial_stimulus",
+            "checkpoint_field",
+        ] {
+            let mut value = base.clone();
+            let mut retained = records.clone();
+            let evidence = &mut value["historical_evidence"][0];
+            match corruption {
+                "proof_field" => evidence["execution_proof"]["unknown"] = serde_json::json!(true),
+                "missing_hash" => {
+                    evidence["execution_proof"]["receipt"]
+                        .as_object_mut()
+                        .unwrap()
+                        .remove("source_sha256");
+                }
+                "producer" => {
+                    evidence["execution_proof"]["receipt"]["implementation"] =
+                        serde_json::json!("dynamo_v1_jail")
+                }
+                "root" => {
+                    evidence["checkpoint"]["provenance"]["origin"]["source_sha256"] =
+                        serde_json::json!("f".repeat(64))
+                }
+                "unknown_request" => {
+                    evidence["execution_proof"]["requests"] = serde_json::json!({"unknown":digest})
+                }
+                "absent_record" => {
+                    evidence["execution_proof"]["requests"] = serde_json::json!({"absent":digest})
+                }
+                "digest" => {
+                    evidence["execution_proof"]["requests"]["id"] =
+                        serde_json::json!("f".repeat(64))
+                }
+                "receipt_members" => evidence["receipt_membership"] = serde_json::json!([]),
+                "receipt_body" => {
+                    evidence["receipt_membership"][0]["body"]["results_sha256"] =
+                        serde_json::json!("f".repeat(64))
+                }
+                "partial_stimulus" => {
+                    retained["id"]["value"]["stimulus"] =
+                        serde_json::json!({"unavailable":{"code":"original_request_not_retained"}})
+                }
+                "checkpoint_field" => evidence["checkpoint"]["unknown"] = serde_json::json!(true),
+                _ => unreachable!(),
+            }
+            assert!(
+                historical_evidence(
+                    &yaml::load_str(&value.to_string())?,
+                    &authored,
+                    Some("sample"),
+                    "dynamo_v1",
+                    "11.0.7",
+                    Some(&yaml::load_str(&retained.to_string())?)
+                )
+                .is_err(),
+                "{corruption}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn capture_provenance_inheritance_is_optional_but_typed() -> Result<()> {
         let authored = yaml::load_str("cases: {one: {}}")?;
         let base = serde_json::json!({
@@ -1763,6 +2419,113 @@ mod tests {
     }
 
     #[test]
+    fn execution_wrappers_preserve_lineage_and_historical_evidence() -> Result<()> {
+        let root = tempfile::tempdir()?;
+        let authored = yaml::load_str("cases: {one: {}}")?;
+        let evidence = serde_json::json!([{"kind":"execution_manifest","schema_version":1,"family":"sample","implementation":"dynamo_v2","version":"1.1.0","checkpoint":{},"cases":["one"],"defaults":{},"exceptions":{},"metadata_changes":{"one":{}},"receipt_membership":[{"members":["one"],"body":{"original":true}}]}]);
+        let mut resources = Vec::new();
+        let mut captures = Vec::new();
+        for version in ["1.0.0", "1.1.0"] {
+            let member = format!("{STORE}/families/sample/dynamo_v2-{version}.yaml");
+            let execution = format!("executions/sample--dynamo_v2-{version}.yaml");
+            let manifest = serde_json::json!({"schema_version":1,"family":"sample","implementation":"dynamo_v2","version":version,
+                "checkpoint":{"provenance":{"status":"legacy","captured_with":{"dynamo_v2":version}},"document":{},"document_overrides":{}},
+                "cases":["one"],"defaults":{},"exceptions":{}});
+            let mut wrapper = serde_json::json!({"execution":execution});
+            if version == "1.0.0" {
+                wrapper["changes"] = serde_json::json!({"one":{"case_key":"one","stimulus":{"unavailable":{"code":"retained"}},"observation":{"unavailable":{"code":"unsupported"}}}});
+            } else {
+                wrapper["member_changes"] = serde_json::json!({"one":member});
+                wrapper["inheritance_changes"] = serde_json::json!({"one":false});
+                wrapper["historical_evidence"] = evidence.clone();
+            }
+            for (path, value, is_capture) in [
+                (member.clone(), wrapper, true),
+                (format!("{STORE}/{execution}"), manifest, false),
+            ] {
+                let bytes = serde_json::to_vec(&value)?;
+                let destination = root.path().join(&path);
+                fs::create_dir_all(destination.parent().unwrap())?;
+                fs::write(destination, &bytes)?;
+                let mut resource =
+                    serde_json::json!({"path":path,"size":bytes.len(),"sha256":sha256(&bytes)});
+                if is_capture {
+                    resource["kind"] = serde_json::json!("history");
+                    resource["family"] = serde_json::json!("sample");
+                    resource["implementation"] = serde_json::json!("dynamo_v2");
+                    resource["version"] = serde_json::json!(version);
+                    resource["execution"] = serde_json::json!(execution);
+                    captures.push(resources.len());
+                } else {
+                    resource["receipts"] = serde_json::json!([]);
+                }
+                resources.push(resource);
+            }
+        }
+        let index = resources
+            .iter()
+            .map(|row| (row["path"].as_str().unwrap().to_owned(), row))
+            .collect();
+        let selected = captures
+            .iter()
+            .map(|index| &resources[*index])
+            .collect::<Vec<_>>();
+        let history = load_history(
+            root.path(),
+            &authored,
+            "sample",
+            "dynamo_v2",
+            &selected,
+            false,
+            HistoryAdmission {
+                limit: 1024 * 1024,
+                index: &index,
+            },
+        )?;
+        assert!(
+            history.captures[1]
+                .document
+                .field("historical_evidence")?
+                .equivalent(
+                    yaml::load_str(&serde_json::json!({"items":evidence}).to_string())?
+                        .field("items")?
+                )
+        );
+        assert!(
+            history.captures[1]
+                .document
+                .field("changes")?
+                .mapping()?
+                .is_empty()
+        );
+        assert_eq!(
+            history.captures[1]
+                .document
+                .field("inheritance_changes")?
+                .field("one")?,
+            &Node::Bool(false)
+        );
+        let mut cursor = crate::history::Cursor::default();
+        cursor.apply(&history, 0)?;
+        cursor.apply(&history, 1)?;
+        let rows = cursor.records(&history, "1.1.0")?;
+        assert_eq!(
+            rows.field("one")?.field("member")?.string()?,
+            format!("{STORE}/families/sample/dynamo_v2-1.1.0.yaml")
+        );
+        assert_eq!(
+            rows.field("one")?
+                .field("value")?
+                .field("document")?
+                .field("captured_with")?
+                .field("dynamo_v2")?
+                .string()?,
+            "1.0.0"
+        );
+        Ok(())
+    }
+
+    #[test]
     fn sparse_proof_membership_follows_bound_history_after_corpus_growth() -> Result<()> {
         let request = serde_json::json!({"input":"hello","init":{},"finish_reason":"stop","tools":[],"chunks":[{"delta_text":"hello"}]});
         let mut later = request.clone();
@@ -1770,81 +2533,98 @@ mod tests {
         later["chunks"] = serde_json::json!([{"delta_text":"new request"}]);
         let authored = yaml::load_str(&serde_json::to_string(&serde_json::json!({"cases":{
             "id":{"lifecycle":"active","request":request},
-            "later":{"lifecycle":"active","request":later}
+            "later":{"lifecycle":"active","request":later},
+            "inherited_retired":{"lifecycle":"retired","request":null}
         }}))?)?;
-        let digest = request_digest(authored.field("cases")?.field("id")?.field("request")?)?;
-        let root = tempfile::tempdir()?;
-        for implementation in ["dynamo_v2", "sglang_python_batch"] {
-            let member = format!("{STORE}/families/sample/{implementation}-0.1.0.yaml");
-            fs::create_dir_all(root.path().join(&member).parent().unwrap())?;
-            let origin = serde_json::json!({"crate_version":"0.1.0","source_sha256":"a".repeat(64),
+        for lifecycle in ["active", "retired"] {
+            let mut authored = authored.clone();
+            let mut cases = authored.field("cases")?.clone();
+            let mut bound = cases.field("id")?.clone();
+            bound.set("lifecycle", Node::Str(lifecycle.into()))?;
+            cases.set("id", bound)?;
+            authored.set("cases", cases)?;
+            let digest = request_digest(authored.field("cases")?.field("id")?.field("request")?)?;
+            let root = tempfile::tempdir()?;
+            for implementation in ["dynamo_v2", "sglang_python_batch"] {
+                let member = format!("{STORE}/families/sample/{implementation}-0.1.0.yaml");
+                fs::create_dir_all(root.path().join(&member).parent().unwrap())?;
+                let origin = serde_json::json!({"crate_version":"0.1.0","source_sha256":"a".repeat(64),
                 "adapter_sha256":"b".repeat(64),"job_sha256":"c".repeat(64)});
-            let receipt = serde_json::json!({"crate_version":"0.1.0","source_sha256":"a".repeat(64),
+                let receipt = serde_json::json!({"crate_version":"0.1.0","source_sha256":"a".repeat(64),
                 "adapter_sha256":"b".repeat(64),"job_sha256":"c".repeat(64),"results_sha256":"d".repeat(64),
                 "implementation":implementation,"version":"0.1.0"});
-            let valid = serde_json::json!({"provenance":{"status":"captured","origin":origin},"document":{},
+                let valid = serde_json::json!({"provenance":{"status":"captured","origin":origin},"document":{},
                 "changes":{"id":{"case_key":"UNIFIED.id","stimulus":{"inline":request,"semantic_sha256":digest},
                     "observation":{"value":{"assembled":[{"kind":"text","text":"hello"}]}}}},
                 "metadata_changes":{"id":{"batch_final":{"reasoning_text":"","normal_text":"hello","calls":[]}}},
                 "document_overrides":{},"execution_proof":{"receipt":receipt,"requests":{"id":digest}}});
-            let direct = yaml::load_str(&serde_json::to_string(&valid)?)?;
-            assert!(capture(&direct, &authored, implementation, "0.1.0").is_err());
-            for corruption in [
-                "valid", "missing", "extra", "digest", "partial", "unbound", "producer", "version",
-            ] {
-                let mut document = valid.clone();
-                match corruption {
-                    "missing" => document["execution_proof"]["requests"] = serde_json::json!({}),
-                    "extra" => {
-                        document["execution_proof"]["requests"]["later"] = serde_json::json!(digest)
+                let mut valid = valid;
+                valid["changes"]["inherited_retired"] = serde_json::json!({
+                    "case_key":"inherited_retired", "stimulus":{"unavailable":{"code":"original_request_not_retained"}},
+                    "observation":{"unavailable":{"code":"not_executed"}}});
+                let direct = yaml::load_str(&serde_json::to_string(&valid)?)?;
+                assert!(capture(&direct, &authored, implementation, "0.1.0").is_err());
+                for corruption in [
+                    "valid", "missing", "extra", "digest", "partial", "unbound", "producer",
+                    "version",
+                ] {
+                    let mut document = valid.clone();
+                    match corruption {
+                        "missing" => {
+                            document["execution_proof"]["requests"] = serde_json::json!({})
+                        }
+                        "extra" => {
+                            document["execution_proof"]["requests"]["later"] =
+                                serde_json::json!(digest)
+                        }
+                        "digest" => {
+                            document["execution_proof"]["requests"]["id"] =
+                                serde_json::json!("e".repeat(64))
+                        }
+                        "partial" => {
+                            document["changes"]["id"]["stimulus"] = serde_json::json!({"partial":{"input":"old"},"semantic_sha256":"e".repeat(64)})
+                        }
+                        "unbound" => {
+                            document["changes"]["id"]["stimulus"] = serde_json::json!({"unavailable":{"code":"original_request_not_retained"}})
+                        }
+                        "producer" => {
+                            document["execution_proof"]["receipt"]["implementation"] =
+                                serde_json::json!("vllm_python_batch")
+                        }
+                        "version" => {
+                            document["execution_proof"]["receipt"]["version"] =
+                                serde_json::json!("0.1.1")
+                        }
+                        _ => {}
                     }
-                    "digest" => {
-                        document["execution_proof"]["requests"]["id"] =
-                            serde_json::json!("e".repeat(64))
-                    }
-                    "partial" => {
-                        document["changes"]["id"]["stimulus"] = serde_json::json!({"partial":{"input":"old"},"semantic_sha256":"e".repeat(64)})
-                    }
-                    "unbound" => {
-                        document["changes"]["id"]["stimulus"] = serde_json::json!({"unavailable":{"code":"original_request_not_retained"}})
-                    }
-                    "producer" => {
-                        document["execution_proof"]["receipt"]["implementation"] =
-                            serde_json::json!("vllm_python_batch")
-                    }
-                    "version" => {
-                        document["execution_proof"]["receipt"]["version"] =
-                            serde_json::json!("0.1.1")
-                    }
-                    _ => {}
-                }
-                let bytes = serde_json::to_vec(&document)?;
-                fs::write(root.path().join(&member), &bytes)?;
-                let resource = serde_json::json!({"path":member,"version":"0.1.0","size":bytes.len(),"sha256":sha256(&bytes)});
-                let index = BTreeMap::from([(member.clone(), &resource)]);
-                let loaded = load_history(
-                    root.path(),
-                    &authored,
-                    "sample",
-                    implementation,
-                    &[&resource],
-                    implementation.ends_with("_batch"),
-                    HistoryAdmission {
-                        limit: 16 * 1024 * 1024,
-                        index: &index,
-                    },
-                );
-                if corruption == "valid" {
-                    let history = loaded?;
-                    assert_eq!(history.captures.len(), 1);
-                    assert!(
-                        history.captures[0]
-                            .document
-                            .field("execution_proof")?
-                            .equivalent(direct.field("execution_proof")?)
+                    let bytes = serde_json::to_vec(&document)?;
+                    fs::write(root.path().join(&member), &bytes)?;
+                    let resource = serde_json::json!({"path":member,"version":"0.1.0","size":bytes.len(),"sha256":sha256(&bytes)});
+                    let index = BTreeMap::from([(member.clone(), &resource)]);
+                    let loaded = load_history(
+                        root.path(),
+                        &authored,
+                        "sample",
+                        implementation,
+                        &[&resource],
+                        implementation.ends_with("_batch"),
+                        HistoryAdmission {
+                            limit: 16 * 1024 * 1024,
+                            index: &index,
+                        },
                     );
-                } else {
-                    assert!(loaded.is_err(), "accepted {implementation}/{corruption}");
+                    if corruption == "valid" {
+                        let history = loaded?;
+                        assert_eq!(history.captures.len(), 1);
+                        assert!(
+                            history.captures[0]
+                                .document
+                                .field("execution_proof")?
+                                .equivalent(direct.field("execution_proof")?)
+                        );
+                    } else {
+                        assert!(loaded.is_err(), "accepted {implementation}/{corruption}");
+                    }
                 }
             }
         }

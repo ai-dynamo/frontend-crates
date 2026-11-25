@@ -83,6 +83,17 @@ pub fn thinking_bool_from_args(args: Option<&HashMap<String, serde_json::Value>>
     None
 }
 
+fn emit_default_thinking_effort(args: Option<&HashMap<String, serde_json::Value>>) -> Result<bool> {
+    match args.and_then(|args| args.get("emit_default_thinking_effort")) {
+        Some(serde_json::Value::Bool(emit)) => Ok(*emit),
+        None | Some(serde_json::Value::Null) => Ok(true),
+        Some(_) => Err(PromptRenderError::invalid_request(
+            "emit_default_thinking_effort must be a boolean",
+        )
+        .into()),
+    }
+}
+
 #[derive(Debug)]
 pub enum TokenInput {
     Single(Vec<u32>),
