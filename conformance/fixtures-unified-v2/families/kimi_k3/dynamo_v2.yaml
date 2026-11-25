@@ -1,19 +1,23 @@
-capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"9b383272645d2b918ff24c6a1c039924c6369d26fb9a84d039c1576d4d41e5d5","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v2","lineage":[{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"kimi_k3","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"de3cf33aa7509cedbc9df221838cb22812e78cde660e4eeebe28e388826fd3a0","source":"conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_8ea221db576d8883
+  origin: origin_07a003f8660f826e
 origins:
-  origin_8ea221db576d8883:
+  origin_07a003f8660f826e:
     crate_version: 0.10.12
-    source_sha256: d5716a4f8a3d70afb0d58c6e8ac2ef70387153f6f53638edbd788ad461572914
-    git_commit: ff3db954cb329b5025f6bd40c9c0374e67ea4c5f
+    source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+    git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
     git_commit: 731c488a763345d2940794be01d3a5d7c89ebc3a
+  origin_8ea221db576d8883:
+    crate_version: 0.10.12
+    source_sha256: d5716a4f8a3d70afb0d58c6e8ac2ef70387153f6f53638edbd788ad461572914
+    git_commit: ff3db954cb329b5025f6bd40c9c0374e67ea4c5f
   origin_423b0bcc49cad973:
     crate_version: 0.10.12
     source_sha256: abde4cd4bcc77371721e0ad86a987c0bd85f7ae903049098e9cb76b89ea20a0f
@@ -31,12 +35,772 @@ producers:
     captured_with:
       dynamo_v2: 0.10.12
     capture_origin: origin_423b0bcc49cad973
+  producer_0600063d3dc4aca2:
+    captured_with:
+      dynamo_v2: 0.10.12
+    capture_origin: origin_07a003f8660f826e
 contexts:
   context_cdf0b3c0134ec96f:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_1ba6a235ff16c701:
+  context_fba2cef63fa8838f:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: text
+            text: I mean self literal
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: self literal
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: GuidedJson
+              named_tool: null
+            finish_reason: stop
+            input: 'I mean <|open|>think<|sep|>self literal<|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="array"<|sep|>[{"name": "get_weather", "arguments": {"city": "Rome"}}]<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: 'I mean '
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: self literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: call tool="f" index="1"
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: argument key="x" type="array"
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Rome"}}]'
+            - delta_text: <|close|>
+            - delta_text: argument
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: call
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 48c813da187ec054acde3e848166656d74bb774f78b26255ffade6384bcdf527
+        resolution: fresh_execution
+  context_e9ae27bdae82abc6:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: text
+            text: I mean self literal
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: self literal
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: GuidedJson
+              named_tool: null
+            finish_reason: stop
+            input: 'I mean <|open|>think<|sep|>self literal<|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="object"<|sep|>{"city": "Rome"}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: 'I mean '
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: self literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: call tool="f" index="1"
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: argument key="x" type="object"
+            - delta_text: <|sep|>
+            - delta_text: '{"city": "Rome"}'
+            - delta_text: <|close|>
+            - delta_text: argument
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: call
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 73f783a5773fa2ad1f0677da1f8b6167753cd491243ea833637dec2a949a7fe9
+        resolution: fresh_execution
+  context_d0f85fbe1699c017:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: text
+            text: I mean self literal
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: self literal
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: GuidedJson
+              named_tool: null
+            finish_reason: stop
+            input: 'I mean <|open|>think<|sep|>self literal<|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>[{"name":"get_weather","arguments":{"city":"Rome"}}]<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: 'I mean '
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: self literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: call tool="f" index="1"
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: argument key="x" type="string"
+            - delta_text: <|sep|>
+            - delta_text: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
+            - delta_text: <|close|>
+            - delta_text: argument
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: call
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 72cbf4c6d6993445a8087b9e6288e5b241403034f4d20db0b294665db864e950
+        resolution: fresh_execution
+  context_00a936d8d13b6dd7:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: text
+            text: '{}I mean self literal'
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: '{}I mean '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: self literal
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: GuidedJson
+              named_tool: null
+            finish_reason: stop
+            input: '{}I mean <|open|>think<|sep|>self literal<|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="array"<|sep|>[{"name": "get_weather", "arguments": {"city": "Rome"}}]<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: '{}I mean '
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: self literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: call tool="f" index="1"
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: argument key="x" type="array"
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Rome"}}]'
+            - delta_text: <|close|>
+            - delta_text: argument
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: call
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 8a492d3150748c5778937ffb8362acabb340c902648138add9e0725e9825071b
+        resolution: fresh_execution
+  context_e5d3abed8eae8434:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          - kind: text
+            text: I mean self literal
+          chunks:
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+            - kind: text
+              text: 'I mean '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: self literal
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: GuidedJson
+              named_tool: null
+            finish_reason: tool_calls
+            input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>'
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]I mean '
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: self literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: dd6eee27dc548ae63d0fd91db7dbb2ea0b48c5c9759713a42d0c61463dda8857
+        resolution: fresh_execution
+  context_f25cc93f1148eb08:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: text
+            text: I mean self literal
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          chunks:
+          - expected:
+            - kind: text
+              text: 'I mean '
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: self literal
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city": "Paris"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: GuidedJson
+              named_tool: null
+            finish_reason: tool_calls
+            input: 'I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: 'I mean '
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: self literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 8dac712e3548e66ff1c4d62cd104393d9950a7c7139062d9c9153a84cc89350c
+        resolution: fresh_execution
+  context_114643ec052f08fb:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -174,11 +938,11 @@ contexts:
             - delta_text: ‹finish›
         provenance:
           crate_version: 0.10.12
-          source_sha256: d5716a4f8a3d70afb0d58c6e8ac2ef70387153f6f53638edbd788ad461572914
-          git_commit: ff3db954cb329b5025f6bd40c9c0374e67ea4c5f
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: b14771022e535f07b08ee6438c13d8ee07466e52
           implementation: dynamo_v2
           version: 0.10.12
-          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: 48e313542088d0da56cfaa0d0ae8c886637efb948e44d1bfc4fcbf71372bf9d8
         resolution: fresh_execution
       verified_recaptures:
@@ -465,6 +1229,146 @@ contexts:
           crate_version: 0.10.12
           source_sha256: abde4cd4bcc77371721e0ad86a987c0bd85f7ae903049098e9cb76b89ea20a0f
           git_commit: 929f271ba0c24f58f75be38a54430478b6c1996d
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: 48e313542088d0da56cfaa0d0ae8c886637efb948e44d1bfc4fcbf71372bf9d8
+        resolution: fresh_execution
+      - result:
+          assembled:
+          - kind: text
+            text: literal then a call
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: literal
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: text
+              text: ' then a call'
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: get_weather
+              arguments: '{"city":"'
+              complete: false
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: Paris
+              complete: false
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '"}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: Response
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <|open|>think<|sep|>literal<|close|>think<|sep|> then a call<|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: <|open|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: literal
+            - delta_text: <|close|>
+            - delta_text: think
+            - delta_text: <|sep|>
+            - delta_text: ' then a call'
+            - delta_text: <|open|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: call tool="get_weather" index="1"
+            - delta_text: <|sep|>
+            - delta_text: <|open|>
+            - delta_text: argument key="city" type="string"
+            - delta_text: <|sep|>
+            - delta_text: Paris
+            - delta_text: <|close|>
+            - delta_text: argument
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: call
+            - delta_text: <|sep|>
+            - delta_text: <|close|>
+            - delta_text: tools
+            - delta_text: <|sep|>
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d5716a4f8a3d70afb0d58c6e8ac2ef70387153f6f53638edbd788ad461572914
+          git_commit: ff3db954cb329b5025f6bd40c9c0374e67ea4c5f
           implementation: dynamo_v2
           version: 0.10.12
           adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
@@ -3727,6 +4631,7 @@ records:
       - expected: []
   guided_json_native_parameter_array_before_payload:
     case_key: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    context: context_fba2cef63fa8838f
     request: 8263013ea57a5c983d9bfd6c517a1add00e4fa23fd7223e10fdf0caeb89b49c5
     output:
       assembled:
@@ -3775,6 +4680,7 @@ records:
       - expected: []
   guided_json_native_parameter_object_before_payload:
     case_key: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    context: context_e9ae27bdae82abc6
     request: f3bb49635572c920f9af31549c8f4d15df7a6d655a5cf126aa7da7ce6868d8e8
     output:
       assembled:
@@ -3823,6 +4729,7 @@ records:
       - expected: []
   guided_json_native_parameter_string_before_payload:
     case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    context: context_d0f85fbe1699c017
     request: e513c26acea175e94fd4bd63b01aac260d806333af45083dbdc0ce8dd30d1701
     output:
       assembled:
@@ -3871,6 +4778,7 @@ records:
       - expected: []
   guided_json_noncall_before_native_array_before_payload:
     case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    context: context_00a936d8d13b6dd7
     request: be4587b15ac19751e91139eed3ad246755738c24be5cdee3cbd615868cba0f40
     output:
       assembled:
@@ -3998,6 +4906,7 @@ records:
       - expected: []
   guided_json_quoted_bare_header_after_payload:
     case_key: UNIFIED.35-guided_json_quoted_bare_header_after_payload
+    context: context_e5d3abed8eae8434
     request: b3779350a9396c14fd363281cd473ae34e0532f2a07fb2f94acb6690e5323f99
     output:
       assembled:
@@ -4026,6 +4935,7 @@ records:
           text: <|open|>think<|sep|>self literal<|close|>think<|sep|>
   guided_json_quoted_bare_header_in_answer:
     case_key: UNIFIED.35-guided_json_quoted_bare_header_in_answer
+    context: context_f25cc93f1148eb08
     request: 3fa5bb1012df542fb709afc5e8a4b84be69584b9c2fafc6b87b85f982b5abea3
     output:
       assembled:
@@ -5256,6 +6166,23 @@ records:
         - kind: text
           text: .
       - expected: []
+  kimi_k3_repeated_think_to_response_handoff_split_markers:
+    case_key: UNIFIED.kimi-repeated_think_to_response_handoff_split_markers
+    producer: producer_0600063d3dc4aca2
+    request: f8370b48ac2950925a501f1b7097faff9d7d140061bb9dde6cee44a1a279acb5
+    output:
+      assembled:
+      - kind: text
+        text: Answer. ..
+      chunks:
+      - expected:
+        - kind: text
+          text: Answer. .
+      - expected: []
+      - expected:
+        - kind: text
+          text: .
+      - expected: []
   kimi_k3_short_reasoning_close:
     case_key: UNIFIED.kimi-short_reasoning_close
     producer: producer_15bb5d174fd8ebca
@@ -5270,6 +6197,25 @@ records:
       - expected:
         - kind: reasoning
           text: plan
+        - kind: text
+          text: answer
+      - expected: []
+  kimi_k3_short_reasoning_close_split_before_gt:
+    case_key: UNIFIED.kimi-short_reasoning_close_split_before_gt
+    producer: producer_0600063d3dc4aca2
+    request: 6b99775e36f025d7c79626b6b5102c587fb3d376c14086f0e4971022e51d99c2
+    output:
+      assembled:
+      - kind: reasoning
+        text: plan
+      - kind: text
+        text: answer
+      chunks:
+      - expected:
+        - kind: reasoning
+          text: plan
+      - expected: []
+      - expected:
         - kind: text
           text: answer
       - expected: []
@@ -15697,7 +16643,7 @@ records:
       - expected: []
   prefilled_response_reasoning_markers_literal:
     case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
-    context: context_1ba6a235ff16c701
+    context: context_114643ec052f08fb
     request: ad73c06ef05bfabd5e7d23fe2bcca277b804f0b4f4e8200409fb70eb7f7f8ebe
     output:
       assembled:
