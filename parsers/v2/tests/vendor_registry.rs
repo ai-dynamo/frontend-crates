@@ -296,57 +296,6 @@ fn factory_override_keeps_aliases_without_claiming_harmony_capabilities() {
 }
 
 #[test]
-fn loaded_registration_validates_the_entire_batch_before_inserting() {
-    use dynamo_parsers_v2::{
-        BatchPrefill, UnifiedParserDescriptor, UnifiedParserRegistration, resolve_unified_parser,
-        unified::register_loaded_unified_parsers,
-    };
-
-    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
-    let _restore_valid = Restore("loaded_valid");
-    let _restore_invalid = Restore("loaded_invalid");
-    let mut valid = UnifiedParserDescriptor::new("loaded_valid");
-    valid.guidance.structural_tag = true;
-    let valid = UnifiedParserRegistration::loaded(
-        valid,
-        "valid".into(),
-        Some(std::sync::Arc::new(|_| Ok(None))),
-        None,
-        vendor_factory,
-    );
-    for error in [
-        "marker-pair prefill requires markers",
-        "parser must accept text or token IDs",
-    ] {
-        let mut invalid = UnifiedParserDescriptor::new("loaded_invalid");
-        if error.starts_with("marker") {
-            invalid.batch_prefill = BatchPrefill::MarkerPair;
-        } else {
-            invalid.text_input = false;
-        }
-        let invalid = UnifiedParserRegistration::loaded(
-            invalid,
-            "invalid".into(),
-            None,
-            None,
-            vendor_factory,
-        );
-        assert_eq!(
-            register_loaded_unified_parsers(vec![valid.clone(), invalid])
-                .unwrap_err()
-                .to_string(),
-            error
-        );
-        assert!(resolve_unified_parser("loaded_valid").is_none());
-        assert!(resolve_unified_parser("loaded_invalid").is_none());
-    }
-    register_loaded_unified_parsers(vec![valid]).unwrap();
-    let registration = resolve_unified_parser("loaded_valid").unwrap();
-    assert!(registration.descriptor.guidance.structural_tag);
-    assert!(registration.plugin_guidance().is_some());
-}
-
-#[test]
 fn legacy_factory_retains_host_and_standalone_compatibility() {
     use dynamo_parsers_v2::{
         create_tool_parser_for_family, register_unified_parser, resolve_unified_parser,
@@ -418,37 +367,4 @@ fn legacy_factory_retains_host_and_standalone_compatibility() {
         builder
     ));
     assert!(create_tool_parser_for_family("qwen3_coder", &[]).is_ok());
-}
-
-#[test]
-fn loaded_plugins_cannot_claim_a_legacy_host_selector() {
-    use dynamo_parsers_v2::{
-        UnifiedParserDescriptor, UnifiedParserRegistration, resolve_unified_parser,
-        resolve_unified_parser_pair, unified::register_loaded_unified_parsers,
-    };
-
-    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
-    let mut descriptor = UnifiedParserDescriptor::new("mistral");
-    for family in ["mistral", "attempted_override"] {
-        descriptor.family = family.into();
-        if family != "mistral" {
-            descriptor.aliases.push("mistral".into());
-        }
-        let registration = UnifiedParserRegistration::loaded(
-            descriptor.clone(),
-            "test".into(),
-            None,
-            None,
-            vendor_factory,
-        );
-        assert!(register_loaded_unified_parsers(vec![registration]).is_err());
-        assert!(resolve_unified_parser(family).is_none());
-    }
-    assert_eq!(
-        resolve_unified_parser_pair(Some("mistral"), None)
-            .unwrap()
-            .descriptor
-            .family,
-        "mistral_4",
-    );
 }

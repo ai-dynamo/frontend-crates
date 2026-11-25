@@ -49,13 +49,12 @@
 //! divergence is stated at the item.
 
 pub mod beam;
-pub mod plugin;
 pub mod prefill;
 mod registration;
 pub use registration::{
-    AutoSelection, BatchPrefill, ForcedToolGuidance, Guidance, LoadedGuidance, LoadedPrompt,
-    NativeGrammar, NativeToolBoundary, ReasoningControl, RequiredVocabularyToken,
-    TokenPromptPrefix, UnifiedParserDescriptor, UnifiedParserRegistration,
+    AutoSelection, BatchPrefill, ForcedToolGuidance, Guidance, NativeGrammar, NativeToolBoundary,
+    ReasoningControl, RequiredVocabularyToken, TokenPromptPrefix, UnifiedParserDescriptor,
+    UnifiedParserRegistration,
 };
 
 mod blank_tool_turn;
@@ -6608,38 +6607,8 @@ fn register_linked_unified_parser(
             descriptor,
             factory,
             vendor: true,
-            plugin_identity: None,
-            plugin_guidance: None,
-            plugin_prompt: None,
         },
     ))
-}
-
-/// Admit all externally loaded parsers together, without shadowing existing selectors.
-pub fn register_loaded_unified_parsers(entries: Vec<UnifiedParserRegistration>) -> Result<()> {
-    let mut vendors = VENDOR_PARSERS
-        .write()
-        .unwrap_or_else(|error| error.into_inner());
-    let mut names: std::collections::HashSet<&str> = builtin_unified_registrations()
-        .iter()
-        .chain(vendors.values())
-        .flat_map(|entry| entry.descriptor.configured_selectors())
-        .collect();
-    for entry in &entries {
-        entry.descriptor.validate()?;
-        for name in entry.descriptor.configured_selectors() {
-            anyhow::ensure!(
-                !name.is_empty() && names.insert(name),
-                "invalid or conflicting parser selector '{name}'"
-            );
-        }
-    }
-    vendors.extend(
-        entries
-            .into_iter()
-            .map(|entry| (entry.descriptor.family.clone(), entry)),
-    );
-    Ok(())
 }
 
 /// Remove a startup registration through its canonical name or alias.
@@ -6815,9 +6784,6 @@ macro_rules! unified_registry {
                 descriptor: UnifiedParserDescriptor::builtin($family, &[$($alias),*], $configure),
                 factory: registration::Factory::Linked(|tools| Ok($ctor(tools))),
                 vendor: false,
-                plugin_identity: None,
-                plugin_guidance: None,
-            plugin_prompt: None,
             }),+]);
             &ENTRIES
         }

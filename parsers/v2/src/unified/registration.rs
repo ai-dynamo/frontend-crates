@@ -330,33 +330,19 @@ impl UnifiedParserDescriptor {
     }
 }
 
-type OwnedFactory = dyn Fn(&[Tool]) -> anyhow::Result<Box<dyn UnifiedParser>> + Send + Sync;
-
 #[derive(Clone)]
 pub(crate) enum Factory {
     LegacyLinked(UnifiedParserFactory),
     Linked(UnifiedParserFactory),
-    Loaded(std::sync::Arc<OwnedFactory>),
 }
 
 impl Factory {
     pub(crate) fn linked(&self) -> Option<UnifiedParserFactory> {
         match self {
             Self::LegacyLinked(factory) | Self::Linked(factory) => Some(*factory),
-            Self::Loaded(_) => None,
         }
     }
 }
-
-/// Host adapter for a native parser plugin's constraint builder.
-pub type LoadedGuidance = dyn Fn(super::plugin::GuidanceRequest) -> anyhow::Result<Option<serde_json::Value>>
-    + Send
-    + Sync;
-
-/// Host adapter for a native plugin's rendered-prompt inspector.
-pub type LoadedPrompt = dyn Fn(super::plugin::PromptRequest) -> anyhow::Result<super::prefill::ParserPromptState>
-    + Send
-    + Sync;
 
 /// A resolved descriptor and factory, retained together even after registry changes.
 #[derive(Clone)]
@@ -364,58 +350,16 @@ pub struct UnifiedParserRegistration {
     pub descriptor: UnifiedParserDescriptor,
     pub(crate) factory: Factory,
     pub(crate) vendor: bool,
-    pub(crate) plugin_identity: Option<String>,
-    pub(crate) plugin_guidance: Option<std::sync::Arc<LoadedGuidance>>,
-    pub(crate) plugin_prompt: Option<std::sync::Arc<LoadedPrompt>>,
 }
 
 impl UnifiedParserRegistration {
-    /// Retain the loaded library through the factory and every instance it creates.
-    pub fn loaded(
-        descriptor: UnifiedParserDescriptor,
-        identity: String,
-        guidance: Option<std::sync::Arc<LoadedGuidance>>,
-        prompt: Option<std::sync::Arc<LoadedPrompt>>,
-        factory: impl Fn(&[Tool]) -> anyhow::Result<Box<dyn UnifiedParser>> + Send + Sync + 'static,
-    ) -> Self {
-        Self {
-            descriptor,
-            factory: Factory::Loaded(std::sync::Arc::new(factory)),
-            vendor: true,
-            plugin_identity: Some(identity),
-            plugin_guidance: guidance,
-            plugin_prompt: prompt,
-        }
-    }
-
-    /// Identity advertised by workers that use an external plugin.
-    pub fn plugin_identity(&self) -> Option<&str> {
-        self.plugin_identity.as_deref()
-    }
-
-    /// Return a retained plugin builder usable by the host's guidance resolver.
-    pub fn plugin_guidance(&self) -> Option<std::sync::Arc<LoadedGuidance>> {
-        self.plugin_guidance.clone()
-    }
-
     /// Inspect the rendered prompt through the registered implementation.
     pub fn inspect_prompt(
         &self,
         prompt: Option<&str>,
         header_search_end: Option<usize>,
     ) -> anyhow::Result<super::prefill::ParserPromptState> {
-        match (&self.plugin_prompt, prompt) {
-            (Some(inspect), Some(prompt)) => inspect(super::plugin::PromptRequest {
-                prompt: prompt.to_owned(),
-                header_search_end,
-            }),
-            _ => Ok(self.descriptor.resolve_prompt(prompt, header_search_end)),
-        }
-    }
-
-    /// Whether the plugin supplies its own rendered-prompt inspector.
-    pub fn has_plugin_prompt(&self) -> bool {
-        self.plugin_prompt.is_some()
+        Ok(self.descriptor.resolve_prompt(prompt, header_search_end))
     }
 
     /// Whether this registration came from the startup override API.
@@ -430,7 +374,7 @@ impl UnifiedParserRegistration {
             Factory::LegacyLinked(_) => self
                 .create(&[])
                 .map(|parser| parser.preserve_special_tokens()),
-            _ => Ok(self.descriptor.preserve_special_tokens),
+            Factory::Linked(_) => Ok(self.descriptor.preserve_special_tokens),
         }
     }
 
@@ -439,7 +383,6 @@ impl UnifiedParserRegistration {
         let family = &self.descriptor.family;
         let parser = match &self.factory {
             Factory::LegacyLinked(factory) | Factory::Linked(factory) => factory(tools),
-            Factory::Loaded(factory) => factory(tools),
         }?;
         let parser = super::blank_tool_turn::wrap(family, parser);
         if crate::tool_calling::debug::debug_enabled() {
