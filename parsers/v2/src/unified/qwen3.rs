@@ -279,6 +279,18 @@ mod tests {
             parser.native_tool_completion(),
             Some(NativeToolCompletion::IncompleteCall)
         );
+
+        // A wrapper opened with no call, or cut inside the call opener, is truncated.
+        for truncated in ["<tool_call>", "<tool_call>\n<func"] {
+            parser.reset();
+            parser.parse_into(truncated, &mut out).unwrap();
+            parser.finish().unwrap();
+            assert_eq!(
+                parser.native_tool_completion(),
+                Some(NativeToolCompletion::IncompleteCall),
+                "{truncated:?}"
+            );
+        }
     }
 
     fn weather_tools() -> Vec<Tool> {

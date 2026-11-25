@@ -238,6 +238,21 @@ struct SystemNormalization {
 }
 
 impl SystemNormalization {
+    /// A developer rewritten in place becomes a non-leading `system` turn; when
+    /// this template demotes those to `user`, consolidate into the leading turn.
+    fn keep_rewritten_developers_as_system(&mut self) {
+        if self.demote_nonleading_system {
+            for fallback in [
+                &mut self.fallback_developer,
+                &mut self.fallback_developer_in_history,
+            ] {
+                if matches!(fallback, DeveloperFallback::RewriteInPlace) {
+                    *fallback = DeveloperFallback::Consolidate;
+                }
+            }
+        }
+    }
+
     fn is_required(&self) -> bool {
         !matches!(self.fallback_developer, DeveloperFallback::Preserve)
             || !matches!(

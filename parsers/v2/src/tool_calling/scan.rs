@@ -3788,6 +3788,14 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
                 let Some(start) = invoke_start else {
                     if flush {
+                        // An opened block that never started its next call is
+                        // still a truncated call; whitespace after a completed
+                        // call in an open wrapper is not.
+                        if !self.uncommitted_block.trim().is_empty()
+                            || !self.buffer.trim().is_empty()
+                        {
+                            self.dropped_incomplete_call = true;
+                        }
                         tracing::warn!(
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"

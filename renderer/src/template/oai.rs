@@ -2775,6 +2775,32 @@ mod tests {
     }
 
     #[test]
+    fn developer_fallback_consolidates_when_late_system_would_be_demoted() {
+        // Rejects a system turn directly after a user turn, but renders one after an assistant.
+        let template = concat!(
+            "{% for m in messages %}{% if m.role == 'system' and not loop.first ",
+            "and loop.previtem.role == 'user' %}{{ raise_exception('System after user.') }}",
+            "{% endif %}{% if m.role != 'developer' %}{{ m.role }}[{{ m.content }}]{% endif %}",
+            "{% endfor %}"
+        );
+        let f = formatter_for(template);
+        assert!(f.default_system_normalization.demote_nonleading_system);
+        assert_eq!(
+            render_shape(
+                &f,
+                json!([
+                    {"role": "user", "content": "question"},
+                    {"role": "assistant", "content": "answer"},
+                    {"role": "developer", "content": "instruction"},
+                    {"role": "user", "content": "followup"}
+                ])
+            )
+            .unwrap(),
+            "system[instruction]user[question]assistant[answer]user[followup]"
+        );
+    }
+
+    #[test]
     fn developer_fallback_uses_selected_template_capability() {
         let messages = json!([
             {"role": "developer", "content": "d"},

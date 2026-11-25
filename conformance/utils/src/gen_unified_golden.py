@@ -3232,8 +3232,9 @@ EDGE.append((
 K3_RESPONSE_LITERAL = k3_close("argument") + r_text("kimi_k3", "literal") + "after"
 K3_MARKER_PROGRESS_ARGUMENTS = {"q": r_text("kimi_k3", "literal"), "content": "x" * 4096}
 KIMI_REPEATED_HANDOFF_CHUNKS = [
-    "Answer. .<|close|>think<|sep|>",
-    "<|open|>response<|sep|>.",
+    "Answer. .<|clo",
+    "se|>think<|sep|><|open",
+    "|>response<|sep|>.",
 ]
 KIMI_ORPHAN_RESPONSE_NATIVE = (
     "Answer: 天气。"
@@ -3252,11 +3253,11 @@ KIMI_REASONING_ORPHAN_NATIVE = (
 KIMI_SHORT_REASONING_CLOSE_NATIVE = "plan<|close|>think>" + k3_open("response") + "answer"
 K3_RESPONSE_CASES = [
     ("kimi_k3_repeated_think_to_response_handoff",
-     "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.",
+     "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split inside both the think-close and response-open markers so partial syntax is retained across pushes while surrounding punctuation is preserved. Other registered families do not use K3's named XTML channel handoff; their own channel transitions are covered by family-native cases, and shared prefilled-response cases cover standalone reasoning markers.",
      "".join(KIMI_REPEATED_HANDOFF_CHUNKS),
      [{"kind": "text", "text": "Answer. .."}]),
     ("kimi_k3_orphan_response_reasoning_markers",
-     "Kimi K3 starts in Response with standalone think-open/think-close/response-open markers and a whitespace-separated handoff. Orphan XTML controls are structural noise and must not reach visible text; surrounding prose, punctuation, and whitespace survive. Other registered families do not use this named XTML channel grammar.",
+     "Kimi K3 starts in Response with standalone think-open/think-close/response-open markers and a whitespace-separated handoff. Orphan XTML controls are structural noise and must not reach visible text; surrounding prose, punctuation, and whitespace survive. A think pair inside an open response does not re-enter reasoning without a new assistant turn, so its body stays visible, matching the shared prefilled-response marker convention. Other registered families do not use this named XTML channel grammar.",
      KIMI_ORPHAN_RESPONSE_NATIVE,
      [{"kind": "text", "text": "Answer: 天气。open \nclosed again."}]),
     ("kimi_k3_reasoning_recovery_orphan_response_markers",
@@ -3264,7 +3265,7 @@ K3_RESPONSE_CASES = [
      KIMI_REASONING_ORPHAN_NATIVE,
      [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "bodyABC"}]),
     ("kimi_k3_short_reasoning_close",
-     "Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Treat that marker as a channel close even across arbitrary delivery splits; do not leave it or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.",
+     "Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Split after `<|close|>think` so the parser must hold it until `>` distinguishes the compact close from the separator form; do not leave it or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.",
      KIMI_SHORT_REASONING_CLOSE_NATIVE,
      [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "answer"}]),
     ("kimi_k3_typed_response_marker_payload",
@@ -3312,7 +3313,7 @@ K3_RESPONSE_CHUNKS = {
     "kimi_k3_repeated_think_to_response_handoff": KIMI_REPEATED_HANDOFF_CHUNKS,
     "kimi_k3_orphan_response_reasoning_markers": [KIMI_ORPHAN_RESPONSE_NATIVE],
     "kimi_k3_reasoning_recovery_orphan_response_markers": [KIMI_REASONING_ORPHAN_NATIVE],
-    "kimi_k3_short_reasoning_close": [KIMI_SHORT_REASONING_CLOSE_NATIVE],
+    "kimi_k3_short_reasoning_close": ["plan<|close|>think", ">", k3_open("response") + "answer"],
 }
 K3_NO_TOOLS = {
     "kimi_k3_repeated_think_to_response_handoff",

@@ -993,6 +993,8 @@ impl HfTokenizerConfigJsonFormatter {
             &tool_use_native_text_array_roles,
             true,
         );
+        default_system_normalization.keep_rewritten_developers_as_system();
+        tool_use_system_normalization.keep_rewritten_developers_as_system();
         let default_template_requires_reasoning_string = default_template_handles_reasoning
             && detect_reasoning_string_requirement(
                 &env,
