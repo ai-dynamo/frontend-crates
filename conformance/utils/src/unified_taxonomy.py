@@ -209,6 +209,8 @@ UNIFIED_TAX = {
     "kimi_k3_orphan_response_reasoning_markers": ("kimi", "29"),
     "kimi_k3_reasoning_recovery_orphan_response_markers": ("kimi", "30"),
     "kimi_k3_short_reasoning_close": ("kimi", "31"),
+    "kimi_k3_repeated_think_to_response_handoff_split_markers": ("kimi", "32"),
+    "kimi_k3_short_reasoning_close_split_before_gt": ("kimi", "33"),
     **{scenario: ("mistral", str(index)) for index, scenario in enumerate([
         "mistral_text_after_call_dropped", "mistral_reasoning_after_call_dropped",
         "mistral_call_inside_reasoning_ends_thought", "mistral_brace_fallback_calls",

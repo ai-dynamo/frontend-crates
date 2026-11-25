@@ -3232,6 +3232,10 @@ EDGE.append((
 K3_RESPONSE_LITERAL = k3_close("argument") + r_text("kimi_k3", "literal") + "after"
 K3_MARKER_PROGRESS_ARGUMENTS = {"q": r_text("kimi_k3", "literal"), "content": "x" * 4096}
 KIMI_REPEATED_HANDOFF_CHUNKS = [
+    "Answer. .<|close|>think<|sep|>",
+    "<|open|>response<|sep|>.",
+]
+KIMI_REPEATED_HANDOFF_SPLIT_MARKER_CHUNKS = [
     "Answer. .<|clo",
     "se|>think<|sep|><|open",
     "|>response<|sep|>.",
@@ -3253,7 +3257,7 @@ KIMI_REASONING_ORPHAN_NATIVE = (
 KIMI_SHORT_REASONING_CLOSE_NATIVE = "plan<|close|>think>" + k3_open("response") + "answer"
 K3_RESPONSE_CASES = [
     ("kimi_k3_repeated_think_to_response_handoff",
-     "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split inside both the think-close and response-open markers so partial syntax is retained across pushes while surrounding punctuation is preserved. Other registered families do not use K3's named XTML channel handoff; their own channel transitions are covered by family-native cases, and shared prefilled-response cases cover standalone reasoning markers.",
+     "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.",
      "".join(KIMI_REPEATED_HANDOFF_CHUNKS),
      [{"kind": "text", "text": "Answer. .."}]),
     ("kimi_k3_orphan_response_reasoning_markers",
@@ -3265,7 +3269,15 @@ K3_RESPONSE_CASES = [
      KIMI_REASONING_ORPHAN_NATIVE,
      [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "bodyABC"}]),
     ("kimi_k3_short_reasoning_close",
-     "Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Split after `<|close|>think` so the parser must hold it until `>` distinguishes the compact close from the separator form; do not leave it or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.",
+     "Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Treat that marker as a channel close; do not leave it or the response controls inside reasoning. The split-before-gt companion delivers the same input across the compact close. Other registered families do not use this exact malformed-marker compatibility rule.",
+     KIMI_SHORT_REASONING_CLOSE_NATIVE,
+     [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "answer"}]),
+    ("kimi_k3_repeated_think_to_response_handoff_split_markers",
+     "Same repeated Kimi K3/K3.1 think-to-response handoff as the boundary-split case, delivered with splits inside both the think-close and response-open markers. Partial XTML syntax must be held across pushes and consumed once complete, preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff.",
+     "".join(KIMI_REPEATED_HANDOFF_SPLIT_MARKER_CHUNKS),
+     [{"kind": "text", "text": "Answer. .."}]),
+    ("kimi_k3_short_reasoning_close_split_before_gt",
+     "Same compact Kimi K3 think close as the single-chunk case, split after `<|close|>think` so the parser must hold it until `>` distinguishes the compact close from the XTML separator form. Do not leave the close or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.",
      KIMI_SHORT_REASONING_CLOSE_NATIVE,
      [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "answer"}]),
     ("kimi_k3_typed_response_marker_payload",
@@ -3306,6 +3318,8 @@ K3_STARTING_STATES = {
     "kimi_k3_orphan_response_reasoning_markers": "Response",
     "kimi_k3_reasoning_recovery_orphan_response_markers": "Reasoning",
     "kimi_k3_short_reasoning_close": "Reasoning",
+    "kimi_k3_repeated_think_to_response_handoff_split_markers": "Response",
+    "kimi_k3_short_reasoning_close_split_before_gt": "Reasoning",
     "kimi_k3_direct_typed_response_recovery": "Response",
     "kimi_k3_direct_json_response_recovery": "Response",
 }
@@ -3313,19 +3327,27 @@ K3_RESPONSE_CHUNKS = {
     "kimi_k3_repeated_think_to_response_handoff": KIMI_REPEATED_HANDOFF_CHUNKS,
     "kimi_k3_orphan_response_reasoning_markers": [KIMI_ORPHAN_RESPONSE_NATIVE],
     "kimi_k3_reasoning_recovery_orphan_response_markers": [KIMI_REASONING_ORPHAN_NATIVE],
-    "kimi_k3_short_reasoning_close": ["plan<|close|>think", ">", k3_open("response") + "answer"],
+    "kimi_k3_short_reasoning_close": [KIMI_SHORT_REASONING_CLOSE_NATIVE],
+    "kimi_k3_repeated_think_to_response_handoff_split_markers": KIMI_REPEATED_HANDOFF_SPLIT_MARKER_CHUNKS,
+    "kimi_k3_short_reasoning_close_split_before_gt": ["plan<|close|>think", ">", k3_open("response") + "answer"],
 }
 K3_NO_TOOLS = {
     "kimi_k3_repeated_think_to_response_handoff",
     "kimi_k3_orphan_response_reasoning_markers",
     "kimi_k3_reasoning_recovery_orphan_response_markers",
     "kimi_k3_short_reasoning_close",
+    "kimi_k3_repeated_think_to_response_handoff_split_markers",
+    "kimi_k3_short_reasoning_close_split_before_gt",
+}
+K3_NO_FINISH_STEP = {
+    "kimi_k3_repeated_think_to_response_handoff",
+    "kimi_k3_repeated_think_to_response_handoff_split_markers",
 }
 for scenario, description, native, golden in K3_RESPONSE_CASES:
     EDGE.append((
         scenario, description, ["I3", "I5", "I7"], golden,
         {"starting_state": K3_STARTING_STATES.get(scenario, "None"), "tool_output_mode": "Native", "named_tool": None},
-        {"finish_reason": "stop", "finish_step": scenario != "kimi_k3_repeated_think_to_response_handoff", "input_chunks": {"kimi_k3": K3_RESPONSE_CHUNKS.get(scenario, [native[offset:offset + 64] for offset in range(0, len(native), 64)])}},
+        {"finish_reason": "stop", "finish_step": scenario not in K3_NO_FINISH_STEP, "input_chunks": {"kimi_k3": K3_RESPONSE_CHUNKS.get(scenario, [native[offset:offset + 64] for offset in range(0, len(native), 64)])}},
         OnlyFamilies({"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
         [] if scenario in K3_NO_TOOLS else [
          {"name": "lookup", "parameters": {"type": "object", "properties": {

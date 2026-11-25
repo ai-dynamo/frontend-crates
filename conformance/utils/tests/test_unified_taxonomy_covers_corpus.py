@@ -693,6 +693,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "kimi_k3_direct_typed_response_recovery",
                 "kimi_k3_direct_json_response_recovery",
                 "kimi_k3_repeated_think_to_response_handoff",
+                "kimi_k3_repeated_think_to_response_handoff_split_markers",
                 "kimi_k3_orphan_response_reasoning_markers",
             })
         if family == "deepseek_v4":
@@ -748,7 +749,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 marker = G._NATIVE_QUOTED_CONTROL.get(family, "<tool_call>")
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
-            elif scenario == "kimi_k3_repeated_think_to_response_handoff":
+            elif scenario in {"kimi_k3_repeated_think_to_response_handoff",
+                              "kimi_k3_repeated_think_to_response_handoff_split_markers"}:
                 marker = G.k3_close("think")
             elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
                 marker = '<|open|>call tool="lookup"'
@@ -2729,6 +2731,7 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             # Validated by native_short_reasoning_markers_do_not_leak: this scenario
             # intentionally closes with the compact compatibility spelling instead.
             "kimi_k3_short_reasoning_close",
+            "kimi_k3_short_reasoning_close_split_before_gt",
         }
         if scenario.removesuffix("_pr424") not in unclosed:
             assert control_tokens(family)[1] in raw, (family, scenario, "missing reasoning closer")

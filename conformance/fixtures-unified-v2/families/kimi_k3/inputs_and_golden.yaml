@@ -5357,11 +5357,11 @@ requests:
     - 7
     finish_step: true
   6b99775e36f025d7c79626b6b5102c587fb3d376c14086f0e4971022e51d99c2:
+    input: plan<|close|>think><|open|>response<|sep|>answer
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
-    input: plan<|close|>think><|open|>response<|sep|>answer
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 18
@@ -11812,11 +11812,11 @@ requests:
     - 7
     finish_step: true
   f8370b48ac2950925a501f1b7097faff9d7d140061bb9dde6cee44a1a279acb5:
+    input: Answer. .<|close|>think<|sep|><|open|>response<|sep|>.
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-    input: Answer. .<|close|>think<|sep|><|open|>response<|sep|>.
     tools: tools_9db8284c68087826
     chunk_sizes:
     - 14
@@ -17591,9 +17591,9 @@ cases:
     policy:
     - I2
     - I3
-    description: Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split inside both the think-close and response-open markers so partial syntax is retained across pushes while surrounding punctuation is preserved. Other registered families do not use K3's named XTML channel handoff; their own channel transitions are covered by family-native cases, and shared prefilled-response cases cover standalone reasoning markers.
+    description: Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.
     display_id: UNIFIED.kimi-repeated_think_to_response_handoff
-    request: f8370b48ac2950925a501f1b7097faff9d7d140061bb9dde6cee44a1a279acb5
+    request: cf61df066ddce55d877e8fe1137b8d1fe8048d13ab0da4a68fb3a6c9becc7545
     golden:
     - kind: text
       text: Answer. ..
@@ -17626,9 +17626,9 @@ cases:
     - I3
     - I5
     - I7
-    description: Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Split after `<|close|>think` so the parser must hold it until `>` distinguishes the compact close from the separator form; do not leave it or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.
+    description: Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Treat that marker as a channel close; do not leave it or the response controls inside reasoning. The split-before-gt companion delivers the same input across the compact close. Other registered families do not use this exact malformed-marker compatibility rule.
     display_id: UNIFIED.kimi-short_reasoning_close
-    request: 6b99775e36f025d7c79626b6b5102c587fb3d376c14086f0e4971022e51d99c2
+    request: e3f2418468aeddf58b8a7d9d4f7261438d358f438065a90674e6f527f372e2c4
     golden:
     - kind: reasoning
       text: plan
@@ -17798,3 +17798,27 @@ cases:
     golden:
     - kind: reasoning
       text: Let me think, I should run this command "grep -v '
+  kimi_k3_repeated_think_to_response_handoff_split_markers:
+    description: Same repeated Kimi K3/K3.1 think-to-response handoff as the boundary-split case, delivered with splits inside both the think-close and response-open markers. Partial XTML syntax must be held across pushes and consumed once complete, preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-repeated_think_to_response_handoff_split_markers
+    request: f8370b48ac2950925a501f1b7097faff9d7d140061bb9dde6cee44a1a279acb5
+    golden:
+    - kind: text
+      text: Answer. ..
+  kimi_k3_short_reasoning_close_split_before_gt:
+    description: Same compact Kimi K3 think close as the single-chunk case, split after `<|close|>think` so the parser must hold it until `>` distinguishes the compact close from the XTML separator form. Do not leave the close or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-short_reasoning_close_split_before_gt
+    request: 6b99775e36f025d7c79626b6b5102c587fb3d376c14086f0e4971022e51d99c2
+    golden:
+    - kind: reasoning
+      text: plan
+    - kind: text
+      text: answer

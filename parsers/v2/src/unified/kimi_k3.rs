@@ -2298,8 +2298,13 @@ fn guided_holdback(haystack: &str, _state: GuidedChannelState) -> usize {
         )
 }
 
+/// Response-mode think controls stay out of the guided control set so they cannot
+/// open a reasoning span, but like the native Response path they are XTML
+/// structure, not visible prose.
 fn guided_strip_text(text: &str) -> String {
-    text.to_string()
+    RESPONSE_LITERAL_MARKERS
+        .iter()
+        .fold(text.to_string(), |text, marker| text.replace(marker, ""))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -5301,13 +5306,16 @@ mod tests {
     }
 
     #[test]
-    fn guided_response_prefill_keeps_quoted_channel_markup_literal() {
+    fn guided_response_prefill_strips_channel_markup_without_reasoning() {
         let payload = r#"[{"name":"weather","arguments":{"city":"Paris"}}]"#;
-        let quote = format!(
+        let markup = format!(
             "I mean {}self literal{}",
             THINK_OPEN.canonical, THINK_CLOSE.canonical
         );
-        for input in [format!("{quote}{payload}"), format!("{payload}{quote}")] {
+        // Like the native Response path: XTML controls are structure, not prose,
+        // and a prefilled response never reopens reasoning.
+        let quote = "I mean self literal".to_string();
+        for input in [format!("{markup}{payload}"), format!("{payload}{markup}")] {
             let expected = if input.starts_with('[') {
                 vec![
                     UnifiedEvent::ToolCall {
