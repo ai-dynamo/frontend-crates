@@ -106,12 +106,22 @@ impl KimiK3Formatter {
         // thinking. Make the public function-object form work without requiring
         // clients to know K3-specific chat-template arguments.
         let thinking = named_tool.is_none() && thinking_bool_from_args(args).unwrap_or(true);
-        let thinking_effort = resolve_thinking_effort(args);
+        let request_effort = req.reasoning_effort();
+        let thinking_effort = if thinking {
+            resolve_thinking_effort(
+                args,
+                request_effort.as_ref().and_then(|value| value.as_str()),
+            )?
+        } else {
+            None
+        };
         let model_name = match self.version {
             KimiVersion::K3 => "Kimi K3",
             KimiVersion::K31 => "Kimi K3.1",
         };
-        if thinking && !VALID_THINKING_EFFORTS.contains(&thinking_effort.as_str()) {
+        if let Some(thinking_effort) = thinking_effort
+            && !VALID_THINKING_EFFORTS.contains(&thinking_effort)
+        {
             return Err(PromptRenderError::invalid_request(format!(
                 "Unsupported {model_name} thinking_effort={thinking_effort:?}; supported values are {}",
                 VALID_THINKING_EFFORTS.join(", ")
@@ -128,7 +138,7 @@ impl KimiK3Formatter {
             response_format.as_ref(),
             req.should_add_generation_prompt(),
             thinking,
-            thinking_effort.as_str(),
+            thinking_effort,
         )
     }
 }
@@ -338,14 +348,16 @@ fn message_declares_tool(message: &Value, name: &str) -> bool {
         .is_some_and(|tools| contains_tool(tools, name))
 }
 
-fn resolve_thinking_effort(args: Option<&HashMap<String, Value>>) -> String {
-    args.and_then(|args| {
-        args.get("thinking_effort")
-            .or_else(|| args.get("reasoning_effort"))
-            .and_then(Value::as_str)
-    })
-    .unwrap_or("max")
-    .to_string()
+fn resolve_thinking_effort<'a>(
+    args: Option<&'a HashMap<String, Value>>,
+    request_effort: Option<&'a str>,
+) -> Result<Option<&'a str>> {
+    let default_effort = crate::emit_default_thinking_effort(args)?.then_some("max");
+    let effort = match args.and_then(|args| args.get("thinking_effort")) {
+        Some(native) => native.as_str().or(request_effort),
+        None => request_effort.or_else(|| args?.get("reasoning_effort")?.as_str()),
+    };
+    Ok(effort.or(default_effort))
 }
 
 fn push_segment(segments: &mut Vec<RenderedSegment>, text: impl Into<String>, allow_special: bool) {
@@ -839,7 +851,7 @@ fn build_chat_segments(
     response_format: Option<&Value>,
     add_generation_prompt: bool,
     thinking: bool,
-    thinking_effort: &str,
+    thinking_effort: Option<&str>,
 ) -> Result<RenderedPrompt> {
     let mut segments = Vec::new();
     let mut pending_segments = 0usize;
@@ -887,7 +899,7 @@ fn build_chat_segments(
         render_tool_declare(&mut segments, tools, false)?;
     }
 
-    if thinking {
+    if let Some(thinking_effort) = thinking_effort {
         internal_system_message(
             &mut segments,
             "thinking-effort",
@@ -1370,6 +1382,65 @@ mod tests {
                     if message == "Kimi K3 messages must contain a string role"
             ));
         }
+    }
+
+    #[test]
+    fn default_thinking_effort_only_controls_the_fallback_message() {
+        use GenerationState::{Reasoning, Response};
+
+        let emit_default = "emit_default_thinking_effort";
+        for formatter in [fmt(), KimiK3Formatter::new_k31(true)] {
+            for (args, effort, state) in [
+                (json!({}), Some("max"), Reasoning),
+                (json!({(emit_default): true}), Some("max"), Reasoning),
+                (json!({(emit_default): false}), None, Reasoning),
+                (
+                    json!({(emit_default): false, "reasoning_effort": "max"}),
+                    Some("max"),
+                    Reasoning,
+                ),
+                (
+                    json!({(emit_default): false, "reasoning_effort": "high"}),
+                    Some("high"),
+                    Reasoning,
+                ),
+                (
+                    json!({(emit_default): false, "thinking_effort": "low"}),
+                    Some("low"),
+                    Reasoning,
+                ),
+                (
+                    json!({"thinking": false, "reasoning_effort": "high"}),
+                    None,
+                    Response,
+                ),
+            ] {
+                let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+                request.args = serde_json::from_value(args).unwrap();
+                let prompt = formatter.render_prompt(&request).unwrap();
+                let text = prompt.as_str();
+                assert_eq!(prompt.generation_state(), state, "{:?}", request.args);
+                assert_eq!(text.contains("type=\"thinking-effort\""), effort.is_some());
+                if let Some(effort) = effort {
+                    assert!(text.contains(&format!("thinking_effort={effort}`")));
+                } else if state == Reasoning {
+                    assert!(text.ends_with("<|open|>think<|sep|>"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rejects_non_boolean_emit_default_thinking_effort() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request
+            .args
+            .insert("emit_default_thinking_effort".into(), json!("false"));
+        let error = fmt().render(&request).unwrap_err();
+        assert_eq!(
+            invalid_request_message(&error),
+            "emit_default_thinking_effort must be a boolean"
+        );
     }
 
     #[test]

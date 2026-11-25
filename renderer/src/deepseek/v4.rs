@@ -571,8 +571,13 @@ impl crate::OAIPromptFormatter for DeepSeekV4Formatter {
             .map(|value| serde_json::to_value(value).context("serialize reasoning_effort"))
             .transpose()?
             .or_else(|| args.and_then(|args| args.get("reasoning_effort").cloned()));
+        let emit_default = crate::emit_default_thinking_effort(args)?;
         let (disable_thinking, reasoning_effort) =
-            Self::resolve_reasoning_effort(effort_value.as_ref());
+            if !emit_default && effort_value.as_ref().is_none_or(JsonValue::is_null) {
+                (false, None)
+            } else {
+                Self::resolve_reasoning_effort(effort_value.as_ref())
+            };
         let mut thinking_mode = super::common::resolve_thinking_mode(args, self.thinking_mode);
         if disable_thinking {
             thinking_mode = ThinkingMode::Chat;
