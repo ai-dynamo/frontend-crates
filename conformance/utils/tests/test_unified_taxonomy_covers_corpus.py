@@ -646,7 +646,12 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_array_before_payload",
             })
         if family == "kimi_k3":
-            extra.update({"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"})
+            extra.update({
+                "kimi_k3_direct_typed_response_recovery",
+                "kimi_k3_direct_json_response_recovery",
+                "kimi_k3_repeated_think_to_response_handoff",
+                "kimi_k3_orphan_response_reasoning_markers",
+            })
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
         if family == "deepseek_v41":

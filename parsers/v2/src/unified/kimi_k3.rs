@@ -36,15 +36,9 @@ const END_OF_MSG: &str = "<|end_of_msg|>";
 const THINK_OPEN: Marker = Marker::pair("<|open|>think<|sep|>", "<|open|> think <|sep|>");
 const THINK_CLOSE: Marker = Marker::pair("<|close|>think<|sep|>", "<|close|> think <|sep|>");
 const THINK_CLOSE_HEAD: Marker = Marker::pair("<|close|>think", "<|close|> think");
+const SHORT_THINK_OPEN: Marker = Marker::single("<|open|>think>");
+const SHORT_THINK_CLOSE: Marker = Marker::single("<|close|>think>");
 const RESPONSE_OPEN: Marker = Marker::pair("<|open|>response<|sep|>", "<|open|> response <|sep|>");
-const REPEATED_RESPONSE_HANDOFF: Marker = Marker::pair(
-    "<|close|>think<|sep|><|open|>response<|sep|>",
-    "<|close|> think <|sep|><|open|> response <|sep|>",
-);
-const MIXED_RESPONSE_HANDOFF: Marker = Marker::pair(
-    "<|close|>think<|sep|><|open|> response <|sep|>",
-    "<|close|> think <|sep|><|open|>response<|sep|>",
-);
 const RESPONSE_CLOSE: Marker =
     Marker::pair("<|close|>response<|sep|>", "<|close|> response <|sep|>");
 const TOOLS_OPEN: Marker = Marker::pair("<|open|>tools<|sep|>", "<|open|> tools <|sep|>");
@@ -63,6 +57,8 @@ const JSON_OPEN: Marker = Marker::pair("<|open|>json", "<|open|> json");
 const JSON_CLOSE: Marker = Marker::pair("<|close|>json<|sep|>", "<|close|> json <|sep|>");
 
 const ALL_MARKERS: &[Marker] = &[
+    SHORT_THINK_OPEN,
+    SHORT_THINK_CLOSE,
     THINK_OPEN,
     THINK_CLOSE,
     RESPONSE_OPEN,
@@ -83,6 +79,8 @@ const ALL_MARKERS: &[Marker] = &[
 const IDLE_MARKERS: &[Marker] = ALL_MARKERS;
 const SEP_MARKER: Marker = Marker::pair("<|sep|>", " <|sep|>");
 const REASONING_MARKERS: &[Marker] = &[
+    SHORT_THINK_OPEN,
+    SHORT_THINK_CLOSE,
     THINK_CLOSE_HEAD,
     THINK_OPEN,
     THINK_CLOSE,
@@ -100,8 +98,11 @@ const REASONING_MARKERS: &[Marker] = &[
     Marker::single(END_OF_MSG),
 ];
 const RESPONSE_MARKERS: &[Marker] = &[
-    REPEATED_RESPONSE_HANDOFF,
-    MIXED_RESPONSE_HANDOFF,
+    SHORT_THINK_OPEN,
+    SHORT_THINK_CLOSE,
+    THINK_OPEN,
+    THINK_CLOSE,
+    RESPONSE_OPEN,
     RESPONSE_CLOSE,
     TOOLS_OPEN,
     CALL_OPEN,
@@ -1578,7 +1579,10 @@ impl KimiK3Native {
         if self.consume_assistant_message_open() {
             return true;
         }
-        if self.consume(THINK_OPEN) {
+        if self
+            .consume_any_at_start(&[THINK_OPEN, SHORT_THINK_OPEN])
+            .is_some()
+        {
             self.mode = Mode::Reasoning;
             return true;
         }
@@ -1659,6 +1663,7 @@ impl KimiK3Native {
             return true;
         }
         if let Some(len) = self.consume_any_at_start(&[
+            SHORT_THINK_OPEN,
             THINK_OPEN,
             RESPONSE_CLOSE,
             TOOLS_CLOSE,
@@ -1679,8 +1684,20 @@ impl KimiK3Native {
     }
 
     fn drain_response(&mut self, flush: bool, output: &mut UnifiedParserOutput) -> bool {
-        // In an open response, recover only a complete repeated handoff.
-        if self.consume(REPEATED_RESPONSE_HANDOFF) || self.consume(MIXED_RESPONSE_HANDOFF) {
+        // XTML channel controls are structural in an open response, including orphans.
+        // Call parsing keeps marker-looking argument strings out of this drain.
+        if let Some(len) = self.consume_any_at_start(&[
+            SHORT_THINK_OPEN,
+            SHORT_THINK_CLOSE,
+            THINK_OPEN,
+            THINK_CLOSE,
+            RESPONSE_OPEN,
+        ]) {
+            tracing::warn!(
+                why = "kimi_k3_orphan_marker_in_response",
+                skipped_bytes = len,
+                "quarantining orphan Kimi K3 structure inside response"
+            );
             return true;
         }
         if self.consume(RESPONSE_CLOSE) {
@@ -2008,6 +2025,9 @@ impl KimiK3Native {
     }
 
     fn consume_reasoning_close(&mut self, flush: bool) -> bool {
+        if self.consume(SHORT_THINK_CLOSE) {
+            return true;
+        }
         let Some(head_len) = THINK_CLOSE_HEAD.prefix_len(&self.buffer) else {
             return false;
         };
@@ -3009,31 +3029,126 @@ mod tests {
             &literal,
             UnifiedParserStartingState::Response,
             &[UnifiedEvent::Text {
-                text: literal.clone(),
+                text: "beforeliteral".into(),
             }],
         );
     }
 
     #[test]
     fn native_response_strips_repeated_think_to_response_handoffs() {
-        let literal = format!(
-            "literal {} or {}",
-            THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
-        );
         let mut input = String::from("Answer: 天气。");
         for close in THINK_CLOSE.variants() {
             for open in RESPONSE_OPEN.variants() {
                 input.push_str(&format!(" .{close}{open}."));
             }
         }
-        input.push_str(&literal);
         let expected = [UnifiedEvent::Text {
-            text: format!("Answer: 天气。 .. .. .. ..{literal}"),
+            text: "Answer: 天气。 .. .. .. ..".into(),
         }];
         assert_native_fragmentations_from_state(
             &input,
             UnifiedParserStartingState::Response,
             &expected,
+        );
+    }
+
+    #[test]
+    fn native_response_strips_orphan_reasoning_markers() {
+        for marker in [THINK_OPEN, THINK_CLOSE, RESPONSE_OPEN] {
+            for variant in marker.variants() {
+                let input = format!("before{variant}after");
+                assert_native_fragmentations_from_state(
+                    &input,
+                    UnifiedParserStartingState::Response,
+                    &[UnifiedEvent::Text {
+                        text: "beforeafter".into(),
+                    }],
+                );
+            }
+        }
+
+        let separated = format!(
+            "before{} \n{}after",
+            THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &separated,
+            UnifiedParserStartingState::Response,
+            &[UnifiedEvent::Text {
+                text: "before \nafter".into(),
+            }],
+        );
+    }
+
+    #[test]
+    fn native_reasoning_recovery_strips_later_response_markers() {
+        let input = format!(
+            "plan{}body{}A{}B{}C",
+            RESPONSE_OPEN.canonical,
+            THINK_OPEN.canonical,
+            THINK_CLOSE.canonical,
+            RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &input,
+            UnifiedParserStartingState::Reasoning,
+            &[
+                UnifiedEvent::Reasoning {
+                    text: "plan".into(),
+                },
+                UnifiedEvent::Text {
+                    text: "bodyABC".into(),
+                },
+            ],
+        );
+    }
+
+    #[test]
+    fn native_short_reasoning_markers_do_not_leak() {
+        let input = format!(
+            "{}plan{}{}answer",
+            SHORT_THINK_OPEN.canonical, SHORT_THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &input,
+            UnifiedParserStartingState::None,
+            &[
+                UnifiedEvent::Reasoning {
+                    text: "plan".into(),
+                },
+                UnifiedEvent::Text {
+                    text: "answer".into(),
+                },
+            ],
+        );
+
+        let prefilled = format!(
+            "plan{}{}answer",
+            SHORT_THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &prefilled,
+            UnifiedParserStartingState::Reasoning,
+            &[
+                UnifiedEvent::Reasoning {
+                    text: "plan".into(),
+                },
+                UnifiedEvent::Text {
+                    text: "answer".into(),
+                },
+            ],
+        );
+
+        let response = format!(
+            "before{}{}after",
+            SHORT_THINK_OPEN.canonical, SHORT_THINK_CLOSE.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &response,
+            UnifiedParserStartingState::Response,
+            &[UnifiedEvent::Text {
+                text: "beforeafter".into(),
+            }],
         );
     }
 

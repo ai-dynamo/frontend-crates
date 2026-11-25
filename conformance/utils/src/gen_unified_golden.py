@@ -1941,7 +1941,7 @@ EDGE = [
 
 
     ("prefilled_response_reasoning_markers_literal",
-     "A prefilled-Response case where starting_state=Response is observable. Response says the prompt already opened visible content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Marker-free prefilled-Response variants parse identically under starting_state=None and are deliberately omitted. This one does not.",
+     "A prefilled-Response case where starting_state=Response is observable. The prompt already opened visible content, so this stream has no reasoning channel. Literal marker-pair text stays visible; mode-owned structural controls, including Kimi K3 XTML, are stripped instead of opening a reasoning span. Marker-free prefilled-Response variants parse identically under starting_state=None and are deliberately omitted. This one does not.",
      ["P5"],
      # The literal text is the family's OWN reasoning markers, so the golden is
      # filled per family (below) rather than hardcoding one grammar's.
@@ -1979,7 +1979,7 @@ EDGE = [
         "kimi_k3": (k3_channel("think", "literal") + " then a call"
                     + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
                     M, M,
-                    k3_channel("think", "literal") + " then a call"),
+                    "literal then a call"),
         "mistral_4": ("[THINK]literal[/THINK] then a call" + r_tool("mistral_4", "get_weather", "city", "Paris", 0),
                     M,
                     {"verdict": "match", "note": "reasoning disabled, so the markers stay literal text"},
@@ -2336,12 +2336,16 @@ def _guided_response_markup(fam, recipient, after_payload=False):
     `to=…<|message|>` is the control marker that can be quoted for muse. Fixed
     marker-pair grammars cannot quote an opener without a response-state contract, so
     their family-equivalent input is their own reasoning envelope while Response is
-    prefilled. Return the expected visible text separately because muse strips its
-    special-token framing while the marker-pair families preserve their literal bytes.
+    prefilled. Return the expected visible text separately because Muse and Kimi K3
+    strip their structural controls while the other marker-pair families preserve
+    their literal bytes.
     """
     if fam in MUSE_FAMILIES:
         text = f"I mean to={recipient}literal"
         markup = f"I mean to={recipient}<|message|>literal<|eom|>"
+    elif fam == "kimi_k3":
+        text = f"I mean {recipient} literal"
+        markup = f"I mean {k3_open('think')}{recipient} literal{k3_close('think')}"
     else:
         reason_open, reason_close, _tool_open, _tool_close = control_tokens(fam)
         text = f"I mean {reason_open}{recipient} literal{reason_close}"
@@ -3085,24 +3089,6 @@ DEEPSEEK_V41_REDUNDANT_SCENARIOS = {
     "prefilled_reasoning_then_text": "reason_then_content",
 }
 
-KIMI_REPEATED_HANDOFF_CHUNKS = [
-    "Answer. .<|close|>think<|sep|>",
-    "<|open|>response<|sep|>.",
-]
-EDGE.append((
-    "kimi_k3_repeated_think_to_response_handoff",
-    "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.",
-    ["I2", "I3"], [{"kind": "text", "text": "Answer. .."}],
-    {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None},
-    {"finish_reason": "stop", "input_chunks": {"kimi_k3": KIMI_REPEATED_HANDOFF_CHUNKS}},
-    OnlyFamilies({"kimi_k3": (
-        "".join(KIMI_REPEATED_HANDOFF_CHUNKS),
-        D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M,
-    )}),
-    [],
-))
-
-
 KIMI_PROGRESS_FORMS = {
     "k2": ("kimi_k2", '<|tool_calls_section_begin|><|tool_call_begin|>functions.write_file:0<|tool_call_argument_begin|>{"count":7,"content":"', '"}', '<|tool_call_end|>', '<|tool_calls_section_end|>'),
     "k3_typed": ("kimi_k3", '<|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>argument key="count" type="number"<|sep|>7<|close|>argument<|sep|><|open|>argument key="content" type="string"<|sep|>', '<|close|>argument<|sep|>', '<|close|>call<|sep|>', '<|close|>tools<|sep|>'),
@@ -3204,7 +3190,42 @@ EDGE.append((
 
 K3_RESPONSE_LITERAL = k3_close("argument") + r_text("kimi_k3", "literal") + "after"
 K3_MARKER_PROGRESS_ARGUMENTS = {"q": r_text("kimi_k3", "literal"), "content": "x" * 4096}
+KIMI_REPEATED_HANDOFF_CHUNKS = [
+    "Answer. .<|close|>think<|sep|>",
+    "<|open|>response<|sep|>.",
+]
+KIMI_ORPHAN_RESPONSE_NATIVE = (
+    "Answer: 天气。"
+    + k3_open("think") + "open"
+    + k3_close("think") + " \n"
+    + k3_open("response") + "closed"
+    + k3_close("think") + " again"
+    + k3_open("response") + "."
+)
+KIMI_REASONING_ORPHAN_NATIVE = (
+    "plan" + k3_open("response") + "body"
+    + k3_open("think") + "A"
+    + k3_close("think") + "B"
+    + k3_open("response") + "C"
+)
+KIMI_SHORT_REASONING_CLOSE_NATIVE = "plan<|close|>think>" + k3_open("response") + "answer"
 K3_RESPONSE_CASES = [
+    ("kimi_k3_repeated_think_to_response_handoff",
+     "Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.",
+     "".join(KIMI_REPEATED_HANDOFF_CHUNKS),
+     [{"kind": "text", "text": "Answer. .."}]),
+    ("kimi_k3_orphan_response_reasoning_markers",
+     "Kimi K3 starts in Response with standalone think-open/think-close/response-open markers and a whitespace-separated handoff. Orphan XTML controls are structural noise and must not reach visible text; surrounding prose, punctuation, and whitespace survive. Other registered families do not use this named XTML channel grammar.",
+     KIMI_ORPHAN_RESPONSE_NATIVE,
+     [{"kind": "text", "text": "Answer: 天气。open \nclosed again."}]),
+    ("kimi_k3_reasoning_recovery_orphan_response_markers",
+     "Kimi K3 starts in Reasoning, recovers a response channel whose think close was elided, then encounters further reasoning/response markers in that response. Preserve the original reasoning and visible text while suppressing every later orphan control. Other registered families do not use this named XTML recovery grammar.",
+     KIMI_REASONING_ORPHAN_NATIVE,
+     [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "bodyABC"}]),
+    ("kimi_k3_short_reasoning_close",
+     "Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Treat that marker as a channel close even across arbitrary delivery splits; do not leave it or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.",
+     KIMI_SHORT_REASONING_CLOSE_NATIVE,
+     [{"kind": "reasoning", "text": "plan"}, {"kind": "text", "text": "answer"}]),
     ("kimi_k3_typed_response_marker_payload",
      "Native K3 typed string contains an apparent argument close and a framed response before its real argument close. The response stays literal argument data.",
      r_tool_arguments("kimi_k3", "lookup", {"q": K3_RESPONSE_LITERAL}, 0),
@@ -3238,15 +3259,34 @@ K3_RESPONSE_CASES = [
      k3_call("lookup", 1, k3_json('{"q":"first"}'), close=False) + r_text("kimi_k3", "recovered"),
      [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}, {"kind": "text", "text": "recovered"}]),
 ]
+K3_STARTING_STATES = {
+    "kimi_k3_repeated_think_to_response_handoff": "Response",
+    "kimi_k3_orphan_response_reasoning_markers": "Response",
+    "kimi_k3_reasoning_recovery_orphan_response_markers": "Reasoning",
+    "kimi_k3_short_reasoning_close": "Reasoning",
+    "kimi_k3_direct_typed_response_recovery": "Response",
+    "kimi_k3_direct_json_response_recovery": "Response",
+}
+K3_RESPONSE_CHUNKS = {
+    "kimi_k3_repeated_think_to_response_handoff": KIMI_REPEATED_HANDOFF_CHUNKS,
+    "kimi_k3_orphan_response_reasoning_markers": [KIMI_ORPHAN_RESPONSE_NATIVE],
+    "kimi_k3_reasoning_recovery_orphan_response_markers": [KIMI_REASONING_ORPHAN_NATIVE],
+    "kimi_k3_short_reasoning_close": [KIMI_SHORT_REASONING_CLOSE_NATIVE],
+}
+K3_NO_TOOLS = {
+    "kimi_k3_repeated_think_to_response_handoff",
+    "kimi_k3_orphan_response_reasoning_markers",
+    "kimi_k3_reasoning_recovery_orphan_response_markers",
+    "kimi_k3_short_reasoning_close",
+}
 for scenario, description, native, golden in K3_RESPONSE_CASES:
     EDGE.append((
         scenario, description, ["I3", "I5", "I7"], golden,
-        {"starting_state": "Response" if scenario in {
-            "kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery",
-        } else "None", "tool_output_mode": "Native", "named_tool": None},
-        {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": [native[offset:offset + 64] for offset in range(0, len(native), 64)]}},
+        {"starting_state": K3_STARTING_STATES.get(scenario, "None"), "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "finish_step": scenario != "kimi_k3_repeated_think_to_response_handoff", "input_chunks": {"kimi_k3": K3_RESPONSE_CHUNKS.get(scenario, [native[offset:offset + 64] for offset in range(0, len(native), 64)])}},
         OnlyFamilies({"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
-        [{"name": "lookup", "parameters": {"type": "object", "properties": {
+        [] if scenario in K3_NO_TOOLS else [
+         {"name": "lookup", "parameters": {"type": "object", "properties": {
             "q": {"type": "string"}, "content": {"type": "string"}}, "required": ["q"]}},
          {"name": "next", "parameters": {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}}],
     ))
