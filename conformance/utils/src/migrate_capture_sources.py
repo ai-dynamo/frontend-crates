@@ -162,32 +162,13 @@ def _expanded_evidence(root: Path, path: Path) -> dict:
         )
         for reference in manifest.get("receipts", {})
     }
-    expanded = execution_manifests.expand(
+    return execution_manifests.historical_evidence(
         manifest,
         family=family,
         implementation=implementation,
         version=version,
         receipt_documents=receipt_documents,
     )
-    receipts = [
-        {"members": members, "body": receipt_documents[reference]}
-        for reference, members in sorted(manifest.get("receipts", {}).items())
-    ]
-    return {
-        "kind": "execution_manifest",
-        "schema_version": 1,
-        "family": family,
-        "implementation": implementation,
-        "version": version,
-        "checkpoint": manifest["checkpoint"],
-        "cases": manifest["cases"],
-        "defaults": manifest["defaults"],
-        "exceptions": manifest["exceptions"],
-        "metadata_changes": expanded["metadata_changes"],
-        "receipt_membership": receipts,
-        **({"execution_proof": expanded["execution_proof"]}
-           if "execution_proof" in expanded else {}),
-    }
 
 
 def convert_snapshots(source: Path, destination: Path, spool: Path) -> dict:

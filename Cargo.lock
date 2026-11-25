@@ -1166,7 +1166,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-decisions"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "dynamo-protocols",
  "serde",
@@ -1198,7 +1198,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-multimodal"
-version = "0.2.15"
+version = "0.2.22"
 dependencies = [
  "base64 0.22.1",
  "blake3",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "11.0.14"
+version = "11.0.15"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1294,7 +1294,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "10.5.0"
+version = "10.6.0"
 dependencies = [
  "aho-corasick",
  "anyhow",

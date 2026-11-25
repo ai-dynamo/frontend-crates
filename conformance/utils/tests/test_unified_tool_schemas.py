@@ -95,7 +95,7 @@ def _assert_golden_schemas(cases, tools):
         if custom_probe is not None:
             # These exact native compatibility requests deliberately use an invalid
             # JSON Schema type. Preserve the strict schema oracle for every other case.
-            assert case_id.rsplit(".", 1)[1] in {"qwen3", "nemotron_v3"}
+            assert case_id.rsplit(".", 1)[1] in {"minimax_m2", "nemotron_nano", "nemotron_v3", "qwen3", "qwen3_coder"}
             assert case["tools"] == schema_tools(custom_probe)
             assert case["golden"] == [{"kind": "tool_call", "name": "schema_probe",
                                        "arguments": {"value": {"a": 1}}}]
@@ -107,7 +107,7 @@ def _assert_golden_schemas(cases, tools):
             if event["kind"] == "tool_call":
                 if not offered_tools:
                     # Native lexical probes deliberately exercise unoffered calls.
-                    assert case_id.endswith(".gpt_oss") or (
+                    assert case_id.rsplit(".", 1)[1] in {"gpt_oss", "harmony", "harmony_text"} or (
                         scenario in {
                             "gpt_oss_multiple_unknown_and_empty_tools",
                             "gpt_oss_control_marker_inside_argument_string",
@@ -129,7 +129,7 @@ def _assert_golden_schemas(cases, tools):
                     continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
-                    assert family in {"kimi_k2", "mistral_4", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3", "hermes"}
+                    assert family in {"kimi_k2", "mistral_4", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3", "hermes", "deepseek_v3_2", "minimax_m2", "nemotron_nano", "qwen3_coder"}
                     assert event["arguments"] == ({} if family in {"kimi_k2", "mistral_4"} else {"value": '{"x":"unfinished'})
                     continue
                 if case_id.startswith("UNIFIED.mistral_name_before_marker.") and event["name"] == "":

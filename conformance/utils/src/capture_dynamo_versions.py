@@ -10,6 +10,7 @@ import json
 import queue
 import subprocess
 import tomllib
+import traceback
 from pathlib import Path
 
 import yaml
@@ -96,33 +97,36 @@ def validate_adapter_binding(manifest: dict, identity: str, relative: str) -> st
     return digest
 
 
-def run_inventory(inventory: Path, work: Path, workers: int, versions: list[str] | None = None, target_root: Path | None = None, families: list[str] | None = None) -> dict:
-    targets = yaml.safe_load(inventory.read_text())["targets"]
+def frozen_family_jobs(store: Path, families: list[str] | None = None) -> dict[tuple[str, str], bytes]:
+    registered = {path.parent.name for path in store.glob("*/inputs_and_golden.yaml")}
+    if families and set(families) - registered:
+        raise ValueError("requested family is outside the Unified corpus")
+    return {(mode, family): (json.dumps(build_job(store, family, mode=mode), ensure_ascii=False) + "\n").encode()
+            for mode in ("stream", "batch") for family in sorted(registered)
+            if not families or family in families}
+
+
+def run_inventory(inventory: Path, work: Path, workers: int, versions: list[str] | None = None, target_root: Path | None = None, families: list[str] | None = None, *, store_root: Path | None = None) -> dict:
+    document = yaml.safe_load(inventory.read_text())
+    targets = document["targets"]
     if versions:
         targets = [target for target in targets if target["version"] in versions]
     if not targets:
         raise ValueError("empty release inventory")
     work.mkdir(parents=True, exist_ok=False)
     adapter_manifest_sha256 = freeze_adapters(work)
-    store = ROOT / "conformance/fixtures-unified-v2/families"
-    registered = {path.parent.name for path in store.glob("*/inputs_and_golden.yaml")}
-    if families and set(families) - registered:
-        raise ValueError("requested family is outside the Unified corpus")
-    jobs = {}
-    for mode in ("stream", "batch"):
-        directory = work / "jobs" / mode
-        directory.mkdir(parents=True)
-        jobs[mode] = []
-        for family_path in sorted(store.glob("*/inputs_and_golden.yaml")):
-            family = family_path.parent.name
-            if families and family not in families:
-                continue
-            path = directory / (family + ".json")
-            path.write_text(json.dumps(build_job(store, family, mode=mode), ensure_ascii=False) + "\n")
-            jobs[mode].append(path)
+    store = store_root or ROOT / "conformance/fixtures-unified-v2/families"
+    jobs = {mode: [] for mode in ("stream", "batch")}
+    for (mode, family), data in frozen_family_jobs(store, families).items():
+        path = work / "jobs" / mode / (family + ".json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        jobs[mode].append(path)
+    if not jobs["stream"]:
+        raise ValueError("empty registered family corpus")
     frozen = {str(path.relative_to(work)): hashlib.sha256(path.read_bytes()).hexdigest() for paths in jobs.values() for path in paths}
     (work / "frozen-jobs.json").write_text(json.dumps(frozen, sort_keys=True))
-    (work / "inventory.yaml").write_bytes(inventory.read_bytes())
+    (work / "inventory.yaml").write_text(yaml.safe_dump({**document, "targets": targets}, sort_keys=False))
     slots = queue.Queue()
     for index in range(workers):
         slots.put((target_root or work) / f"cargo-target-{index}")
@@ -138,7 +142,7 @@ def run_inventory(inventory: Path, work: Path, workers: int, versions: list[str]
                 try:
                     outputs = capture_dynamo_unified.capture(target, jobs["stream"], work / "captures" / f"{implementation}-{version}", producer, target_dir)
                 except (RuntimeError, OSError, ValueError, subprocess.CalledProcessError) as error:
-                    return {"implementation": implementation, "version": version, "blocker": str(error), "producer": str(producer)}
+                    return {"implementation": implementation, "version": version, "blocker": str(error), "traceback": traceback.format_exc(), "producer": str(producer)}
             else:
                 for jail in (False, True):
                     mode_impl = "dynamo_v1_jail" if jail else implementation
@@ -153,7 +157,7 @@ def run_inventory(inventory: Path, work: Path, workers: int, versions: list[str]
                             outputs.append(output)
                     except (RuntimeError, OSError, ValueError, subprocess.CalledProcessError) as error:
                         for job in jobs["batch"]:
-                            outputs.append({"implementation": mode_impl, "family": job.stem, "blocker": str(error), "producer": str(producer / mode_impl)})
+                            outputs.append({"implementation": mode_impl, "family": job.stem, "blocker": str(error), "traceback": traceback.format_exc(), "producer": str(producer / mode_impl)})
             return {"implementation": implementation, "version": version, "outputs": [str(path) if isinstance(path, Path) else path for path in outputs]}
         finally:
             slots.put(target_dir)
@@ -165,7 +169,8 @@ def run_inventory(inventory: Path, work: Path, workers: int, versions: list[str]
             result = future.result()
             completed.append(result)
             (work / "run-status.json").write_text(json.dumps(completed, indent=2) + "\n")
-            print(f"{target['implementation']} {target['version']}: {'BLOCKED' if 'blocker' in result else 'recorded'}", flush=True)
+            blocked = "blocker" in result or any(isinstance(output, dict) for output in result.get("outputs", []))
+            print(f"{target['implementation']} {target['version']}: {'BLOCKED' if blocked else 'recorded'}", flush=True)
     validate_frozen_jobs(work, frozen)
     result = {"targets": completed, "jobs": frozen, "adapter_manifest_sha256": adapter_manifest_sha256}
     adapters = validate_frozen_adapters(work, result)
@@ -216,11 +221,41 @@ def validate_source_identity(work: Path, receipt: dict, frozen: dict, identity: 
             raise ValueError("coverage source package differs from execution")
         has_protocol = identity == "dynamo_v1_jail" and any(package["name"] == "dynamo-protocols" for package in tomllib.loads(lock.read_text())["package"])
         flags = capture_dynamo_unified_batch.compatibility_flags(sources[0], has_protocol)
+        if (producer / "reasoning-context-probe.log").exists():
+            flags.extend(recorded_context_flags(producer))
         if "compatibility_flags" in receipt and receipt["compatibility_flags"] != flags:
             raise ValueError("coverage compatibility flags differ from source")
         source_identity["compatibility_flags"] = flags
     if receipt["source_sha256"] != hashlib.sha256(json.dumps(source_identity, sort_keys=True).encode()).hexdigest():
         raise ValueError("coverage source and lock identity mismatch")
+
+
+def recorded_context_flags(producer: Path) -> list[str]:
+    """Validate the retained compiler capability probe without rebuilding a producer."""
+    example = producer / "examples" / f"{capture_dynamo_unified_batch.CONTEXT_PROBE_NAME}.rs"
+    if example.is_symlink() or example.read_text() != capture_dynamo_unified_batch.CONTEXT_PROBE:
+        raise ValueError("coverage context capability probe source differs from adapter")
+    rows = []
+    for line in (producer / "reasoning-context-probe.log").read_text().splitlines():
+        if line.startswith("{"):
+            rows.append(json.loads(line))
+    finished = [row for row in rows if row.get("reason") == "build-finished"]
+    if len(finished) != 1 or type(finished[0].get("success")) is not bool:
+        raise ValueError("coverage context capability probe lacks one compiler result")
+    errors = [row for row in rows if row.get("reason") == "compiler-message" and row["message"]["level"] == "error"]
+    if finished[0]["success"]:
+        artifacts = [row for row in rows if row.get("reason") == "compiler-artifact"
+                     and row["target"]["name"] == capture_dynamo_unified_batch.CONTEXT_PROBE_NAME
+                     and Path(row["target"]["src_path"]).resolve() == example.resolve()]
+        if errors or len(artifacts) != 1:
+            raise ValueError("coverage context capability success lacks the owned compiler artifact")
+        return ["conformance_reasoning_context"]
+    missing_api_codes = {"E0412", "E0422", "E0425", "E0432", "E0433", "E0599", "E0603", "E0624"}
+    actionable = [row for row in errors if row["message"]["code"] is not None or row["message"].get("spans")]
+    if (not errors or not actionable or any(Path(row["target"]["src_path"]).resolve() != example.resolve() for row in errors)
+            or any(row["message"]["code"] is None or row["message"]["code"]["code"] not in missing_api_codes for row in actionable)):
+        raise ValueError("coverage context capability failure is not an owned missing API result")
+    return []
 
 
 def coverage_inventory(work: Path, result: dict) -> dict:
@@ -294,6 +329,8 @@ def main():
     coverage = coverage_inventory(args.work, result)
     (args.work / "coverage.json").write_text(json.dumps(coverage, ensure_ascii=False) + "\n")
     print(json.dumps(coverage["counts"], sort_keys=True), flush=True)
+    if any(coverage["counts"].get(status, 0) for status in ("source_build_blocker", "missing_evidence")):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

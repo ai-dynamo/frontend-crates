@@ -11,6 +11,20 @@ class NumericLiteral(str):
     """Native numeric token, distinct from a quoted string argument."""
 
 
+
+def json_with_numeric_literals(value):
+    if isinstance(value, NumericLiteral):
+        return str(value)
+    if isinstance(value, dict):
+        return "{" + ",".join(
+            json.dumps(key, ensure_ascii=False) + ":" + json_with_numeric_literals(item)
+            for key, item in value.items()
+        ) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(json_with_numeric_literals(item) for item in value) + "]"
+    return json.dumps(value, ensure_ascii=False)
+
+
 class _JsonNumberToken(str):
     """Valid JSON number whose exponent is outside Decimal's supported range."""
 

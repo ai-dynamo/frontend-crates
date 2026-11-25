@@ -687,6 +687,7 @@ fn missing_inner_closers_obey_family_argument_ownership() {
             "muse_spark",
             "nemotron_v3",
             "qwen3",
+            "qwen3_coder",
         ]
         .into_iter()
         .map(str::to_owned)
@@ -1040,7 +1041,7 @@ fn native_review_variants_share_split_and_finish_coverage() {
             }
         }
     }
-    assert_eq!(checked, 20);
+    assert_eq!(checked, 21);
 }
 
 #[test]
@@ -1159,6 +1160,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "muse_spark",
         "nemotron_v3",
         "qwen3",
+        "qwen3_coder",
     ];
     let mut checked = 0;
     let files = load_native_golden();
@@ -1205,17 +1207,10 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         .values()
         .filter(|family| family.native)
         .count();
-    let template_families = common::unified_families()
-        .values()
-        .filter(|family| {
-            family.native
-                && (family.scenario_profile.as_deref() != Some("native") || family.shared_scenarios)
-        })
-        .count();
     assert_eq!(
         checked,
         native_families * reference_scenarios.len()
-            + template_families * template_reference_scenarios.len()
+            + native_families * template_reference_scenarios.len()
             + dotted_native_families.len() * dotted_scenarios.len()
             // Native Harmony's two reference repetitions use the delivery lifecycle owner.
             - 2,

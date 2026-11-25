@@ -14,13 +14,14 @@
 //! SGLang, and TensorRT-LLM all take `image_grid_thw` from that HF image
 //! processor, so this planner is the single geometry contract for all three.
 //!
-//! [`Glm5NextImageProcessor`] adds pixel preprocessing using the same planner.
-//! The metadata-only processor does not produce vision embeddings, and it
-//! does not cover video: GLM expands video frames with the *image* token, so
-//! [`MmFamilyProcessor::layout_from_metadata`] refuses prompts that carry the
-//! video placeholder rather than mis-attributing those positions.
+//! [`Glm5NextImageProcessor`] adds pixel preprocessing for images and video
+//! using the same planner. The metadata-only processor does not produce vision
+//! embeddings, and it does not lay out video: a video expands into image
+//! tokens and timestamp text, so [`MmFamilyProcessor::layout_from_metadata`]
+//! refuses prompts that carry the video placeholder.
 
 mod image;
+mod video;
 
 pub use image::{Glm5NextImageProcessor, Glm5NextImageSpec};
 
@@ -48,7 +49,7 @@ pub struct Glm5NextGeometrySpec {
 }
 
 /// Planning parameters resolved from the checkpoint, without serving defaults.
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
 pub struct Glm5NextSpec {
     /// `<|image|>`: the chat-template placeholder and the expanded feature id.
     pub image_token_id: i32,
@@ -58,6 +59,26 @@ pub struct Glm5NextSpec {
     pub video_token_id: Option<i32>,
     #[serde(flatten)]
     pub geometry: Glm5NextGeometrySpec,
+    /// The video processor, when the checkpoint ships one. Its pixel path
+    /// runs in [`Glm5NextImageProcessor`].
+    #[serde(default)]
+    pub video: Option<Glm5NextVideoSpec>,
+}
+
+/// `Glm5NextVideoProcessor` knobs. The token bounds apply to the whole clip.
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
+pub struct Glm5NextVideoSpec {
+    /// `<|begin_of_image|>` and `<|end_of_image|>`, which frame each
+    /// temporal group of a video.
+    pub image_start_token_id: i32,
+    pub image_end_token_id: i32,
+    /// Sampled frames per second of source time.
+    pub fps: f64,
+    pub max_frames: u32,
+    #[serde(flatten)]
+    pub geometry: Glm5NextGeometrySpec,
+    pub image_mean: [f32; 3],
+    pub image_std: [f32; 3],
 }
 
 /// GLM-5.3-Flash metadata-only processor. Pixel preprocessing is explicitly
@@ -104,6 +125,36 @@ impl Glm5NextProcessor {
                 "glm5_next: video_token_id must be nonnegative",
             ));
         }
+        if let Some(video) = &spec.video {
+            video.geometry.validate()?;
+            if spec.video_token_id.is_none() {
+                return Err(MmError::invalid_input(
+                    "glm5_next: a video processor needs video_token_id",
+                ));
+            }
+            if video.image_start_token_id < 0 || video.image_end_token_id < 0 {
+                return Err(MmError::invalid_input(
+                    "glm5_next: image start and end token ids must be nonnegative",
+                ));
+            }
+            if !(video.fps.is_finite() && video.fps > 0.0) || video.max_frames == 0 {
+                return Err(MmError::invalid_input(
+                    "glm5_next: video fps and max_frames must be positive",
+                ));
+            }
+            // M-RoPE reads one merge size for images and video.
+            if video.geometry.merge_size != spec.geometry.merge_size {
+                return Err(MmError::unsupported(
+                    "glm5_next: video merge_size must equal the image merge_size",
+                ));
+            }
+            // SGLang's clip budget leaves the expand factor out of each token's pixels.
+            if video.geometry.patch_expand_factor != 1 {
+                return Err(MmError::unsupported(
+                    "glm5_next: video patch_expand_factor must be 1",
+                ));
+            }
+        }
         Ok(Self { spec })
     }
 
@@ -119,7 +170,12 @@ impl MmFamilyProcessor for Glm5NextProcessor {
                 usize::try_from(self.plan_image(*width, *height)?.num_image_tokens)
                     .map_err(|_| MmError::limit_exceeded("glm5_next: token count exceeds usize"))
             }
-            _ => Err(MmError::unsupported("glm5_next supports only images")),
+            MediaMetadata::Video { .. } => Err(MmError::unsupported(
+                "glm5_next: a video's tokens include its timestamp text; use layout_with_text",
+            )),
+            _ => Err(MmError::unsupported(
+                "glm5_next supports only images and video",
+            )),
         }
     }
 
@@ -343,6 +399,64 @@ pub fn plan_image_grid(
     })
 }
 
+/// Shared canvas, patch grid, and tokens per temporal group of one video.
+/// `video_grid_thw` is `[grid_t, grid_h, grid_w]`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Glm5NextVideoPlan {
+    pub resized_height: u32,
+    pub resized_width: u32,
+    pub grid_t: u32,
+    pub grid_h: u32,
+    pub grid_w: u32,
+    /// `grid_h * grid_w / merge_size²`: the `<|image|>` copies per group.
+    pub tokens_per_group: u32,
+}
+
+/// The geometry SGLang gives `num_frames` sampled frames: one canvas from
+/// [`smart_resize`] under the budget for the whole clip, `temporal_patch_size`
+/// frames per group (the last frame repeats to fill the last group).
+/// Unsupported when HF's video processor, which SGLang runs on the frames it
+/// resized to that canvas, plans a different canvas from it.
+pub fn plan_video_grid(
+    num_frames: u32,
+    width: u32,
+    height: u32,
+    spec: &Glm5NextGeometrySpec,
+) -> Result<Glm5NextVideoPlan> {
+    spec.validate()?;
+    let factor = spec.alignment_factor()?;
+    let canvas = |height, width| {
+        smart_resize(
+            num_frames,
+            height,
+            width,
+            spec.temporal_patch_size,
+            factor,
+            spec.min_image_tokens,
+            spec.max_image_tokens,
+        )
+    };
+    let (resized_height, resized_width) = canvas(height, width)?;
+    if canvas(resized_height, resized_width)? != (resized_height, resized_width) {
+        return Err(MmError::unsupported(
+            "glm5_next: SGLang would resize this clip a second time",
+        ));
+    }
+    let grid_h = resized_height / spec.patch_size;
+    let grid_w = resized_width / spec.patch_size;
+    let merge_length = u64::from(spec.merge_size) * u64::from(spec.merge_size);
+    let tokens_per_group = u32::try_from(u64::from(grid_h) * u64::from(grid_w) / merge_length)
+        .map_err(|_| MmError::limit_exceeded("glm5_next geometry: token count exceeds u32"))?;
+    Ok(Glm5NextVideoPlan {
+        resized_height,
+        resized_width,
+        grid_t: num_frames.div_ceil(spec.temporal_patch_size),
+        grid_h,
+        grid_w,
+        tokens_per_group,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -446,6 +560,7 @@ mod tests {
             image_token_id: 154854,
             video_token_id: Some(154855),
             geometry: glm53_flash(),
+            video: None,
         };
         let processor = Glm5NextProcessor::new(spec).unwrap();
         let image = MediaMetadata::Image {
@@ -474,12 +589,57 @@ mod tests {
     }
 
     #[test]
+    fn plans_a_video_against_the_clip_budget() {
+        let spec = Glm5NextGeometrySpec {
+            max_image_tokens: 240000,
+            ..glm53_flash()
+        };
+        // 60 s of 1080p at 2 fps fits: sides align up to 28.
+        let plan = plan_video_grid(120, 1920, 1080, &spec).unwrap();
+        assert_eq!(
+            (plan.resized_height, plan.resized_width, plan.grid_t),
+            (1092, 1932, 60)
+        );
+        assert_eq!(plan.tokens_per_group, 39 * 69);
+        // 2 minutes does not: one canvas for all frames, within the budget.
+        let plan = plan_video_grid(240, 1920, 1080, &spec).unwrap();
+        assert_eq!(plan.grid_t, 120);
+        assert!(plan.grid_t * plan.tokens_per_group <= 240000);
+        let step = u64::from(plan.resized_height + 28) * u64::from(plan.resized_width + 28);
+        assert!(240 * step > 240000 * 2 * 28 * 28);
+    }
+
+    /// SGLang 25c1c439 plans 28x392 for four 1x16 frames in groups of three,
+    /// and transformers 5.19.0 plans 28x364 from that canvas.
+    #[test]
+    fn refuses_a_clip_that_sglang_resizes_twice() {
+        let spec = Glm5NextGeometrySpec {
+            temporal_patch_size: 3,
+            max_image_tokens: 240000,
+            ..glm53_flash()
+        };
+        assert_eq!(
+            smart_resize(4, 1, 16, 3, 28, 16, 240000).unwrap(),
+            (28, 392)
+        );
+        assert_eq!(
+            smart_resize(4, 28, 392, 3, 28, 16, 240000).unwrap(),
+            (28, 364)
+        );
+        assert!(matches!(
+            plan_video_grid(4, 16, 1, &spec),
+            Err(MmError::Unsupported { .. })
+        ));
+    }
+
+    #[test]
     fn image_processor_refuses_rgba() {
         let processor = Glm5NextImageProcessor::new(Glm5NextImageSpec {
             planner: Glm5NextSpec {
                 image_token_id: 154854,
                 video_token_id: None,
                 geometry: glm53_flash(),
+                video: None,
             },
             image_mean: [0.5; 3],
             image_std: [0.5; 3],
@@ -492,6 +652,25 @@ mod tests {
                 height: 448,
                 width: 448,
             }),
+            Err(MmError::Unsupported { .. })
+        ));
+        // Without a video processor, video is refused too.
+        assert!(
+            !processor
+                .capabilities()
+                .supports(crate::processor::Modality::Video)
+        );
+        assert!(matches!(
+            processor.process_items(
+                &[],
+                &[DecodedMedia::Video {
+                    rgb: vec![7u8; 2 * 28 * 28 * 3],
+                    height: 28,
+                    width: 28,
+                    frame_indices: vec![0, 1],
+                    fps: 2.0,
+                }]
+            ),
             Err(MmError::Unsupported { .. })
         ));
     }

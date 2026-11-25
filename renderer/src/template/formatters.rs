@@ -3,6 +3,7 @@
 
 use std::sync::Arc;
 
+use super::effort::EffortTemplate;
 use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
     ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
@@ -447,11 +448,22 @@ fn detect_passthrough_template(env: &Environment) -> bool {
 /// map iteration behavior without colliding with schema keys.
 /// Only executable tags are normalized; comments, raw blocks, and quoted strings
 /// can contain tag-shaped text that must remain literal.
-fn normalize_jinja_syntax(template: &str) -> String {
+fn normalize_jinja_syntax(template: &str) -> (String, Option<EffortTemplate>) {
+    let profile = EffortTemplate::detect(template);
+    let mut adapted_effort = None;
     let mut out = String::with_capacity(template.len());
     let mut i = 0;
 
     while i < template.len() {
+        if let Some(effort) = profile
+            && template[i..].starts_with('{')
+            && let Some((len, tag)) = effort.guarded_tag(&template[i..])
+        {
+            adapted_effort = Some(effort);
+            out.push_str(&tag);
+            i += len;
+            continue;
+        }
         if template[i..].starts_with("{#") {
             let Some(end) = find_tag_end(template, i + 2, "#}") else {
                 out.push_str(&template[i..]);
@@ -495,7 +507,7 @@ fn normalize_jinja_syntax(template: &str) -> String {
         }
     }
 
-    out
+    (out, adapted_effort)
 }
 
 fn normalize_jinja_block(inner: &str) -> String {
@@ -668,16 +680,22 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
         .replace(OLD_TOOL_LOOP_END, NEW_TOOL_LOOP_END)
 }
 
-pub(super) fn normalize_chat_template_source(source: &str) -> String {
-    let source = normalize_jinja_syntax(source);
+fn normalize_chat_template(source: &str) -> (String, Option<EffortTemplate>) {
+    let (source, effort) = normalize_jinja_syntax(source);
 
-    if is_gemma4_reasoning_field_template_source(&source) {
+    let source = if is_gemma4_reasoning_field_template_source(&source) {
         adapt_gemma4_reasoning_template_source(&source)
     } else if is_minimax_m2_template_source(&source) {
         adapt_minimax_m2_thinking_template_source(&source)
     } else {
         source
-    }
+    };
+    (source, effort)
+}
+
+#[cfg(test)]
+pub(super) fn normalize_chat_template_source(source: &str) -> String {
+    normalize_chat_template(source).0
 }
 
 /// Find a capability marker in executable Jinja, excluding prose, comments,
@@ -801,6 +819,8 @@ impl HfTokenizerConfigJsonFormatter {
         env.add_function("strftime_now", strftime_now);
 
         let mut supports_add_generation_prompt = None;
+        let mut default_effort_template = None;
+        let mut tool_use_effort_template = None;
 
         match &chat_template.0 {
             Either::Left(x) => {
@@ -811,7 +831,9 @@ impl HfTokenizerConfigJsonFormatter {
                     supports_add_generation_prompt = Some(true);
                 }
                 // Remove known non-standard tags before validation (they don't affect output)
-                let template_cleaned = normalize_chat_template_source(x);
+                let (template_cleaned, effort) = normalize_chat_template(x);
+                default_effort_template = effort;
+                tool_use_effort_template = effort;
                 env.add_template_owned("default", template_cleaned.clone())?;
                 env.add_template_owned("tool_use", template_cleaned)?;
             }
@@ -843,7 +865,12 @@ impl HfTokenizerConfigJsonFormatter {
                             supports_add_generation_prompt = Some(false);
                         }
                         // Remove known non-standard tags before validation (they don't affect output)
-                        let template_cleaned = normalize_chat_template_source(v);
+                        let (template_cleaned, effort) = normalize_chat_template(v);
+                        match k.as_str() {
+                            "default" => default_effort_template = effort,
+                            "tool_use" => tool_use_effort_template = effort,
+                            _ => (),
+                        }
                         env.add_template_owned(k.to_string(), template_cleaned)?;
                     }
                 }
@@ -869,7 +896,7 @@ impl HfTokenizerConfigJsonFormatter {
 
         // Detect if a given template natively handles reasoning_content (e.g.
         // Nemotron, Qwen3, or a Gemma4 tool template adapted by
-        // `normalize_chat_template_source`). If so, we must NOT inject <think>
+        // `normalize_chat_template`). If so, we must NOT inject <think>
         // blocks for that template — it renders reasoning itself. Per-template
         // (default vs tool_use) because HF configs can register different sources
         // for each: Gemma4 adapts only its `tool_use` template to read
@@ -995,6 +1022,8 @@ impl HfTokenizerConfigJsonFormatter {
         let control_markers = super::oai::ControlMarkers::from_config(&config);
 
         Ok(HfTokenizerConfigJsonFormatter {
+            default_effort_template,
+            tool_use_effort_template,
             env,
             config,
             control_markers,
@@ -1205,7 +1234,7 @@ mod tests {
     #[test]
     fn test_normalize_dict_method_calls_rewrites_items_method() {
         let template = "{% for k, v in tool.parameters.properties.items() %}{{ k }}{% endfor %}";
-        let result = normalize_jinja_syntax(template);
+        let (result, _) = normalize_jinja_syntax(template);
         assert_eq!(
             result,
             "{% for k, v in tool.parameters.properties|items %}{{ k }}{% endfor %}"
@@ -1215,14 +1244,14 @@ mod tests {
     #[test]
     fn test_normalize_dict_method_calls_rewrites_expression_items_method() {
         let template = "{{ tool.parameters.properties.items() }}";
-        let result = normalize_jinja_syntax(template);
+        let (result, _) = normalize_jinja_syntax(template);
         assert_eq!(result, "{{ tool.parameters.properties|items }}");
     }
 
     #[test]
     fn test_normalize_dict_method_calls_preserves_literal_text() {
         let template = "Do not rewrite literal .items() text.";
-        let result = normalize_jinja_syntax(template);
+        let (result, _) = normalize_jinja_syntax(template);
         assert_eq!(result, template);
     }
 
@@ -1234,13 +1263,13 @@ mod tests {
             "{{ '.items()' }}",
             "{{ \".items()\" }}",
         );
-        let result = normalize_jinja_syntax(template);
+        let (result, _) = normalize_jinja_syntax(template);
         assert_eq!(result, template);
     }
 
     #[test]
     fn test_normalize_dict_method_calls_avoids_schema_items_collision() {
-        let template = normalize_jinja_syntax(
+        let (template, _) = normalize_jinja_syntax(
             "{% for param_name, param_spec in tool.parameters.properties.items() %}{{ param_name }}={{ param_spec.type }};{% endfor %}",
         );
 

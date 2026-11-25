@@ -232,11 +232,13 @@ def snapshot_bytes(destination, resource, decoder=None):
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def capture_releases(site):
+def capture_releases(site, family=None):
     catalog = runtime_catalog(site)
     versions = {}
     for resource in catalog['sources']['unified']:
-        if resource['kind'] == 'resolved-capture':
+        if (resource['kind'] == 'resolved-capture'
+                and (family is None or resource.get('family') == family
+                     or family in resource.get('families', []))):
             versions.setdefault(resource['implementation'], set()).add(resource['version'])
     return {implementation: sorted(releases, key=capture_release_sort_key)
             for implementation, releases in versions.items()}
@@ -266,19 +268,42 @@ def history_request_contract(site, identities):
         if implementation == "dynamo":
             implementation = "dynamo_v2"
             identity = f"{implementation}@{version}"
-        candidate = next(item for item in candidates
-                         if item["implementation"] == implementation and item["version"] == version)
-        families = set(candidate.get("capture_families") or ())
-        if implementation == "dynamo_v2":
-            families.intersection_update(latest_dynamo.get("native_unified_families") or ())
-        if identity in embedded_ids:
-            families.difference_update(embedded_families)
-        required_families.update(families)
+        grouped = implementation in {"dynamo_v1", "dynamo_v1_jail"} and (version == "Latest" or version.endswith(".x"))
+        if grouped:
+            family_versions = {}
+            if version == "Latest":
+                family_versions = {row["family"]: row["version"] for row in current if row["implementation"] == implementation}
+            else:
+                blockers = catalog["metadata"]["unified_capture_policy"][implementation]["source_blockers"]
+                major_candidates = [item for item in candidates
+                                    if item["implementation"] == implementation
+                                    and item["version"].split(".")[0] == version.split(".")[0]]
+                for item in sorted(major_candidates, key=lambda item: (
+                    item["version"] not in blockers and not item.get("source_blocker")
+                    and item.get("has_captured_results") is not False,
+                    unified_history._capture_release_sort_key(item["version"]),
+                )):
+                    family_versions.update(dict.fromkeys(item["capture_families"], item["version"]))
+            families = {family for item in resources if item["kind"] == "inputs-and-golden"
+                        for family in item.get("families", [item.get("family")])}
+        else:
+            candidate = next(item for item in candidates
+                             if item["implementation"] == implementation and item["version"] == version)
+            families = set(candidate.get("capture_families") or ())
+            if implementation == "dynamo_v2":
+                families.intersection_update(latest_dynamo.get("native_unified_families") or ())
+            family_versions = dict.fromkeys(families, version)
         for family in families:
+            version = family_versions.get(family)
+            if version is not None and f"{implementation}@{version}" in embedded_ids and family in embedded_families:
+                continue
+            required_families.add(family)
             input_resource = next((item for item in resources
                                    if item["kind"] == "inputs-and-golden" and item["family"] == family), None)
             if input_resource:
                 selected_resources[input_resource["path"]] = input_resource
+            if version is None:
+                continue
             packed = next((item for item in resources if item["kind"] == "resolved-capture"
                            and item["implementation"] == implementation and item["version"] == version
                            and (item.get("family") == family or family in item.get("families", ()))), None)

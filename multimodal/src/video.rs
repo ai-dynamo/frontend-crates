@@ -19,6 +19,8 @@
 
 use crate::{MmError, Result};
 
+pub mod sample;
+
 /// Frame-sampling options (`media_io_kwargs.video`).
 ///
 /// Unknown keys are ignored: the namespace is shared with the engine's own

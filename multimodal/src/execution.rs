@@ -65,6 +65,13 @@ fn armed() -> Option<&'static rayon::ThreadPool> {
     POOL.get()
 }
 
+/// The armed pool when the caller is not one of its threads: a caller that
+/// would block on the pool from inside it runs inline.
+#[cfg(feature = "parallel")]
+fn armed_outside() -> Option<&'static rayon::ThreadPool> {
+    armed().filter(|pool| pool.current_thread_index().is_none())
+}
+
 /// Map `items`, stopping when an error is observed. With the pool armed,
 /// which error is returned is unspecified, and other items may already have
 /// run. Successful output order matches input order.
@@ -82,6 +89,27 @@ where
         return pool.install(|| items.par_iter().map(&f).collect());
     }
     items.iter().map(f).collect()
+}
+
+/// The number of threads a caller may fan out over: the pool size once armed,
+/// else 1, and 1 on a pool thread.
+pub fn threads() -> usize {
+    #[cfg(feature = "parallel")]
+    if let Some(pool) = armed_outside() {
+        return pool.current_num_threads();
+    }
+    1
+}
+
+/// Run `f` on the pool without waiting for it, or inline while unarmed. A
+/// panic in `f` aborts the process while the pool is armed.
+#[cfg(feature = "video-decode")]
+pub(crate) fn spawn(f: impl FnOnce() + Send + 'static) {
+    #[cfg(feature = "parallel")]
+    if let Some(pool) = armed() {
+        return pool.spawn(f);
+    }
+    f()
 }
 
 /// Apply `f(chunk_index, chunk)` over disjoint `chunk_size`-element windows of
@@ -114,4 +142,83 @@ pub fn in_pool<R: Send>(f: impl FnOnce() -> R + Send) -> R {
         return pool.install(f);
     }
     f()
+}
+
+/// Run `produce` on each of `items` and hand the results to `consume` in
+/// input order, on the calling thread. With the pool armed, items are
+/// produced on it, at most `ahead` (and at least one) at a time with the
+/// next one to consume among them; `items` itself is iterated on the caller.
+/// Returns the first error in input order, whether `produce` or `consume`
+/// made it. Later items may already have run: the error returns once the
+/// items already started finish, and the items not started are skipped.
+pub fn try_for_each_ordered<T, R, E>(
+    items: impl IntoIterator<Item = T>,
+    ahead: usize,
+    produce: impl Fn(T) -> Result<R, E> + Send + Sync,
+    mut consume: impl FnMut(R) -> Result<(), E>,
+) -> Result<(), E>
+where
+    T: Send,
+    R: Send,
+    E: Send,
+{
+    #[cfg(feature = "parallel")]
+    if let Some(pool) = armed_outside() {
+        use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+        use std::sync::atomic::{AtomicBool, Ordering};
+        let stop = AtomicBool::new(false);
+        let (produce, stop) = (&produce, &stop);
+        let (sender, receiver) = std::sync::mpsc::channel();
+        return pool.in_place_scope(|scope| {
+            let mut items = items.into_iter().enumerate();
+            let spawn = |(index, item): (usize, T)| {
+                let sender = sender.clone();
+                scope.spawn(move |_| {
+                    // Every job sends once, so the caller never waits on a
+                    // job that panicked or was skipped.
+                    let result = (!stop.load(Ordering::Relaxed))
+                        .then(|| catch_unwind(AssertUnwindSafe(|| produce(item))));
+                    let _ = sender.send((index, result));
+                });
+            };
+            let mut pending = 0;
+            for item in items.by_ref().take(ahead.max(1)) {
+                spawn(item);
+                pending += 1;
+            }
+            let mut ready = std::collections::BTreeMap::new();
+            let mut next = 0;
+            let outcome = loop {
+                if pending == 0 {
+                    break Ok(());
+                }
+                let Some(result) = ready.remove(&next) else {
+                    let (index, result) = receiver.recv().expect("a job sends before it ends");
+                    ready.insert(index, result);
+                    continue;
+                };
+                pending -= 1;
+                next += 1;
+                let consumed = match result.expect("no job is skipped before the stop") {
+                    Ok(produced) => produced.and_then(&mut consume),
+                    Err(panic) => {
+                        stop.store(true, Ordering::Relaxed);
+                        resume_unwind(panic);
+                    }
+                };
+                if consumed.is_err() {
+                    break consumed;
+                }
+                if let Some(item) = items.next() {
+                    spawn(item);
+                    pending += 1;
+                }
+            };
+            stop.store(true, Ordering::Relaxed);
+            outcome
+        });
+    }
+    items
+        .into_iter()
+        .try_for_each(|item| produce(item).and_then(&mut consume))
 }

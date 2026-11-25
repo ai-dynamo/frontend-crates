@@ -6,6 +6,7 @@
 //! and M-RoPE are shared with images in the parent module.
 
 use super::{MAX_RATIO, QwenVlProcessor, grid_tensor, patchify};
+use crate::execution;
 use crate::image::resize;
 use crate::processor::{
     ExpansionPart, Geometry, Modality, ProcessedItem, Tensor, TensorData, TextEncoder,
@@ -57,16 +58,14 @@ impl QwenVlProcessor {
         } else {
             sizing.resize(num_frames, h, w, &VideoPixelBudget::default())?
         };
-        let frames: Vec<std::borrow::Cow<[u8]>> = rgb
-            .chunks_exact(h * w * 3)
-            .map(|frame| {
-                if (th, tw) == (h, w) {
-                    frame.into()
-                } else {
-                    resize::resize_rgb(frame, h, w, th, tw, resize::Resample::AtenU8).into()
-                }
+        let frames: Vec<&[u8]> = rgb.chunks_exact(h * w * 3).collect();
+        let frames: Vec<std::borrow::Cow<[u8]>> = execution::try_map(&frames, |&frame| {
+            Ok::<_, crate::MmError>(if (th, tw) == (h, w) {
+                frame.into()
+            } else {
+                resize::resize_rgb(frame, h, w, th, tw, resize::Resample::AtenU8).into()
             })
-            .collect();
+        })?;
         let (ps, m, tps) = (
             sizing.patch_size,
             sizing.merge_size,

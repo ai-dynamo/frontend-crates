@@ -4,7 +4,7 @@
 use super::super::ToolDefinition;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 use regex::Regex;
-use ruff_python_ast::{Expr, Number as PythonNumber};
+use ruff_python_ast::{Expr, Number as PythonNumber, UnaryOp};
 use ruff_python_parser::parse_expression;
 use serde_json::{Number as JsonNumber, Value, json};
 use std::sync::OnceLock;
@@ -89,26 +89,45 @@ pub fn parse_tool_calls(src: &str) -> anyhow::Result<Vec<ToolCallResponse>> {
     Ok(res)
 }
 
+fn number_value(number: &PythonNumber, negate: bool) -> Result<Value, Box<dyn std::error::Error>> {
+    Ok(match number {
+        // Ruff stores large integers as their source text, so the existing
+        // i64/u64-or-string behavior does not need a bigint dependency.
+        PythonNumber::Int(i) if negate => {
+            match i.as_u64().and_then(|v| 0i64.checked_sub_unsigned(v)) {
+                Some(v) => Value::Number(JsonNumber::from(v)),
+                None => Value::String(format!("-{i}")),
+            }
+        }
+        PythonNumber::Int(i) => {
+            if let Some(v) = i.as_i64() {
+                Value::Number(JsonNumber::from(v))
+            } else if let Some(v) = i.as_u64() {
+                Value::Number(JsonNumber::from(v))
+            } else {
+                Value::String(i.to_string())
+            }
+        }
+        PythonNumber::Float(f) => json!(if negate { -f } else { *f }),
+        PythonNumber::Complex { .. } => return Err("unsupported constant type".into()),
+    })
+}
+
 fn const_expr(e: &Expr) -> Result<Value, Box<dyn std::error::Error>> {
     match e {
         Expr::BooleanLiteral(literal) => Ok(json!(literal.value)),
         Expr::NoneLiteral(_) => Ok(Value::Null),
-        Expr::NumberLiteral(literal) => Ok(match &literal.value {
-            PythonNumber::Int(i) => {
-                // Ruff stores large integers as their source text, so the
-                // existing i64/u64-or-string behavior does not need a bigint
-                // dependency.
-                if let Some(v) = i.as_i64() {
-                    Value::Number(JsonNumber::from(v))
-                } else if let Some(v) = i.as_u64() {
-                    Value::Number(JsonNumber::from(v))
-                } else {
-                    Value::String(i.to_string())
+        Expr::NumberLiteral(literal) => number_value(&literal.value, false),
+        // Python parses `-8` as a unary minus applied to the literal `8`, so a
+        // signed number never reaches the `NumberLiteral` arm above.
+        Expr::UnaryOp(unary) if matches!(unary.op, UnaryOp::USub | UnaryOp::UAdd) => {
+            match unary.operand.as_ref() {
+                Expr::NumberLiteral(literal) => {
+                    number_value(&literal.value, unary.op == UnaryOp::USub)
                 }
+                _ => Err("only numeric operands are allowed for unary signs".into()),
             }
-            PythonNumber::Float(f) => json!(f),
-            PythonNumber::Complex { .. } => return Err("unsupported constant type".into()),
-        }),
+        }
         Expr::StringLiteral(literal) => Ok(json!(literal.value.to_str())),
         // Handle Python lists as expressions, not constants
         Expr::List(expr_list) => {
@@ -367,6 +386,37 @@ mod tests {
         assert_eq!(args["ratio"], 1.5);
         assert_eq!(args["text"], "hello");
         assert_eq!(args["huge"], "18446744073709551616");
+    }
+
+    #[test] // TOOLCALLING.batch.7
+    fn test_parse_tool_call_parse_pythonic_negative_numbers() {
+        let message = concat!(
+            "[quadratic_roots(a=5, b=-8, c=2), ",
+            "get_weather(latitude=-33.8688, longitude=151.2093), ",
+            "move(dy=+2, path=[-1, 0.5], opts={'delta': -3}, ",
+            "big=-9223372036854775808, ",
+            "huge=-18446744073709551616)]"
+        );
+        let (result, _) = try_tool_call_parse_pythonic(message, None).unwrap();
+        assert_eq!(result.len(), 3);
+        let (name, args) = extract_name_and_args(result[0].clone());
+        assert_eq!(name, "quadratic_roots");
+        assert_eq!(args, json!({"a": 5, "b": -8, "c": 2}));
+        let (name, args) = extract_name_and_args(result[1].clone());
+        assert_eq!(name, "get_weather");
+        assert_eq!(args, json!({"latitude": -33.8688, "longitude": 151.2093}));
+        let (name, args) = extract_name_and_args(result[2].clone());
+        assert_eq!(name, "move");
+        assert_eq!(
+            args,
+            json!({
+                "dy": 2,
+                "path": [-1, 0.5],
+                "opts": {"delta": -3},
+                "big": i64::MIN,
+                "huge": "-18446744073709551616"
+            })
+        );
     }
 
     #[test]

@@ -210,7 +210,9 @@ impl Cursor {
                     record.update(change)?;
                     if change.get("observation").is_some() {
                         record.remove("_document_overrides")?;
+                        record.remove("_suppress_inherited_from")?;
                         record.set("_origin_capture_id", Node::Str(capture.id.clone()))?;
+                        record.set("_source_member", Node::Str(capture.member.clone()))?;
                     }
                     record
                 }
@@ -218,6 +220,7 @@ impl Cursor {
                     fields(change, &["case_key", "stimulus", "observation"], &[])?;
                     let mut record = change.clone();
                     record.set("_origin_capture_id", Node::Str(capture.id.clone()))?;
+                    record.set("_source_member", Node::Str(capture.member.clone()))?;
                     record
                 }
             };
@@ -261,6 +264,41 @@ impl Cursor {
             record.set("_document_overrides", existing)?;
             state.set(case_id, record)?;
         }
+        if let Some(members) = capture.document.get("member_changes") {
+            let available = history.captures[..=index]
+                .iter()
+                .map(|source| source.member.as_str())
+                .collect::<BTreeSet<_>>();
+            for (case_id, member) in members.mapping()? {
+                let case_id = case_id.string()?;
+                let member = member.string()?;
+                ensure!(
+                    available.contains(member),
+                    "source member is unavailable or newer than its checkpoint"
+                );
+                let mut record = state
+                    .field(case_id)
+                    .context("member change has no observation")?
+                    .clone();
+                record.set("_source_member", Node::Str(member.into()))?;
+                state.set(case_id, record)?;
+            }
+        }
+        if let Some(inheritance) = capture.document.get("inheritance_changes") {
+            for (case_id, suppressed) in inheritance.mapping()? {
+                ensure!(
+                    matches!(suppressed, Node::Bool(_)),
+                    "inheritance change must be boolean"
+                );
+                let case_id = case_id.string()?;
+                let mut record = state
+                    .field(case_id)
+                    .context("inheritance change has no observation")?
+                    .clone();
+                record.set("_suppress_inherited_from", suppressed.clone())?;
+                state.set(case_id, record)?;
+            }
+        }
         self.current = Some(index);
         Ok(())
     }
@@ -293,10 +331,17 @@ impl Cursor {
             let mut overrides = record
                 .remove("_document_overrides")?
                 .unwrap_or_else(Node::map);
-            let suppress_inherited_from = overrides
-                .get("capture_provenance")
-                .and_then(|provenance| provenance.get("inherited_from"))
-                == Some(&Node::Null);
+            let explicit_inheritance = record.remove("_suppress_inherited_from")?;
+            let suppress_inherited_from = explicit_inheritance.as_ref().map_or_else(
+                || {
+                    overrides
+                        .get("capture_provenance")
+                        .and_then(|provenance| provenance.get("inherited_from"))
+                        == Some(&Node::Null)
+                },
+                |flag| flag == &Node::Bool(true),
+            );
+            let source_member = record.remove("_source_member")?;
             let origin_id = record
                 .remove("_origin_capture_id")?
                 .context("observation has no origin")?;
@@ -332,13 +377,23 @@ impl Cursor {
                 document.remove("parser_path")?;
             }
             document.update(&overrides)?;
+            if explicit_inheritance.is_some()
+                && !suppress_inherited_from
+                && current.version != version
+                && document.get("inherited_from").is_none()
+            {
+                document.set("inherited_from", Node::Str(current.version.clone()))?;
+            }
             if let Some(metadata) = metadata.filter(truthy) {
                 document.set("record_metadata", metadata)?;
             }
             record.set("document", document)?;
             let mut wrapped = Node::map();
             wrapped.set("value", record)?;
-            wrapped.set("member", Node::Str(origin.member.clone()))?;
+            wrapped.set(
+                "member",
+                source_member.unwrap_or_else(|| Node::Str(origin.member.clone())),
+            )?;
             if suppress_inherited_from {
                 wrapped.set("suppress_inherited_from", Node::Bool(true))?;
             }
@@ -781,6 +836,158 @@ document_overrides: {}
                 .collect::<Vec<_>>(),
             vec!["case_key", "stimulus", "observation", "document"]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn source_members_change_without_replacing_observations() -> Result<()> {
+        let first = capture(
+            "1.0.0",
+            "provenance: {status: legacy}\ndocument: {}\nchanges: {a: {case_key: a, stimulus: {ref: current}, observation: {value: {assembled: []}}}}\nmetadata_changes: {}\ndocument_overrides: {}\n",
+        )?;
+        let second = capture(
+            "1.1.0",
+            "provenance: {status: legacy}\ndocument: {}\nchanges: {}\nmetadata_changes: {}\ndocument_overrides: {}\nmember_changes: {a: family/dynamo_v2-1.1.0.yaml}\n",
+        )?;
+        let third = capture(
+            "1.2.0",
+            "provenance: {status: legacy}\ndocument: {}\nchanges: {a: {observation: {error: {code: changed}}}}\nmetadata_changes: {}\ndocument_overrides: {}\n",
+        )?;
+        let mut history = History {
+            implementation: "dynamo_v2".into(),
+            captures: vec![first, second, third],
+        };
+        history.validate()?;
+        let mut cursor = Cursor::default();
+        cursor.apply(&history, 0)?;
+        let original = cursor.records(&history, "1.0.0")?;
+        cursor.apply(&history, 1)?;
+        let selected = cursor.records(&history, "1.1.0")?;
+        assert_eq!(
+            selected.field("a")?.field("member")?.string()?,
+            "family/dynamo_v2-1.1.0.yaml"
+        );
+        assert!(
+            selected
+                .field("a")?
+                .field("value")?
+                .field("observation")?
+                .equivalent(original.field("a")?.field("value")?.field("observation")?)
+        );
+        assert_eq!(
+            selected
+                .field("a")?
+                .field("value")?
+                .field("document")?
+                .field("captured_with")?
+                .field("dynamo_v2")?
+                .string()?,
+            "1.0.0"
+        );
+        assert!(
+            selected
+                .field("a")?
+                .field("value")?
+                .get("_source_member")
+                .is_none()
+        );
+        cursor.apply(&history, 2)?;
+        assert_eq!(
+            cursor
+                .records(&history, "1.2.0")?
+                .field("a")?
+                .field("member")?
+                .string()?,
+            "family/dynamo_v2-1.2.0.yaml"
+        );
+        for (case_id, member) in [
+            ("missing", "family/dynamo_v2-1.1.0.yaml"),
+            ("a", "family/dynamo_v2-1.2.0.yaml"),
+            ("a", "family/dynamo_v2-0.9.0.yaml"),
+        ] {
+            let mut invalid = history.captures.clone();
+            invalid[1].document.set(
+                "member_changes",
+                load_str(&format!("{{{case_id}: {member}}}"))?,
+            )?;
+            let mut invalid = History {
+                implementation: "dynamo_v2".into(),
+                captures: invalid,
+            };
+            assert!(invalid.validate().is_err(), "{case_id}: {member}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn explicit_snapshot_inheritance_projection_survives_observation_deduplication() -> Result<()> {
+        for suppressed in [false, true] {
+            let first = capture(
+                "1.0.0",
+                "provenance: {status: legacy}\ndocument: {}\nchanges: {a: {case_key: a, stimulus: {ref: current}, observation: {value: {assembled: []}}}}\nmetadata_changes: {}\ndocument_overrides: {}\n",
+            )?;
+            let second = capture(
+                "1.1.0",
+                &format!(
+                    "provenance: {{status: legacy}}\ndocument: {{}}\nchanges: {{}}\nmetadata_changes: {{}}\ndocument_overrides: {{a: {{capture_provenance: {{captured_with: {{dynamo_v2: 1.0.0}}, capture_origin: null, inherited_from: null}}}}}}\nmember_changes: {{a: family/dynamo_v2-1.1.0.yaml}}\ninheritance_changes: {{a: {suppressed}}}\n"
+                ),
+            )?;
+            let third = capture(
+                "1.2.0",
+                "provenance: {status: legacy}\ndocument: {}\nchanges: {a: {observation: {error: {code: changed}}}}\nmetadata_changes: {}\ndocument_overrides: {}\n",
+            )?;
+            let mut history = History {
+                implementation: "dynamo_v2".into(),
+                captures: vec![first, second, third],
+            };
+            history.validate()?;
+            let mut cursor = Cursor::default();
+            cursor.apply(&history, 0)?;
+            cursor.apply(&history, 1)?;
+            let exact = cursor.records(&history, "1.1.0")?;
+            assert!(
+                exact
+                    .field("a")?
+                    .field("value")?
+                    .field("document")?
+                    .get("inherited_from")
+                    .is_none()
+            );
+            assert_eq!(
+                exact.field("a")?.get("suppress_inherited_from"),
+                suppressed.then_some(&Node::Bool(true))
+            );
+            let projected = cursor.records(&history, "1.3.0")?;
+            assert_eq!(
+                projected
+                    .field("a")?
+                    .field("value")?
+                    .field("document")?
+                    .get("inherited_from"),
+                (!suppressed).then_some(&Node::Str("1.1.0".into()))
+            );
+            assert!(
+                projected
+                    .field("a")?
+                    .field("value")?
+                    .get("_suppress_inherited_from")
+                    .is_none()
+            );
+            cursor.apply(&history, 2)?;
+            let changed = cursor.records(&history, "1.2.0")?;
+            assert!(changed.field("a")?.get("suppress_inherited_from").is_none());
+            for inheritance in ["{missing: false}", "{a: null}", "{a: 0}"] {
+                let mut invalid = history.captures.clone();
+                invalid[1]
+                    .document
+                    .set("inheritance_changes", load_str(inheritance)?)?;
+                let mut invalid = History {
+                    implementation: "dynamo_v2".into(),
+                    captures: invalid,
+                };
+                assert!(invalid.validate().is_err(), "{inheritance}");
+            }
+        }
         Ok(())
     }
 

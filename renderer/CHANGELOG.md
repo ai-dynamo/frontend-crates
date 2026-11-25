@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [10.6.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.5.1...dynamo-renderer-v10.6.0) - 2026-11-25
+
+### Features
+
+- *(renderer)* Make default thinking effort instructions optional ([#668](https://github.com/ai-dynamo/frontend-crates/pull/668))
+
+## [10.5.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.5.0...dynamo-renderer-v10.5.1) - 2026-11-24
+
+### Refactoring
+
+- *(renderer)* Break the DeepSeek v4/v41 module cycle ([#664](https://github.com/ai-dynamo/frontend-crates/pull/664))
+
+### Chore
+
+- Release dynamo-parsers v11.0.14, dynamo-parsers-v2 v0.10.10
+
 ## [10.5.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v10.4.5...dynamo-renderer-v10.5.0) - 2026-11-20
 
 ### Features

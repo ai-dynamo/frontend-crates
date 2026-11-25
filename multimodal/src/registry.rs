@@ -9,14 +9,19 @@
 use crate::models::deepseek_v41::{DeepseekV41GeometrySpec, DeepseekV41Processor, DeepseekV41Spec};
 use crate::models::glm5_next::{
     Glm5NextGeometrySpec, Glm5NextImageProcessor, Glm5NextImageSpec, Glm5NextProcessor,
-    Glm5NextSpec,
+    Glm5NextSpec, Glm5NextVideoSpec,
 };
 use crate::models::kimi_k3::{KimiK3Processor, KimiK3Spec};
-use crate::models::nemotron_vl::{NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec};
+use crate::models::nemotron_vl::{
+    NemotronVlProcessor, NemotronVlSizing, NemotronVlSpec, NemotronVlVideoSpec,
+    default_video_placeholder,
+};
 use crate::models::pixtral::{PixtralProcessor, PixtralSpec};
-use crate::models::qwen_vl::{QwenVlSpec, Resampler};
+use crate::models::qwen_vl::{QwenVlSpec, QwenVlVideoSpec, Resampler};
+#[cfg(feature = "audio")]
+use crate::models::qwen3_asr::{Qwen3AsrProcessor, Qwen3AsrSpec};
 use crate::{MmError, Result};
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
 /// Resolved parameters of one family processor, one variant per family.
 /// Built directly or deserialized via [`processor_from_spec`], where the
@@ -26,17 +31,20 @@ use serde_json::{Value, json};
 #[non_exhaustive]
 pub enum ProcessorSpec {
     QwenVl(QwenVlSpec),
+    #[cfg(feature = "audio")]
+    Qwen3Asr(Qwen3AsrSpec),
     /// Metadata-only image accounting and layout; pixel processing is unsupported.
     DeepseekV41(DeepseekV41Spec),
     /// Metadata-only GLM-5.3-Flash image accounting and layout; pixel
-    /// processing and video are unsupported.
+    /// processing and video layout are unsupported.
     Glm5Next(Glm5NextSpec),
-    /// Full GLM image pipeline, selected by `glm5_next` specs with pixel knobs.
+    /// Full GLM image and video pipeline, selected by `glm5_next` specs with
+    /// pixel knobs; [`glm5_next_pixel_spec`] resolves it from a checkpoint.
     Glm5NextImage(Glm5NextImageSpec),
     /// Kimi-K3 and K3.1 images. The prompt expansion and its length need
     /// `size_tokens`, which the consumer fills from the model's tokenizer.
     KimiK3(KimiK3Spec),
-    /// Nemotron 3.5 Super VL images; `sizing` names the mirrored reference.
+    /// Nemotron 3.5 Super VL images and videos; `sizing` names the mirrored reference.
     NemotronVl(NemotronVlSpec),
     /// HF `PixtralProcessor` image pipeline (Mistral Large 4).
     Pixtral(PixtralSpec),
@@ -51,6 +59,13 @@ impl TryFrom<Value> for ProcessorSpec {
     fn try_from(mut value: Value) -> std::result::Result<Self, Self::Error> {
         match value.get("family").and_then(Value::as_str) {
             Some("qwen_vl") => serde_json::from_value(value).map(Self::QwenVl),
+            #[cfg(feature = "audio")]
+            Some("qwen3_asr") => {
+                if let Some(spec) = value.as_object_mut() {
+                    spec.remove("family");
+                }
+                serde_json::from_value(value).map(Self::Qwen3Asr)
+            }
             Some("deepseek_v41") => serde_json::from_value(value).map(Self::DeepseekV41),
             Some("glm5_next")
                 if ["image_mean", "image_std", "resample"]
@@ -82,6 +97,8 @@ pub fn build_processor(
     spec: ProcessorSpec,
 ) -> Result<Box<dyn crate::processor::MmFamilyProcessor>> {
     match spec {
+        #[cfg(feature = "audio")]
+        ProcessorSpec::Qwen3Asr(spec) => Ok(Box::new(Qwen3AsrProcessor::new(spec)?)),
         ProcessorSpec::QwenVl(spec) => Ok(Box::new(crate::models::qwen_vl::QwenVlProcessor::new(
             spec,
         )?)),
@@ -124,9 +141,12 @@ pub fn spec_from_hf_configs(
         MmError::invalid_input_with_source("invalid preprocessor_config.json", error)
     })?;
     match config["model_type"].as_str() {
-        Some(
-            "qwen2_vl" | "qwen2_5_vl" | "qwen3_vl" | "qwen3_vl_moe" | "qwen3_5" | "qwen3_5_moe",
-        ) => Ok(ProcessorSpec::QwenVl(resolve_qwen_vl(&config, &pre)?)),
+        Some(model_type)
+            if matches!(model_type, "qwen2_vl" | "qwen2_5_vl")
+                || QWEN3_VIDEO_MODEL_TYPES.contains(&model_type) =>
+        {
+            Ok(ProcessorSpec::QwenVl(resolve_qwen_vl(&config, &pre)?))
+        }
         Some("deepseek_v4" | "deepseek_v41") => Ok(ProcessorSpec::DeepseekV41(
             resolve_deepseek_v41(&config, &pre)?,
         )),
@@ -240,6 +260,62 @@ const GLM5_NEXT_INERT: &[&str] = &[
     "processor_class",
 ];
 
+/// Knobs that shape pixel values: the pixel pipeline honors only these values.
+/// HF reads a null stage flag as off and refuses a null factor or resample;
+/// only `do_convert_rgb` may be null, a no-op on the host's RGB frames.
+const GLM5_NEXT_PIXEL_PINNED: &[(&str, Predicate)] = &[
+    ("do_rescale", |v| v.as_bool() == Some(true)),
+    ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
+    ("do_normalize", |v| v.as_bool() == Some(true)),
+    ("do_convert_rgb", |v| {
+        v.is_null() || v.as_bool() == Some(true)
+    }),
+    // PIL's BICUBIC, the class default.
+    ("resample", |v| v.as_u64() == Some(3)),
+];
+
+/// `Glm5NextVideoProcessor` knobs with one honored value. SGLang samples
+/// frames itself, so HF's `max_duration` cap must stay off.
+const GLM5_NEXT_VIDEO_PINNED: &[(&str, Predicate)] = &[
+    ("video_processor_type", |v| {
+        v.as_str() == Some("Glm5NextVideoProcessor")
+    }),
+    ("max_duration", |v| v.is_null() || v.as_f64() == Some(0.0)),
+];
+
+/// Video knobs SGLang's GLM processor never reads: it samples frames itself,
+/// and `max_image_size` is a sentinel.
+const GLM5_NEXT_VIDEO_INERT: &[&str] = &[
+    "do_sample_frames",
+    "num_frames",
+    "max_image_size",
+    "return_metadata",
+];
+
+/// The resampler of each GLM-5.3-Flash image processor; the two share
+/// `smart_resize`.
+fn glm5_next_resampler(processor_type: &Value) -> Option<Resampler> {
+    match processor_type.as_str()? {
+        "Glm5NextImageProcessor" => Some(Resampler::AtenU8),
+        "Glm5NextImageProcessorPil" => Some(Resampler::Pil),
+        _ => None,
+    }
+}
+
+fn glm5_next_mean_std(knobs: &serde_json::Map<String, Value>) -> Result<([f32; 3], [f32; 3])> {
+    let read = |name: &str| {
+        serde_json::from_value::<[f32; 3]>(knobs.get(name).cloned().unwrap_or(Value::Null)).map_err(
+            |error| {
+                MmError::invalid_input_with_source(
+                    format!("glm5_next needs a 3-value {name}"),
+                    error,
+                )
+            },
+        )
+    };
+    Ok((read("image_mean")?, read("image_std")?))
+}
+
 fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
     let top = pre
         .as_object()
@@ -330,11 +406,162 @@ fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
     };
     let image_token_id = token_id("image_token_id")?
         .ok_or_else(|| MmError::invalid_input("config.json is missing image_token_id"))?;
-    Ok(Glm5NextSpec {
+    let mut spec = Glm5NextSpec {
         image_token_id,
         video_token_id: token_id("video_token_id")?,
         geometry,
-    })
+        video: None,
+    };
+    // A video setting never fails a resolve: an unhonored block leaves video off.
+    spec.video = (top.get("video_processor"))
+        .and_then(|video| resolve_glm5_next_video(&spec, video, config).ok());
+    Ok(spec)
+}
+
+/// The `video_processor` block of `processor_config.json` as `planner`'s video
+/// part, checked as the processor built from both would check it.
+fn resolve_glm5_next_video(
+    planner: &Glm5NextSpec,
+    video: &Value,
+    config: &Value,
+) -> Result<Glm5NextVideoSpec> {
+    let knobs = video.as_object().ok_or_else(|| {
+        MmError::invalid_input("processor_config video_processor is not an object")
+    })?;
+    for (knob, value) in knobs {
+        let knob = knob.as_str();
+        if GLM5_NEXT_GEOMETRY.contains(&knob)
+            || ["image_mean", "image_std", "fps", "max_frames"].contains(&knob)
+        {
+            continue;
+        }
+        let pinned = (GLM5_NEXT_VIDEO_PINNED.iter())
+            .chain(GLM5_NEXT_PIXEL_PINNED)
+            .chain(GLM5_NEXT_PINNED)
+            .find(|(name, _)| *name == knob);
+        match pinned {
+            Some((_, honored)) if honored(value) => {}
+            Some(_) => {
+                return Err(MmError::unsupported(format!(
+                    "glm5_next video knob {knob} = {value} cannot be honored"
+                )));
+            }
+            None if value.is_null()
+                || GLM5_NEXT_INERT.contains(&knob)
+                || GLM5_NEXT_VIDEO_INERT.contains(&knob) => {}
+            None => {
+                return Err(MmError::unsupported(format!(
+                    "unrecognized glm5_next video knob {knob}"
+                )));
+            }
+        }
+    }
+    let geometry: Glm5NextGeometrySpec =
+        serde_json::from_value(video.clone()).map_err(|error| {
+            MmError::invalid_input_with_source("invalid glm5_next video processor geometry", error)
+        })?;
+    let (image_mean, image_std) = glm5_next_mean_std(knobs)?;
+    let token_id = |field: &str| {
+        (config.get(field).and_then(Value::as_i64))
+            .and_then(|id| i32::try_from(id).ok())
+            .ok_or_else(|| MmError::invalid_input(format!("config.json needs an i32 {field}")))
+    };
+    // GLM-5.3-Flash's block omits `max_frames`, so the class value applies, as
+    // SGLang reads it from the processor.
+    let max_frames = match knobs.get("max_frames") {
+        None | Some(Value::Null) => 2048,
+        Some(value) => (value.as_u64())
+            .and_then(|n| u32::try_from(n).ok())
+            .ok_or_else(|| MmError::invalid_input("glm5_next video max_frames must be a u32"))?,
+    };
+    let spec = Glm5NextVideoSpec {
+        image_start_token_id: token_id("image_start_token_id")?,
+        image_end_token_id: token_id("image_end_token_id")?,
+        fps: (knobs.get("fps").and_then(Value::as_f64))
+            .ok_or_else(|| MmError::invalid_input("glm5_next video processor needs an fps"))?,
+        max_frames,
+        geometry,
+        image_mean,
+        image_std,
+    };
+    for (knob, field, value) in [
+        ("patch_size", "patch_size", spec.geometry.patch_size),
+        ("merge_size", "spatial_merge_size", spec.geometry.merge_size),
+        (
+            "temporal_patch_size",
+            "temporal_patch_size",
+            spec.geometry.temporal_patch_size,
+        ),
+    ] {
+        if let Some(declared) = config["vision_config"].get(field).and_then(Value::as_u64)
+            && declared != u64::from(value)
+        {
+            return Err(MmError::invalid_input(format!(
+                "glm5_next: video {knob} = {value} disagrees with vision_config.{field} = {declared}"
+            )));
+        }
+    }
+    Glm5NextImageProcessor::new(Glm5NextImageSpec {
+        planner: Glm5NextSpec {
+            video: Some(spec.clone()),
+            ..planner.clone()
+        },
+        image_mean,
+        image_std,
+        resample: Resampler::AtenU8,
+    })?;
+    Ok(spec)
+}
+
+/// The pixel spec, images and video, of a `glm5_next` checkpoint: the planner
+/// [`spec_from_hf_configs`] resolves from the same files, plus the image
+/// processor's normalization and resampler. Stricter than the planner: knobs
+/// that shape pixel values must keep the values the pipeline mirrors,
+/// `image_mean` and `image_std` are required, and a `video_processor` block
+/// the pipeline cannot honor is an `Err` rather than video left off.
+pub fn glm5_next_pixel_spec(
+    config_json: &str,
+    processor_config_json: &str,
+) -> Result<Glm5NextImageSpec> {
+    let ProcessorSpec::Glm5Next(planner) =
+        spec_from_hf_configs(config_json, processor_config_json)?
+    else {
+        return Err(MmError::unsupported(
+            "glm5_next_pixel_spec needs a glm5_next checkpoint",
+        ));
+    };
+    let parse = |json: &str| {
+        serde_json::from_str::<Value>(json)
+            .map_err(|error| MmError::invalid_input_with_source("invalid config JSON", error))
+    };
+    let (config, pre) = (parse(config_json)?, parse(processor_config_json)?);
+    let knobs = (pre.get("image_processor").unwrap_or(&pre).as_object())
+        .ok_or_else(|| MmError::invalid_input("processor config is not an object"))?;
+    for (knob, honored) in GLM5_NEXT_PIXEL_PINNED {
+        if let Some(value) = knobs.get(*knob)
+            && !honored(value)
+        {
+            return Err(MmError::unsupported(format!(
+                "glm5_next pixel knob {knob} = {value} cannot be honored"
+            )));
+        }
+    }
+    if let Some(video) = pre.get("video_processor").filter(|video| !video.is_null())
+        && planner.video.is_none()
+    {
+        resolve_glm5_next_video(&planner, video, &config)?;
+    }
+    let (image_mean, image_std) = glm5_next_mean_std(knobs)?;
+    let spec = Glm5NextImageSpec {
+        planner,
+        image_mean,
+        image_std,
+        resample: (knobs.get("image_processor_type"))
+            .and_then(glm5_next_resampler)
+            .unwrap_or(Resampler::AtenU8),
+    };
+    Glm5NextImageProcessor::new(spec.clone())?;
+    Ok(spec)
 }
 
 /// `media_proc_cfg` knobs [`KimiK3Spec`] reads. The spec refuses the values
@@ -468,6 +695,10 @@ fn resolve_kimi_k3(config: &Value, pre: &Value) -> Result<KimiK3Spec> {
 /// checkpoint ships only the nested transformers v5 file (GLM-5.3-Flash).
 /// `nemotron_h_omni` also needs `tokenizer.json`, reads both processor files
 /// when both exist, and resolves to the HF processor's sizing.
+/// A Qwen3-VL, Qwen3.5 or `qwen4_exp` directory also resolves
+/// [`QwenVlSpec::video`] from the `video_processor` entry of
+/// `processor_config.json` or, without one, `video_preprocessor_config.json`;
+/// a video config the crate cannot honor leaves it `None`.
 /// A directory without `config.json`, or with one that says `mistral_large4`,
 /// resolves from `params.json` (`vision_encoder`) and `processor_config.json`
 /// when it holds them. That spec mirrors the HF `PixtralProcessor`, not an
@@ -479,14 +710,14 @@ pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
             MmError::invalid_input_with_source(format!("cannot read {name}"), error)
         })
     };
-    let config = read_optional_json(dir, "config.json")?;
-    if (config.as_ref()).is_none_or(|config| config["model_type"] == "mistral_large4")
+    let parsed = read_optional_json(dir, "config.json")?;
+    if (parsed.as_ref()).is_none_or(|config| config["model_type"] == "mistral_large4")
         && let Some(params) = read_optional_json(dir, "params.json")?
         && params["vision_encoder"].is_object()
     {
         let pre = read_optional_json(dir, "processor_config.json")?
             .ok_or_else(|| MmError::invalid_input("cannot read processor_config.json"))?;
-        return resolve_pixtral(&params, config.as_ref(), &pre).map(ProcessorSpec::Pixtral);
+        return resolve_pixtral(&params, parsed.as_ref(), &pre).map(ProcessorSpec::Pixtral);
     }
     let config = read("config.json")?;
     let pre = match std::fs::read_to_string(dir.join("preprocessor_config.json")) {
@@ -523,7 +754,24 @@ pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
         return resolve_nemotron_vl(&config, &pre, nested.as_deref(), &tokenizer)
             .map(ProcessorSpec::NemotronVl);
     }
-    spec_from_hf_configs(&config, &pre)
+    let mut spec = spec_from_hf_configs(&config, &pre)?;
+    if let ProcessorSpec::QwenVl(qwen) = &mut spec
+        && let Some(config) = &parsed
+        && (config["model_type"].as_str()).is_some_and(|t| QWEN3_VIDEO_MODEL_TYPES.contains(&t))
+        // transformers v5's order: the nested entry, then the flat file.
+        && let Some(video) = (read_optional_json(dir, "processor_config.json").ok().flatten())
+            .and_then(|mut nested| nested.get_mut("video_processor").map(Value::take))
+            .filter(|video| !video.is_null())
+            .or_else(|| read_optional_json(dir, "video_preprocessor_config.json").ok().flatten())
+    {
+        // A video config the crate cannot honor leaves video off; it must not
+        // fail the image spec.
+        qwen.video = resolve_qwen_video(config, &video).ok();
+        if crate::models::qwen_vl::QwenVlProcessor::new(qwen.clone()).is_err() {
+            qwen.video = None;
+        }
+    }
+    Ok(spec)
 }
 
 const CONSUMED: &[&str] = &[
@@ -551,6 +799,9 @@ const PINNED: &[(&str, Predicate)] = &[
         v.is_null() || v.as_bool() == Some(false)
     }),
     ("do_pad", |v| v.is_null() || v.as_bool() == Some(false)),
+    ("cap_pixels_per_frame", |v| {
+        v.is_null() || v.as_bool() == Some(false)
+    }),
     ("resample", |v| v.as_i64() == Some(3)),
     ("rescale_factor", |v| v.as_f64() == Some(1.0 / 255.0)),
     ("data_format", |v| v.as_str() == Some("channels_first")),
@@ -575,31 +826,36 @@ const INERT: &[&str] = &[
     "processor_class",
 ];
 
-fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
-    let knobs = pre
-        .as_object()
-        .ok_or_else(|| MmError::invalid_input("preprocessor_config.json is not an object"))?;
-    let set = |knob: &str| knobs.get(knob).filter(|value| !value.is_null());
+fn check_qwen_knobs(file: &str, knobs: &Map<String, Value>, consumed: &[&str]) -> Result<()> {
     for (knob, value) in knobs {
         let knob = knob.as_str();
-        if CONSUMED.contains(&knob) || INERT.contains(&knob) {
+        if consumed.contains(&knob) || INERT.contains(&knob) {
             continue;
         }
         match PINNED.iter().find(|(name, _)| *name == knob) {
             Some((_, honored)) if honored(value) => {}
             Some(_) => {
                 return Err(MmError::unsupported(format!(
-                    "preprocessor knob {knob} = {value} cannot be honored bit-exactly"
+                    "{file} knob {knob} = {value} cannot be honored bit-exactly"
                 )));
             }
             None if value.is_null() => {}
             None => {
                 return Err(MmError::unsupported(format!(
-                    "unrecognized preprocessor knob {knob}"
+                    "unrecognized {file} knob {knob}"
                 )));
             }
         }
     }
+    Ok(())
+}
+
+fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
+    let knobs = pre
+        .as_object()
+        .ok_or_else(|| MmError::invalid_input("preprocessor_config.json is not an object"))?;
+    let set = |knob: &str| knobs.get(knob).filter(|value| !value.is_null());
+    check_qwen_knobs("preprocessor", knobs, CONSUMED)?;
 
     let to_usize = |knob: &str, value: Option<&Value>| {
         let value = value.and_then(Value::as_u64).ok_or_else(|| {
@@ -612,13 +868,6 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
         })
     };
     let usize_knob = |knob: &str| to_usize(knob, set(knob));
-    let rgb_knob = |knob: &str| -> Result<[f32; 3]> {
-        set(knob)
-            .and_then(|value| serde_json::from_value::<[f32; 3]>(value.clone()).ok())
-            .ok_or_else(|| {
-                MmError::invalid_input(format!("preprocessor knob {knob} must be 3 numbers"))
-            })
-    };
     // Qwen2/2.5 carry the pixel bounds at the top level; Qwen3 as
     // `size.{shortest,longest}_edge` (pixel counts despite the names).
     let size = set("size")
@@ -653,12 +902,105 @@ fn resolve_qwen_vl(config: &Value, pre: &Value) -> Result<QwenVlSpec> {
         temporal_patch_size: usize_knob("temporal_patch_size")?,
         min_pixels: pixels("min_pixels", "shortest_edge")?,
         max_pixels: pixels("max_pixels", "longest_edge")?,
-        image_mean: rgb_knob("image_mean")?,
-        image_std: rgb_knob("image_std")?,
+        image_mean: rgb_knob("preprocessor", knobs, "image_mean")?,
+        image_std: rgb_knob("preprocessor", knobs, "image_std")?,
         // Both HF processor names run torchvision's uint8 path on a default
         // server; `Resampler::Pil` stays reachable through the spec JSON.
         resample: Resampler::AtenU8,
         video: None,
+    })
+}
+
+fn rgb_knob(file: &str, knobs: &Map<String, Value>, knob: &str) -> Result<[f32; 3]> {
+    (knobs.get(knob))
+        .and_then(|value| serde_json::from_value::<[f32; 3]>(value.clone()).ok())
+        .ok_or_else(|| MmError::invalid_input(format!("{file} knob {knob} must be 3 numbers")))
+}
+
+/// Qwen model types whose processor is `Qwen3VLProcessor`, video included.
+/// Qwen2-VL and Qwen2.5-VL size video with another rule and serve images only.
+const QWEN3_VIDEO_MODEL_TYPES: &[&str] = &[
+    "qwen3_vl",
+    "qwen3_vl_moe",
+    "qwen3_5",
+    "qwen3_5_moe",
+    "qwen4_exp",
+];
+
+/// Knobs [`resolve_qwen_video`] reads. `max_video_tokens` acts only with
+/// `cap_pixels_per_frame`, which the video spec refuses.
+const QWEN_VIDEO_CONSUMED: &[&str] = &[
+    "video_processor_type",
+    "patch_size",
+    "merge_size",
+    "temporal_patch_size",
+    "size",
+    "image_mean",
+    "image_std",
+    "max_video_tokens",
+];
+
+/// The frame sampling knobs `save_pretrained` writes, at the defaults of
+/// transformers' `Qwen3VLVideoProcessor`.
+const QWEN_VIDEO_SAMPLING: &[(&str, Predicate)] = &[
+    ("do_sample_frames", Value::is_boolean),
+    ("fps", |v| v.as_f64() == Some(2.0)),
+    ("min_frames", |v| v.as_u64() == Some(4)),
+    ("max_frames", |v| v.as_u64() == Some(768)),
+    ("num_frames", Value::is_null),
+    ("video_metadata", Value::is_null),
+    ("return_metadata", |v| v.as_bool() == Some(false)),
+];
+
+/// The video half of `Qwen3VLProcessor`.
+fn resolve_qwen_video(config: &Value, pre: &Value) -> Result<QwenVlVideoSpec> {
+    let mut knobs = pre
+        .as_object()
+        .ok_or_else(|| MmError::invalid_input("video_preprocessor_config.json is not an object"))?
+        .clone();
+    for (knob, honored) in QWEN_VIDEO_SAMPLING {
+        if let Some(value) = knobs.remove(*knob)
+            && !honored(&value)
+        {
+            return Err(MmError::unsupported(format!(
+                "video preprocessor knob {knob} = {value} cannot be honored: the host samples the frames"
+            )));
+        }
+    }
+    check_qwen_knobs("video preprocessor", &knobs, QWEN_VIDEO_CONSUMED)?;
+    if pre["video_processor_type"] != "Qwen3VLVideoProcessor" {
+        return Err(MmError::unsupported(format!(
+            "video processor {} is not Qwen3VLVideoProcessor",
+            pre["video_processor_type"]
+        )));
+    }
+    // The vision tower reshapes rows with its own sizes (HF's defaults are 16
+    // and 2): a mismatch fails there or mixes patches.
+    for (knob, default) in [("patch_size", 16), ("temporal_patch_size", 2)] {
+        let tower = config["vision_config"][knob].as_u64().unwrap_or(default);
+        if pre[knob].as_u64() != Some(tower) {
+            return Err(MmError::invalid_input(format!(
+                "video processor {knob} = {} disagrees with vision_config.{knob} = {tower}",
+                pre[knob]
+            )));
+        }
+    }
+    let token_id = |field: &str| {
+        config[field]
+            .as_i64()
+            .and_then(|id| i32::try_from(id).ok())
+            .ok_or_else(|| MmError::invalid_input(format!("config.json is missing {field}")))
+    };
+    Ok(QwenVlVideoSpec {
+        video_token_id: token_id("video_token_id")?,
+        vision_start_token_id: token_id("vision_start_token_id")?,
+        vision_end_token_id: token_id("vision_end_token_id")?,
+        processor: serde_json::from_value(pre.clone()).map_err(|error| {
+            MmError::invalid_input_with_source("invalid video_preprocessor_config.json", error)
+        })?,
+        pre_resized: false,
+        image_mean: rgb_knob("video preprocessor", &knobs, "image_mean")?,
+        image_std: rgb_knob("video preprocessor", &knobs, "image_std")?,
     })
 }
 
@@ -683,13 +1025,11 @@ const NEMOTRON_VL_PINNED: &[(&str, Predicate)] = &[
     ("_downsample_factor", |v| v.as_u64() == Some(2)),
 ];
 
-/// Naming knobs, and knobs of the unsupported video path.
-const NEMOTRON_VL_INERT: &[&str] = &[
-    "auto_map",
-    "processor_class",
-    "video_target_num_patches",
-    "video_maintain_aspect_ratio",
-];
+/// Naming knobs.
+const NEMOTRON_VL_INERT: &[&str] = &["auto_map", "processor_class"];
+
+/// Video knobs [`resolve_nemotron_vl_video`] reads.
+const NEMOTRON_VL_VIDEO: &[&str] = &["video_target_num_patches", "video_maintain_aspect_ratio"];
 
 /// The spec of the checkpoint's HF processor. SGLang reads the same geometry
 /// from `config.json`, so the files must agree.
@@ -717,6 +1057,8 @@ fn resolve_nemotron_vl(
     #[derive(serde::Deserialize)]
     struct Tokenizer {
         added_tokens: Vec<AddedToken>,
+        #[serde(default)]
+        model: Value,
     }
 
     let parse = |name: &str, json: &str| {
@@ -732,7 +1074,8 @@ fn resolve_nemotron_vl(
 
     // transformers loads the `image_processor` object of processor_config.json when
     // there is one. With no flat file, `flat` is that document.
-    let nested = nested.as_ref().unwrap_or(&flat).get("image_processor");
+    let processor = nested.as_ref().unwrap_or(&flat);
+    let nested = processor.get("image_processor");
     let pre = match nested {
         Some(nested) if flat.get("image_processor").is_none() => {
             if let Some(knob) = NEMOTRON_VL_CONSUMED
@@ -755,7 +1098,10 @@ fn resolve_nemotron_vl(
         .ok_or_else(|| MmError::invalid_input("preprocessor_config.json is not an object"))?;
     for (knob, value) in knobs {
         let knob = knob.as_str();
-        if NEMOTRON_VL_CONSUMED.contains(&knob) || NEMOTRON_VL_INERT.contains(&knob) {
+        if [NEMOTRON_VL_CONSUMED, NEMOTRON_VL_INERT, NEMOTRON_VL_VIDEO]
+            .iter()
+            .any(|knobs| knobs.contains(&knob))
+        {
             continue;
         }
         match NEMOTRON_VL_PINNED.iter().find(|(name, _)| *name == knob) {
@@ -842,7 +1188,63 @@ fn resolve_nemotron_vl(
         image_mean: knobs.norm_mean,
         image_std: knobs.norm_std,
         sizing: NemotronVlSizing::Hf,
+        // SGLang splices a placeholder that is one token, and an empty one puts every
+        // video at the prompt start; `rewrite_prompt` mirrors neither, so video stays off.
+        video: resolve_nemotron_vl_video(config, processor, pre).filter(|video| {
+            let text = video.placeholder.as_str();
+            let vocab = &tokenizer.model["vocab"];
+            !(text.is_empty()
+                || (tokenizer.added_tokens.iter()).any(|token| token.content == text)
+                || vocab.get(text).is_some()
+                || (vocab.as_array())
+                    .is_some_and(|pieces| pieces.iter().any(|piece| piece[0] == text)))
+        }),
     })
+}
+
+/// `None`, so video is off and images still resolve, when a video knob is
+/// malformed or refused, or SGLang would group frames differently.
+fn resolve_nemotron_vl_video(
+    config: &Value,
+    processor: &Value,
+    pre: &Value,
+) -> Option<NemotronVlVideoSpec> {
+    let vision = &config["vision_config"];
+    let count = |value: &Value| value.as_u64().and_then(|value| u32::try_from(value).ok());
+    let temporal_patch_size = match processor.get("video_temporal_patch_dim") {
+        None => 2,
+        Some(value) => count(value)?,
+    };
+    // SGLang reads only this key and defaults it to 1.
+    if count(&vision["video_temporal_patch_size"])? != temporal_patch_size {
+        return None;
+    }
+    let image_size = match vision.get("image_size").or(config.get("force_image_size")) {
+        None => 512,
+        Some(Value::Array(sizes)) => count(sizes.first()?)?,
+        Some(value) => count(value)?,
+    };
+    Some(NemotronVlVideoSpec {
+        temporal_patch_size,
+        target_num_patches: match pre.get("video_target_num_patches") {
+            None => 1024,
+            Some(value) => count(value)?,
+        },
+        maintain_aspect_ratio: match pre.get("video_maintain_aspect_ratio") {
+            None => true,
+            Some(value) => value.as_bool()?,
+        },
+        image_size,
+        pruning_rate: match config.get("video_pruning_rate") {
+            None => 0.0,
+            Some(value) => value.as_f64()?,
+        },
+        placeholder: match config.get("video_context_token") {
+            None => default_video_placeholder(),
+            Some(value) => value.as_str()?.to_owned(),
+        },
+    })
+    .filter(|video| video.validate().is_ok())
 }
 
 fn read_optional_json(dir: &std::path::Path, name: &str) -> Result<Option<Value>> {
@@ -987,6 +1389,7 @@ fn resolve_pixtral(params: &Value, config: Option<&Value>, pre: &Value) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::qwen_vl::Qwen3VlVideo;
 
     // Trimmed from Qwen/Qwen2.5-VL-7B-Instruct.
     const QWEN25_CONFIG: &str = r#"{
@@ -1213,6 +1616,185 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
 
         assert!(spec_from_model_dir(std::path::Path::new("/nonexistent")).is_err());
+    }
+
+    // Qwen/Qwen3.5-27B's video_preprocessor_config.json.
+    const QWEN35_VIDEO_PREPROCESSOR: &str = r#"{
+        "size": {"longest_edge": 25165824, "shortest_edge": 4096},
+        "patch_size": 16, "temporal_patch_size": 2, "merge_size": 2,
+        "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+        "processor_class": "Qwen3VLProcessor",
+        "video_processor_type": "Qwen3VLVideoProcessor"
+    }"#;
+
+    // Qwen/Qwen3.5-0.8B's video processor after transformers 5.19.0 save_pretrained.
+    const QWEN35_SAVED_VIDEO_PREPROCESSOR: &str = r#"{
+        "do_convert_rgb": true, "do_normalize": true, "do_rescale": true,
+        "do_resize": true, "do_sample_frames": true, "fps": 2,
+        "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+        "max_frames": 768, "max_video_tokens": 768, "merge_size": 2,
+        "min_frames": 4, "patch_size": 16, "resample": 3,
+        "rescale_factor": 0.00392156862745098, "return_metadata": false,
+        "size": {"longest_edge": 25165824, "shortest_edge": 4096},
+        "temporal_patch_size": 2, "video_processor_type": "Qwen3VLVideoProcessor"
+    }"#;
+
+    #[test]
+    fn model_dir_resolution_reads_the_qwen_video_config() {
+        let dir = std::env::temp_dir().join(format!("mm-registry-video-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let resolve = |config: &str, video: &str| {
+            std::fs::write(dir.join("config.json"), config).unwrap();
+            std::fs::write(dir.join("preprocessor_config.json"), QWEN35_PREPROCESSOR).unwrap();
+            std::fs::write(dir.join("video_preprocessor_config.json"), video).unwrap();
+            spec_from_model_dir(&dir).map(|spec| match spec {
+                ProcessorSpec::QwenVl(spec) => spec.video,
+                _ => panic!("expected Qwen spec"),
+            })
+        };
+        let config = |model_type: &str, [video, start, end]: [i32; 3]| {
+            let ids = format!(
+                r#"{{"video_token_id": {video}, "vision_start_token_id": {start},
+                "vision_end_token_id": {end},"#
+            );
+            (QWEN35_CONFIG.replacen('{', &ids, 1))
+                .replace("\"qwen3_5\"", &format!("\"{model_type}\""))
+        };
+        let saved_with_nulls = (QWEN35_SAVED_VIDEO_PREPROCESSOR)
+            .replace(
+                r#""do_sample_frames": true"#,
+                r#""do_sample_frames": false"#,
+            )
+            .replacen('{', r#"{"num_frames": null, "video_metadata": null,"#, 1);
+        for (model_type, ids) in [
+            ("qwen3_vl", [151656, 151652, 151653]),
+            ("qwen3_vl_moe", [151656, 151652, 151653]),
+            ("qwen3_5", [248057, 248053, 248054]),
+            ("qwen3_5_moe", [248057, 248053, 248054]),
+            ("qwen4_exp", [248057, 248053, 248054]),
+        ] {
+            for file in [
+                QWEN35_VIDEO_PREPROCESSOR,
+                QWEN35_SAVED_VIDEO_PREPROCESSOR,
+                &saved_with_nulls,
+            ] {
+                let video = resolve(&config(model_type, ids), file).unwrap().unwrap();
+                assert_eq!(
+                    [
+                        video.video_token_id,
+                        video.vision_start_token_id,
+                        video.vision_end_token_id
+                    ],
+                    ids
+                );
+                assert_eq!(
+                    video.processor,
+                    Qwen3VlVideo::new(16, 2, 2, 4096, 25165824).unwrap()
+                );
+                assert_eq!((video.image_mean, video.image_std), ([0.5; 3], [0.5; 3]));
+                assert!(!video.pre_resized);
+            }
+        }
+        let qwen35 = config("qwen3_5", [248057, 248053, 248054]);
+        let qwen2 =
+            QWEN35_VIDEO_PREPROCESSOR.replace("Qwen3VLVideoProcessor", "Qwen2VLVideoProcessor");
+        for video in [
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""fps": 2"#, r#""fps": 1"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""max_frames": 768"#, r#""max_frames": 64"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR
+                .replace(r#""do_sample_frames": true"#, r#""do_sample_frames": 7"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""do_resize": true"#, r#""do_resize": null"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR
+                .replace(r#""do_resize": true"#, r#""do_resize": false"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replacen('{', r#"{"cap_pixels_per_frame": true,"#, 1),
+            qwen2.clone(),
+        ] {
+            let direct = resolve_qwen_video(
+                &serde_json::from_str(&qwen35).unwrap(),
+                &serde_json::from_str(&video).unwrap(),
+            );
+            assert!(
+                matches!(direct, Err(MmError::Unsupported { .. })),
+                "{video}"
+            );
+            assert!(resolve(&qwen35, &video).unwrap().is_none(), "{video}");
+        }
+        for video in [
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""merge_size": 2"#, r#""merge_size": 1"#),
+            QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(
+                r#""image_std": [0.5, 0.5, 0.5]"#,
+                r#""image_std": [0, 0.5, 0.5]"#,
+            ),
+        ] {
+            let direct = resolve_qwen_video(
+                &serde_json::from_str(&qwen35).unwrap(),
+                &serde_json::from_str(&video).unwrap(),
+            );
+            assert!(direct.is_ok(), "{video}");
+            assert!(resolve(&qwen35, &video).unwrap().is_none(), "{video}");
+        }
+        let tower14 = qwen35.replacen('{', r#"{"vision_config": {"patch_size": 14},"#, 1);
+        for (config, video) in [
+            (&tower14, QWEN35_SAVED_VIDEO_PREPROCESSOR.to_string()),
+            (
+                &qwen35,
+                QWEN35_SAVED_VIDEO_PREPROCESSOR
+                    .replace(r#""patch_size": 16"#, r#""patch_size": 14"#),
+            ),
+            (
+                &qwen35,
+                QWEN35_SAVED_VIDEO_PREPROCESSOR
+                    .replace(r#""temporal_patch_size": 2"#, r#""temporal_patch_size": 1"#),
+            ),
+        ] {
+            let direct = resolve_qwen_video(
+                &serde_json::from_str(config).unwrap(),
+                &serde_json::from_str(&video).unwrap(),
+            );
+            assert!(
+                matches!(direct, Err(MmError::InvalidInput { .. })),
+                "{config} {video}"
+            );
+            assert!(
+                resolve(config, &video).unwrap().is_none(),
+                "{config} {video}"
+            );
+        }
+        let direct = resolve_qwen_video(
+            &serde_json::from_str(QWEN35_CONFIG).unwrap(),
+            &serde_json::from_str(QWEN35_VIDEO_PREPROCESSOR).unwrap(),
+        );
+        assert!(matches!(direct, Err(MmError::InvalidInput { .. })));
+        assert!(
+            resolve(QWEN35_CONFIG, QWEN35_VIDEO_PREPROCESSOR)
+                .unwrap()
+                .is_none()
+        );
+        assert!(resolve(&qwen35, "{").unwrap().is_none());
+        for video in [qwen2.as_str(), "{"] {
+            assert!(resolve(QWEN25_CONFIG, video).unwrap().is_none());
+        }
+        std::fs::write(dir.join("config.json"), &qwen35).unwrap();
+        std::fs::write(
+            dir.join("video_preprocessor_config.json"),
+            QWEN35_VIDEO_PREPROCESSOR,
+        )
+        .unwrap();
+        let with_processor_config = |json: &str| {
+            std::fs::write(dir.join("processor_config.json"), json).unwrap();
+            match spec_from_model_dir(&dir).unwrap() {
+                ProcessorSpec::QwenVl(spec) => spec.video,
+                _ => panic!("expected Qwen spec"),
+            }
+        };
+        let nested = |video: &str| format!(r#"{{"video_processor": {video}}}"#);
+        let fps1 = QWEN35_SAVED_VIDEO_PREPROCESSOR.replace(r#""fps": 2"#, r#""fps": 1"#);
+        assert!(with_processor_config(r#"{"processor_class": "Qwen3VLProcessor"}"#).is_some());
+        assert!(with_processor_config(r#"{"video_processor": null}"#).is_some());
+        assert!(with_processor_config(&nested(&fps1)).is_none());
+        std::fs::remove_file(dir.join("video_preprocessor_config.json")).unwrap();
+        assert!(with_processor_config(&nested(QWEN35_SAVED_VIDEO_PREPROCESSOR)).is_some());
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     // Trimmed from moonshotai/Kimi-K3; the preprocessor config is complete.

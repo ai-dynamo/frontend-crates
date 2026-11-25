@@ -45,6 +45,21 @@ def _receipted_jobs(store, root, implementation, mode, versions=("0.25.1", "0.26
     return rows
 
 
+@pytest.mark.parametrize("implementation,mode", [("dynamo_v1", "batch"), ("dynamo_v2", "stream")])
+def test_compact_intermediate_insert_updates_parent_without_rewriting_later_observation(tmp_path, implementation, mode):
+    store = tmp_path / "store"
+    _write_family(store)
+    initial = _receipted_jobs(store, tmp_path / "initial", implementation, mode, versions=("11.0.0", "11.0.2"))
+    import_capture_groups(store, {implementation: initial}, compact_executions=True)
+    history = unified_history.load_store(store).histories["gemma4", implementation]
+    before = history.complete_snapshot(implementation + "-11.0.2")
+    inserted = _receipted_jobs(store, tmp_path / "inserted", implementation, mode, versions=("11.0.1",))
+    import_capture_groups(store, {implementation: inserted}, compact_executions=True)
+    history = unified_history.load_store(store).histories["gemma4", implementation]
+    assert history.complete_snapshot(implementation + "-11.0.2") == before
+    assert unified_history.load_yaml(history.capture_path(implementation + "-11.0.2"))["parent"] == implementation + "-11.0.1"
+
+
 def test_grouped_expected_jobs_are_owned_by_each_history_and_transaction(tmp_path, monkeypatch):
     store = tmp_path / "store"
     _write_family(store)

@@ -288,7 +288,7 @@ fn grid_tensor(name: &str, grid: [u32; 3]) -> (String, Tensor) {
 /// `w`): patches ordered `(t, gh/m, gw/m, m, m)`, features `(C, tps, ps,
 /// ps)`; parallel over merged-block rows. A frame repeated within a patch
 /// (a still's temporal copies) is normalized once and copied.
-fn patchify(
+pub(crate) fn patchify(
     frames: &[&[u8]],
     (h, w): (usize, usize),
     (ps, m, tps): (usize, usize, usize),

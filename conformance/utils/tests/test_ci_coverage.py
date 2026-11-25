@@ -65,7 +65,7 @@ def test_authored_reader_does_not_open_historical_archives(tmp_path, monkeypatch
     family_path.parent.mkdir(parents=True)
     family_path.write_text(yaml.safe_dump({"input_document": {"family": "sample"},
                                          "golden_document": {"family": "sample"}, "cases": {}}))
-    monkeypatch.setattr(unified_history, "_load_store_unlocked", lambda *_: pytest.fail("full store loaded"))
+    monkeypatch.setattr(unified_history, "_load_store_unlocked", lambda *_, **_kwargs: pytest.fail("full store loaded"))
     versions = tmp_path / "versions"
     versions.mkdir()
     (versions / "dynamo-0.7.18.tar.gz").write_bytes(b"must never be opened")
