@@ -885,7 +885,7 @@ impl HfTokenizerConfigJsonFormatter {
                     // The assistant policy only skips spellings, so a message
                     // that spells none under the other policy needs no role.
                     json_spells_marker(message, &self.control_markers, false)
-                        && (!is_assistant_message(message)
+                        && (!has_inline_assistant_history(message)
                             || json_spells_marker(message, &self.control_markers, true))
                 })
                 || [&tool_json, &response_format]
@@ -1455,13 +1455,15 @@ fn json_spells_marker(
     }
 }
 
-fn is_assistant_message(message: &serde_json::Value) -> bool {
+fn has_inline_assistant_history(message: &serde_json::Value) -> bool {
     message.get("role").and_then(|role| role.as_str()) == Some("assistant")
+        && message
+            .get("reasoning_content")
+            .is_none_or(serde_json::Value::is_null)
 }
 
-/// Shield every message with the policy for its role: assistant history keeps
-/// the markers the template reads out of prior answers; every other role is
-/// request text through and through.
+/// Only legacy assistant history needs template-readable inline controls.
+/// With explicit reasoning, the template supplies its own channel boundaries.
 fn shield_message_literals(
     messages: &mut serde_json::Value,
     markers: &ControlMarkers,
@@ -1472,7 +1474,7 @@ fn shield_message_literals(
         return;
     };
     for message in list {
-        let is_assistant = is_assistant_message(message);
+        let is_assistant = has_inline_assistant_history(message);
         shield_control_literals(message, markers, is_assistant, prefix, literals);
     }
 }
