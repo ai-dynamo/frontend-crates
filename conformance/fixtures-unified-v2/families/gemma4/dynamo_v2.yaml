@@ -1,15 +1,15 @@
-capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"1d47db854eb1fd1f00f4689820f5467b5b68135f820df1d6d059a8bb28036c04","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"gemma4","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"d183f190df87f852f5eda508788207d454403760024eecca3b7b5eef9726b0c9","source":"conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_423b0bcc49cad973
+  origin: origin_8ea221db576d8883
 origins:
-  origin_423b0bcc49cad973:
+  origin_8ea221db576d8883:
     crate_version: 0.10.12
-    source_sha256: abde4cd4bcc77371721e0ad86a987c0bd85f7ae903049098e9cb76b89ea20a0f
-    git_commit: 929f271ba0c24f58f75be38a54430478b6c1996d
+    source_sha256: d5716a4f8a3d70afb0d58c6e8ac2ef70387153f6f53638edbd788ad461572914
+    git_commit: ff3db954cb329b5025f6bd40c9c0374e67ea4c5f
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f

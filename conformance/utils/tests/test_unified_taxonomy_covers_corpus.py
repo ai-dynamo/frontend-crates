@@ -705,6 +705,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 marker = G._NATIVE_QUOTED_CONTROL.get(family, "<tool_call>")
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
+            elif scenario == "kimi_k3_repeated_think_to_response_handoff":
+                marker = G.k3_close("think")
             elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
                 marker = '<|open|>call tool="lookup"'
             elif scenario == "guided_response_rejected_header_quote_ownership":
@@ -1514,6 +1516,8 @@ def _family_value(scenario, family):
         recipient = quoted[scenario]
         if family == "gpt_oss":
             reason_open = reason_open.removeprefix("<|start|>assistant")
+        if family == "kimi_k3":
+            return f"I mean {recipient} literal"
         return (f"I mean to={recipient}literal" if family in {"muse_glimmer", "muse_spark"}
                 else f"I mean {reason_open}{recipient} literal{reason_close}")
     if scenario == "guided_json_narrated_invoke_in_reasoning":
@@ -1528,14 +1532,16 @@ def _family_value(scenario, family):
         "guided_json_native_parameter_array_before_payload",
         "guided_json_native_parameter_string_before_payload",
     }:
-        if scenario.startswith("guided_json_native_parameter_") and family not in {"qwen3", "muse_glimmer", "muse_spark"}:
+        if scenario.startswith("guided_json_native_parameter_") and family not in {"qwen3", "muse_glimmer", "muse_spark", "kimi_k3"}:
             return f"I mean {reason_open}self literal{reason_close}"
         suffix = " then a call" if scenario == "prefilled_response_reasoning_markers_literal" else ""
         if family == "gpt_oss" and scenario == "prefilled_response_reasoning_markers_literal":
             return "<think>literal</think> then a call"
-        if family == "beam" and scenario == "prefilled_response_reasoning_markers_literal":
-            # Beam's framing is special tokens: under Response the framed analysis
-            # message is consumed as control and its body is visible text.
+        if family == "kimi_k3" and scenario.startswith("guided_json_native_parameter_"):
+            return "I mean self literal"
+        if family in {"beam", "kimi_k3"} and scenario == "prefilled_response_reasoning_markers_literal":
+            # Both parsers consume native analysis controls under Response and
+            # retain their body as visible text.
             return "literal then a call"
         return ("to=selfliteral" if family in {"muse_glimmer", "muse_spark"}
                 else f"{reason_open}literal{reason_close}") + suffix
@@ -2677,6 +2683,9 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             "kimi_k3_elided_think_close_to_response",
             "gpt_oss_interrupted_reasoning_then_response",
             "interrupted_reasoning_then_response",
+            # Validated by native_short_reasoning_markers_do_not_leak: this scenario
+            # intentionally closes with the compact compatibility spelling instead.
+            "kimi_k3_short_reasoning_close",
         }
         if scenario.removesuffix("_pr424") not in unclosed:
             assert control_tokens(family)[1] in raw, (family, scenario, "missing reasoning closer")
