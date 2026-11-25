@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import importlib
 import importlib.metadata
+import importlib.metadata
 import inspect
 import json
 import sys
@@ -13,11 +14,12 @@ from pathlib import Path
 
 import peer_modules
 from capture_stimulus import batch_final_events, unavailable_result, validate_family_scoped_cases
-from impls import SGLANG_UNIFIED_PIPELINES, VLLM_UNIFIED_PIPELINES, parser_families_path
+from impls import SGLANG_UNIFIED_PIPELINES, parser_families_path, vllm_unified_pipelines
 from peer_modules import VllmTextTokenizer, resolve_peer_module, sglang_reasoning_kwargs, sglang_supports_reasoning_init, parser_error_detail, peer_call
 
 
 from tables.common import decode_arguments
+from vllm_capture_tokenizer import StubTokenizer, capture_tokenizer
 
 
 def capture_cases(job, pipeline, registrations, execute, *, supports_reasoning_init=False):
@@ -72,21 +74,46 @@ def vllm_pipeline():
     protocol = resolve_peer_module("vllm", "protocol")
 
     def registered(names):
-        return (names[0] in reasoning_manager.reasoning_parsers or names[0] in reasoning_manager.__dict__.get("lazy_parsers", {})) and (names[1] in tool_manager.tool_parsers or names[1] in tool_manager.__dict__.get("lazy_parsers", {}))
+        return (names[0] is None or names[0] in reasoning_manager.reasoning_parsers or names[0] in reasoning_manager.__dict__.get("lazy_parsers", {})) and (names[1] in tool_manager.tool_parsers or names[1] in tool_manager.__dict__.get("lazy_parsers", {}))
 
     def execute(names, request):
         tools = [protocol.ChatCompletionToolsParam.model_validate(tool if "function" in tool else {"type": "function", "function": tool}) for tool in request["tools"]]
         req = protocol.ChatCompletionRequest.model_construct(model="parser-only-capture", messages=[], tools=tools, tool_choice="auto" if tools else "none")
-        parser = peer_modules._vllm_reasoning_parser(names[0], {})
-        reasoning_method = parser.extract_reasoning if hasattr(parser, "extract_reasoning") else parser.extract_reasoning_content
-        reasoning_text, content = peer_call(reasoning_method, request["input"], req)
+        unified_family = {("openai_gptoss", "openai"): "gpt_oss", ("beam", "beam"): "beam"}.get(names)
+        if unified_family:
+            tokenizer = capture_tokenizer(unified_family)
+            text = request["input"]
+            tokenizer.bind_input(text, marker_at_start=False)
+            options = {"is_harmony": True} if unified_family == "gpt_oss" else {}
+            cls = peer_modules.vllm_parser_factory()(
+                tool_parser_name=names[1], reasoning_parser_name=names[0],
+                enable_auto_tools=True, model_name=unified_family, **options,
+            )
+            parser = peer_modules.capture_parser(cls, tokenizer, tools=tools)
+            reasoning, content, calls = parser.parse(text, req)
+            return {
+                "reasoning_text": reasoning or "",
+                "normal_text": content or "",
+                "calls": [{"name": call.name, "arguments": decode_arguments(call.arguments)}
+                          for call in calls or ()],
+            }
+        configured_family = "mistral_4" if names == ("mistral", "mistral") else None
+        tokenizer = StubTokenizer(configured_family) if configured_family else VllmTextTokenizer()
+        reasoning_text, content = "", request["input"]
+        if names[0] is not None:
+            if configured_family is not None:
+                parser = peer_call(reasoning_manager.get_reasoning_parser(names[0]), tokenizer)
+            else:
+                parser = peer_modules._vllm_reasoning_parser(names[0], {})
+            reasoning_method = parser.extract_reasoning if hasattr(parser, "extract_reasoning") else parser.extract_reasoning_content
+            reasoning_text, content = peer_call(reasoning_method, request["input"], req)
         cls = tool_manager.get_tool_parser(names[1])
         kwargs = {"tools": tools} if "tools" in inspect.signature(cls.__init__).parameters else {}
-        parser = peer_call(cls, tokenizer=VllmTextTokenizer(), **kwargs)
+        parser = peer_call(cls, tokenizer=tokenizer, **kwargs)
         result = peer_call(parser.extract_tool_calls, content or "", req)
         return {"reasoning_text": reasoning_text or "", "normal_text": result.content or "", "calls": [{"name": call.function.name, "arguments": decode_arguments(call.function.arguments)} for call in result.tool_calls]}
 
-    return VLLM_UNIFIED_PIPELINES, registered, execute
+    return vllm_unified_pipelines(importlib.metadata.version("vllm")), registered, execute
 
 
 def source_identity_root(engine, root, version):
@@ -97,6 +124,9 @@ def source_identity_root(engine, root, version):
     adapter_root = Path(__file__).resolve().parent
     config = parser_families_path()
     adapter_files = {config.name: hashlib.sha256(config.read_bytes()).hexdigest()}
+    if engine == "vllm":
+        template = adapter_root / "beam_response_template.json"
+        adapter_files[template.name] = hashlib.sha256(template.read_bytes()).hexdigest()
     for loaded in tuple(sys.modules.values()):
         path = loaded.__dict__.get("__file__") if loaded is not None else None
         if path:
