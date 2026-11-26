@@ -43,6 +43,10 @@ pub use unified::{
     register_unified_parser, tool_arguments_raw, unregister_unified_parser,
     vendor_unified_families,
 };
+pub use unified::{
+    ReasoningMarkers, ThinkingPolicy, UnifiedFamilyInfo, register_unified_family,
+    unified_family_info, unified_family_names,
+};
 
 #[cfg(test)]
 mod feature_tests {

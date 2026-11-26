@@ -52,6 +52,7 @@ pub mod beam;
 mod blank_tool_turn;
 pub mod deepseek_v4;
 pub mod deepseek_v41;
+mod family;
 pub mod gemma4;
 pub mod glm47;
 mod guided_cursor;
@@ -73,6 +74,10 @@ use crate::tool_calling::json_prefix::JsonPrefixState;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
+pub use family::{
+    ReasoningMarkers, ThinkingPolicy, UnifiedFamilyInfo, register_unified_family,
+    unified_family_info, unified_family_names,
+};
 pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
 
 use serde::{Deserialize, Serialize};
