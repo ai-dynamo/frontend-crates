@@ -1226,7 +1226,7 @@ dependencies = [
  "anyhow",
  "async-stream",
  "dynamo-protocols",
- "dynamo-structural-tag",
+ "dynamo-structural-tag 0.1.2",
  "futures",
  "num-traits",
  "openai-harmony",
@@ -1247,7 +1247,7 @@ name = "dynamo-parsers-v2"
 version = "0.10.3"
 dependencies = [
  "anyhow",
- "dynamo-structural-tag",
+ "dynamo-structural-tag 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "openai-harmony",
  "percent-encoding",
  "regex",
@@ -1309,6 +1309,19 @@ dependencies = [
 [[package]]
 name = "dynamo-structural-tag"
 version = "0.1.2"
+dependencies = [
+ "anyhow",
+ "jsonschema",
+ "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "dynamo-structural-tag"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8350d3089f5f140c6f8dfcdbdf77b2c1e97b0bcc1b67b4d32a06a41426ea7085"
 dependencies = [
  "anyhow",
  "jsonschema",

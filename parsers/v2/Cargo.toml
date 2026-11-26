@@ -15,7 +15,7 @@ arbitrary-precision = ["serde_json/arbitrary_precision"]
 
 [dependencies]
 sha2 = "0.10"
-dynamo-structural-tag.workspace = true
+dynamo-structural-tag = "0.1.2"
 openai-harmony = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

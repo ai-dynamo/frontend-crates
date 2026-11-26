@@ -34,11 +34,25 @@ use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{
     GuidedPrefix, GuidedPrefixContext, GuidedPrefixScanner, GuidedRouted, ScannerUnified,
-    UnifiedParser, count_guided_prefix_bytes,
+    UnifiedFamily, UnifiedFamilyInfo, UnifiedParser, count_guided_prefix_bytes,
 };
 
 const REASONING_START: &str = "<think>";
 const REASONING_END: &str = "</think>";
+
+/// The existing Qwen3 XML parser, available to statically linked catalogs.
+pub struct Qwen3;
+
+impl UnifiedFamily for Qwen3 {
+    const INFO: UnifiedFamilyInfo = UnifiedFamilyInfo::new("qwen3")
+        .aliases(&["qwen3_coder"])
+        .reasoning(REASONING_START, REASONING_END)
+        .tool_call_opener("<tool_call>");
+
+    fn create(tools: &[Tool]) -> anyhow::Result<Box<dyn UnifiedParser>> {
+        Ok(qwen3_unified(tools))
+    }
+}
 
 fn guided_function_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     let suffix = &context.text[context.at..];
