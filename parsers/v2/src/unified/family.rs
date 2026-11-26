@@ -9,9 +9,6 @@
 //! can be turned off. That knowledge lives here, next to the parser, so a new
 //! family needs no host-side code: a crate bump or a vendor registration brings it.
 
-use std::collections::HashMap;
-use std::sync::{LazyLock, RwLock};
-
 use super::{Result, Tool, UnifiedParser, UnifiedParserFactory, UnifiedParserStartingState};
 
 /// Reasoning open and close markers, as the model emits them.
@@ -128,10 +125,7 @@ const BUILTIN: &[UnifiedFamilyInfo] = &[
         .reasoning(THINK.0, THINK.1)
         .tool_call_opener("<tool_call>"),
     UnifiedFamilyInfo::new("hermes").reasoning(THINK.0, THINK.1),
-    UnifiedFamilyInfo::new("qwen3")
-        .aliases(&["qwen3_coder"])
-        .reasoning(THINK.0, THINK.1)
-        .tool_call_opener("<tool_call>"),
+    super::qwen3::Qwen3::INFO,
     UnifiedFamilyInfo::new("nemotron_v3")
         .aliases(&["nemotron3"])
         .reasoning(THINK.0, THINK.1)
@@ -180,36 +174,38 @@ const BUILTIN: &[UnifiedFamilyInfo] = &[
             "<|sep|>",
         ])
         .thinking(ThinkingPolicy::Optional),
-    UnifiedFamilyInfo::new("mistral_4")
-        .aliases(&["mistral"])
-        .thinking(ThinkingPolicy::Optional),
+    UnifiedFamilyInfo::new("mistral_4").thinking(ThinkingPolicy::Optional),
     UnifiedFamilyInfo::new("gpt_oss").aliases(&["harmony"]),
 ];
 
-static VENDOR_INFO: LazyLock<RwLock<HashMap<&'static str, UnifiedFamilyInfo>>> =
-    LazyLock::new(Default::default);
+pub(super) fn builtin_family_info(name: &str) -> Option<UnifiedFamilyInfo> {
+    BUILTIN.iter().find(|info| info.answers_to(name)).copied()
+}
 
 /// Facts about a family, by canonical name or alias. A vendor registration wins
 /// over the built-in of the same name, matching parser selection.
 pub fn unified_family_info(name: &str) -> Option<UnifiedFamilyInfo> {
-    let vendor = VENDOR_INFO.read().unwrap_or_else(|e| e.into_inner());
-    vendor
-        .values()
-        .find(|info| info.answers_to(name))
-        .or_else(|| BUILTIN.iter().find(|info| info.answers_to(name)))
-        .copied()
+    super::vendor_registration(name)
+        .and_then(|registration| registration.info)
+        .or_else(|| builtin_family_info(name))
 }
 
 /// Every name that selects a family, built-in or vendor, sorted.
 pub fn unified_family_names() -> Vec<&'static str> {
-    let vendor = VENDOR_INFO.read().unwrap_or_else(|e| e.into_inner());
+    let vendor = super::VENDOR_PARSERS
+        .read()
+        .unwrap_or_else(|e| e.into_inner());
     let mut names: Vec<&'static str> = super::REGISTERED_UNIFIED_FAMILIES
         .iter()
         .copied()
         .chain(
             BUILTIN
                 .iter()
-                .chain(vendor.values())
+                .chain(
+                    vendor
+                        .values()
+                        .filter_map(|registration| registration.info.as_ref()),
+                )
                 .flat_map(|info| std::iter::once(info.family).chain(info.aliases.iter().copied())),
         )
         .collect();
@@ -244,16 +240,14 @@ pub trait UnifiedFamily {
 /// Register a parser together with its facts, for hosts that build `info` at
 /// runtime (a loaded `.so`). Startup-only, like
 /// [`register_unified_parser`](super::register_unified_parser).
+/// Built-in names and registered canonical names take precedence over custom
+/// aliases. When two custom aliases overlap, the first canonical name in sorted
+/// order takes precedence.
 pub fn register_unified_family(
     info: UnifiedFamilyInfo,
     factory: UnifiedParserFactory,
 ) -> Option<UnifiedParserFactory> {
-    let previous = super::register_unified_parser(info.family, factory);
-    VENDOR_INFO
-        .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(info.family, info);
-    previous
+    super::register_factory(info.family, factory, Some(info))
 }
 
 #[cfg(test)]
@@ -268,10 +262,18 @@ mod tests {
     }
 
     #[test]
-    fn aliases_resolve_to_one_canonical_family() {
+    fn aliases_resolve_to_one_canonical_family_and_factory() {
         for info in BUILTIN {
             for name in std::iter::once(&info.family).chain(info.aliases) {
                 assert_eq!(unified_family_info(name).unwrap().family, info.family);
+                assert_eq!(
+                    super::super::canonical_unified_family(name),
+                    Some(info.family)
+                );
+                assert!(
+                    super::super::create_unified_parser_for_family(name, &[]).is_ok(),
+                    "{name}"
+                );
             }
         }
     }

@@ -19,7 +19,8 @@
 
 use anyhow::Result;
 use dynamo_parsers_v2::{
-    Tool, UnifiedParser, UnifiedParserEvent, UnifiedParserExt, UnifiedParserOutput,
+    Tool, UnifiedFamily, UnifiedFamilyInfo, UnifiedParser, UnifiedParserEvent, UnifiedParserExt,
+    UnifiedParserOutput,
 };
 
 static SERIALIZE: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -48,6 +49,48 @@ impl UnifiedParser for VendorEverythingIsText {
 
 fn vendor_factory(_tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
     Ok(Box::new(VendorEverythingIsText))
+}
+
+struct VendorFamily;
+
+impl UnifiedFamily for VendorFamily {
+    const INFO: UnifiedFamilyInfo =
+        UnifiedFamilyInfo::new("acme_family").aliases(&["acme-family-alias"]);
+
+    fn create(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
+        vendor_factory(tools)
+    }
+}
+
+#[test]
+fn family_alias_selects_the_registered_factory() {
+    let _g = SERIALIZE.lock().unwrap_or_else(|e| e.into_inner());
+    VendorFamily::register();
+    let _restore = Restore(VendorFamily::INFO.family);
+    let alias = VendorFamily::INFO.aliases[0];
+
+    assert_eq!(
+        dynamo_parsers_v2::unified_family_info(alias),
+        Some(VendorFamily::INFO)
+    );
+    let output = dynamo_parsers_v2::create_unified_parser_for_family(alias, &[])
+        .unwrap()
+        .push("vendor text")
+        .unwrap();
+    assert_eq!(output, vec![UnifiedParserEvent::Text("vendor text".into())]);
+}
+
+#[test]
+fn removing_a_family_removes_its_metadata_and_aliases() {
+    let _g = SERIALIZE.lock().unwrap_or_else(|e| e.into_inner());
+    VendorFamily::register();
+    let _restore = Restore(VendorFamily::INFO.family);
+    let alias = VendorFamily::INFO.aliases[0];
+
+    assert!(dynamo_parsers_v2::unregister_unified_parser(alias).is_some());
+    assert!(dynamo_parsers_v2::unified_family_info(alias).is_none());
+    assert!(dynamo_parsers_v2::unified_family_info(VendorFamily::INFO.family).is_none());
+    assert!(!dynamo_parsers_v2::unified_family_names().contains(&alias));
 }
 
 /// A vendor can implement `UnifiedParser` from outside and have it selected.
