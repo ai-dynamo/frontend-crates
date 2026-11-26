@@ -44,7 +44,7 @@ pub use unified::{
     vendor_unified_families,
 };
 pub use unified::{
-    ReasoningMarkers, ThinkingPolicy, UnifiedFamilyInfo, register_unified_family,
+    ReasoningMarkers, ThinkingPolicy, UnifiedFamily, UnifiedFamilyInfo, register_unified_family,
     unified_family_info, unified_family_names,
 };
 

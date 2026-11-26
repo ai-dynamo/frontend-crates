@@ -12,7 +12,7 @@
 use std::collections::HashMap;
 use std::sync::{LazyLock, RwLock};
 
-use super::{UnifiedParserFactory, UnifiedParserStartingState};
+use super::{Result, Tool, UnifiedParser, UnifiedParserFactory, UnifiedParserStartingState};
 
 /// Reasoning open and close markers, as the model emits them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -218,7 +218,31 @@ pub fn unified_family_names() -> Vec<&'static str> {
     names
 }
 
-/// Register a parser together with its facts. Startup-only, like
+/// A parser family: its facts and how to build its parser.
+///
+/// ```ignore
+/// struct MyModel;
+/// impl UnifiedFamily for MyModel {
+///     const INFO: UnifiedFamilyInfo = UnifiedFamilyInfo::new("my_model")
+///         .reasoning("<think>", "</think>")
+///         .tool_call_opener("<tool_call>");
+///     fn create(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> { ... }
+/// }
+/// MyModel::register(); // once, at startup
+/// ```
+pub trait UnifiedFamily {
+    const INFO: UnifiedFamilyInfo;
+
+    fn create(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>>;
+
+    /// Returns the factory this replaced, if any.
+    fn register() -> Option<UnifiedParserFactory> {
+        register_unified_family(Self::INFO, Self::create)
+    }
+}
+
+/// Register a parser together with its facts, for hosts that build `info` at
+/// runtime (a loaded `.so`). Startup-only, like
 /// [`register_unified_parser`](super::register_unified_parser).
 pub fn register_unified_family(
     info: UnifiedFamilyInfo,

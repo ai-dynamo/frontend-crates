@@ -75,7 +75,7 @@ use std::collections::BTreeMap;
 use std::ops::Range;
 
 pub use family::{
-    ReasoningMarkers, ThinkingPolicy, UnifiedFamilyInfo, register_unified_family,
+    ReasoningMarkers, ThinkingPolicy, UnifiedFamily, UnifiedFamilyInfo, register_unified_family,
     unified_family_info, unified_family_names,
 };
 pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
