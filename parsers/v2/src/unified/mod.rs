@@ -4059,6 +4059,8 @@ impl GuidedState {
                     || self.response_prefill_text_emitted
                     || !prefix.trim().is_empty()
                 {
+                    // Buffered text must match what `push_response_prose` would emit.
+                    let prefix = self.reasoning.strip_text(&prefix);
                     self.response_prefill_prose.push_str(&prefix);
                 }
             } else {

@@ -83,11 +83,12 @@ fn parts(named: bool) -> (&'static str, &'static str) {
 
 #[test]
 fn response_prefill_native_body_cannot_become_the_guided_payload() {
-    for (family, header, trailer, literal_prefix) in [
+    for (family, header, trailer, literal_prefix, visible_prefix) in [
         (
             "gpt_oss",
             "<|start|>assistant<|channel|>commentary to=functions.ignored <|constrain|>json<|message|>",
             "<|call|>",
+            "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>",
             "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>",
         ),
         (
@@ -95,12 +96,15 @@ fn response_prefill_native_body_cannot_become_the_guided_payload() {
             "<|start|>assistant to=functions.ignored<|channel|>commentary<|message|>",
             "<|call|>",
             "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>",
+            "I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>",
         ),
         (
             "kimi_k3",
             "<|open|>tools<|sep|><|open|>call tool=\"ignored\" index=\"1\"<|sep|>",
             "<|close|>call<|sep|><|close|>tools<|sep|>",
             "I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>",
+            // K3 think controls are XTML structure in a Response, not prose.
+            "I mean self literal",
         ),
     ] {
         for array in [false, true] {
@@ -133,7 +137,7 @@ fn response_prefill_native_body_cannot_become_the_guided_payload() {
                     let mut expected = Vec::new();
                     if !prefix.is_empty() {
                         expected.push(UnifiedEvent::Text {
-                            text: prefix.into(),
+                            text: prefix.replace(literal_prefix, visible_prefix),
                         });
                     }
                     expected.push(UnifiedEvent::ToolCall {
