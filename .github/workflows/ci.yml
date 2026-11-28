@@ -82,7 +82,6 @@ jobs:
       BAZELISK_VERSION: "1.28.1"
       BAZELISK_SHA256: 22e7d3a188699982f661cf4687137ee52d1f24fec1ec893d91a6c4d791a75de8
       BAZELISK_VERIFY_SHA256: 2e14c55c298752d71e8a0bbd762665ffce5966c9ad00ec5d1a8b82a58e7bfa06
-      BAZEL_CACHE: ${{ github.workspace }}/../frontend-crates-bazel-cache
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -103,11 +102,11 @@ jobs:
         id: cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
-          # Downloads are small archives. Unpacked repositories are about 2.3 GB
-          # and recreate in under a minute, so they stay out of the cache.
+          # actions/cache rejects '..' paths. Downloads are small archives; unpacked
+          # repositories are about 2.3 GB and recreate in under a minute, so they stay out.
           path: |
-            ../frontend-crates-bazel-cache/actions
-            ../frontend-crates-bazel-cache/repository/content_addressable
+            ~/.cache/frontend-crates-bazel/actions
+            ~/.cache/frontend-crates-bazel/repository/content_addressable
           key: bazel-v1-${{ runner.os }}-${{ hashFiles('.bazelversion', 'MODULE.bazel.lock') }}-${{ github.ref_name == 'main' && github.sha || github.ref_name }}
           restore-keys: |
             bazel-v1-${{ runner.os }}-${{ hashFiles('.bazelversion', 'MODULE.bazel.lock') }}-
@@ -115,7 +114,8 @@ jobs:
       - name: Build and test with Bazel
         run: |
           bazel --nohome_rc --nosystem_rc test //... \
-            --disk_cache="$BAZEL_CACHE/actions" --repository_cache="$BAZEL_CACHE/repository" \
+            --disk_cache="$HOME/.cache/frontend-crates-bazel/actions" \
+            --repository_cache="$HOME/.cache/frontend-crates-bazel/repository" \
             --keep_going 2>&1 | tee "$RUNNER_TEMP/bazel.log"
           {
             echo "### Bazel action reuse"
@@ -129,8 +129,8 @@ jobs:
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
-            ../frontend-crates-bazel-cache/actions
-            ../frontend-crates-bazel-cache/repository/content_addressable
+            ~/.cache/frontend-crates-bazel/actions
+            ~/.cache/frontend-crates-bazel/repository/content_addressable
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
   rust:
