@@ -199,10 +199,13 @@ impl CachedTokenizer {
             None => false,
         };
 
-        // A `single_word` token next to a word character is not a special token, so it is
-        // never a safe split point. Drop it only after the overlap check above.
+        // A `single_word` token next to a word character is not a special token, and a
+        // `normalized` one is matched on text the normalizer has rewritten, so neither is
+        // ever a safe split point. Drop them only after the overlap check above.
         let rules = inner.prefix_split_rules();
-        special_tokens.retain(|token| !rules.single_word.contains(token));
+        special_tokens.retain(|token| {
+            !rules.single_word.contains(token) && !rules.normalized.contains(token)
+        });
 
         let l1_enabled = !special_tokens.is_empty() && !overlapping_specials;
         let cache_tokens = if l1_enabled {
@@ -945,6 +948,12 @@ mod tests {
             ),
             (with_flag("single_word"), "<s>abc </s>def", true),
             (metaspace_first, "<s> Hello</s>Bye", false),
+            // TinyLlama's `Prepend("▁")` normalizer would give the text after `</s>` a `▁`.
+            (
+                with_flag("normalized"),
+                "<s>user\nHi there </s>\nBye</s><s>",
+                true,
+            ),
         ];
 
         let temp = tempfile::tempdir().unwrap();
@@ -966,6 +975,36 @@ mod tests {
                     assert_eq!(ids.token_ids(), expected.token_ids(), "{input:?}");
                 }
                 assert!(cached.cache_stats().hits > 0, "{input:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn normalized_specials_split_only_under_an_identity_normalizer() {
+        let mut json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(TINYLLAMA_PATH).unwrap()).unwrap();
+        for token in json["added_tokens"].as_array_mut().unwrap() {
+            if token["content"] == "</s>" {
+                token["normalized"] = true.into();
+            }
+        }
+        let mut identity = json.clone();
+        identity["normalizer"] = serde_json::json!({"type": "Sequence", "normalizers": []});
+
+        let temp = tempfile::tempdir().unwrap();
+        for (name, json, expected) in [
+            ("prepend", json, vec!["</s>".to_string()]),
+            ("identity", identity, Vec::new()),
+        ] {
+            let path = temp.path().join(format!("{name}.json"));
+            std::fs::write(&path, serde_json::to_vec(&json).unwrap()).unwrap();
+            let path = path.to_str().unwrap();
+            let backends: [Arc<dyn Tokenizer>; 2] = [
+                Arc::new(HuggingFaceTokenizer::from_file(path).unwrap()),
+                Arc::new(crate::FastTokenizer::from_file(path).unwrap()),
+            ];
+            for inner in backends {
+                assert_eq!(inner.prefix_split_rules().normalized, expected, "{name}");
             }
         }
     }
