@@ -7,8 +7,66 @@
 use dynamo_protocols::types::responses::{
     CreateResponse, TextResponseFormatConfiguration, Verbosity,
 };
-use dynamo_protocols::types::{CreateChatCompletionRequest, CreateCompletionRequest};
+use dynamo_protocols::types::{
+    ChatCompletionAllowedTool, ChatCompletionAllowedToolsMode, CreateChatCompletionInput,
+    CreateChatCompletionRequest, CreateCompletionRequest,
+};
 use serde_json::json;
+
+#[test]
+fn chat_input_round_trips_allowed_tools_and_retains_the_full_catalog() {
+    for (mode, typed_mode) in [
+        ("auto", ChatCompletionAllowedToolsMode::Auto),
+        ("required", ChatCompletionAllowedToolsMode::Required),
+    ] {
+        let payload = json!({
+            "model":"test", "messages":[{"role":"user","content":"Look up"}],
+            "tools":[
+                {"type":"function","function":{"name":"lookup"}},
+                {"type":"function","function":{"name":"delete"}}
+            ],
+            "tool_choice":{"type":"allowed_tools","allowed_tools":{
+                "mode":mode,"tools":[{"type":"function","function":{"name":"lookup"}}]
+            }}
+        });
+        let input: CreateChatCompletionInput = serde_json::from_value(payload.clone()).unwrap();
+        assert_eq!(serde_json::to_value(&input).unwrap(), payload);
+        let (request, selection) = input.into_parts();
+        let selection = selection.unwrap();
+        assert_eq!(selection.mode, typed_mode);
+        let [ChatCompletionAllowedTool::Function { function }] = selection.tools.as_slice() else {
+            panic!("expected the selected function");
+        };
+        assert_eq!(function.name, "lookup");
+        assert!(request.tool_choice.is_none());
+        assert_eq!(
+            request.effective_tool_names().collect::<Vec<_>>(),
+            ["lookup", "delete"]
+        );
+    }
+}
+
+#[test]
+fn chat_input_preserves_standard_choices_when_converted_to_a_request() {
+    for choice in [
+        json!(null),
+        json!("none"),
+        json!("auto"),
+        json!("required"),
+        json!({"type":"function","function":{"name":"lookup"}}),
+        json!({"type":"custom","custom":{"name":"run_python"}}),
+    ] {
+        let payload = json!({"model":"test","messages":[],"tool_choice":choice});
+        let standard: CreateChatCompletionRequest =
+            serde_json::from_value(payload.clone()).unwrap();
+        let input: CreateChatCompletionInput = serde_json::from_value(payload).unwrap();
+        assert_eq!(
+            serde_json::to_value(&input).unwrap(),
+            serde_json::to_value(&standard).unwrap(),
+        );
+        assert_eq!(input.into_parts(), (standard, None));
+    }
+}
 
 #[test]
 fn chat_custom_tools_preserve_openai_declarations_and_named_choice() {
