@@ -93,7 +93,9 @@ impl EffortTemplate {
         let explicit = has_explicit_effort
             .then_some(native_effort)
             .or_else(|| req.reasoning_effort())
-            .or_else(|| args?.get("reasoning_effort").map(Value::from_serialize));
+            // The context holds the arguments as the template receives them,
+            // with control-token spellings in their values shielded.
+            .or_else(|| ctx.get_attr("reasoning_effort").ok());
         if let Some(effort) = explicit.filter(|v| !v.is_none() && !v.is_undefined()) {
             let overrides = Value::from_iter([
                 ("emit_default_thinking_effort", Value::from(true)),
