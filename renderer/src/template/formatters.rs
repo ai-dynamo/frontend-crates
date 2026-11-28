@@ -6,8 +6,8 @@ use std::sync::Arc;
 use super::effort::EffortTemplate;
 use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
-    ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
-    raise_exception, strftime_now, tojson,
+    ChatTemplate, fromjson, python_format, python_formatter, python_methods, python_string,
+    python_trim, raise_exception, strftime_now, tojson,
 };
 use super::{
     ChatTemplateContentFormat, ContextMixins, DeveloperFallback, HfTokenizerConfigJsonFormatter,
@@ -808,6 +808,7 @@ impl HfTokenizerConfigJsonFormatter {
 
         env.add_filter("tojson", tojson);
         env.add_filter("string", python_string);
+        env.add_filter("format", python_format);
         env.set_formatter(python_formatter);
 
         // Templates that round-trip tool call `arguments` (a JSON string) back into an
@@ -1422,6 +1423,93 @@ mod tests {
         assert_eq!(
             render_hf(template, context! { s => "<b>\r\n&\u{2028}hi" }),
             "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"
+        );
+    }
+
+    /// Python `str` of a list or dict is its `repr`, which Seed-OSS tool-call arguments and
+    /// Qwen3-Coder `<type>` unions put in the prompt.
+    #[test]
+    fn test_output_formats_containers_like_python() {
+        let v = json!([{"type": ["string", "null"]}, "it's", "a\"b'\n\u{a0}", 1e-7, true, null]);
+        let expected =
+            r#"[{'type': ['string', 'null']}, "it's", 'a"b\'\n\xa0', 1e-07, True, None]"#;
+        assert_eq!(render_hf("{{ v }}", context! { v => v.clone() }), expected);
+        assert_eq!(render_hf("{{ v | string }}", context! { v => v }), expected);
+    }
+
+    /// The Python spelling of a list or dict still goes through autoescape when it is on.
+    #[test]
+    fn test_output_containers_respect_autoescape() {
+        let v = json!(["<tag>", {"k": "a&b"}]);
+        assert_eq!(
+            render_hf(
+                "{% autoescape true %}{{ v }}{% endautoescape %}",
+                context! { v => v.clone() }
+            ),
+            "[&#x27;&lt;tag&gt;&#x27;, {&#x27;k&#x27;: &#x27;a&amp;b&#x27;}]"
+        );
+        assert_eq!(
+            render_hf(
+                "{% autoescape true %}{{ ['<tag>'] }}{% endautoescape %}",
+                context! {}
+            ),
+            "[&#x27;&lt;tag&gt;&#x27;]"
+        );
+        assert_eq!(
+            render_hf("{{ v }}", context! { v => v }),
+            "['<tag>', {'k': 'a&b'}]"
+        );
+    }
+
+    /// Llama 4 replays tool-call arguments with `"%s" | format(value)`, which prints a list
+    /// or dict argument as Python's `repr`; other arguments keep the builtin's conversions.
+    #[test]
+    fn test_format_filter_formats_containers_like_python() {
+        let args = json!({"paths": ["a.py", "it's"], "opts": {"k": [1.5, false, null]}});
+        assert_eq!(
+            render_hf(
+                r#"{% for k in args %}{{ k }}="{{ "%s" | format(args[k]) }}" {% endfor %}"#,
+                context! { args => args }
+            ),
+            r#"paths="['a.py', "it's"]" opts="{'k': [1.5, False, None]}" "#
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%s|%d|%.2f|%5s" | format(true, 3, 2.5, "a") }}"#,
+                context! {}
+            ),
+            "True|3|2.50|    a"
+        );
+    }
+
+    /// Named `%(key)s` placeholders read from keyword arguments or a positional mapping,
+    /// and a list or dict value they select prints as Python's `repr`.
+    #[test]
+    fn test_format_filter_named_placeholders() {
+        assert_eq!(
+            render_hf(r#"{{ "%(name)s" | format(name="Alice") }}"#, context! {}),
+            "Alice"
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%(k)s|%(n)d" | format(m) }}"#,
+                context! { m => json!({"k": "v", "n": 3}) }
+            ),
+            "v|3"
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%(a)s %(b)s" | format(a=["x", none], b={"k": 1.5}) }}"#,
+                context! {}
+            ),
+            "['x', None] {'k': 1.5}"
+        );
+        assert_eq!(
+            render_hf(
+                r#"{{ "%(a)s" | format(m) }}"#,
+                context! { m => json!({"a": {"t": [true, null]}}) }
+            ),
+            "{'t': [True, None]}"
         );
     }
 

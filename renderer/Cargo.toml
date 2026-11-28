@@ -28,6 +28,7 @@ memchr = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order", "raw_value"] }
 tracing = { workspace = true }
+unicode-properties = { workspace = true }
 
 minijinja = { workspace = true, features = ["loader", "loop_controls"] }
 minijinja-contrib = { workspace = true, features = ["pycompat"] }

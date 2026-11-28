@@ -8,8 +8,12 @@ use std::collections::HashMap;
 use chrono::{DateTime, Local};
 use either::Either;
 use std::borrow::Cow;
+use std::fmt;
+use std::sync::Arc;
 
-use minijinja::value::{Kwargs, ObjectRepr, StringInput, ValueKind, from_args};
+use minijinja::value::{
+    Enumerator, Kwargs, Object, ObjectRepr, Rest, StringInput, ValueKind, from_args,
+};
 use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
 use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
@@ -209,24 +213,112 @@ fn python_float_str(value: &Value) -> Option<String> {
     f64::try_from(value.clone()).ok().map(python_float_repr)
 }
 
-/// Output formatter for `{{ x }}`. HF renders through Python, which prints a float
-/// with `str`; see [`python_float_str`]. Other values are unchanged. `~` concatenation
+/// Python `str` of a list or dict, which is its `repr` (`['a', None]`, `{'k': 1e-06}`)
+/// where minijinja writes `["a", none]`; otherwise [`python_float_str`].
+fn python_str(value: &Value) -> Option<String> {
+    if !matches!(value.kind(), ValueKind::Seq | ValueKind::Map) {
+        return python_float_str(value);
+    }
+    let mut out = String::new();
+    python_repr(value, &mut out).map(|()| out)
+}
+
+/// Appends Python's `repr` of `value`; `None` for a kind Python has no spelling for.
+fn python_repr(value: &Value, out: &mut String) -> Option<()> {
+    let is_map = value.kind() == ValueKind::Map;
+    match value.kind() {
+        ValueKind::None => out.push_str("None"),
+        ValueKind::Bool => out.push_str(if value.is_true() { "True" } else { "False" }),
+        ValueKind::Number => out.push_str(&python_float_str(value).unwrap_or(value.to_string())),
+        ValueKind::String => crate::python::python_str_repr(value.as_str()?, out),
+        ValueKind::Seq | ValueKind::Map => {
+            out.push(if is_map { '{' } else { '[' });
+            for (i, item) in value.try_iter().ok()?.enumerate() {
+                out.push_str(if i == 0 { "" } else { ", " });
+                python_repr(&item, out)?;
+                if is_map {
+                    out.push_str(": ");
+                    python_repr(&value.get_item(&item).ok()?, out)?;
+                }
+            }
+            out.push(if is_map { '}' } else { ']' });
+        }
+        _ => return None,
+    }
+    Some(())
+}
+
+/// Output formatter for `{{ x }}`. HF renders through Python, which prints values
+/// with `str`; see [`python_str`]. Other values are unchanged. `~` concatenation
 /// is a VM op that can't be overridden, and filters that stringify values themselves
 /// (`join`, `replace`, ...) use minijinja's spelling, so `'x' ~ 1e-6` and
-/// `[1e-6] | join` still render `0.000001`.
+/// `[1e-6] | join` still render `0.000001`. The Python spelling is written as a plain
+/// string through [`escape_formatter`], so an active autoescape still applies to it.
 pub fn python_formatter(out: &mut Output, state: &State, value: &Value) -> Result<(), Error> {
-    match python_float_str(value) {
-        Some(text) => out.write_str(&text).map_err(Error::from),
+    match python_str(value) {
+        Some(text) => escape_formatter(out, state, &Value::from(text)),
         None => escape_formatter(out, state, value),
     }
 }
 
-/// The `string` filter with Python `str` floats, matching [`python_formatter`];
-/// other values go to the builtin.
+/// The `string` filter with Python `str` floats, lists and dicts, matching
+/// [`python_formatter`]; other values go to the builtin.
 pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
-    match python_float_str(value) {
+    match python_str(value) {
         Some(text) => Ok(Value::from(text)),
         None => minijinja::filters::string(state, value),
+    }
+}
+
+/// The `format` filter with Python `str` for list and dict arguments, matching
+/// [`python_formatter`]. Llama 4 replays tool-call arguments as `"%s" | format(value)`,
+/// so a list or dict argument must print as Python's `repr`. A mapping argument (a dict
+/// or keyword arguments) stays a mapping so `%(key)s` still looks keys up, and the value
+/// it selects prints the same way. Other arguments go to the builtin unchanged, so
+/// numeric conversions keep working.
+pub fn python_format(state: &State, format_str: &Value, args: Rest<Value>) -> Result<Value, Error> {
+    let args = args.iter().map(python_format_arg).collect();
+    minijinja::filters::format(state, format_str, Rest(args))
+}
+
+fn python_format_arg(arg: &Value) -> Value {
+    match arg.kind() {
+        ValueKind::Seq => python_str(arg).map_or_else(|| arg.clone(), Value::from),
+        ValueKind::Map => Value::from_object(PyFormatMapping(arg.clone())),
+        _ => arg.clone(),
+    }
+}
+
+/// A `format` mapping argument: `%(key)s` reads a key and gets its value with Python
+/// `str` for lists and dicts, and `%s` prints the whole mapping as Python's `repr`.
+#[derive(Debug)]
+struct PyFormatMapping(Value);
+
+impl Object for PyFormatMapping {
+    fn repr(self: &Arc<Self>) -> ObjectRepr {
+        ObjectRepr::Map
+    }
+
+    fn get_value(self: &Arc<Self>, key: &Value) -> Option<Value> {
+        let value = self.0.get_item(key).ok().filter(|v| !v.is_undefined())?;
+        Some(match value.kind() {
+            ValueKind::Seq | ValueKind::Map => python_str(&value).map_or(value, Value::from),
+            _ => value,
+        })
+    }
+
+    fn enumerate(self: &Arc<Self>) -> Enumerator {
+        match self.0.try_iter() {
+            Ok(keys) => Enumerator::Values(keys.collect()),
+            Err(_) => Enumerator::NonEnumerable,
+        }
+    }
+
+    fn render(self: &Arc<Self>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match python_str(&self.0) {
+            Some(text) => f.write_str(&text),
+            None => fmt::Display::fmt(&self.0, f),
+        }
     }
 }
 
