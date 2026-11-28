@@ -24,6 +24,78 @@ use dynamo_parsers_v2::{
 
 static SERIALIZE: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+#[test]
+fn descriptor_and_factory_resolve_atomically_and_remain_pinned() {
+    use dynamo_parsers_v2::{
+        UnifiedParserDescriptor, register_unified_parser_with_descriptor, resolve_unified_parser,
+    };
+    let _guard = SERIALIZE.lock().unwrap_or_else(|e| e.into_inner());
+    let mut descriptor = UnifiedParserDescriptor::new("descriptor_vendor");
+    descriptor.aliases.push("descriptor_alias".into());
+    register_unified_parser_with_descriptor(descriptor, vendor_factory).unwrap();
+    let _restore = Restore("descriptor_vendor");
+    let pinned = resolve_unified_parser("descriptor_alias").unwrap();
+    assert_eq!(pinned.descriptor.family, "descriptor_vendor");
+    let mut stolen = UnifiedParserDescriptor::new("other_vendor");
+    stolen.aliases.push("descriptor_alias".into());
+    assert!(register_unified_parser_with_descriptor(stolen, vendor_factory).is_err());
+    dynamo_parsers_v2::unregister_unified_parser("descriptor_alias").unwrap();
+    assert!(resolve_unified_parser("descriptor_alias").is_none());
+    assert_eq!(
+        pinned
+            .create(&[])
+            .unwrap()
+            .push("retained factory")
+            .unwrap(),
+        vec![UnifiedParserEvent::Text("retained factory".into())]
+    );
+
+    let mut tool = UnifiedParserDescriptor::new("vendor_tool");
+    tool.aliases.push("vendor_tool_alias".into());
+    register_unified_parser_with_descriptor(tool, vendor_factory).unwrap();
+    let _restore_tool = Restore("vendor_tool");
+    let mut reasoner = UnifiedParserDescriptor::new("vendor_reasoner");
+    reasoner
+        .compatible_tool_selectors
+        .push("vendor_tool_alias".into());
+    register_unified_parser_with_descriptor(reasoner, vendor_factory).unwrap();
+    let _restore_reasoner = Restore("vendor_reasoner");
+    for selector in ["vendor_tool", "vendor_tool_alias"] {
+        assert_eq!(
+            dynamo_parsers_v2::resolve_unified_parser_pair(Some(selector), Some("vendor_reasoner"))
+                .unwrap()
+                .descriptor
+                .family,
+            "vendor_reasoner"
+        );
+    }
+
+    let mut replacement = UnifiedParserDescriptor::new("qwen3_coder");
+    replacement.aliases.push("vendor_qwen".into());
+    register_unified_parser_with_descriptor(replacement, vendor_factory).unwrap();
+    let _restore_qwen = Restore("qwen3");
+    assert_eq!(
+        dynamo_parsers_v2::resolve_unified_parser_pair(Some("vendor_qwen"), Some("nemotron_v3"))
+            .unwrap()
+            .descriptor
+            .family,
+        "nemotron_v3"
+    );
+    for alias in ["qwen3", "qwen3_coder", "vendor_qwen"] {
+        let resolved = resolve_unified_parser(alias).unwrap();
+        assert_eq!(resolved.descriptor.family, "qwen3");
+        assert!(!resolved.descriptor.preserve_special_tokens);
+        assert_eq!(
+            resolved
+                .create(&[])
+                .unwrap()
+                .push("<think>literal</think>")
+                .unwrap(),
+            vec![UnifiedParserEvent::Text("<think>literal</think>".into())]
+        );
+    }
+}
+
 /// Removes a registration on drop, including while unwinding from a panic.
 struct Restore(&'static str);
 impl Drop for Restore {
@@ -50,7 +122,7 @@ fn vendor_factory(_tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
     Ok(Box::new(VendorEverythingIsText))
 }
 
-/// A vendor can implement `UnifiedParser` from outside and have it selected.
+/// The fixture name `acme_v1` becomes selectable only after runtime registration.
 #[test]
 fn vendor_can_register_a_new_family() {
     let _g = SERIALIZE.lock().unwrap_or_else(|e| e.into_inner());
@@ -191,4 +263,108 @@ fn unknown_family_error_explains_how_to_register() {
     };
     assert!(err.contains("register_unified_parser"), "{err}");
     assert!(err.contains("no_such_family"), "{err}");
+}
+
+#[test]
+fn factory_override_keeps_aliases_without_claiming_harmony_capabilities() {
+    use dynamo_parsers_v2::{register_unified_parser, resolve_unified_parser};
+
+    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    assert!(
+        resolve_unified_parser("gpt_oss")
+            .unwrap()
+            .descriptor
+            .token_id_input
+    );
+    register_unified_parser("harmony", vendor_factory);
+    let _restore = Restore("gpt_oss");
+    for selector in ["gpt_oss", "harmony"] {
+        let registration = resolve_unified_parser(selector).unwrap();
+        let descriptor = &registration.descriptor;
+        assert_eq!(descriptor.family, "gpt_oss");
+        assert!(descriptor.text_input);
+        assert!(!descriptor.token_id_input);
+        assert!(!descriptor.continuation);
+        assert!(descriptor.token_prompt_prefix.is_none());
+        assert!(!registration.preserves_special_tokens().unwrap());
+        let mut parser = registration.create(&[]).unwrap();
+        assert_eq!(
+            parser.push("plain text").unwrap(),
+            [UnifiedParserEvent::Text("plain text".into())]
+        );
+    }
+}
+
+#[test]
+fn legacy_factory_retains_host_and_standalone_compatibility() {
+    use dynamo_parsers_v2::{
+        create_tool_parser_for_family, register_unified_parser, resolve_unified_parser,
+        resolve_unified_parser_pair, structural_tag_builder_for_family,
+    };
+
+    fn with_tokens(_: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
+        struct PreservationProbe;
+        impl UnifiedParser for PreservationProbe {
+            fn preserve_special_tokens(&self) -> bool {
+                true
+            }
+            fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+                output.push_text(delta);
+                Ok(())
+            }
+            fn finish(&mut self) -> Result<UnifiedParserOutput> {
+                Ok(UnifiedParserOutput::default())
+            }
+        }
+        Ok(Box::new(PreservationProbe))
+    }
+
+    fn needs_tools(tools: &[Tool]) -> Result<Box<dyn UnifiedParser>> {
+        anyhow::ensure!(!tools.is_empty(), "tools are required");
+        vendor_factory(tools)
+    }
+
+    let _guard = SERIALIZE.lock().unwrap_or_else(|error| error.into_inner());
+    assert!(
+        resolve_unified_parser("gemma4")
+            .unwrap()
+            .preserves_special_tokens()
+            .unwrap()
+    );
+    register_unified_parser("gemma4", with_tokens);
+    let _restore_gemma = Restore("gemma4");
+    assert!(
+        resolve_unified_parser("gemma4")
+            .unwrap()
+            .preserves_special_tokens()
+            .unwrap()
+    );
+
+    register_unified_parser("nemotron_v3", vendor_factory);
+    let _restore_nemotron = Restore("nemotron_v3");
+    assert_eq!(
+        resolve_unified_parser_pair(Some("qwen3_coder"), Some("nemotron_v3"))
+            .unwrap()
+            .descriptor
+            .family,
+        "nemotron_v3",
+    );
+
+    let builder = structural_tag_builder_for_family("qwen3_coder").unwrap();
+    register_unified_parser("qwen3", needs_tools);
+    let _restore_qwen = Restore("qwen3");
+    let registration = resolve_unified_parser("qwen3_coder").unwrap();
+    assert!(registration.descriptor.structural_tag_builder.is_none());
+    assert_eq!(
+        registration
+            .preserves_special_tokens()
+            .unwrap_err()
+            .to_string(),
+        "tools are required"
+    );
+    assert!(std::ptr::eq(
+        structural_tag_builder_for_family("qwen3_coder").unwrap(),
+        builder
+    ));
+    assert!(create_tool_parser_for_family("qwen3_coder", &[]).is_ok());
 }

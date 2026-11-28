@@ -27,24 +27,25 @@ pub(crate) const KIMI_K2_TOOL_SECTION_BEGIN: &str = "<|tool_calls_section_begin|
 pub(crate) const DEEPSEEK_TOOL_BLOCK_BEGIN: &str = "<｜DSML｜tool_calls>";
 pub(crate) const DEEPSEEK_TOOL_INVOKE_BEGIN: &str = "<｜DSML｜invoke name=";
 
-static REASONING_PARSER_MAP: OnceLock<HashMap<&'static str, ReasoningParserType>> = OnceLock::new();
+static REASONING_PARSER_MAP: OnceLock<HashMap<&'static str, (ReasoningParserType, bool)>> =
+    OnceLock::new();
 
 /// Initialize the global reasoning parser map
-fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserType> {
+fn get_reasoning_parser_map() -> &'static HashMap<&'static str, (ReasoningParserType, bool)> {
     REASONING_PARSER_MAP.get_or_init(|| {
         let mut map = HashMap::new();
-        map.insert("deepseek_r1", ReasoningParserType::DeepseekR1);
+        map.insert("deepseek_r1", (ReasoningParserType::DeepseekR1, false));
         // DeepSeek V3.x thinking mode uses the same output shape as R1:
         // reasoning text is already in progress and the completion emits
         // `</think>` before the final answer. The V3.x tool-call parsers are
         // distinct because their tool-call wire formats differ, but reasoning
         // shares this forced think-tag parser.
-        map.insert("deepseek_v3", ReasoningParserType::DeepseekR1);
-        map.insert("deepseek_v3_1", ReasoningParserType::DeepseekR1);
-        map.insert("deepseek_v3_2", ReasoningParserType::DeepseekR1);
-        map.insert("basic", ReasoningParserType::Basic);
-        map.insert("gpt_oss", ReasoningParserType::GptOss);
-        map.insert("qwen3", ReasoningParserType::Qwen);
+        map.insert("deepseek_v3", (ReasoningParserType::DeepseekR1, false));
+        map.insert("deepseek_v3_1", (ReasoningParserType::DeepseekR1, false));
+        map.insert("deepseek_v3_2", (ReasoningParserType::DeepseekR1, false));
+        map.insert("basic", (ReasoningParserType::Basic, false));
+        map.insert("gpt_oss", (ReasoningParserType::GptOss, true));
+        map.insert("qwen3", (ReasoningParserType::Qwen, false));
         // DeepSeek-V4 uses the same `<think>` / `</think>` delimiters as Qwen
         // (confirmed against deepseek-ai/DeepSeek-V4-Pro's encoding_dsv4.py)
         // so it delegates to the same `BasicReasoningParser` config today. We
@@ -58,43 +59,63 @@ fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserT
         // the HF model / vLLM recipe / chat-template author picked. We accept
         // all three separator conventions (snake / kebab / concat) rather than
         // force a single canonical form on users.
-        map.insert("deepseek_v4", ReasoningParserType::DeepSeekV4);
-        map.insert("deepseek-v4", ReasoningParserType::DeepSeekV4);
-        map.insert("deepseekv4", ReasoningParserType::DeepSeekV4);
-        map.insert("nemotron_deci", ReasoningParserType::NemotronDeci);
-        map.insert("kimi", ReasoningParserType::Kimi);
-        map.insert("kimi_k25", ReasoningParserType::KimiK25);
+        map.insert("deepseek_v4", (ReasoningParserType::DeepSeekV4, false));
+        map.insert("deepseek-v4", (ReasoningParserType::DeepSeekV4, false));
+        map.insert("deepseekv4", (ReasoningParserType::DeepSeekV4, false));
+        map.insert("nemotron_deci", (ReasoningParserType::NemotronDeci, false));
+        map.insert("kimi", (ReasoningParserType::Kimi, false));
+        map.insert("kimi_k25", (ReasoningParserType::KimiK25, true));
         // Kimi K3 uses XTML channel markers. The generation prompt normally
         // consumes the opening `think` channel, so callers should pair this
         // parser with `set_in_reasoning(true)` when thinking is enabled.
-        map.insert("kimi_k3", ReasoningParserType::KimiK3);
-        map.insert("kimi-k3", ReasoningParserType::KimiK3);
-        map.insert("step3", ReasoningParserType::Step3);
-        map.insert("mistral", ReasoningParserType::Mistral);
-        map.insert("granite", ReasoningParserType::Granite);
-        map.insert("nemotron_nano", ReasoningParserType::DeepseekR1); // nemotron nano is ...</think>
-        map.insert("nemotron3", ReasoningParserType::NemotronV3);
-        map.insert("nemotron_v3", ReasoningParserType::NemotronV3);
-        map.insert("glm45", ReasoningParserType::NemotronDeci); // GLM-4.5/5 is <think>...</think>, no force_reasoning
+        map.insert("kimi_k3", (ReasoningParserType::KimiK3, true));
+        map.insert("kimi-k3", (ReasoningParserType::KimiK3, true));
+        map.insert("step3", (ReasoningParserType::Step3, false));
+        map.insert("mistral", (ReasoningParserType::Mistral, true));
+        map.insert("granite", (ReasoningParserType::Granite, false));
+        map.insert("nemotron_nano", (ReasoningParserType::DeepseekR1, false)); // nemotron nano is ...</think>
+        map.insert("nemotron3", (ReasoningParserType::NemotronV3, false));
+        map.insert("nemotron_v3", (ReasoningParserType::NemotronV3, false));
+        map.insert("glm45", (ReasoningParserType::NemotronDeci, false)); // GLM-4.5/5 is <think>...</think>, no force_reasoning
         map.insert(
             "minimax_append_think",
-            ReasoningParserType::MiniMaxAppendThink,
+            (ReasoningParserType::MiniMaxAppendThink, false),
         );
-        map.insert("minimax_m2", ReasoningParserType::MiniMaxM2);
+        map.insert("minimax_m2", (ReasoningParserType::MiniMaxM2, false));
         // MiniMax M3 thinking blocks use `<mm:think>...</mm:think>`. The chat
         // template pre-fills the opener, so the completion typically emits only
         // the closing marker; dangling-end recovery handles that.
-        map.insert("minimax_m3", ReasoningParserType::MiniMaxM3);
-        map.insert("minimax-m3", ReasoningParserType::MiniMaxM3);
+        map.insert("minimax_m3", (ReasoningParserType::MiniMaxM3, true));
+        map.insert("minimax-m3", (ReasoningParserType::MiniMaxM3, true));
         // Gemma 4 thinking models: reasoning is wrapped in `<|channel>...<channel|>`
         // with a `thought\n` role label that this parser strips. Pair with
         // `--dyn-tool-call-parser gemma4` for end-to-end Gemma 4 support.
-        map.insert("gemma4", ReasoningParserType::Gemma4);
-        map.insert("gemma-4", ReasoningParserType::Gemma4);
+        map.insert("gemma4", (ReasoningParserType::Gemma4, true));
+        map.insert("gemma-4", (ReasoningParserType::Gemma4, true));
         // Block-structured, not a `<think>` prefix, so not a BasicReasoningParser.
-        map.insert("inkling", ReasoningParserType::Inkling);
+        map.insert("inkling", (ReasoningParserType::Inkling, true));
         map
     })
+}
+
+/// Integration capabilities of one legacy reasoning selector.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct ReasoningParserDescriptor {
+    pub selector: &'static str,
+    pub preserve_special_tokens: bool,
+}
+
+/// Descriptors share the legacy reasoning constructor entries.
+pub fn reasoning_parser_descriptors() -> Vec<ReasoningParserDescriptor> {
+    let mut entries: Vec<_> = get_reasoning_parser_map()
+        .iter()
+        .map(|(&selector, (_, preserve))| ReasoningParserDescriptor {
+            selector,
+            preserve_special_tokens: *preserve,
+        })
+        .collect();
+    entries.sort_by_key(|entry| entry.selector);
+    entries
 }
 
 /// Get all available reasoning parser names
@@ -466,7 +487,7 @@ impl ReasoningParserType {
         let normalized_name = name.to_lowercase();
 
         match parser_map.get(normalized_name.as_str()) {
-            Some(parser_type) => parser_type.get_reasoning_parser(),
+            Some((parser_type, _)) => parser_type.get_reasoning_parser(),
             None => {
                 tracing::warn!(
                     parser_name = name,

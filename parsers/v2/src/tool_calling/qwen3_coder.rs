@@ -32,6 +32,143 @@ const BLOCK_END: &str = "</tool_call>";
 const FUNCTION_START: &str = "<function=";
 const FUNCTION_END: &str = "</function>";
 const PARAMETER_START: &str = "<parameter=";
+const PARAMETER_END: &str = "</parameter>";
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum NativeLexicalMode {
+    #[default]
+    OutsideBlock,
+    InsideBlock,
+    ParameterHeader,
+    ParameterValue,
+}
+
+#[derive(Clone, Default)]
+struct NativeLexicalState {
+    mode: NativeLexicalMode,
+    marker_tail: String,
+}
+
+impl crate::unified::NativeToolBoundary for NativeLexicalState {
+    fn observe(&mut self, text: &str) {
+        let mut input = std::mem::take(&mut self.marker_tail);
+        input.push_str(text);
+        loop {
+            match self.mode {
+                NativeLexicalMode::OutsideBlock => {
+                    if let Some(start) = input.find(BLOCK_START) {
+                        input.drain(..start + BLOCK_START.len());
+                        self.mode = NativeLexicalMode::InsideBlock;
+                    } else {
+                        self.retain_partial_suffix(&input, [BLOCK_START]);
+                        return;
+                    }
+                }
+                NativeLexicalMode::InsideBlock => {
+                    let parameter = input.find(PARAMETER_START);
+                    let block_end = input.find(BLOCK_END);
+                    match (parameter, block_end) {
+                        (Some(parameter), Some(block_end)) if block_end < parameter => {
+                            input.drain(..block_end + BLOCK_END.len());
+                            self.mode = NativeLexicalMode::OutsideBlock;
+                        }
+                        (Some(parameter), _) => {
+                            input.drain(..parameter + PARAMETER_START.len());
+                            self.mode = NativeLexicalMode::ParameterHeader;
+                        }
+                        (None, Some(block_end)) => {
+                            input.drain(..block_end + BLOCK_END.len());
+                            self.mode = NativeLexicalMode::OutsideBlock;
+                        }
+                        (None, None) => {
+                            self.retain_partial_suffix(&input, [PARAMETER_START, BLOCK_END]);
+                            return;
+                        }
+                    }
+                }
+                NativeLexicalMode::ParameterHeader => {
+                    let header_end = input.find('>');
+                    if let Some(function_end) = input.find(FUNCTION_END)
+                        && header_end.is_none_or(|end| function_end < end)
+                    {
+                        input.drain(..function_end + FUNCTION_END.len());
+                        self.mode = NativeLexicalMode::InsideBlock;
+                    } else if let Some(header_end) = header_end {
+                        input.drain(..header_end + 1);
+                        self.mode = NativeLexicalMode::ParameterValue;
+                    } else {
+                        self.retain_partial_suffix(&input, [FUNCTION_END]);
+                        return;
+                    }
+                }
+                NativeLexicalMode::ParameterValue => {
+                    // Native parameter values own literal function/block markers.
+                    // Only their own delimiter permits a detour to start another call.
+                    if let Some(at) = input.find(PARAMETER_END) {
+                        input.drain(..at + PARAMETER_END.len());
+                        self.mode = NativeLexicalMode::InsideBlock;
+                    } else {
+                        self.retain_partial_suffix(&input, [PARAMETER_END]);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    fn outside_call(&self) -> bool {
+        self.mode == NativeLexicalMode::OutsideBlock
+    }
+
+    fn can_restart_call(&self) -> bool {
+        self.mode != NativeLexicalMode::ParameterValue
+    }
+
+    fn resolve_opener(&self, held: &str, text: &str) -> Option<bool> {
+        for (start, character) in text.char_indices() {
+            let end = start + character.len_utf8();
+            let candidate = format!("{held}{}", &text[..end]);
+            if candidate == BLOCK_START {
+                return Some(true);
+            }
+            if !BLOCK_START.starts_with(&candidate) {
+                return Some(false);
+            }
+        }
+        None
+    }
+
+    fn partial_opener_suffix_start(&self, text: &str) -> Option<usize> {
+        let len = marker_prefix_suffix_len(text, [BLOCK_START]);
+        if len == 0 {
+            return None;
+        }
+        let start = text.len() - len;
+        let mut before_candidate = self.clone();
+        before_candidate.observe(&text[..start]);
+        before_candidate.outside_call().then_some(start)
+    }
+
+    fn first_call_marker(&self, text: &str) -> Option<usize> {
+        [BLOCK_START, FUNCTION_START]
+            .into_iter()
+            .filter_map(|marker| {
+                crate::unified::prefill::first_unquoted_marker_position(text, marker)
+            })
+            .min()
+    }
+}
+
+impl NativeLexicalState {
+    fn retain_partial_suffix<const N: usize>(&mut self, input: &str, markers: [&str; N]) {
+        let len = marker_prefix_suffix_len(input, markers);
+        self.marker_tail = input[input.len() - len..].to_string();
+    }
+}
+
+pub(crate) fn native_tool_boundary() -> Box<dyn crate::unified::NativeToolBoundary> {
+    Box::new(NativeLexicalState::default())
+}
 
 fn spec() -> WrappedBlockSpec {
     WrappedBlockSpec {

@@ -4,7 +4,7 @@
 //! Model-family capabilities shared by parser construction and guided decoding.
 
 use crate::structural_tag::StructuralTagBuilder;
-use crate::unified::canonical_unified_family;
+use crate::unified::builtin_unified_registrations;
 
 use super::debug::{self, DebugToolParser};
 use super::dsml::DeepSeekV4ToolStreamParser;
@@ -25,16 +25,16 @@ type ParserFactory = fn(&[Tool]) -> anyhow::Result<Box<dyn ToolParser>>;
 struct FamilySpec {
     name: &'static str,
     parser_factory: ParserFactory,
-    structural_tag_builder: Option<&'static StructuralTagBuilder>,
+    standalone_batch: bool,
 }
 
 macro_rules! family_registry {
-    ($($name:literal => ($parser:path, $structural_tag:expr)),+ $(,)?) => {
+    ($($name:literal => ($parser:path, $standalone_batch:literal)),+ $(,)?) => {
         const FAMILY_SPECS: &[FamilySpec] = &[
             $(FamilySpec {
                 name: $name,
                 parser_factory: $parser,
-                structural_tag_builder: $structural_tag,
+                standalone_batch: $standalone_batch,
             }),+
         ];
 
@@ -44,31 +44,24 @@ macro_rules! family_registry {
 }
 
 family_registry! {
-    "harmony"      => (HarmonyToolStreamParser::create, Some(&crate::structural_tag::builders::HARMONY)),
-    "harmony_text" => (HarmonyToolStreamParser::create, Some(&crate::structural_tag::builders::HARMONY)),
-    "deepseek_v4"  => (
-        DeepSeekV4ToolStreamParser::create,
-        Some(&crate::structural_tag::builders::DEEPSEEK_DSML)
-    ),
-    "qwen3_coder"  => (
-        Qwen3CoderToolStreamParser::create,
-        Some(&crate::structural_tag::builders::QWEN3_CODER)
-    ),
-    "muse_glimmer" => (MuseGlimmerToolStreamParser::create, None),
-    // Forced Spark calls need native ATEM guidance rather than a JSON envelope.
-    "muse_spark" => (
-        MuseSparkToolStreamParser::create,
-        Some(&crate::structural_tag::builders::MUSE_SPARK)
-    ),
-    "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
-    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, Some(&crate::structural_tag::builders::MINIMAX_M3)),
-    "gemma4"       => (Gemma4ToolStreamParser::create, None),
-    "glm47"        => (
-        Glm47ToolStreamParser::create,
-        Some(&crate::structural_tag::builders::GLM47)
-    ),
-    "kimi_k2"      => (KimiK2ToolStreamParser::create, Some(&crate::structural_tag::builders::KIMI_K2)),
-    "kimi_k3"      => (KimiK3ToolStreamParser::create, Some(&crate::structural_tag::builders::KIMI_K3)),
+    "harmony" => (HarmonyToolStreamParser::create, false),
+    "harmony_text" => (HarmonyToolStreamParser::create, false),
+    "deepseek_v4" => (DeepSeekV4ToolStreamParser::create, true),
+    "qwen3_coder" => (Qwen3CoderToolStreamParser::create, true),
+    "muse_glimmer" => (MuseGlimmerToolStreamParser::create, false),
+    "muse_spark" => (MuseSparkToolStreamParser::create, false),
+    "minimax_m2" => (MiniMaxM2ToolStreamParser::create, false),
+    "minimax_m3" => (MiniMaxM3ToolStreamParser::create, false),
+    "gemma4" => (Gemma4ToolStreamParser::create, false),
+    "glm47" => (Glm47ToolStreamParser::create, false),
+    "kimi_k2" => (KimiK2ToolStreamParser::create, false),
+    "kimi_k3" => (KimiK3ToolStreamParser::create, false),
+}
+
+/// Resolve a selector qualified for standalone tool-only batch parsing.
+pub fn standalone_batch_tool_family(selector: &str) -> Option<&'static str> {
+    let spec = family_spec(selector)?;
+    spec.standalone_batch.then_some(spec.name)
 }
 
 fn family_spec(family: &str) -> Option<&'static FamilySpec> {
@@ -78,7 +71,17 @@ fn family_spec(family: &str) -> Option<&'static FamilySpec> {
     } else {
         family
     };
-    FAMILY_SPECS.iter().find(|spec| spec.name == family)
+    FAMILY_SPECS
+        .iter()
+        .find(|spec| spec.name == family)
+        .or_else(|| {
+            let entry = builtin_unified_registrations()
+                .iter()
+                .find(|entry| entry.descriptor.accepts(family))?;
+            FAMILY_SPECS
+                .iter()
+                .find(|spec| spec.standalone_batch && spec.name == entry.descriptor.family)
+        })
 }
 
 /// Create the Dynamo v2 tool parser for a registered model family.
@@ -101,12 +104,16 @@ pub fn create_tool_parser_for_family(
 /// the tool-calling registry, or for a family served only by a unified parser (no
 /// tool-call-only parser to carry it), from the structural-tag builders.
 pub fn structural_tag_builder_for_family(family: &str) -> Option<&'static StructuralTagBuilder> {
-    let canonical = canonical_unified_family(family).unwrap_or(family);
-    FAMILY_SPECS
+    let selector = if family == "harmony_text" {
+        "gpt_oss"
+    } else {
+        family
+    };
+    builtin_unified_registrations()
         .iter()
-        .find(|spec| canonical_unified_family(spec.name).unwrap_or(spec.name) == canonical)
-        .and_then(|spec| spec.structural_tag_builder)
-        .or_else(|| crate::structural_tag::builders::unified_only_builder(canonical))
+        .find(|entry| entry.descriptor.accepts(selector))?
+        .descriptor
+        .structural_tag_builder
 }
 
 #[cfg(test)]
@@ -117,6 +124,22 @@ mod tests {
     use crate::structural_tag::{
         StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,
     };
+
+    #[test]
+    fn standalone_batch_uses_tool_only_names_and_qualified_aliases() {
+        // Pin the built-in selector spellings and standalone batch eligibility.
+        for selector in ["deepseek_v4", "deepseek-v4", "deepseekv4"] {
+            assert_eq!(standalone_batch_tool_family(selector), Some("deepseek_v4"));
+            assert!(create_tool_parser_for_family(selector, &[]).is_ok());
+        }
+        assert_eq!(
+            standalone_batch_tool_family("qwen3_coder"),
+            Some("qwen3_coder")
+        );
+        for selector in ["qwen3", "glm47", "muse_spark_open", "unknown"] {
+            assert_eq!(standalone_batch_tool_family(selector), None);
+        }
+    }
 
     #[test]
     fn registered_families_all_create() {

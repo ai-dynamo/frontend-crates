@@ -92,6 +92,17 @@ fn harmony_encoding() -> Result<&'static HarmonyEncoding> {
 static GLOBAL_HARMONY_SPECIAL_TOKENS: std::sync::OnceLock<HashSet<&'static str>> =
     std::sync::OnceLock::new();
 
+pub(crate) const TOKEN_PROMPT_PREFIX: super::TokenPromptPrefix = super::TokenPromptPrefix {
+    encode: encode_harmony,
+    empty_assistant_prefix: "<|start|>assistant",
+    batch_prefix: |output| {
+        output
+            .trim_start()
+            .starts_with("to=")
+            .then_some("<|start|>assistant")
+    },
+};
+
 pub fn encode_harmony(text: &str) -> anyhow::Result<Vec<u32>> {
     let encoding = harmony_encoding()?;
     let special =
@@ -3663,8 +3674,19 @@ mod tests {
                 InvalidGuidedPayloadPolicy::StreamBestEffort,
                 InvalidGuidedPayloadPolicy::Reject,
             ] {
-                let rejected = policy == InvalidGuidedPayloadPolicy::Reject;
-                let expected = if rejected {
+                let quoted = crate::quote_aware_parsing();
+                let rejected = !quoted && policy == InvalidGuidedPayloadPolicy::Reject;
+                let expected = if quoted {
+                    vec![
+                        UnifiedEvent::Text {
+                            text: input.strip_suffix(payload).unwrap().into(),
+                        },
+                        UnifiedEvent::ToolCall {
+                            name: "get_weather".into(),
+                            arguments: serde_json::json!({"city":"Paris"}),
+                        },
+                    ]
+                } else if rejected {
                     Vec::new()
                 } else {
                     vec![UnifiedEvent::Text {
@@ -3707,7 +3729,11 @@ mod tests {
                     policy,
                     &[
                         UnifiedEvent::Text {
-                            text: "The literal \"".into(),
+                            text: if crate::quote_aware_parsing() {
+                                input.strip_suffix(payload).unwrap().into()
+                            } else {
+                                "The literal \"".into()
+                            },
                         },
                         UnifiedEvent::ToolCall {
                             name: "get_weather".into(),

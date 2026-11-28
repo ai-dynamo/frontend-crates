@@ -6,7 +6,7 @@ This guide covers parser goals, grammar families, and contributor workflows for 
 
 **Crate versions and corpus names differ.** `dynamo-parsers` / `dynamo_v1` is the batch/jail implementation. `dynamo-parsers-v2` / `dynamo_v2` includes incremental tool-only and Unified parsers. In conformance, **streaming v1** means non-Unified (`fixtures-stream-v1`, `TOOLCALLING.streamv1.*`); **v2** means Unified (`fixtures-unified-v2`). A `dynamo_v2-*` capture in `fixtures-stream-v1` is therefore valid. See [migration terminology](../../docs/PARSERS-V2-MIGRATION-PLAN.md#terminology) for the naming history.
 
-**Pin and test the version you integrate.** Dynamo uses this published crate for compatible configurations, but its `0.x` API can change between minor releases. The [Dynamo routing guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) owns serving selection. Library families and vendor registrations do not automatically add serving adapters or qualification.
+**Pin and test the version you integrate.** Dynamo uses this published crate for compatible configurations, but its `0.x` API can change between minor releases. The [Dynamo routing guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) owns serving selection. Hosts that consume registration descriptors can discover new families after a dependency upgrade and rebuild; registrations do not by themselves establish model or backend qualification.
 
 ## Using Unified Parsing
 
@@ -106,7 +106,13 @@ These goals govern every tool-calling and reasoning parser, v1 and v2, and are t
 
 The end-to-end workflow for adding a parser — fetch the chat template, identify the format, prefer an existing parser + config over new code, register, test, render — lives in the `tool-parser-generator` skill under `.agents/skills/tool-parser-generator/`. Adding a family to the **unified** path (one ordered reasoning + content + tool stream, rather than the reasoning-then-tool split) is a different workflow with its own tiers and traps — see [`UNIFIED_PORTING.md`](UNIFIED_PORTING.md). Reasoning parsers follow the same goals; see [`../v1/src/reasoning/README.md`](../v1/src/reasoning/README.md).
 
-To supply or replace a family without forking, implement `UnifiedParser` and call `register_unified_parser("family", factory)` at startup. Unregistering restores the built-in. See [CUSTOM_PARSERS.md](CUSTOM_PARSERS.md) for the contract and conformance enrollment.
+To add a parser for Dynamo, implement `UnifiedParser` and add its descriptor and factory to the linked registry. Publish a frontend-crates version; Dynamo discovers its names, aliases, capabilities, and factory after updating the dependency and lockfile and rebuilding. A parser that uses existing capabilities needs no Dynamo Rust source changes. `register_unified_parser` and `register_unified_parser_with_descriptor` remain startup override APIs for applications that provide their own linked Rust implementation.
+
+The optional `quote-aware-default` feature preserves integrations whose existing default treats markers inside complete quotes as literal data. `DYNAMO_PARSERS_DISABLE_QUOTE_AWARE_PARSING` overrides that default. Prompt and batch prefill inspection always distinguishes quoted data from channel evidence.
+
+`unified_parser_registrations()` returns effective descriptors and factories together without constructing parser state. Use `resolve_unified_parser_pair()` for selector compatibility, including vendor aliases and borrowed tool grammars. A host can retain the catalog and use `resolve_unified_parser_pair_in()` and `validate_auto_unified_pair_in()` so model setup and requests use the same policy. Call `registration.create(tools)` for fresh state per choice. Register custom capabilities with `register_unified_parser_with_descriptor(descriptor, factory)`; the factory-only API preserves existing selector routing and uses the default text descriptor. At model admission, call `registration.preserves_special_tokens()` so factory-only replacements can supply their original token-preservation behavior through the parser trait. Use an explicit descriptor for additional capabilities.
+
+
 
 ## Parser families
 

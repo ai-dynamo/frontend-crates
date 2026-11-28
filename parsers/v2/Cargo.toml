@@ -11,6 +11,7 @@ exclude = ["tests/glm47_schema_conformance.rs"]
 
 [features]
 test-utils = []
+quote-aware-default = []
 arbitrary-precision = ["serde_json/arbitrary_precision"]
 
 [dependencies]

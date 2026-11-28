@@ -13,15 +13,6 @@ mod templated_tool_calls;
 
 pub(crate) use beam::BEAM;
 
-/// Grammars of families served only by a unified parser. They have no tool-calling
-/// registry entry, so `structural_tag_builder_for_family` resolves them here.
-pub(crate) fn unified_only_builder(family: &str) -> Option<&'static StructuralTagBuilder> {
-    match family {
-        "beam" => Some(&BEAM),
-        "deepseek_v41" => Some(&DEEPSEEK_DSML_V41),
-        _ => None,
-    }
-}
 pub(crate) use deepseek_dsml::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41};
 pub(crate) use glm47::GLM47;
 pub(crate) use harmony::HARMONY;
