@@ -62,6 +62,22 @@ impl storage::Value for Node {
     fn digest(&self) -> storage::Result<String> {
         source::request_digest(self).map_err(|e| e.to_string())
     }
+    fn payload_digest(&self) -> storage::Result<String> {
+        fn portable(value: &Node) -> bool {
+            match value {
+                Node::Null | Node::Bool(_) | Node::Int(_) | Node::Str(_) => true,
+                Node::Array(items) => items.iter().all(portable),
+                Node::Map(entries) => entries
+                    .iter()
+                    .all(|(key, value)| matches!(key, Node::Str(_)) && portable(value)),
+                _ => false,
+            }
+        }
+        if !matches!(self, Node::Map(_)) || !portable(self) {
+            return Err("result references require integer-only JSON payloads".into());
+        }
+        self.digest()
+    }
 }
 
 pub fn family(document: &Node) -> Result<Node> {
@@ -76,11 +92,12 @@ pub fn is_normalized(document: &Node) -> bool {
 
 pub fn summary_records(document: &Node) -> Result<Node> {
     let mut result = Node::map();
+    let contexts = storage::contexts(document).map_err(|e| anyhow!(e))?;
     for (id, stored) in document.field("records")?.mapping()? {
         let mut value = Node::map();
         value.set(
             "document",
-            storage::metadata(document, stored).map_err(|e| anyhow!(e))?,
+            storage::metadata(document, stored, &contexts).map_err(|e| anyhow!(e))?,
         )?;
         let mut observation = Node::map();
         for (source, target) in [
@@ -130,6 +147,96 @@ mod tests {
         records.set("one", record)?;
         malformed.set("records", records)?;
         assert!(snapshot(&malformed, authored).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn archived_result_references_preserve_complete_payloads() -> Result<()> {
+        let fixture = crate::yaml::load_str(include_str!(
+            "../../utils/tests/fixtures/normalized-results.yaml"
+        ))?;
+        assert!(
+            snapshot(fixture.field("snapshot")?, fixture.field("authored")?)?
+                .equivalent(fixture.field("expected_snapshot")?)
+        );
+        let expanded = snapshot(fixture.field("snapshot")?, fixture.field("authored")?)?;
+        let receipts = |document: &Node| -> Result<Node> {
+            Ok(document
+                .field("records")?
+                .field("one")?
+                .field("value")?
+                .field("document")?
+                .field("record_metadata")?
+                .field("verified_recaptures")?
+                .clone())
+        };
+        assert_eq!(
+            receipts(&expanded)?,
+            receipts(fixture.field("expected_snapshot")?)?
+        );
+        assert!(
+            summary_records(fixture.field("snapshot")?)?
+                .field("one")?
+                .field("value")?
+                .field("document")?
+                .equivalent(
+                    fixture
+                        .field("expected_snapshot")?
+                        .field("records")?
+                        .field("one")?
+                        .field("value")?
+                        .field("document")?
+                )
+        );
+        let mut invalid = fixture.field("snapshot")?.clone();
+        let mut contexts = invalid.field("contexts")?.clone();
+        let mut context = contexts.field("shared")?.clone();
+        let mut metadata = context.field("record_metadata")?.clone();
+        let mut archives = metadata.field("verified_recaptures")?.array()?.to_vec();
+        archives[0].set("result_ref", Node::Str("0".repeat(64)))?;
+        metadata.set("verified_recaptures", Node::Array(archives))?;
+        context.set("record_metadata", metadata)?;
+        contexts.set("shared", context)?;
+        invalid.set("contexts", contexts)?;
+        assert!(snapshot(&invalid, fixture.field("authored")?).is_err());
+        let mut unused = fixture.field("snapshot")?.clone();
+        let mut contexts = unused.field("contexts")?.clone();
+        contexts.set(
+            "unused",
+            crate::yaml::load_str("record_metadata:\n  verified_recaptures:\n  - result_ref: bad")?,
+        )?;
+        unused.set("contexts", contexts)?;
+        assert!(snapshot(&unused, fixture.field("authored")?).is_err());
+        assert!(summary_records(&unused).is_err());
+        for payload in [
+            "value: 1.0",
+            "value: 1000000000000000.25",
+            "value: .inf",
+            "1: typed key",
+            "value: 2026-01-01",
+        ] {
+            let mut invalid = fixture.field("snapshot")?.clone();
+            let mut contexts = invalid.field("contexts")?.clone();
+            let mut context = contexts.field("shared")?.clone();
+            let mut metadata = context.field("record_metadata")?.clone();
+            let mut active = metadata.field("verified_recapture")?.clone();
+            let payload = crate::yaml::load_str(payload)?;
+            // A matching ordinary digest must not bypass the portable-type check.
+            assert!(storage::Value::payload_digest(&payload).is_err());
+            let digest = source::request_digest(&payload).unwrap_or_else(|_| "0".repeat(64));
+            active.set("result", payload)?;
+            let mut archives = metadata.field("verified_recaptures")?.array()?.to_vec();
+            for archive in &mut archives {
+                archive.set("result_ref", Node::Str(digest.clone()))?;
+            }
+            metadata.set("verified_recapture", active)?;
+            metadata.set("verified_recaptures", Node::Array(archives))?;
+            context.set("record_metadata", metadata)?;
+            contexts.set("shared", context)?;
+            invalid.set("contexts", contexts)?;
+            assert!(snapshot(&invalid, fixture.field("authored")?).is_err());
+            assert!(summary_records(&invalid).is_err());
+        }
         Ok(())
     }
 }

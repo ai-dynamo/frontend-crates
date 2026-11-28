@@ -1,15 +1,15 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"9e34f2e15ac39a375315e48033a9283b3b7f500bd39f94d6f59b1039e3f55415","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.13.yaml","version":"0.10.13"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"48216400afb32acc77c90a5637dcd8eae830de6aba5a92aae54818922220032c","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.13.yaml","surface":"unified","version":"0.10.13"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_2bf55717b648d631
+  origin: origin_55202575e7e8010d
 origins:
-  origin_2bf55717b648d631:
-    crate_version: 0.10.12
-    source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
-    git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
+  origin_55202575e7e8010d:
+    crate_version: 0.10.13
+    source_sha256: 64438d499302f5fc4350506169695ba1b44c83644f6d09ebb9485d45b22811c2
+    git_commit: c6e40d1096cf1507d6d1905f8aaf8c2bf2be21e6
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -18,6 +18,10 @@ origins:
     crate_version: 0.10.7
     source_sha256: 39a40d77e46a561e8264e75b6fa9cf6bf79051240c29277de7c19890aeaa642e
     git_commit: e67a5509193bbc79a8fdf4abf86d51d11b5db1eb
+  origin_7234b84b51e026f2:
+    crate_version: 0.10.12
+    source_sha256: 68e028b03eb201199628cf958a5fc52466ef8fe3bd477ebc1839895acdb8078e
+    git_commit: c8b35510b66a5b2cda94e2b7ad62954851fd7291
   origin_369a55db5a4e4dd9:
     crate_version: 0.10.11
     source_sha256: ac1d9ae3fd455c9f2597226aa874469a5ae48beb8263d1f711610de4398c14ae
@@ -31,6 +35,10 @@ producers:
     captured_with:
       dynamo_v2: 0.10.7
     capture_origin: origin_f457b65d31427dcd
+  producer_95f5bcd64cb0f8bb:
+    captured_with:
+      dynamo_v2: 0.10.12
+    capture_origin: origin_7234b84b51e026f2
   producer_81dce86a6a6f21c6:
     captured_with:
       dynamo_v2: 0.10.11
@@ -40,8 +48,156 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
+  context_0e764ba06a7b965b:
+    mode: unified
+    record_metadata:
+      parser_path: unified
+      verified_recapture:
+        result:
+          assembled:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd":"before </tool_call><tool_call>get_weather</tool_call> after"}'
+          chunks:
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: run
+              arguments: '{"cmd":"'
+              complete: false
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: 'before '
+              complete: false
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected: []
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: </tool_call><tool_call>get_weather</tool_call> after"
+              complete: false
+          - expected:
+            - kind: tool_call
+              name: null
+              arguments: '}'
+              complete: true
+          - expected: []
+          capture_input:
+            init:
+              starting_state: None
+              tool_output_mode: Native
+              named_tool: null
+            finish_reason: stop
+            input: <tool_call>run<arg_key>cmd</arg_key><arg_value>before </tool_call><tool_call>get_weather</tool_call> after</arg_value></tool_call>
+            tools:
+            - name: get_weather
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+            - name: f
+              parameters:
+                type: object
+                properties:
+                  x:
+                    type: string
+            - name: g
+              parameters:
+                type: object
+                properties:
+                  y:
+                    type: string
+            - name: run
+              parameters:
+                type: object
+                properties:
+                  cmd:
+                    type: string
+            - name: log
+              parameters:
+                type: object
+                properties:
+                  note:
+                    type: string
+            - name: sum_values
+              parameters:
+                type: object
+                properties:
+                  values:
+                    type: array
+                    items:
+                      type: number
+            - name: functions.
+              parameters:
+                type: object
+                properties: {}
+            chunks:
+            - delta_text: <tool_call>
+            - delta_text: run
+            - delta_text: <arg_key>
+            - delta_text: cmd
+            - delta_text: </arg_key>
+            - delta_text: <arg_value>
+            - delta_text: 'before '
+            - delta_text: </tool_call>
+            - delta_text: <tool_call>
+            - delta_text: get_weather
+            - delta_text: </tool_call>
+            - delta_text: ' after'
+            - delta_text: </arg_value>
+            - delta_text: </tool_call>
+            - delta_text: ‹finish›
+        provenance:
+          crate_version: 0.10.13
+          source_sha256: 64438d499302f5fc4350506169695ba1b44c83644f6d09ebb9485d45b22811c2
+          git_commit: c6e40d1096cf1507d6d1905f8aaf8c2bf2be21e6
+          implementation: dynamo_v2
+          version: 0.10.13
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
+        resolution: fresh_execution
+      verified_recaptures:
+      - result_ref: b42c03c38ec09a88754dd4f588d0886fada4e45cbb0fac85fd8b9e88953e0ed7
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: 68e028b03eb201199628cf958a5fc52466ef8fe3bd477ebc1839895acdb8078e
+          git_commit: c8b35510b66a5b2cda94e2b7ad62954851fd7291
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 22c3d37d0b4b7b3eeb14fa0d28b539620285b146dd52a8e3eca672048f4c79f9
+          job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
+        resolution: fresh_execution
+      - result_ref: b42c03c38ec09a88754dd4f588d0886fada4e45cbb0fac85fd8b9e88953e0ed7
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
+          git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
+        resolution: fresh_execution
+      - result_ref: b42c03c38ec09a88754dd4f588d0886fada4e45cbb0fac85fd8b9e88953e0ed7
+        provenance:
+          crate_version: 0.10.13
+          source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
+          git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
+          implementation: dynamo_v2
+          version: 0.10.13
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: ecaa6e173a14e572988f57d4f9d760c0d8afada5dcbefddae513fddbee6ec5d7
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml
+  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.13.yaml
   producer: producer_aad5f6f536370a6c
   context: context_cdf0b3c0134ec96f
 records:
@@ -2018,6 +2174,33 @@ records:
           arguments: '{"metrics":["temperature","humidity"],"count":5}'
           complete: true
       - expected: []
+  glm47_ambiguous_outer_close_eof_alternative:
+    case_key: UNIFIED.glm5-ambiguous_outer_close_eof_alternative
+    producer: producer_95f5bcd64cb0f8bb
+    request: e1f42f4fdd9968ede04c252542bab4baacbe87e2d0b95080a46b3f9e772c4b35
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"prefix"}'
+      - kind: text
+        text: ' first second'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"prefix'
+          complete: false
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '"}'
+          complete: true
+        - kind: text
+          text: ' first second'
   glm47_ambiguous_outer_close_holdback:
     case_key: UNIFIED.glm5-ambiguous_outer_close_holdback
     producer: producer_81dce86a6a6f21c6
@@ -2073,6 +2256,33 @@ records:
           arguments: '{}'
           complete: true
       - expected: []
+  glm47_literal_nested_opener_closes_without_eof:
+    case_key: UNIFIED.glm5-literal_nested_opener_closes_without_eof
+    producer: producer_95f5bcd64cb0f8bb
+    request: 0b62a18a22490140b0e57c58c293595288b61808166eaebab3191f7c782ad1b4
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"prefix</tool_call><tool_call> after"}'
+      chunks:
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"prefix'
+          complete: false
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: </tool_call><tool_call> after"
+          complete: false
+      - expected:
+        - kind: tool_call
+          name: null
+          arguments: '}'
+          complete: true
+      - expected: []
   glm47_missing_middle_argument_value_progress:
     case_key: UNIFIED.glm5-missing_middle_argument_value_progress
     producer: producer_81dce86a6a6f21c6
@@ -2100,8 +2310,71 @@ records:
           arguments: '"}'
           complete: true
       - expected: []
+  glm47_missing_value_empty_key_leaves_inner_pair_unowned:
+    case_key: UNIFIED.glm5-missing_value_empty_key_leaves_inner_pair_unowned
+    producer: producer_95f5bcd64cb0f8bb
+    request: 9c2eda1be37129c18403774ff25393c45b39db021d82ab4f6e1f3af5fd6fbc0e
+    output:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: '{"cmd":"recovered"}'
+      chunks:
+      - expected: []
+      - expected: []
+      - expected:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd":"recovered"}'
+          complete: true
+      - expected: []
+  glm47_missing_value_empty_replacement:
+    case_key: UNIFIED.glm5-missing_value_empty_replacement
+    producer: producer_95f5bcd64cb0f8bb
+    request: 06a261701eb6c41792efcde3900f76bf30f203607d4e5ab596c6bdab10196a85
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  glm47_missing_value_malformed_replacement:
+    case_key: UNIFIED.glm5-missing_value_malformed_replacement
+    producer: producer_95f5bcd64cb0f8bb
+    request: 50b403511fd86f4fbc030c32066cd5589c041192a5a51f0e4e655ad37bd91800
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  glm47_missing_value_whitespace_owns_inner_pair:
+    case_key: UNIFIED.glm5-missing_value_whitespace_owns_inner_pair
+    producer: producer_95f5bcd64cb0f8bb
+    request: 40b9395338903cd97e2111ac80f153c32953cd1a76c35c3779f7dbca2158edb4
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  glm47_missing_value_whitespace_replacement:
+    case_key: UNIFIED.glm5-missing_value_whitespace_replacement
+    producer: producer_95f5bcd64cb0f8bb
+    request: b1ff93a242190efd5a432e93ed68b09ca7a1f82a4797aa9b7c6df72db624a5c4
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
   glm47_parameterless_call_shape_inside_argument:
     case_key: UNIFIED.glm5-parameterless_call_shape_inside_argument
+    context: context_0e764ba06a7b965b
     request: df259a37fa01485d58e1f5509e33107a2fd40c601d3c01c76473df1e2f1cb384
     output:
       assembled:
@@ -2176,6 +2449,28 @@ records:
           name: null
           arguments: '}'
           complete: true
+      - expected: []
+  glm47_unowned_empty_wrapper_cannot_hide_missing_value:
+    case_key: UNIFIED.glm5-unowned_empty_wrapper_cannot_hide_missing_value
+    producer: producer_95f5bcd64cb0f8bb
+    request: 2b7851ac715b4352401b96b84fcbfa04f7d2e38bb157475e4156db6448dab027
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
+      - expected: []
+  glm47_unowned_malformed_wrapper_cannot_hide_missing_value:
+    case_key: UNIFIED.glm5-unowned_malformed_wrapper_cannot_hide_missing_value
+    producer: producer_95f5bcd64cb0f8bb
+    request: a5a0bee68418f66b4eff1476de43c9e9ea30f150a24fcd51cbba6ee68cabb0ac
+    output:
+      assembled: []
+      chunks:
+      - expected: []
+      - expected: []
+      - expected: []
       - expected: []
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-tool-argument-schema-references-glm_ref_encoded_targets

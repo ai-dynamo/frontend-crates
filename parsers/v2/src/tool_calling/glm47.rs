@@ -13,6 +13,9 @@
 //! recovers a missing value closer and leaves the following bytes as text.
 //! Publishing that ambiguous suffix early would make this recovery impossible
 //! without retracting already-emitted argument bytes.
+//! A nested opener only withholds boundary decisions while its following text
+//! can still become a parameterized invoke header. An invalid header resumes
+//! ordinary value scanning, so real value/call closers need not wait for EOF.
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
@@ -448,24 +451,47 @@ impl InvokeEmitter for Glm47Emitter {
 fn has_incomplete_argument_header(invoke: &str) -> bool {
     let mut rest = invoke.strip_suffix(BLOCK_END).unwrap_or(invoke);
     let mut after_value = false;
+    let mut missing_value = false;
     loop {
         let Some(start) = rest.find(ARG_KEY_START) else {
             let tail = rest.trim();
-            return after_value && !tail.is_empty() && ARG_KEY_START.starts_with(tail);
+            return missing_value
+                || (after_value && !tail.is_empty() && ARG_KEY_START.starts_with(tail));
         };
         rest = &rest[start + ARG_KEY_START.len()..];
         let Some(end) = rest.find(ARG_KEY_END) else {
             return true;
         };
+        let raw_key = &rest[..end];
+        if let Some(nested) = raw_key.rfind(ARG_KEY_START) {
+            rest = &rest[nested..];
+            continue;
+        }
+        let claims_value = !raw_key.is_empty() && !raw_key.contains('<');
+        let valid_key = claims_value && !raw_key.trim().is_empty();
         rest = rest[end + ARG_KEY_END.len()..].trim_start();
         let Some(value) = rest.strip_prefix(ARG_VALUE_START) else {
-            if rest.contains(ARG_KEY_START) {
-                continue;
-            }
-            return true;
+            missing_value = true;
+            continue;
         };
+        // Empty/malformed raw keys do not own values in the batch grammar;
+        // whitespace raw keys own their values but cannot validate recovery.
+        if !claims_value {
+            let next_key = value.find(ARG_KEY_START).unwrap_or(value.len());
+            if let Some(end) = value[..next_key].find(ARG_VALUE_END) {
+                // Keep the terminal-header guard without claiming an inner pair.
+                rest = &value[end + ARG_VALUE_END.len()..];
+                after_value = true;
+            } else {
+                rest = &value[next_key..];
+            }
+            continue;
+        }
+        if valid_key {
+            missing_value = false;
+        }
         let Some(end) = value.find(ARG_VALUE_END) else {
-            return false;
+            return missing_value;
         };
         rest = &value[end + ARG_VALUE_END.len()..];
         after_value = true;
@@ -478,6 +504,7 @@ struct Glm47BoundaryProgress {
     in_arg_value: bool,
     completed_arg_value: bool,
     possible_outer_end: Option<usize>,
+    nested_name_start: Option<usize>,
 }
 
 impl Glm47BoundaryProgress {
@@ -485,20 +512,28 @@ impl Glm47BoundaryProgress {
         while self.cursor < text.len() {
             let rest = &text[self.cursor..];
             if self.in_arg_value {
-                if rest.starts_with(BLOCK_START) && self.possible_outer_end.is_some() {
-                    let body = &rest[BLOCK_START.len()..];
-                    match body.find(ARG_KEY_START) {
-                        Some(at)
-                            if !body[..at].is_empty()
-                                && body[..at].chars().all(|ch| {
-                                    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')
-                                }) =>
-                        {
+                if let Some(name_start) = self.nested_name_start {
+                    self.cursor += rest
+                        .chars()
+                        .take_while(|ch| is_tool_identifier_char(*ch))
+                        .map(char::len_utf8)
+                        .sum::<usize>();
+                    let tail = &text[self.cursor..];
+                    if self.cursor > name_start {
+                        if tail.starts_with(ARG_KEY_START) {
                             return self.possible_outer_end;
                         }
-                        None if !flush => return None,
-                        _ => {}
+                        if !flush && ARG_KEY_START.starts_with(tail) {
+                            return None;
+                        }
                     }
+                    self.nested_name_start = None;
+                    continue;
+                }
+                if rest.starts_with(BLOCK_START) && self.possible_outer_end.is_some() {
+                    self.cursor += BLOCK_START.len();
+                    self.nested_name_start = Some(self.cursor);
+                    continue;
                 }
                 if !flush
                     && self.possible_outer_end.is_some()
@@ -1417,6 +1452,306 @@ mod tests {
     }
 
     #[test]
+    fn native_missing_value_requires_a_valid_replacement_pair_at_every_split() {
+        let tools = tools();
+        for invalid in ["", " \t\n\u{2003}", "bad<junk>", "键<junk>", "bad<arg_key>"] {
+            for value_end in [ARG_VALUE_END, ""] {
+                let input = format!(
+                    "<tool_call>run<arg_key>cmd</arg_key><arg_key>{invalid}</arg_key><arg_value>Paris中文{value_end}</tool_call>"
+                );
+                let check = |chunks: &[&str]| {
+                    let output = legacy(&tools, chunks);
+                    assert!(
+                        output.calls.iter().all(|call| !call.complete),
+                        "invalid replacement completed a call: {chunks:?}: {output:?}"
+                    );
+                };
+                check(&[&input]);
+                check(&char_chunks(&input));
+                for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                    check(&[&input[..split], &input[split..]]);
+                }
+            }
+        }
+
+        // A whitespace raw key owns its apparent value before its trimmed key is discarded.
+        let input = concat!(
+            "<tool_call>run<arg_key>cmd</arg_key><arg_key> \t\u{2003}</arg_key><arg_value>",
+            "<arg_key>cmd</arg_key><arg_value>hidden</arg_value></arg_value></tool_call>"
+        );
+        for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+            assert!(
+                legacy(&tools, &[&input[..split], &input[split..]])
+                    .calls
+                    .iter()
+                    .all(|call| !call.complete)
+            );
+        }
+    }
+
+    #[test]
+    fn native_missing_value_preserves_valid_recovery_and_genuine_empty_calls() {
+        let tools = tools();
+        let first = "<tool_call>run<arg_key>cmd</arg_key>";
+        for middle in [
+            "",
+            "<arg_key></arg_key><arg_value>",
+            "<arg_key>bad<junk></arg_key><arg_value>",
+            "<arg_key>broken",
+            "<arg_key> </arg_key><arg_value><arg_key>cmd</arg_key><arg_value>hidden</arg_value>",
+        ] {
+            let input = format!(
+                "{first}{middle}<arg_key>cmd</arg_key><arg_value>恢复中文</arg_value></tool_call>"
+            );
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_append_only(
+                    legacy(&tools, &[&input[..split], &input[split..]]),
+                    r#"{"cmd":"恢复中文"}"#,
+                );
+            }
+            assert_append_only(
+                legacy(&tools, &char_chunks(&input)),
+                r#"{"cmd":"恢复中文"}"#,
+            );
+        }
+        for name in ["run", "get_time"] {
+            let input = format!("<tool_call>{name}</tool_call>");
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_append_only(legacy(&tools, &[&input[..split], &input[split..]]), "{}");
+            }
+        }
+    }
+
+    #[test]
+    fn native_valid_earlier_pair_cannot_validate_a_later_abandoned_argument() {
+        let tools = file_tools();
+        for invalid in ["", " \u{2003}", "bad<junk>"] {
+            let input = format!(
+                "<tool_call>write_file<arg_key>path</arg_key><arg_value>文件.txt</arg_value>\
+                 <arg_key>content</arg_key><arg_key>{invalid}</arg_key><arg_value>bad</arg_value></tool_call>"
+            );
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                let output = legacy(&tools, &[&input[..split], &input[split..]]);
+                assert!(
+                    output.calls.iter().all(|call| !call.complete),
+                    "{split}: {output:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn native_unowned_wrapper_cannot_hide_the_first_missing_value() {
+        let tools = tools();
+        for wrapper in ["", "broken<bad>", " \u{2003}"] {
+            let input = format!(
+                "<tool_call>run<arg_key>{wrapper}</arg_key><arg_value><arg_key>cmd</arg_key>\
+                 <arg_key></arg_key><arg_value>Paris</arg_value></arg_value></tool_call>"
+            );
+            let check = |chunks: &[&str]| {
+                let output = legacy(&tools, chunks);
+                if !wrapper.is_empty() && wrapper.trim().is_empty() {
+                    // Whitespace owns the whole apparent value, hiding its markers.
+                    assert_append_only(output, "{}");
+                } else {
+                    assert!(
+                        output.calls.iter().all(|call| !call.complete),
+                        "{chunks:?}: {output:?}"
+                    );
+                }
+            };
+            check(&[&input]);
+            check(&char_chunks(&input));
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                check(&[&input[..split], &input[split..]]);
+            }
+
+            let no_missing = format!(
+                "<tool_call>run<arg_key>{wrapper}</arg_key><arg_value>plain</arg_value></tool_call>"
+            );
+            assert_append_only(legacy(&tools, &char_chunks(&no_missing)), "{}");
+        }
+    }
+
+    #[test]
+    fn native_unowned_value_keeps_the_terminal_partial_header_guard() {
+        let tools = tools();
+        for prefix in ["", "<arg_key>cmd</arg_key><arg_value>valid</arg_value>"] {
+            for invalid in ["", "bad<junk>", " \u{2003}"] {
+                let start = format!(
+                    "<tool_call>run{prefix}<arg_key>{invalid}</arg_key><arg_value>ignored</arg_value>"
+                );
+                for tail in ["<arg_", "<arg_ke", "<arg_key>"] {
+                    let input = format!("{start}{tail}</tool_call>");
+                    let check = |chunks: &[&str]| {
+                        let output = legacy(&tools, chunks);
+                        assert!(
+                            output.calls.iter().all(|call| !call.complete),
+                            "{chunks:?}: {output:?}"
+                        );
+                    };
+                    check(&[&input]);
+                    check(&char_chunks(&input));
+                    for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                        check(&[&input[..split], &input[split..]]);
+                    }
+                }
+                for prose in [" explanatory prose", "<arg_ke prose"] {
+                    let input = format!("{start}{prose}</tool_call>");
+                    assert_append_only(
+                        legacy(&tools, &char_chunks(&input)),
+                        if prefix.is_empty() {
+                            "{}"
+                        } else {
+                            r#"{"cmd":"valid"}"#
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn native_nested_header_progress_preserves_recovery_at_the_complete_key_opener() {
+        let mut tools = tools();
+        let name = "lookup_".repeat(512);
+        tools.push(Tool {
+            name: name.clone(),
+            description: None,
+            strict: None,
+            parameters: serde_json::json!({"properties": {"city": {"type": "string"}}}),
+        });
+        let mut parser = Glm47ToolStreamParser::new(&tools);
+        let mut output = parser
+            .push("<tool_call>run<arg_key>cmd</arg_key><arg_value>first</tool_call>")
+            .unwrap();
+        let next = format!("<tool_call>{name}<arg_key");
+        for chunk in char_chunks(&next) {
+            let update = parser.push(chunk).unwrap();
+            assert!(update.calls.iter().all(|call| !call.complete));
+            output.append(update);
+        }
+        let resolved = parser.push(">").unwrap();
+        assert!(
+            resolved
+                .calls
+                .iter()
+                .any(|call| call.tool_index == 0 && call.complete)
+        );
+        output.append(resolved);
+        output.append(
+            parser
+                .push("city</arg_key><arg_value>巴黎</arg_value></tool_call>")
+                .unwrap(),
+        );
+        output.append(parser.finish().unwrap());
+        let calls = output.coalesce_calls().calls;
+        assert_eq!(calls.len(), 2);
+        assert_eq!(
+            (
+                calls[0].tool_index,
+                calls[0].name.as_deref(),
+                calls[0].arguments.as_str(),
+                calls[0].complete
+            ),
+            (0, Some("run"), r#"{"cmd":"first"}"#, true)
+        );
+        assert_eq!(
+            (
+                calls[1].tool_index,
+                calls[1].name.as_deref(),
+                calls[1].arguments.as_str(),
+                calls[1].complete
+            ),
+            (1, Some(name.as_str()), r#"{"city":"巴黎"}"#, true)
+        );
+    }
+
+    #[test]
+    fn native_literal_nested_opener_does_not_delay_the_real_outer_close() {
+        let tools = tools();
+        let opener = "<tool_call>run<arg_key>cmd</arg_key><arg_value>prefix";
+        for (literal, expected) in [
+            (
+                "</tool_call><tool_call> after",
+                r#"{"cmd":"prefix</tool_call><tool_call> after"}"#,
+            ),
+            (
+                "</tool_call><tool_call>中文",
+                r#"{"cmd":"prefix</tool_call><tool_call>中文"}"#,
+            ),
+            (
+                "</tool_call><tool_call>get_time",
+                r#"{"cmd":"prefix</tool_call><tool_call>get_time"}"#,
+            ),
+        ] {
+            let mut parser = Glm47ToolStreamParser::new(&tools);
+            let mut output = parser.push(opener).unwrap();
+            for chunk in char_chunks(literal) {
+                assert!(parser.push(chunk).unwrap().calls.is_empty());
+            }
+            let released = parser.push(ARG_VALUE_END).unwrap();
+            assert_eq!(released.calls.len(), 1);
+            assert!(!released.calls[0].complete);
+            assert_eq!(released.calls[0].arguments, format!("{literal}\""));
+            output.append(released);
+            let completed = parser.push(BLOCK_END).unwrap();
+            assert!(
+                completed.calls.iter().any(|call| call.complete),
+                "still waiting after the real closer: {literal}"
+            );
+            output.append(completed);
+            output.append(parser.finish().unwrap());
+            assert_append_only(output, expected);
+            let input = format!("{opener}{literal}{ARG_VALUE_END}{BLOCK_END}");
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                assert_append_only(
+                    legacy(&tools, &[&input[..split], &input[split..]]),
+                    expected,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn native_ambiguous_prefix_has_two_distinct_valid_continuations() {
+        let tools = tools();
+        let opener = "<tool_call>run<arg_key>cmd</arg_key><arg_value>前缀";
+        let ambiguous = "</tool_call> 后续中文";
+        for complete_value in [false, true] {
+            let mut parser = Glm47ToolStreamParser::new(&tools);
+            let mut output = parser.push(opener).unwrap();
+            for chunk in char_chunks(ambiguous) {
+                assert!(parser.push(chunk).unwrap().calls.is_empty());
+            }
+            if complete_value {
+                for chunk in char_chunks("</arg_value") {
+                    assert!(parser.push(chunk).unwrap().calls.is_empty());
+                }
+                let released = parser.push(">").unwrap();
+                assert_eq!(released.calls.len(), 1);
+                assert!(!released.calls[0].complete);
+                assert_eq!(released.calls[0].arguments, format!("{ambiguous}\""));
+                output.append(released);
+                output.append(parser.push(BLOCK_END).unwrap());
+            }
+            output.append(parser.finish().unwrap());
+            assert_eq!(
+                output.normal_text,
+                if complete_value { "" } else { " 后续中文" }
+            );
+            assert_append_only(
+                output,
+                if complete_value {
+                    r#"{"cmd":"前缀</tool_call> 后续中文"}"#
+                } else {
+                    r#"{"cmd":"前缀"}"#
+                },
+            );
+        }
+    }
+
+    #[test]
     fn native_reset_clears_partial_arguments_and_restarts_index_zero() {
         let tools = file_tools();
         let mut scanner = glm47_scanner(&tools);
@@ -1426,6 +1761,7 @@ mod tests {
             "<tool_call>write_file<arg_key>content",
             "<tool_call>write_file<arg_key>content</arg_key><arg_value>old",
             "<tool_call>write_file<arg_key>content</arg_key><arg_value>old</tool_call> withheld",
+            "<tool_call>write_file<arg_key>content</arg_key><arg_value>old</tool_call><tool_call>pending_name",
             "<tool_call>write_file<arg_key>count</arg_key><arg_value>123",
             "<tool_call>write_file<arg_key>path</arg_key><arg_value>old</arg_value><arg_key>path</arg_key>",
         ] {

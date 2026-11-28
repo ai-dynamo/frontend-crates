@@ -466,6 +466,32 @@ for (const field of ['checkpoint', 'defaults', 'exceptions']) {
   invalidEvidence[field] = [];
   await assert.rejects(validateUnifiedCapture({ ...snapshot, historical_evidence: [invalidEvidence] }, inputs, snapshotResource), new RegExp(`${field} must be a mapping`));
 }
+// The semantic hash was calculated by Python viewer_codec.canonical_typed on
+// the previous snapshot, before its observation changed and a new case arrived.
+const displaced = {
+  ...historicalEvidence, checkpoint: {document: {}, provenance: snapshot.provenance, document_overrides: {id: {}}},
+  source_snapshot: {path: 'conformance/fixtures-unified-v2/families/sample/dynamo_v2.yaml', sha256: 'c'.repeat(64),
+    semantic_sha256: 'be59ea94dcc818c4220b0cf675d63321903467c89e9c0698b74c649280988711',
+    capture_selection: {surface: 'unified', family: 'sample', implementation: 'dynamo_v2', version: '0.1.0', source: snapshotMember}},
+  changes: {id: {observation: snapshotRecord.value.observation}}, member_changes: {id: snapshotMember},
+  inheritance_changes: {id: false}, document_members: {id: ['captured_with']},
+};
+const current = structuredClone(snapshot);
+current.records.id.value.observation.value.assembled = [{kind: 'text', text: 'new'}];
+current.records.more = structuredClone(current.records.id);
+const withMore = {...inputs, cases: {...inputs.cases, more: inputs.cases.id}};
+await validateUnifiedCapture({...current, historical_evidence: [displaced]}, withMore, snapshotResource);
+for (const mutate of [
+  e => { e.source_snapshot.semantic_sha256 = 'f'.repeat(64); },
+  e => { e.source_snapshot.capture_selection.source = 'other.yaml'; },
+  e => { e.changes.id.observation.value.assembled = [{kind: 'text', text: 'wrong'}]; },
+  e => { delete e.inheritance_changes.id; },
+  e => { e.document_members.id.push('captured_with'); },
+  e => { delete e.source_snapshot; },
+]) {
+  const invalid = structuredClone(displaced); mutate(invalid);
+  await assert.rejects(validateUnifiedCapture({...current, historical_evidence: [invalid]}, withMore, snapshotResource), /historical|source snapshot|membership/);
+}
 await validateResolvedUnified({ id: snapshotRecord }, inputs, snapshotResource, [
   { path: snapshotMember, kind: 'history', family: 'sample', implementation: 'dynamo_v2', version: '0.1.0' },
 ]);

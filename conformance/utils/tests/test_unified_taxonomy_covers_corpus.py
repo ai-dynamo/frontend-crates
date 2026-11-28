@@ -2553,10 +2553,57 @@ def _assert_structural_quoted_json_call(family: str, case: dict) -> None:
     ]
 
 
+GLM_RECOVERY_ORACLES = {
+    "glm47_missing_value_empty_key_leaves_inner_pair_unowned": (
+        ["<tool_call>run<arg_key>cmd</arg_key><arg_key></arg_key><arg_value>",
+         "<arg_key>cmd</arg_key><arg_value>recovered</arg_value>", "</arg_value></tool_call>"],
+        [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "recovered"}}],
+    ),
+    "glm47_ambiguous_outer_close_eof_alternative": (
+        ["<tool_call>run<arg_key>cmd</arg_key><arg_value>prefix", "</tool_call>", " first", " second"],
+        [{"kind": "tool_call", "name": "run", "arguments": {"cmd": "prefix"}},
+         {"kind": "text", "text": " first second"}],
+    ),
+}
+
+
+@pytest.mark.parametrize("scenario", [
+    "glm47_missing_value_empty_key_leaves_inner_pair_unowned",
+    "glm47_ambiguous_outer_close_eof_alternative",
+])
+def test_glm_recovery_authoring_contract_rejects_changed_input_or_output(scenario):
+    case = build_cases("glm47")[f"UNIFIED.{scenario}.glm47"]
+    _assert_input_carries_events("glm47", scenario, case)
+    for name, _description, chunks, events in G.GLM47_STREAMING_CASES:
+        if name == scenario:
+            _assert_input_carries_events("glm47", scenario, {**case, "input": "".join(chunks), "input_chunks": chunks, "golden": events})
+    for field, replacement in [
+        ("input", "changed"), ("golden", []), ("tools", []), ("input_chunks", []),
+        ("init", {"starting_state": "Response", "tool_output_mode": "Native", "named_tool": None}),
+        ("finish_reason", "length"), ("finish_step", False),
+    ]:
+        with pytest.raises(AssertionError, match="GLM recovery"):
+            _assert_input_carries_events("glm47", scenario, {**case, field: replacement})
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     request_family = family
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
+    if scenario in GLM_RECOVERY_ORACLES:
+        # These malformed/EOF fields cannot use the complete-field projection below.
+        chunks, expected = GLM_RECOVERY_ORACLES[scenario]
+        assert family == "glm47", "GLM recovery family"
+        assert case["input"] == "".join(chunks), "GLM recovery input"
+        assert case.get("input_chunks") == chunks, "GLM recovery delivery"
+        assert case["golden"] == expected, "GLM recovery output"
+        assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}, "GLM recovery mode"
+        assert case["finish_reason"] == "stop" and case.get("finish_step") is True, "GLM recovery finish"
+        assert case["tools"] == [
+            {"name": "run", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}}},
+            {"name": "get_time", "parameters": {"type": "object", "properties": {}}},
+        ], "GLM recovery tools"
+        return
     if family == "gpt_oss" and scenario in GPT_OSS_RECOVERY_ORACLES:
         expected_input, expected_events = GPT_OSS_RECOVERY_ORACLES[scenario]
         assert case["input"] == expected_input, "Harmony recovery input"

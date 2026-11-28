@@ -112,7 +112,7 @@ export function statusTotals(status) {
   return { reports: status.reports.length, empty: status.reports.reduce((sum, report) => sum + report.empty, 0), red: status.reports.reduce((sum, report) => sum + report.red, 0) };
 }
 
-export function validateUnifiedKnownDivergences(model, registry, families, aliases, v1SplitScenarios = []) {
+export function validateUnifiedKnownDivergences(model, registry, families, aliases, v1SplitScenarios = [], nativeFamilies = families) {
   const tabs = selectTabs(model, ['unified']);
   if (tabs.length !== 1) throw new Error('expected exactly one Unified tab');
   const tab = tabs[0];
@@ -139,6 +139,7 @@ export function validateUnifiedKnownDivergences(model, registry, families, alias
     const empty = states.filter(([sub, state, cell]) => {
       if (state !== 'empty') return false;
       const reason = cell.tooltip?.candidates?.find((candidate) => candidate.key === reference.key)?.block?.unavailable;
+      if (!nativeFamilies.includes(row.family) && reason === `No parser for ${row.family}`) return false;
       const expectedUnavailable = `Dynamo v2 does not run the Dynamo v1 split parser for ${row.family};`;
       return !(v1SplitScenarios.includes(sub) && typeof reason === 'string' && reason.startsWith(expectedUnavailable));
     }).map(([sub]) => sub).sort();
@@ -216,8 +217,10 @@ export async function runStatus(options, output = console.log, errorOutput = con
       }
       const tab = await buildTab(catalog, reader, spec.id, { rowFamilies });
       if (options.knownDivergences && tab.id === 'tab-unified') {
-        const displayFamilies = [...selectedUnifiedFamilies(catalog, tabCandidates(catalog, spec))];
-        validateUnifiedKnownDivergences({ tabs: [tab] }, known, displayFamilies, catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
+        const candidates = tabCandidates(catalog, spec);
+        const displayFamilies = [...selectedUnifiedFamilies(catalog, candidates)];
+        const nativeFamilies = candidates.find(item => item.control.key === defaultReference(tab).key)?.source.native_unified_families;
+        validateUnifiedKnownDivergences({ tabs: [tab] }, known, displayFamilies, catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios, nativeFamilies);
       }
       status.reports.push(...buildStatus(page, [tab], options.models, status.html).reports);
     }

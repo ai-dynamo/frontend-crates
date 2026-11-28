@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { expandFamily, expandSnapshot } from './normalization.js';
 import { sha256, createWorkerParser, validateResource, resourceMetrics } from './data.js';
-import { canonicalJson, sameValue, getField, hasField, setField, deleteField, mergeMappings, mappingEntries, isMapping } from './values.js';
-import { familyCaptureSource, compareVersions, provenanceReleaseVersion, unifiedCaptureVersionPattern, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, selectedUnifiedSnapshot } from './model.js';
+import { canonicalJson, canonicalTyped, sameValue, getField, hasField, setField, deleteField, mergeMappings, mappingEntries, isMapping } from './values.js';
+import { resolveUnified, familyCaptureSource, compareVersions, provenanceReleaseVersion, unifiedCaptureVersionPattern, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, selectedUnifiedSnapshot } from './model.js';
 
 export function sourceReference(value, directory) {
   if (typeof value !== 'string' || !new RegExp(`^${directory}/[A-Za-z0-9][A-Za-z0-9_.+-]*\\.yaml$`).test(value)) throw new Error(`invalid ${directory} filename reference`);
@@ -201,6 +201,64 @@ async function validateExecutionProof(proof, inputDocument, provenance, implemen
   if (!sameValue(proof.requests, expected)) throw new Error(`${where} execution proof request membership mismatch`);
 }
 
+// A displaced versionless capture stores absolute document/receipt metadata
+// and observation deltas against the retained records for this release.
+async function validateHistoricalSource(evidence, snapshot, inputs, resource, where) {
+  const deltaFields = ['changes', 'document_members', 'member_changes', 'inheritance_changes'];
+  if (!Object.hasOwn(evidence, 'source_snapshot')) {
+    if (deltaFields.some(field => Object.hasOwn(evidence, field))) throw new Error(`${where} changes require a source snapshot`);
+    return;
+  }
+  const { implementation, version, family } = resource;
+  const member = `conformance/fixtures-unified-v2/families/${family}/${implementation}-${version}.yaml`;
+  const source = evidence.source_snapshot;
+  const sourceFields = ['path', 'sha256', 'semantic_sha256', 'capture_selection'];
+  keys(source, sourceFields, sourceFields, where);
+  const identity = { surface: 'unified', family, implementation, version, source: member };
+  if (source.path !== `conformance/fixtures-unified-v2/families/${family}/${implementation}.yaml`
+      || ![source.sha256, source.semantic_sha256].every(d => typeof d === 'string' && /^[a-f0-9]{64}$/.test(d))
+      || Object.entries(identity).some(([k,v]) => source.capture_selection?.[k] !== v)) throw new Error(`${where} invalid historical source identity`);
+  const caseIds = [...evidence.cases].sort();
+  for (const field of deltaFields) {
+    stringMapping(evidence[field], where);
+    if (field !== 'changes' && !sameValue(Object.keys(evidence[field]).sort(), caseIds)) throw new Error(`${where} invalid ${field} membership`);
+  }
+  const checkpointFields = ['provenance', 'document', 'document_overrides'];
+  keys(evidence.checkpoint, checkpointFields, checkpointFields, where);
+  const checkpoint = {...evidence.checkpoint, changes: evidence.changes, metadata_changes: evidence.metadata_changes};
+  await validateCapturePayload(checkpoint, inputs, resource);
+  const initial = Object.create(null);
+  for (const id of caseIds) {
+    const prior = snapshot.records[id]?.value;
+    if (prior) initial[id] = {case_key: prior.case_key, stimulus: prior.stimulus, observation: prior.observation};
+  }
+  const resolved = resolveUnified([
+    {...resource, path: member, document: {...evidence.checkpoint, changes: initial, document_overrides: {}}},
+    {...resource, path: member, document: checkpoint},
+  ], version);
+  if (!sameValue([...resolved.keys()].sort(), caseIds)) throw new Error(`${where} changed historical case membership`);
+  const records = Object.create(null);
+  for (const [id, {value}] of resolved) {
+    const fields = evidence.document_members[id], suppress = evidence.inheritance_changes[id];
+    if (!Array.isArray(fields) || fields.some(field => typeof field !== 'string') || new Set(fields).size !== fields.length
+        || evidence.member_changes[id] !== member || typeof suppress !== 'boolean') throw new Error(`${where} invalid historical record: ${id}`);
+    const overrides = evidence.checkpoint.document_overrides[id];
+    for (const [field] of mappingEntries(value.document)) if (!fields.includes(field)) deleteField(value.document, field);
+    for (const field of fields) {
+      if (hasField(value.document, field)) continue;
+      const owner = field === 'record_metadata' ? evidence.metadata_changes : field === 'parser_path' ? overrides : overrides?.capture_provenance;
+      const key = field === 'record_metadata' ? id : field;
+      if (!hasField(owner, key)) throw new Error(`${where} missing historical document field ${field}`);
+      setField(value.document, field, getField(owner, key));
+    }
+    records[id] = {value, member, ...(suppress ? {suppress_inherited_from: true} : {})};
+  }
+  const restored = {schema_version: 2n, provenance: checkpoint.provenance, document: checkpoint.document, records};
+  if (Object.hasOwn(evidence, 'execution_proof')) restored.execution_proof = evidence.execution_proof;
+  await validateUnifiedSnapshot(restored, inputs, resource);
+  if (await sha256(new TextEncoder().encode(canonicalTyped(restored))) !== source.semantic_sha256) throw new Error(`${where} historical snapshot semantic identity mismatch`);
+}
+
 export async function validateUnifiedSnapshot(snapshot, inputDocument, resource) {
   const { path, implementation, version } = resource;
   const fields = ['schema_version', 'provenance', 'document', 'records'];
@@ -235,7 +293,7 @@ export async function validateUnifiedSnapshot(snapshot, inputDocument, resource)
     if (!Array.isArray(snapshot.historical_evidence)) throw new Error(`${path}.historical_evidence must be a list`);
     for (const [index, evidence] of snapshot.historical_evidence.entries()) {
       const where = `${path}.historical_evidence[${index}]`;
-      keys(evidence, ['kind', 'schema_version', 'family', 'implementation', 'version', 'checkpoint', 'cases', 'defaults', 'exceptions', 'metadata_changes', 'receipt_membership'], ['kind', 'schema_version', 'family', 'implementation', 'version', 'checkpoint', 'cases', 'defaults', 'exceptions', 'metadata_changes', 'receipt_membership', 'execution_proof'], where);
+      keys(evidence, ['kind', 'schema_version', 'family', 'implementation', 'version', 'checkpoint', 'cases', 'defaults', 'exceptions', 'metadata_changes', 'receipt_membership'], ['kind', 'schema_version', 'family', 'implementation', 'version', 'checkpoint', 'cases', 'defaults', 'exceptions', 'metadata_changes', 'receipt_membership', 'execution_proof', 'source_snapshot', 'changes', 'document_members', 'member_changes', 'inheritance_changes'], where);
       if (evidence.kind !== 'execution_manifest' || evidence.schema_version !== 1n && evidence.schema_version !== 1
           || evidence.family !== resource.family || evidence.implementation !== implementation || evidence.version !== version) throw new Error(`${where} producer identity mismatch`);
       mapping(evidence.checkpoint, `${where}.checkpoint`);
@@ -251,6 +309,7 @@ export async function validateUnifiedSnapshot(snapshot, inputDocument, resource)
         if (!Array.isArray(entry.members) || new Set(entry.members).size !== entry.members.length) throw new Error(`${receiptWhere} has invalid members`);
         mapping(entry.body, `${receiptWhere}.body`);
       }
+      await validateHistoricalSource(evidence, snapshot, inputDocument, resource, where);
     }
   }
   return snapshot;

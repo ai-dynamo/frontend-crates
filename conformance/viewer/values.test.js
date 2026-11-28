@@ -6,7 +6,7 @@ await test('values contracts', async () => {
 const savedGlobals = Object.getOwnPropertyDescriptors(globalThis);
 try {
 const { default: assert } = await import('node:assert/strict');
-const { parseJson, sameValue, stringifyValue, canonicalJson, temporalText } = await import('./values.js');
+const { parseJson, sameValue, stringifyValue, canonicalJson, canonicalTyped, temporalText } = await import('./values.js');
 const { hasField, getField, setField, deleteField } = await import('./values.js');
 const { HttpResourceStore, sha256 } = await import('./data.js');
 const { parseYaml } = await import('./yaml_data.js');
@@ -58,6 +58,11 @@ assert.equal(stringifyValue(temporal.date), '"2026-10-12"');
 const binary = parseYaml('value: !!binary ZGF0ZToyMDI2LTEwLTEy').value;
 assert.equal(sameValue(binary, temporal.date), false);
 assert.equal(stringifyValue(parseYaml('value: !!binary eA==').value), '"eA=="');
+const offsetStamp = parseYaml('value: 2001-12-15T02:59:43.100000-05:00').value;
+assert.equal(canonicalTyped(structuredClone(offsetStamp)), '["datetime","2001-12-15T02:59:43.100000-05:00"]');
+assert.equal(temporalText(offsetStamp), '2001-12-15T07:59:43.100000+00:00');
+assert.equal(canonicalTyped(parseYaml('value: 2001-12-15T02:59:43-05:00').value), '["datetime","2001-12-15T02:59:43-05:00"]');
+assert.equal(canonicalTyped([1n, 1.0, -0, new Uint8Array([0, 255])]), '["array",[["int","1"],["float","1.0"],["float","-0.0"],["binary","AP8="]]]');
 assert.equal(temporalText(parseYaml('value: 9999-12-31T23:00:00-01:00').value), '+010000-01-01T00:00:00.000000+00:00');
 assert.equal(sameValue(parseYaml('value: 2020-01-01T00:00:00+01:99').value, parseYaml('value: 2020-01-01T00:00:00+02:39').value), true);
 assert.throws(() => parseYaml('value: 2020-01-01T00:00:00+23:99'), /offset/);

@@ -55,6 +55,8 @@ from unified_history import load_store, _capture_release_sort_key
 from unified_taxonomy import numbered_id
 from explode_unified_fixtures import _split_only_cases
 from fixture_disposition import canonical_unified_case_key
+from impls import parser_families_path
+import yaml
 
 root = Path("conformance/fixtures-unified-v2")
 store = load_store(root)
@@ -70,13 +72,21 @@ for family in golden.scenario_families("v1_split_parallel_tool_calls"):
     ):
         expected[family].add(numbered_id("v1_split_parallel_tool_calls"))
 current_version = dynamo_v2_label(Path.cwd())
+registry = yaml.safe_load(parser_families_path().read_text())["unified"]
 for family, case_ids in expected.items():
     canonical = {
         canonical_unified_case_key(family, case["display_id"], case["scenario"])
         for case in store.families[family].cases.values()
         if case["lifecycle"] == "active"
     }
-    history = store.histories[(family, "dynamo_v2")]
+    if case_ids != canonical:
+        raise SystemExit(f"inputs/golden {family} differs from generator; "
+                         f"missing={sorted(case_ids - canonical)} extra={sorted(canonical - case_ids)}")
+    history = store.histories.get((family, "dynamo_v2"))
+    if history is None:
+        if registry[family]["native"]:
+            raise SystemExit(f"missing native Dynamo v2 capture for {family}")
+        continue
     current_captures = [
         (capture_id, capture)
         for capture_id, capture in history.captures.items()
@@ -94,14 +104,9 @@ for family, case_ids in expected.items():
         for case_id in history.resolve(current_label)
         if history.family.cases[case_id]["lifecycle"] == "active"
     }
-    for kind, actual in (("inputs/golden", canonical), ("capture", captured)):
-        missing = sorted(case_ids - actual)
-        extra = sorted(actual - case_ids)
-        if missing or extra:
-            raise SystemExit(
-                f"{kind} {current_label}/{family} differs from generator; "
-                f"missing={missing} extra={extra}"
-            )
+    if case_ids != captured:
+        raise SystemExit(f"capture {current_label}/{family} differs from generator; "
+                         f"missing={sorted(case_ids - captured)} extra={sorted(captured - case_ids)}")
 
 print("Unified source gate passed: generated YAML history and captures are current.")
 PY
