@@ -15,7 +15,8 @@ use serde::ser::Error as _;
 use serde::{Deserialize, Serialize};
 
 use crate::python::{
-    PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace, python_splitlines,
+    PyJsonFormatter, is_python_space, python_float_repr, python_rsplit, python_split_whitespace,
+    python_splitlines,
 };
 
 #[allow(dead_code)]
@@ -232,9 +233,10 @@ pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
 
 /// minijinja-contrib's pycompat string methods, with Python's whitespace where
 /// Rust's differs: `strip`, `lstrip`, `rstrip` and `split()` also treat U+001C..U+001F
-/// as whitespace, `isspace` is false for `""`, and `splitlines` ends lines at every
-/// Python line break. HF renders templates through Python, so `m.content.strip()` must
-/// strip what Python strips.
+/// as whitespace, `isspace` is false for `""`, `splitlines` ends lines at every
+/// Python line break, and `rsplit`, which pycompat lacks, splits like Python. HF
+/// renders templates through Python, so `m.content.strip()` must strip what Python
+/// strips.
 pub fn python_methods(
     state: &State,
     value: &Value,
@@ -269,6 +271,23 @@ pub fn python_methods(
                         })
                         .collect());
                 }
+            }
+            "rsplit" => {
+                let (sep, maxsplit): (Option<&str>, Option<i64>) = from_args(args)?;
+                if sep == Some("") {
+                    return Err(Error::new(ErrorKind::InvalidOperation, "empty separator"));
+                }
+                let maxsplit = maxsplit.and_then(|n| usize::try_from(n).ok());
+                return Ok(python_rsplit(s, sep, maxsplit)
+                    .into_iter()
+                    .map(|part| {
+                        if value.is_safe() {
+                            Value::from_safe_string(part.to_owned())
+                        } else {
+                            Value::from(part)
+                        }
+                    })
+                    .collect());
             }
             "splitlines" => {
                 let (keepends,): (Option<bool>,) = from_args(args)?;
