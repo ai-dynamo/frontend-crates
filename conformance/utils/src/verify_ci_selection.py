@@ -34,7 +34,11 @@ def verify_jobs(results, jobs, gate="conformance-table"):
         if expanded == downstream:
             break
         downstream = expanded
-    required = set(jobs) - downstream
+    # The Bazel job only measures action reuse beside the Cargo gate until cutover.
+    measurement = {"bazel-rust"} & jobs.keys()
+    if measurement & (dependencies(jobs[gate]) | downstream):
+        raise ValueError("Bazel measurement cannot qualify the required publication")
+    required = set(jobs) - downstream - measurement
     if not required or dependencies(jobs[gate]) != required or set(results) != required:
         raise ValueError("publication gate must depend on every validation job")
     failed = {name: result.get("result") for name, result in results.items() if result.get("result") != "success"}

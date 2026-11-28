@@ -1,0 +1,7 @@
+# Keep developer and CI actions under the same sandbox contract.
+common --enable_bzlmod
+common --lockfile_mode=error
+build --incompatible_strict_action_env
+build --spawn_strategy=sandboxed
+build --symlink_prefix=/
+test --test_output=errors

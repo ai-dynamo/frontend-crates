@@ -1,0 +1,35 @@
+module(name = "frontend_crates")
+
+bazel_dep(name = "rules_rust", version = "0.75.0")
+bazel_dep(name = "platforms", version = "1.1.0")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2024",
+    versions = ["1.96.1"],
+)
+use_repo(rust, "rust_toolchains")
+register_toolchains("@rust_toolchains//:all")
+
+rust_host_tools = use_extension("@rules_rust//rust:extensions.bzl", "rust_host_tools")
+rust_host_tools.host_tools(name = "frontend_host_tools", version = "1.96.1")
+use_repo(rust_host_tools, "frontend_host_tools")
+
+# Cargo.toml and Cargo.lock stay the dependency authority; Bazel only reads them.
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+
+# Match Cargo's test profile for the hot regex and tokenizer paths.
+crate.annotation(crate = "regex", rustc_flags = ["-Copt-level=3"])
+crate.annotation(crate = "regex-automata", rustc_flags = ["-Copt-level=3"])
+crate.annotation(crate = "regex-syntax", rustc_flags = ["-Copt-level=3"])
+crate.annotation(crate = "openai-harmony", rustc_flags = ["-Copt-level=2"])
+crate.annotation(crate = "tiktoken-rs", rustc_flags = ["-Copt-level=2"])
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    host_tools = "@frontend_host_tools",
+    skip_cargo_lockfile_overwrite = True,
+    manifests = ["//:Cargo.toml"],
+    supported_platform_triples = ["x86_64-unknown-linux-gnu"],
+)
+use_repo(crate, "crates")

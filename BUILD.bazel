@@ -1,0 +1,60 @@
+# Cargo workspace members built and tested by Bazel. Cargo.toml remains the
+# dependency authority; packages that need Python or native media libraries
+# (conformance, multimodal, parsers/v2-py) stay Cargo-only for now.
+load("//ci/bazel:rust.bzl", "workspace_crate")
+
+workspace_crate(path = "protocols", crate_name = "dynamo_protocols")
+
+workspace_crate(path = "decisions", crate_name = "dynamo_decisions", deps = [":protocols"])
+
+workspace_crate(path = "tokenizers", crate_name = "dynamo_tokenizers")
+
+workspace_crate(path = "parsers/structural-tag", crate_name = "dynamo_structural_tag")
+
+workspace_crate(
+    path = "parsers/v1",
+    crate_name = "dynamo_parsers",
+    deps = [":parsers_structural-tag", ":protocols"],
+    test_compile_data = {"glm47_schema_conformance": [":glm47_schema_matrix"]},
+    # One libtest target holds about 1,100 cases; Cargo nextest schedules them
+    # individually, so give the package more time than a leaf test.
+    unit_size = "large",
+)
+
+workspace_crate(
+    path = "parsers/v2",
+    crate_name = "dynamo_parsers_v2",
+    deps = [":parsers_structural-tag"],
+    rustc_flags = ["-Copt-level=2"],
+    test_binaries = {"stamp_stream_token_ids_cli": ["stamp_stream_token_ids"]},
+    test_compile_data = {
+        "glm47_schema_conformance": [":glm47_schema_matrix"],
+        "vendor_parser_example": ["parsers/v2/CUSTOM_PARSERS.md"],
+    },
+    # include! resolves relative strings against the including source file, so
+    # only the unit target needs an absolute support-file root at compile time.
+    unit_rustc_env = {"CARGO_MANIFEST_DIR": "$${pwd}/parsers/v2"},
+)
+
+workspace_crate(
+    path = "renderer",
+    crate_name = "dynamo_renderer",
+    deps = [":protocols", ":tokenizers"],
+    dev_deps = [":parsers_v2"],
+)
+
+workspace_crate(
+    path = "examples/dynamo-demo-server",
+    crate_name = "dynamo_demo_server",
+    main_only = True,
+    deps = [":protocols", ":parsers_v1", ":renderer", ":tokenizers"],
+)
+
+filegroup(
+    name = "glm47_schema_matrix",
+    srcs = [
+        "conformance/utils/src/glm47_schema_cases.json",
+        "parsers/tests/check_glm47_schema_roundtrip.py",
+        "parsers/tests/glm47_schema_matrix.rs",
+    ],
+)
