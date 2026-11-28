@@ -27,7 +27,7 @@ mod tests {
         choice.finish_reason = finish_reason;
         let token = ChatCompletionTokenLogprob {
             token: text.to_string(),
-            logprob: -0.5,
+            logprob: Some(-0.5),
             token_id: Some(42),
             bytes: Some(text.as_bytes().to_vec()),
             top_logprobs: Vec::new(),
@@ -318,7 +318,7 @@ mod tests {
                 .iter()
                 .map(|token| ChatCompletionTokenLogprob {
                     token: token.to_string(),
-                    logprob: -0.5,
+                    logprob: Some(-0.5),
                     token_id: None,
                     bytes: Some(token.as_bytes().to_vec()),
                     top_logprobs: Vec::new(),
@@ -3933,7 +3933,7 @@ mod tests {
     async fn test_nemotron_dropped_whitespace_keeps_its_logprobs() {
         let token = |text: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
             token: text.to_string(),
-            logprob: -0.5,
+            logprob: Some(-0.5),
             token_id: None,
             bytes: Some(text.as_bytes().to_vec()),
             top_logprobs: Vec::new(),

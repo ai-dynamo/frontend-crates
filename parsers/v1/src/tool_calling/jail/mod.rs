@@ -5225,7 +5225,7 @@ mod tests {
                     .map(
                         |(i, c)| dynamo_protocols::types::ChatCompletionTokenLogprob {
                             token: c.to_string(),
-                            logprob: -(i as f32 + 1.0) * 0.1,
+                            logprob: Some(-(i as f32 + 1.0) * 0.1),
                             token_id: None,
                             bytes: Some(c.to_string().into_bytes()),
                             top_logprobs: vec![],
@@ -6818,7 +6818,7 @@ mod tests {
     fn test_merge_held_logprobs_then_resplit_keeps_entries() {
         let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
             token: token.to_string(),
-            logprob: 0.0,
+            logprob: Some(0.0),
             token_id: None,
             bytes: None,
             top_logprobs: vec![],
@@ -6850,7 +6850,7 @@ mod tests {
     fn test_merge_held_logprobs_fills_missing_channels() {
         let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
             token: token.to_string(),
-            logprob: 0.0,
+            logprob: Some(0.0),
             token_id: None,
             bytes: None,
             top_logprobs: vec![],
@@ -6881,7 +6881,7 @@ mod tests {
 
         let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
             token: token.to_string(),
-            logprob: 0.0,
+            logprob: Some(0.0),
             token_id: None,
             bytes: None,
             top_logprobs: vec![],
@@ -6940,7 +6940,7 @@ mod tests {
     fn test_split_logprobs_at_chars_partitions_token_entries() {
         let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
             token: token.to_string(),
-            logprob: 0.0,
+            logprob: Some(0.0),
             token_id: None,
             bytes: None,
             top_logprobs: vec![],
@@ -7484,7 +7484,7 @@ mod tests {
                     .map(
                         |token| dynamo_protocols::types::ChatCompletionTokenLogprob {
                             token: token.to_string(),
-                            logprob: -0.5,
+                            logprob: Some(-0.5),
                             token_id: None,
                             bytes: None,
                             top_logprobs: Vec::new(),
