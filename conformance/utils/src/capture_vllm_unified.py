@@ -21,8 +21,8 @@ projected to an ordered event list; streaming `parse_delta` gives the real
 per-chunk deltas. No GPU / model needed — the parser only lexes text, so a stub
 tokenizer with deterministic marker IDs is enough.
 """
+import importlib.metadata
 import json
-import re
 import sys
 import traceback
 
@@ -34,6 +34,7 @@ from unified_tools import openai_tools
 
 from peer_modules import AdapterContractError, resolve_peer_module, vllm_parser_factory, vllm_stream_is_legacy, parser_error_detail
 from peer_modules import capture_parser
+from vllm_capture_tokenizer import capture_tokenizer
 
 ChatCompletionRequest = resolve_peer_module("vllm", "protocol").ChatCompletionRequest
 _PARSER_FACTORY = vllm_parser_factory()
@@ -41,102 +42,12 @@ _PARSER_FACTORY = vllm_parser_factory()
 # family -> (reasoning_parser_name, tool_parser_name) for the released Python
 # parser registrations used by the Unified corpus. DeepSeek V4.1 shares the
 # `deepseek_v4` registration in vLLM 0.27.1.
-from impls import VLLM_TOKENIZER_MARKERS, VLLM_UNIFIED_PIPELINES as FAMILY_PARSERS
+from impls import vllm_tokenizer_markers, vllm_unified_pipelines
 
+FAMILY_PARSERS = vllm_unified_pipelines(importlib.metadata.version("vllm"))
 TOOLS = openai_tools()
 FINISH_SENTINEL = "‹finish›"
 
-
-class StubTokenizer:
-    """Deterministic marker tokenizer for parser-only capture.
-
-    The parser APIs inspect token IDs when deciding whether a prompt ended inside
-    reasoning. An empty vocabulary makes that state impossible to exercise, so
-    this tokenizer exposes the exact marker strings used by each parser family
-    with stable synthetic IDs. It still returns no IDs for ordinary model text.
-    """
-    all_special_tokens = []
-    is_fast = True
-
-    def __init__(self, family):
-        self.source_text = None
-        self.marker_at_start = False
-        markers = VLLM_TOKENIZER_MARKERS[family]
-        self._vocab = {marker: 256 + index for index, marker in enumerate(markers)}
-        self._encoded = {
-            marker: [token_id] for marker, token_id in self._vocab.items()
-        }
-        if family == "kimi_k3":
-            self._vocab = {token: 256 + index for index, token in enumerate(
-                ("<|open|>", "<|close|>", "<|sep|>", "think", "response", "message"))}
-            self._encoded.update({token: [token_id] for token, token_id in self._vocab.items()})
-            self._encoded["<|open|>think<|sep|>"] = [256, 259, 258]
-            self._encoded["<|close|>think<|sep|>"] = [257, 259, 258]
-            self._encoded["<|open|>response<|sep|>"] = [256, 260, 258]
-            self._encoded["<|close|>response<|sep|>"] = [257, 260, 258]
-            self._encoded["<|close|>message<|sep|>"] = [257, 261, 258]
-        self._patterns = []
-        for marker, ids in self._encoded.items():
-            pattern = re.escape(marker)
-            if family == "kimi_k3":
-                # vLLM's XTML decoder may insert spaces between marker tokens.
-                pattern = pattern.replace("think", r"\s*think\s*")
-                pattern = pattern.replace("response", r"\s*response\s*")
-                pattern = pattern.replace("message", r"\s*message\s*")
-            self._patterns.append((re.compile(pattern), ids))
-
-    def get_vocab(self):
-        return self._vocab
-
-    def convert_tokens_to_ids(self, t):
-        return self._vocab.get(t)
-
-    def get_added_vocab(self):
-        return self._vocab
-
-    def encode(self, t, add_special_tokens=False):
-        return [token for _start, _end, tokens in self.token_spans(t) for token in tokens]
-
-    def token_spans(self, text):
-        matches = sorted((match.start(), -len(match.group()), match.end(), ids)
-                         for pattern, ids in self._patterns for match in pattern.finditer(text))
-        spans, cursor = [], 0
-        for start, _length, end, ids in matches:
-            if start < cursor:
-                continue
-            spans.extend((index, index + 1, [1000 + ord(text[index])]) for index in range(cursor, start))
-            spans.append((start, end, ids))
-            cursor = end
-        spans.extend((index, index + 1, [1000 + ord(text[index])]) for index in range(cursor, len(text)))
-        return spans
-
-    def bind_input(self, text, *, marker_at_start):
-        self.source_text, self.marker_at_start = text, marker_at_start
-
-    def generated_ids(self, previous_text, current_text):
-        """Expose completed control markers at their authored chunk positions.
-
-        DelegatingParser uses IDs to leave reasoning even when its detector
-        extracts text correctly. A split marker must not transition early.
-        Ordinary text gets an opaque ID: its vocabulary is irrelevant here.
-        """
-        if self.marker_at_start:
-            if self.source_text is None or not self.source_text.startswith(current_text):
-                raise AdapterContractError("Token engine input differs from the bound authored text")
-            # A token can precede its fully decoded spelling; the published
-            # scanner explicitly defers it until the corresponding text arrives.
-            return [token for start, _end, ids in self.token_spans(self.source_text)
-                    if len(previous_text) <= start < len(current_text) for token in ids]
-        return [token for _start, end, ids in self.token_spans(current_text)
-                if end > len(previous_text) for token in ids]
-
-    def decode(self, ids, **k):
-        markers = {token_id: marker for marker, token_id in self._vocab.items()}
-        return "".join(chr(token_id - 1000) if token_id >= 1000 else markers[token_id] for token_id in ids)
-
-    @property
-    def vocab_size(self):
-        return 0
 
 
 def _fn(tc):
@@ -227,12 +138,22 @@ def _request(case):
 
 def _prompt_token_ids(case, family):
     init = case.get("init") or {}
+    if family == "beam":
+        prefix = "<|start|>assistant"
+        channel = {"Reasoning": "analysis", "Response": "final"}.get(init.get("starting_state"))
+        if channel:
+            prefix += f"<|channel|>{channel}<|message|>"
+        return capture_tokenizer(family).encode(prefix)
     if init.get("starting_state") != "Reasoning":
         return None
-    markers = VLLM_TOKENIZER_MARKERS[family]
-    tokenizer = StubTokenizer(family)
+    markers = vllm_tokenizer_markers(family)
+    tokenizer = capture_tokenizer(family)
     if family == "kimi_k3":
         marker = "<|open|>think<|sep|>"
+    elif family == "mistral_4":
+        marker = "[THINK]"
+    elif family in {"muse_glimmer", "muse_spark"}:
+        return tokenizer.encode("<|start|>assistant to=self<|message|>")
     elif family == "gemma4":
         marker = "<|channel>"
     elif family == "minimax_m3":
@@ -286,8 +207,9 @@ def _capture_cases(cases):
             continue
         rn, tn = FAMILY_PARSERS[fam]
         try:
+            options = {"is_harmony": True} if fam == "gpt_oss" else {}
             cls = _PARSER_FACTORY(tool_parser_name=tn, reasoning_parser_name=rn,
-                                 enable_auto_tools=True, model_name=fam)
+                                 enable_auto_tools=True, model_name=fam, **options)
         except (KeyError, TypeError) as error:
             # Published managers can wrap a lazy dependency failure as a
             # registration error; it still blocks execution of the release.
@@ -317,7 +239,7 @@ def _capture_cases(cases):
                 "tools": openai_tools(case.get("tools")),
                 "chat_template_kwargs": req.chat_template_kwargs,
             }
-            full_tokenizer = StubTokenizer(fam)
+            full_tokenizer = capture_tokenizer(fam)
             parser = capture_parser(cls, full_tokenizer, **parser_kwargs)
             full_tokenizer.bind_input(case["input"], marker_at_start=parser.token_engine)
 
@@ -325,7 +247,7 @@ def _capture_cases(cases):
             # prefilled reasoning row therefore gets its assembled projection
             # from the initialized stream rather than from parse(), which has no
             # prompt-state argument.
-            tokenizer = StubTokenizer(fam)
+            tokenizer = capture_tokenizer(fam)
             p = capture_parser(cls, tokenizer, **parser_kwargs)
             tokenizer.bind_input(case["input"], marker_at_start=p.token_engine)
             if hasattr(p, "initialize_streaming"):
@@ -348,7 +270,9 @@ def _capture_cases(cases):
             if case["terminal_step"]:
                 per_chunk.append(_delta_events(p.parse_delta("", [], req, None, finished=True)))
 
-            if (case.get("init") or {}).get("starting_state") == "Reasoning":
+            if (case.get("init") or {}).get("starting_state") == "Reasoning" or (
+                fam == "beam" and (case.get("init") or {}).get("starting_state") == "Response"
+            ):
                 assembled = _assembled_from_chunks(per_chunk)
             else:
                 # Batch: the real final-message fields, projected to an ordered
@@ -386,6 +310,20 @@ def main():
         return unavailable_result(code, detail, capture=request_binding(case))
 
     for case in job.get("cases", []):
+        if case["family"] == "gpt_oss" and (case.get("init") or {}) != {
+            "starting_state": "None", "tool_output_mode": "Native", "named_tool": None
+        }:
+            results[case["id"]] = unavailable_for(case, "unsupported_request_mode",
+                "The Harmony capture uses the released token pipeline with default prompt and native tool encoding")
+            continue
+        if case["family"] == "hermes" and (case.get("init") or {}).get("starting_state") == "Reasoning":
+            results[case["id"]] = unavailable_for(case, "unsupported_request_mode",
+                "vLLM's Hermes tool parser has no native reasoning initialization")
+            continue
+        if (case.get("init") or {}).get("structural_tag") is not None:
+            results[case["id"]] = unavailable_for(case, "unsupported_request_mode",
+                "Parser-only capture does not execute structural-tag generation constraints")
+            continue
         if case.get("finish_reason", "stop") not in {"stop", "length"}:
             results[case["id"]] = unavailable_for(case, "peer_termination_unsupported",
                 "Published parser capture supports serving stop/length termination only")

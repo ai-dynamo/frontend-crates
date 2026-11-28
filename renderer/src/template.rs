@@ -213,6 +213,14 @@ struct JinjaEnvironment {
     env: Environment<'static>,
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+enum DeveloperFallback {
+    #[default]
+    Preserve,
+    RewriteInPlace,
+    Consolidate,
+}
+
 /// Which message-shape restrictions one chat template enforces, probed once at
 /// load. Each rewrite in `normalize_system_messages` is gated on its own flag:
 /// the restrictions are independent, so a template that rejects a non-leading
@@ -220,8 +228,9 @@ struct JinjaEnvironment {
 /// separate instead of being reshaped for a rule it does not have.
 #[derive(Debug, Default, Clone, Copy)]
 struct SystemNormalization {
-    /// Template accepts `system` but rejects the equivalent `developer` turn.
-    fallback_developer: bool,
+    /// How to retain instructions the selected template omits or rejects.
+    fallback_developer: DeveloperFallback,
+    fallback_developer_in_history: DeveloperFallback,
     /// Template raises on a `system` turn that is not first.
     demote_nonleading_system: bool,
     /// Template raises on two adjacent `user` turns.
@@ -229,8 +238,29 @@ struct SystemNormalization {
 }
 
 impl SystemNormalization {
+    /// A developer rewritten in place becomes a non-leading `system` turn; when
+    /// this template demotes those to `user`, consolidate into the leading turn.
+    fn keep_rewritten_developers_as_system(&mut self) {
+        if self.demote_nonleading_system {
+            for fallback in [
+                &mut self.fallback_developer,
+                &mut self.fallback_developer_in_history,
+            ] {
+                if matches!(fallback, DeveloperFallback::RewriteInPlace) {
+                    *fallback = DeveloperFallback::Consolidate;
+                }
+            }
+        }
+    }
+
     fn is_required(&self) -> bool {
-        self.fallback_developer || self.demote_nonleading_system || self.coalesce_consecutive_users
+        !matches!(self.fallback_developer, DeveloperFallback::Preserve)
+            || !matches!(
+                self.fallback_developer_in_history,
+                DeveloperFallback::Preserve
+            )
+            || self.demote_nonleading_system
+            || self.coalesce_consecutive_users
     }
 }
 

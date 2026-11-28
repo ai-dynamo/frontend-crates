@@ -4776,6 +4776,16 @@ requests:
     - 5
     - 7
     finish_step: true
+  5a46b6791d2d3a519b243a461fa4e9a7052791e08aadbb7bdb32cca992f13390:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: "Answer: 天气。<|open|>think<|sep|>open<|close|>think<|sep|> \n<|open|>response<|sep|>closed<|close|>think<|sep|> again<|open|>response<|sep|>."
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 138
+    finish_step: true
   5a78e6f3907836a559f8d8e026194a6fe986e7ea48eb80f601c3a342a088af7d:
     input: '<|open|>think<|sep|>a<|close|>think<|sep|><|open|>response<|sep|>Here you go: <|close|>response<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
     tools: tools_cbf47ccf5fd2ef00
@@ -4861,6 +4871,16 @@ requests:
     - 9
     - 5
     - 7
+    finish_step: true
+  5df68aa36a22fc95447e5db771e7dbfe08851a57b753f40a5c14d1428cbe2a01:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: plan<|open|>response<|sep|>body<|open|>think<|sep|>A<|close|>think<|sep|>B<|open|>response<|sep|>C
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 98
     finish_step: true
   5ed54eb4a7c199ff5cacff0df3d48706ba7db7ba28a8797c01722574b98016ae:
     input: <|open|>think<|sep|>Look it up.<|close|>think<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>think<|sep|>Now answer.<|close|>think<|sep|><|open|>response<|sep|>It's 18C.<|close|>response<|sep|>
@@ -5335,6 +5355,18 @@ requests:
     - 9
     - 5
     - 7
+    finish_step: true
+  6b99775e36f025d7c79626b6b5102c587fb3d376c14086f0e4971022e51d99c2:
+    input: plan<|close|>think><|open|>response<|sep|>answer
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 18
+    - 1
+    - 29
     finish_step: true
   6c3e82baf63409233a43faa5aea67edb70b4a7d760e3fa7174d5a11dcc382977:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>auto<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -10567,6 +10599,16 @@ requests:
     - 20
     - 79
     finish_step: true
+  cf61df066ddce55d877e8fe1137b8d1fe8048d13ab0da4a68fb3a6c9becc7545:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    input: Answer. .<|close|>think<|sep|><|open|>response<|sep|>.
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 30
+    - 24
   cf70226391b4e25a8f7109ff05f9c3db42f2cd385d1ffd6fc97dd5ec33e543b3:
     input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_84aaff47dfbac1c3
@@ -10977,6 +11019,16 @@ requests:
     tools: tools_14bcb316cd445c47
     chunk_sizes:
     - 204
+    finish_step: true
+  e3f2418468aeddf58b8a7d9d4f7261438d358f438065a90674e6f527f372e2c4:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+    input: plan<|close|>think><|open|>response<|sep|>answer
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 48
     finish_step: true
   e4b7f3db2c8704dacec7a52c4dbd838ded417b49e1be500c32a1138d8c06781a:
     input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
@@ -11759,6 +11811,17 @@ requests:
     - 5
     - 7
     finish_step: true
+  f8370b48ac2950925a501f1b7097faff9d7d140061bb9dde6cee44a1a279acb5:
+    input: Answer. .<|close|>think<|sep|><|open|>response<|sep|>.
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+    tools: tools_9db8284c68087826
+    chunk_sizes:
+    - 14
+    - 22
+    - 18
   f8c1d3579584968857a3833ce22fbc47d1ea9abb32d81346af38d4643f0b328e:
     input: <|open|>tools<|sep|><|open|>call tool="write_file" index="1"<|sep|><|open|>json type="object"<|sep|>{"count":7,"content":"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
     tools: tools_683f10361cb16d68
@@ -13454,7 +13517,7 @@ cases:
     request: 3fa5bb1012df542fb709afc5e8a4b84be69584b9c2fafc6b87b85f982b5abea3
     golden:
     - kind: text
-      text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+      text: I mean self literal
     - kind: tool_call
       name: get_weather
       arguments:
@@ -13474,7 +13537,7 @@ cases:
       arguments:
         city: Paris
     - kind: text
-      text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+      text: I mean self literal
   tool_block_never_closed_then_text:
     policy:
     - P2
@@ -13625,12 +13688,12 @@ cases:
     historical_ids:
     - UNIFIED.50-4
     - UNIFIED.50.d
-    description: A prefilled-Response case where starting_state=Response is observable. Response says the prompt already opened visible content, so this stream has no reasoning channel at all and `<think>`/`</think>` are ordinary characters the model happened to write — they must reach the user as text, markers and all. Marker-free prefilled-Response variants parse identically under starting_state=None and are deliberately omitted. This one does not.
+    description: A prefilled-Response case where starting_state=Response is observable. The prompt already opened visible content, so this stream has no reasoning channel. Literal marker-pair text stays visible; mode-owned structural controls, including Kimi K3 XTML, are stripped instead of opening a reasoning span. Marker-free prefilled-Response variants parse identically under starting_state=None and are deliberately omitted. This one does not.
     display_id: UNIFIED.50-prefilled_response_reasoning_markers_literal
     request: ad73c06ef05bfabd5e7d23fe2bcca277b804f0b4f4e8200409fb70eb7f7f8ebe
     golden:
     - kind: text
-      text: <|open|>think<|sep|>literal<|close|>think<|sep|> then a call
+      text: literal then a call
     - kind: tool_call
       name: get_weather
       arguments:
@@ -16034,7 +16097,7 @@ cases:
     request: 8263013ea57a5c983d9bfd6c517a1add00e4fa23fd7223e10fdf0caeb89b49c5
     golden:
     - kind: text
-      text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+      text: I mean self literal
     - kind: tool_call
       name: get_weather
       arguments:
@@ -16048,7 +16111,7 @@ cases:
     request: f3bb49635572c920f9af31549c8f4d15df7a6d655a5cf126aa7da7ce6868d8e8
     golden:
     - kind: text
-      text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+      text: I mean self literal
     - kind: tool_call
       name: get_weather
       arguments:
@@ -16062,7 +16125,7 @@ cases:
     request: e513c26acea175e94fd4bd63b01aac260d806333af45083dbdc0ce8dd30d1701
     golden:
     - kind: text
-      text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+      text: I mean self literal
     - kind: tool_call
       name: get_weather
       arguments:
@@ -16076,7 +16139,7 @@ cases:
     request: be4587b15ac19751e91139eed3ad246755738c24be5cdee3cbd615868cba0f40
     golden:
     - kind: text
-      text: '{}I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>'
+      text: '{}I mean self literal'
     - kind: tool_call
       name: get_weather
       arguments:
@@ -17524,6 +17587,53 @@ cases:
       name: run
       arguments:
         cmd: Paris
+  kimi_k3_repeated_think_to_response_handoff:
+    policy:
+    - I2
+    - I3
+    description: Kimi K3/K3.1 starts in Response with no tools and repeats a complete XTML think-to-response handoff. Split at the marker boundary to retain pending syntax across pushes while preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff; shared prefilled-response cases cover their standalone reasoning markers.
+    display_id: UNIFIED.kimi-repeated_think_to_response_handoff
+    request: cf61df066ddce55d877e8fe1137b8d1fe8048d13ab0da4a68fb3a6c9becc7545
+    golden:
+    - kind: text
+      text: Answer. ..
+  kimi_k3_orphan_response_reasoning_markers:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Kimi K3 starts in Response with standalone think-open/think-close/response-open markers and a whitespace-separated handoff. Orphan XTML controls are structural noise and must not reach visible text; surrounding prose, punctuation, and whitespace survive. A think pair inside an open response does not re-enter reasoning without a new assistant turn, so its body stays visible, matching the shared prefilled-response marker convention. Other registered families do not use this named XTML channel grammar.
+    display_id: UNIFIED.kimi-orphan_response_reasoning_markers
+    request: 5a46b6791d2d3a519b243a461fa4e9a7052791e08aadbb7bdb32cca992f13390
+    golden:
+    - kind: text
+      text: "Answer: 天气。open \nclosed again."
+  kimi_k3_reasoning_recovery_orphan_response_markers:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Kimi K3 starts in Reasoning, recovers a response channel whose think close was elided, then encounters further reasoning/response markers in that response. Preserve the original reasoning and visible text while suppressing every later orphan control. Other registered families do not use this named XTML recovery grammar.
+    display_id: UNIFIED.kimi-reasoning_recovery_orphan_response_markers
+    request: 5df68aa36a22fc95447e5db771e7dbfe08851a57b753f40a5c14d1428cbe2a01
+    golden:
+    - kind: reasoning
+      text: plan
+    - kind: text
+      text: bodyABC
+  kimi_k3_short_reasoning_close:
+    policy:
+    - I3
+    - I5
+    - I7
+    description: Kimi K3 emits the observed compact think close without the XTML separator, then opens a normal response. Treat that marker as a channel close; do not leave it or the response controls inside reasoning. The split-before-gt companion delivers the same input across the compact close. Other registered families do not use this exact malformed-marker compatibility rule.
+    display_id: UNIFIED.kimi-short_reasoning_close
+    request: e3f2418468aeddf58b8a7d9d4f7261438d358f438065a90674e6f527f372e2c4
+    golden:
+    - kind: reasoning
+      text: plan
+    - kind: text
+      text: answer
   native_quoted_reasoning_closer_in_sentence:
     policy:
     - I2
@@ -17688,3 +17798,27 @@ cases:
     golden:
     - kind: reasoning
       text: Let me think, I should run this command "grep -v '
+  kimi_k3_repeated_think_to_response_handoff_split_markers:
+    description: Same repeated Kimi K3/K3.1 think-to-response handoff as the boundary-split case, delivered with splits inside both the think-close and response-open markers. Partial XTML syntax must be held across pushes and consumed once complete, preserving surrounding punctuation. Other registered families do not use K3's named XTML channel handoff.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-repeated_think_to_response_handoff_split_markers
+    request: f8370b48ac2950925a501f1b7097faff9d7d140061bb9dde6cee44a1a279acb5
+    golden:
+    - kind: text
+      text: Answer. ..
+  kimi_k3_short_reasoning_close_split_before_gt:
+    description: Same compact Kimi K3 think close as the single-chunk case, split after `<|close|>think` so the parser must hold it until `>` distinguishes the compact close from the XTML separator form. Do not leave the close or the response controls inside reasoning. Other registered families do not use this exact malformed-marker compatibility rule.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-short_reasoning_close_split_before_gt
+    request: 6b99775e36f025d7c79626b6b5102c587fb3d376c14086f0e4971022e51d99c2
+    golden:
+    - kind: reasoning
+      text: plan
+    - kind: text
+      text: answer

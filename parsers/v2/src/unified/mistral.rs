@@ -304,6 +304,34 @@ mod tests {
     }
 
     #[test]
+    fn native_completion_distinguishes_truncated_json_from_eof_delimited_blocks() {
+        use crate::unified::{NativeToolCompletion, UnifiedParserOutput};
+
+        let mut parser = mistral_unified(&[]);
+        let mut out = UnifiedParserOutput::default();
+        parser
+            .parse_into(r#"[TOOL_CALLS]weather[ARGS]{"city":"Paris"}"#, &mut out)
+            .unwrap();
+        assert!(!parser.has_pending_native_tool_call());
+        parser.finish().unwrap();
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::NoIncompleteCall)
+        );
+
+        parser.reset();
+        parser
+            .parse_into(r#"[TOOL_CALLS]weather[ARGS]{"city":"Par"#, &mut out)
+            .unwrap();
+        assert!(parser.has_pending_native_tool_call());
+        parser.finish().unwrap();
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::IncompleteCall)
+        );
+    }
+
+    #[test]
     fn reasoning_then_call() {
         assert_every_split(
             r#"[THINK]Need the weather.[/THINK][TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}"#,

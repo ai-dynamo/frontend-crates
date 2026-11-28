@@ -1,15 +1,15 @@
-capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.13.yaml","version":"0.10.13"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"0c5ffb220aa42415dc87dd5c9d0182c1bc798f23a89b3a5132c6b5b1057214b3","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.13.yaml","surface":"unified","version":"0.10.13"}
+capture_selection: {"family":"beam","implementation":"dynamo_v2","lineage":[{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"beam","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"c695fe01ac5c64f2f0afa3353cefaa07c0e24caa8ba1d560c78003e7b1873998","source":"conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_f45c58335771b433
+  origin: origin_2bf55717b648d631
 origins:
-  origin_f45c58335771b433:
-    crate_version: 0.10.13
-    source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
-    git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
+  origin_2bf55717b648d631:
+    crate_version: 0.10.12
+    source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+    git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -33,7 +33,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.13.yaml
+  member: conformance/fixtures-unified-v2/families/beam/dynamo_v2-0.10.12.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:

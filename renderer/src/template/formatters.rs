@@ -10,8 +10,8 @@ use super::tokcfg::{
     raise_exception, strftime_now, tojson,
 };
 use super::{
-    ChatTemplateContentFormat, ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment,
-    SystemNormalization,
+    ChatTemplateContentFormat, ContextMixins, DeveloperFallback, HfTokenizerConfigJsonFormatter,
+    JinjaEnvironment, SystemNormalization,
 };
 use either::Either;
 use minijinja::{Environment, Value, context};
@@ -48,6 +48,17 @@ fn probe_template_raises(
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
 ) -> bool {
+    render_template_probe(env, template_name, messages, tools, tok)
+        .is_some_and(|result| result.is_err())
+}
+
+fn render_template_probe(
+    env: &Environment,
+    template_name: &str,
+    messages: serde_json::Value,
+    tools: &Option<serde_json::Value>,
+    tok: &ProbeTokens,
+) -> Option<Result<String, minijinja::Error>> {
     let ctx = context! {
         messages => messages,
         add_generation_prompt => false,
@@ -56,10 +67,9 @@ fn probe_template_raises(
         eos_token => tok.eos,
         unk_token => tok.unk,
     };
-    match env.get_template(template_name) {
-        Ok(t) => t.render(&ctx).is_err(),
-        Err(_) => false,
-    }
+    env.get_template(template_name)
+        .ok()
+        .map(|template| template.render(&ctx))
 }
 
 /// Detects which message shapes agent clients send that this template rejects,
@@ -106,7 +116,8 @@ fn detect_system_normalization(
         tok,
     );
     SystemNormalization {
-        fallback_developer: false,
+        fallback_developer: DeveloperFallback::Preserve,
+        fallback_developer_in_history: DeveloperFallback::Preserve,
         demote_nonleading_system: nonleading_system || mid_after_assistant,
         coalesce_consecutive_users: consecutive_users,
     }
@@ -120,22 +131,53 @@ fn detect_developer_fallback(
     tools: &Option<serde_json::Value>,
     tok: &ProbeTokens,
     requires_content_arrays: bool,
-) -> bool {
-    let content = |text: &str| {
-        if requires_content_arrays {
+    native_text_array_roles: &[&str],
+    in_history: bool,
+) -> DeveloperFallback {
+    // Digits survive common case and escaping filters.
+    const PROBE: &str = "57296048310762";
+    let message = |role: &str, text: &str| {
+        let content = if requires_content_arrays || native_text_array_roles.contains(&role) {
             json!([{"type": "text", "text": text}])
         } else {
             json!(text)
-        }
+        };
+        json!({"role": role, "content": content})
     };
-    let messages = |role: &str| {
+    let render = |messages| render_template_probe(env, template_name, messages, tools, tok);
+    let Some(Ok(system)) = render(json!([message("system", PROBE), message("user", "user")]))
+    else {
+        return DeveloperFallback::Preserve;
+    };
+    let developer_messages = if in_history {
         json!([
-            {"role": role, "content": content("s")},
-            {"role": "user", "content": content("u")}
+            message("user", "first"),
+            message("assistant", "reply"),
+            message("developer", PROBE),
+            message("user", "second")
         ])
+    } else {
+        json!([message("developer", PROBE), message("user", "user")])
     };
-    !probe_template_raises(env, template_name, messages("system"), tools, tok)
-        && probe_template_raises(env, template_name, messages("developer"), tools, tok)
+    match render(developer_messages) {
+        Some(Err(_)) => DeveloperFallback::Consolidate,
+        Some(Ok(developer)) if system.contains(PROBE) && !developer.contains(PROBE) => {
+            // Keep the original position when the template actually renders a late system turn.
+            let late_system = render(json!([
+                message("system", "instructions"),
+                message("user", "first"),
+                message("assistant", "reply"),
+                message("system", PROBE),
+                message("user", "second")
+            ]));
+            if late_system.is_some_and(|result| result.is_ok_and(|text| text.contains(PROBE))) {
+                DeveloperFallback::RewriteInPlace
+            } else {
+                DeveloperFallback::Consolidate
+            }
+        }
+        _ => DeveloperFallback::Preserve,
+    }
 }
 
 /// Detects whether a template renders JSON-string `tool_calls[].function.arguments`
@@ -897,6 +939,20 @@ impl HfTokenizerConfigJsonFormatter {
                 &tool_use_probe_tools,
                 &probe_tokens,
             );
+        let default_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            default_template_handles_tool_calls_arguments_string,
+        );
+        let tool_use_native_text_array_roles = detect_native_text_array_roles(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            tool_use_template_handles_tool_calls_arguments_string,
+        );
         let mut default_system_normalization =
             detect_system_normalization(&env, "default", &default_probe_tools, &probe_tokens);
         let mut tool_use_system_normalization =
@@ -907,6 +963,17 @@ impl HfTokenizerConfigJsonFormatter {
             &default_probe_tools,
             &probe_tokens,
             requires_content_arrays,
+            &default_native_text_array_roles,
+            false,
+        );
+        default_system_normalization.fallback_developer_in_history = detect_developer_fallback(
+            &env,
+            "default",
+            &default_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+            &default_native_text_array_roles,
+            true,
         );
         tool_use_system_normalization.fallback_developer = detect_developer_fallback(
             &env,
@@ -914,7 +981,20 @@ impl HfTokenizerConfigJsonFormatter {
             &tool_use_probe_tools,
             &probe_tokens,
             requires_content_arrays,
+            &tool_use_native_text_array_roles,
+            false,
         );
+        tool_use_system_normalization.fallback_developer_in_history = detect_developer_fallback(
+            &env,
+            "tool_use",
+            &tool_use_probe_tools,
+            &probe_tokens,
+            requires_content_arrays,
+            &tool_use_native_text_array_roles,
+            true,
+        );
+        default_system_normalization.keep_rewritten_developers_as_system();
+        tool_use_system_normalization.keep_rewritten_developers_as_system();
         let default_template_requires_reasoning_string = default_template_handles_reasoning
             && detect_reasoning_string_requirement(
                 &env,
@@ -931,20 +1011,6 @@ impl HfTokenizerConfigJsonFormatter {
                 &probe_tokens,
                 tool_use_template_handles_tool_calls_arguments_string,
             );
-        let default_native_text_array_roles = detect_native_text_array_roles(
-            &env,
-            "default",
-            &default_probe_tools,
-            &probe_tokens,
-            default_template_handles_tool_calls_arguments_string,
-        );
-        let tool_use_native_text_array_roles = detect_native_text_array_roles(
-            &env,
-            "tool_use",
-            &tool_use_probe_tools,
-            &probe_tokens,
-            tool_use_template_handles_tool_calls_arguments_string,
-        );
 
         // Detect each variant once so rendering can safely fall back to flat tools.
         let handles_native_tools = |name| {

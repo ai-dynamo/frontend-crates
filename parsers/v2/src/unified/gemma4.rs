@@ -191,9 +191,9 @@ mod tests {
     };
     use crate::tool_calling::traits::ToolParser;
     use crate::unified::{
-        InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-        UnifiedParserStartingState, UnifiedToolOutputMode, assemble, guided_prefix_examined_bytes,
-        reset_guided_prefix_examined_bytes,
+        InvalidGuidedPayloadPolicy, NativeToolCompletion, UnifiedEvent, UnifiedParserExt,
+        UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
+        guided_prefix_examined_bytes, reset_guided_prefix_examined_bytes,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -735,6 +735,11 @@ mod tests {
             );
             deltas.extend(parser.finish().expect("finish").events);
             assert_eq!(assemble(&deltas), expected, "split={split}");
+            assert_eq!(
+                parser.native_tool_completion(),
+                Some(NativeToolCompletion::IncompleteCall),
+                "split={split}"
+            );
         }
     }
 
@@ -752,6 +757,11 @@ mod tests {
         assert_eq!(
             assemble(&deltas),
             vec![call("echo", serde_json::json!({"value": "y"}))]
+        );
+        assert!(parser.finish().expect("finish").events.is_empty());
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::IncompleteCall)
         );
     }
 

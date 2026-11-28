@@ -39,8 +39,8 @@
 //! keep their output unchanged (see [`applies_to`]).
 
 use super::{
-    ToolCallPolicy, UnifiedParser, UnifiedParserEvent, UnifiedParserInit,
-    UnifiedParserInputCapabilities, UnifiedParserOutput,
+    NativeToolCompletion, ReasoningPrefillState, ToolCallPolicy, UnifiedParser, UnifiedParserEvent,
+    UnifiedParserInit, UnifiedParserInputCapabilities, UnifiedParserOutput,
 };
 use crate::tool_calling::traits::Result;
 
@@ -187,6 +187,18 @@ impl UnifiedParser for BlankToolTurn {
     fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
         let tail = self.inner.finish_at_eos()?;
         Ok(self.settle_tail(tail))
+    }
+
+    fn inspect_reasoning_prefill(&self, rendered: &str) -> Option<ReasoningPrefillState> {
+        self.inner.inspect_reasoning_prefill(rendered)
+    }
+
+    fn native_tool_completion(&self) -> Option<NativeToolCompletion> {
+        self.inner.native_tool_completion()
+    }
+
+    fn has_pending_native_tool_call(&self) -> bool {
+        self.inner.has_pending_native_tool_call()
     }
 
     fn reset(&mut self) -> String {

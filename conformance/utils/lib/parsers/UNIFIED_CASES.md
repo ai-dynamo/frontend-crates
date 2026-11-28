@@ -205,9 +205,9 @@ These two invocation-boundary scenarios differ from `missing_inner_closers_then_
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 329 of the 564 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 329 of the 570 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 235 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 241 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - The two `minimax_m3-guided_native_after_prefilled_reasoning_*` rows cover M3 recovery and are scoped to its conversion.
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
@@ -513,6 +513,18 @@ Native Kimi progress cases `kimi-9` through `kimi-14` use `write_file(count: int
 
 
 ### Kimi K3 XTML
+
+`kimi-repeated_think_to_response_handoff` (`kimi-28`) starts K3/K3.1 in `Response` with native output and no tools. Its two chunks end at the think closer and begin at the response opener (`chunk_sizes: [30, 24]`). The complete repeated XTML handoff is consumed and surrounding punctuation yields one text event, `Answer. ..`. Only K3 uses this named XTML channel sequence; the other registered families retain their shared prefilled-response marker cases. `50-prefilled_response_reasoning_markers_literal` is the companion for mode-owned controls: K3 strips XTML while literal marker-pair families preserve their text.
+
+`kimi-orphan_response_reasoning_markers` (`kimi-29`) adds standalone think-open/think-close/response-open controls and a whitespace-separated handoff in an open Response. GOLDEN preserves only `Answer: 天气。open \nclosed again.`; no XTML reaches visible text.
+
+`kimi-reasoning_recovery_orphan_response_markers` (`kimi-30`) starts in Reasoning and recovers a Response with an elided think close, then strips subsequent orphan controls. GOLDEN is Reasoning `plan` followed by Text `bodyABC`.
+
+`kimi-short_reasoning_close` (`kimi-31`) accepts the historically observed compact close without the XTML separator in one chunk (`chunk_sizes: [48]`). The close and following response controls are consumed; GOLDEN is Reasoning `plan` followed by Text `answer`.
+
+`kimi-repeated_think_to_response_handoff_split_markers` (`kimi-32`) delivers the `kimi-28` input in three chunks that split inside the think closer and the response opener (`chunk_sizes: [14, 22, 18]`). Partial XTML is held across pushes; GOLDEN is the same single text event, `Answer. ..`.
+
+`kimi-short_reasoning_close_split_before_gt` (`kimi-33`) delivers the `kimi-31` input split after `<|close|>think` (`chunk_sizes: [18, 1, 29]`), so the parser must wait for `>` to distinguish the compact close from the separator form. GOLDEN is Reasoning `plan` followed by Text `answer`.
 
 - **`kimi-typed_argument_values`** through **`kimi-guided_native_wrapper`** cover Kimi K3 XTML typed arguments, raw JSON blocks, spacing variants, message termination, reasoning closure, recovery, and guided wrappers.
 

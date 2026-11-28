@@ -8,11 +8,14 @@ use crate::tool_calling::scan::ReasoningSpec;
 use crate::tool_calling::traits::Tool;
 use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
+const REASONING_START: &str = "<think>";
+const REASONING_END: &str = "</think>";
+
 pub(crate) fn glm47_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(ScannerUnified::new(
         glm47_scanner(tools).with_reasoning(ReasoningSpec {
-            start: "<think>",
-            end: "</think>",
+            start: REASONING_START,
+            end: REASONING_END,
             forced_start: false,
             preserve_special_tokens: false,
             ..Default::default()
@@ -28,6 +31,41 @@ mod tests {
         UnifiedParserStartingState, UnifiedToolOutputMode, assemble,
         create_unified_parser_for_family,
     };
+
+    #[test]
+    fn native_completion_reports_a_call_discarded_at_eof() {
+        use crate::unified::{NativeToolCompletion, UnifiedParserOutput};
+        let mut parser = glm47_unified(&tools());
+        let mut out = UnifiedParserOutput::default();
+        parser.parse_into("<tool_call>get_time</tool_call><tool_call>run<arg_key>cmd</arg_key><arg_value>work", &mut out).unwrap();
+        assert_eq!(parser.native_tool_completion(), None);
+        assert!(parser.has_pending_native_tool_call());
+        parser.finish().unwrap();
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::IncompleteCall)
+        );
+
+        parser.reset();
+        parser
+            .parse_into("<tool_call>get_time</tool_call>", &mut out)
+            .unwrap();
+        assert!(!parser.has_pending_native_tool_call());
+        parser.finish().unwrap();
+        assert_eq!(
+            parser.native_tool_completion(),
+            Some(NativeToolCompletion::NoIncompleteCall)
+        );
+
+        parser.reset();
+        parser
+            .parse_into(
+                "<tool_call>run<arg_key>cmd</arg_key><arg_value>literal </tool_call> text",
+                &mut out,
+            )
+            .unwrap();
+        assert!(parser.has_pending_native_tool_call());
+    }
 
     fn tools() -> Vec<Tool> {
         vec![

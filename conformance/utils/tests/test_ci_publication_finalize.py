@@ -422,7 +422,7 @@ def test_finalization_workflow_keeps_contributor_code_read_only():
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
     jobs = workflow["jobs"]
     finalizer = jobs["finalize-publication"]
-    assert finalizer["if"] == "${{ always() }}"
+    assert finalizer["if"] == "${{ always() && needs.conformance-table.result != 'skipped' }}"
     assert set(finalizer["needs"]) == {"conformance-table", "deploy-pages"}
     assert workflow["permissions"] == {"contents": "read"}
     assert not [name for name, job in jobs.items() if job.get("permissions", {}).get("actions") == "write"]

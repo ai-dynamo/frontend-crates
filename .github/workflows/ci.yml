@@ -28,14 +28,30 @@ jobs:
     timeout-minutes: 5
     outputs:
       validation_matrix: ${{ steps.validation.outputs.matrix }}
+      conformance: ${{ steps.scope.outputs.conformance }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
       - name: Select complete validation matrix
         id: validation
         run: |
           matrix=$(python3 conformance/utils/src/ci_plan.py --matrix)
           printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+      # No conformance input or workspace crate reads multimodal/; the rust job tests it.
+      # A paths filter sees the mirror push diff, not the pull request diff, so diff from the merge base.
+      - name: Skip conformance for multimodal-only pull requests
+        id: scope
+        run: |
+          conformance=true
+          if [[ "$GITHUB_REF_NAME" == pull-request/* ]] &&
+            files=$(git diff --no-renames --name-only "$(git merge-base origin/main HEAD)" HEAD) &&
+            [[ -n "$files" ]] && ! grep -qv '^multimodal/' <<< "$files"; then
+            conformance=false
+          fi
+          printf 'conformance=%s\n' "$conformance" >> "$GITHUB_OUTPUT"
 
   structural-tag-compat:
     needs: prepare
@@ -109,6 +125,7 @@ jobs:
         with:
           name: capture-verification
           path: ${{ steps.rust.outputs.capture_report_directory }}/*.json
+          retention-days: 7
           if-no-files-found: error
       - name: Run parser arbitrary-precision feature mode
         run: cargo test --locked -p dynamo-parsers-v2 --features arbitrary-precision --lib --test harmony_continuation_allocations
@@ -118,6 +135,7 @@ jobs:
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
   pages-build:
     needs: prepare
+    if: ${{ needs.prepare.outputs.conformance != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -194,6 +212,7 @@ jobs:
 
   conformance-fixtures:
     needs: prepare
+    if: ${{ needs.prepare.outputs.conformance != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -271,7 +290,7 @@ jobs:
 
   conformance-table:
     needs: [prepare, rust, structural-tag-compat, pages-build, conformance-fixtures, conformance-check]
-    if: ${{ always() }}
+    if: ${{ always() && needs.prepare.outputs.conformance != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -393,7 +412,7 @@ jobs:
 
   finalize-publication:
     needs: [conformance-table, deploy-pages]
-    if: ${{ always() }}
+    if: ${{ always() && needs.conformance-table.result != 'skipped' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

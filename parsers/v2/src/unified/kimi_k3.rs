@@ -36,6 +36,8 @@ const END_OF_MSG: &str = "<|end_of_msg|>";
 const THINK_OPEN: Marker = Marker::pair("<|open|>think<|sep|>", "<|open|> think <|sep|>");
 const THINK_CLOSE: Marker = Marker::pair("<|close|>think<|sep|>", "<|close|> think <|sep|>");
 const THINK_CLOSE_HEAD: Marker = Marker::pair("<|close|>think", "<|close|> think");
+const SHORT_THINK_OPEN: Marker = Marker::single("<|open|>think>");
+const SHORT_THINK_CLOSE: Marker = Marker::single("<|close|>think>");
 const RESPONSE_OPEN: Marker = Marker::pair("<|open|>response<|sep|>", "<|open|> response <|sep|>");
 const RESPONSE_CLOSE: Marker =
     Marker::pair("<|close|>response<|sep|>", "<|close|> response <|sep|>");
@@ -55,6 +57,8 @@ const JSON_OPEN: Marker = Marker::pair("<|open|>json", "<|open|> json");
 const JSON_CLOSE: Marker = Marker::pair("<|close|>json<|sep|>", "<|close|> json <|sep|>");
 
 const ALL_MARKERS: &[Marker] = &[
+    SHORT_THINK_OPEN,
+    SHORT_THINK_CLOSE,
     THINK_OPEN,
     THINK_CLOSE,
     RESPONSE_OPEN,
@@ -75,6 +79,8 @@ const ALL_MARKERS: &[Marker] = &[
 const IDLE_MARKERS: &[Marker] = ALL_MARKERS;
 const SEP_MARKER: Marker = Marker::pair("<|sep|>", " <|sep|>");
 const REASONING_MARKERS: &[Marker] = &[
+    SHORT_THINK_OPEN,
+    SHORT_THINK_CLOSE,
     THINK_CLOSE_HEAD,
     THINK_OPEN,
     THINK_CLOSE,
@@ -92,6 +98,11 @@ const REASONING_MARKERS: &[Marker] = &[
     Marker::single(END_OF_MSG),
 ];
 const RESPONSE_MARKERS: &[Marker] = &[
+    SHORT_THINK_OPEN,
+    SHORT_THINK_CLOSE,
+    THINK_OPEN,
+    THINK_CLOSE,
+    RESPONSE_OPEN,
     RESPONSE_CLOSE,
     TOOLS_OPEN,
     CALL_OPEN,
@@ -1568,7 +1579,10 @@ impl KimiK3Native {
         if self.consume_assistant_message_open() {
             return true;
         }
-        if self.consume(THINK_OPEN) {
+        if self
+            .consume_any_at_start(&[THINK_OPEN, SHORT_THINK_OPEN])
+            .is_some()
+        {
             self.mode = Mode::Reasoning;
             return true;
         }
@@ -1649,6 +1663,7 @@ impl KimiK3Native {
             return true;
         }
         if let Some(len) = self.consume_any_at_start(&[
+            SHORT_THINK_OPEN,
             THINK_OPEN,
             RESPONSE_CLOSE,
             TOOLS_CLOSE,
@@ -1669,6 +1684,22 @@ impl KimiK3Native {
     }
 
     fn drain_response(&mut self, flush: bool, output: &mut UnifiedParserOutput) -> bool {
+        // XTML channel controls are structural in an open response, including orphans.
+        // Call parsing keeps marker-looking argument strings out of this drain.
+        if let Some(len) = self.consume_any_at_start(&[
+            SHORT_THINK_OPEN,
+            SHORT_THINK_CLOSE,
+            THINK_OPEN,
+            THINK_CLOSE,
+            RESPONSE_OPEN,
+        ]) {
+            tracing::warn!(
+                why = "kimi_k3_orphan_marker_in_response",
+                skipped_bytes = len,
+                "quarantining orphan Kimi K3 structure inside response"
+            );
+            return true;
+        }
         if self.consume(RESPONSE_CLOSE) {
             self.mode = Mode::Idle;
             return true;
@@ -1994,6 +2025,9 @@ impl KimiK3Native {
     }
 
     fn consume_reasoning_close(&mut self, flush: bool) -> bool {
+        if self.consume(SHORT_THINK_CLOSE) {
+            return true;
+        }
         let Some(head_len) = THINK_CLOSE_HEAD.prefix_len(&self.buffer) else {
             return false;
         };
@@ -2264,8 +2298,13 @@ fn guided_holdback(haystack: &str, _state: GuidedChannelState) -> usize {
         )
 }
 
+/// Response-mode think controls stay out of the guided control set so they cannot
+/// open a reasoning span, but like the native Response path they are XTML
+/// structure, not visible prose.
 fn guided_strip_text(text: &str) -> String {
-    text.to_string()
+    RESPONSE_LITERAL_MARKERS
+        .iter()
+        .fold(text.to_string(), |text, marker| text.replace(marker, ""))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2995,7 +3034,125 @@ mod tests {
             &literal,
             UnifiedParserStartingState::Response,
             &[UnifiedEvent::Text {
-                text: literal.clone(),
+                text: "beforeliteral".into(),
+            }],
+        );
+    }
+
+    #[test]
+    fn native_response_strips_repeated_think_to_response_handoffs() {
+        let mut input = String::from("Answer: 天气。");
+        for close in THINK_CLOSE.variants() {
+            for open in RESPONSE_OPEN.variants() {
+                input.push_str(&format!(" .{close}{open}."));
+            }
+        }
+        let expected = [UnifiedEvent::Text {
+            text: "Answer: 天气。 .. .. .. ..".into(),
+        }];
+        assert_native_fragmentations_from_state(
+            &input,
+            UnifiedParserStartingState::Response,
+            &expected,
+        );
+    }
+
+    #[test]
+    fn native_response_strips_orphan_reasoning_markers() {
+        for marker in [THINK_OPEN, THINK_CLOSE, RESPONSE_OPEN] {
+            for variant in marker.variants() {
+                let input = format!("before{variant}after");
+                assert_native_fragmentations_from_state(
+                    &input,
+                    UnifiedParserStartingState::Response,
+                    &[UnifiedEvent::Text {
+                        text: "beforeafter".into(),
+                    }],
+                );
+            }
+        }
+
+        let separated = format!(
+            "before{} \n{}after",
+            THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &separated,
+            UnifiedParserStartingState::Response,
+            &[UnifiedEvent::Text {
+                text: "before \nafter".into(),
+            }],
+        );
+    }
+
+    #[test]
+    fn native_reasoning_recovery_strips_later_response_markers() {
+        let input = format!(
+            "plan{}body{}A{}B{}C",
+            RESPONSE_OPEN.canonical,
+            THINK_OPEN.canonical,
+            THINK_CLOSE.canonical,
+            RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &input,
+            UnifiedParserStartingState::Reasoning,
+            &[
+                UnifiedEvent::Reasoning {
+                    text: "plan".into(),
+                },
+                UnifiedEvent::Text {
+                    text: "bodyABC".into(),
+                },
+            ],
+        );
+    }
+
+    #[test]
+    fn native_short_reasoning_markers_do_not_leak() {
+        let input = format!(
+            "{}plan{}{}answer",
+            SHORT_THINK_OPEN.canonical, SHORT_THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &input,
+            UnifiedParserStartingState::None,
+            &[
+                UnifiedEvent::Reasoning {
+                    text: "plan".into(),
+                },
+                UnifiedEvent::Text {
+                    text: "answer".into(),
+                },
+            ],
+        );
+
+        let prefilled = format!(
+            "plan{}{}answer",
+            SHORT_THINK_CLOSE.canonical, RESPONSE_OPEN.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &prefilled,
+            UnifiedParserStartingState::Reasoning,
+            &[
+                UnifiedEvent::Reasoning {
+                    text: "plan".into(),
+                },
+                UnifiedEvent::Text {
+                    text: "answer".into(),
+                },
+            ],
+        );
+
+        let response = format!(
+            "before{}{}after",
+            SHORT_THINK_OPEN.canonical, SHORT_THINK_CLOSE.canonical
+        );
+        assert_native_fragmentations_from_state(
+            &response,
+            UnifiedParserStartingState::Response,
+            &[UnifiedEvent::Text {
+                text: "beforeafter".into(),
             }],
         );
     }
@@ -5149,13 +5306,16 @@ mod tests {
     }
 
     #[test]
-    fn guided_response_prefill_keeps_quoted_channel_markup_literal() {
+    fn guided_response_prefill_strips_channel_markup_without_reasoning() {
         let payload = r#"[{"name":"weather","arguments":{"city":"Paris"}}]"#;
-        let quote = format!(
+        let markup = format!(
             "I mean {}self literal{}",
             THINK_OPEN.canonical, THINK_CLOSE.canonical
         );
-        for input in [format!("{quote}{payload}"), format!("{payload}{quote}")] {
+        // Like the native Response path: XTML controls are structure, not prose,
+        // and a prefilled response never reopens reasoning.
+        let quote = "I mean self literal".to_string();
+        for input in [format!("{markup}{payload}"), format!("{payload}{markup}")] {
             let expected = if input.starts_with('[') {
                 vec![
                     UnifiedEvent::ToolCall {
