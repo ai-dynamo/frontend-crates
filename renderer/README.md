@@ -3,13 +3,13 @@
 ## Introduction
 `dynamo-renderer` turns OpenAI-style chat requests into model-ready prompt strings. It is the *encode* side of inference serving: messages + tools + generation settings in, a fully-rendered prompt out. It is standalone, so an external OpenAI frontend can reuse Dynamo's prompt formatting without pulling in the Dynamo runtime.
 
-It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-contrib` pycompat) and also ships native Rust formatters for model families whose prompt protocol cannot be represented faithfully by the published template. The crate is a *bridge* between OpenAI request types (`dynamo-protocols`) and the template engine; Kimi K3 additionally returns segment-aware prompts so structural XTML tokens and ordinary user text remain distinct through tokenization.
+It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-contrib` pycompat) and also ships native Rust formatters for model families whose prompt protocol cannot be represented faithfully by the published template. The crate is a *bridge* between OpenAI request types (`dynamo-protocols`) and the template engine; the native DeepSeek, Inkling, and Kimi K3 formatters additionally return segment-aware prompts so their control tokens and ordinary request text remain distinct through tokenization.
 
 ## Features
 - **HF chat templates**: faithful `apply_chat_template` rendering, including tool-use and generation-prompt handling.
 - **vLLM content formats**: `PromptFormatter::from_parts_with_content_format` shapes message content like vLLM's `--chat-template-content-format` (`string` or `openai`) instead of probing the template.
 - **Control-token spellings as text**: a control-token spelling in a message, tool definition or `response_format` (for example `<|im_end|>`) comes back from `render_prompt` as an ordinary-text segment, so only the template's own markers encode as control tokens. On by default; `ChatTemplate::with_request_control_tokens_as_text(false)` turns it off, except for Harmony templates, which always render this way. A model that lists its markers only in `tokenizer.json` also needs `ChatTemplate::with_tokenizer_json`.
-- **Native DeepSeek formatters**: Rust formatters for V4.1 / V4 / V3.2 families (under `deepseek`).
+- **Native DeepSeek formatters**: Rust formatters for V4.1 / V4 / V3.2 families (under `deepseek`). Like the Inkling formatter, they return their control tokens and the request text as separate segments; `native_formatter_for_with(.., false)` turns that off.
 - **Native Inkling formatter**: exact text, image, audio, reasoning, and tool-use framing for `inkling_mm_model` (under `inkling`). Media blocks contain only the marker token; the backend multimodal processor expands per-patch or per-frame placeholders later.
 - **Native Kimi K3 formatter**: XTML rendering with explicit trusted-control and ordinary-text segment boundaries (under `kimi_k3`).
 - **Bring-your-own request type**: implement `OAIChatLikeRequest` for any request type, or use the ready-made impl for `dynamo-protocols`' OpenAI chat request.

@@ -130,6 +130,60 @@ pub fn native_formatter_for(
     deepseek_formatter_for(model_type_lower, display_name_lower)
 }
 
+/// [`native_formatter_for`], with the choice that
+/// [`ChatTemplate::with_request_control_tokens_as_text`] gives chat templates.
+///
+/// These formatters return a segmented prompt, so a control-token spelling in
+/// request text encodes as ordinary text. `false` turns that off: the prompt
+/// comes back as one text and the tokenizer matches every spelling in it, as
+/// before the formatters returned segments.
+pub fn native_formatter_for_with(
+    model_type_lower: &Option<String>,
+    display_name_lower: &str,
+    request_control_tokens_as_text: bool,
+) -> Option<PromptFormatter> {
+    let PromptFormatter::OAI(formatter) =
+        native_formatter_for(model_type_lower, display_name_lower)?;
+    Some(PromptFormatter::OAI(if request_control_tokens_as_text {
+        formatter
+    } else {
+        Arc::new(WholeText(formatter))
+    }))
+}
+
+/// A formatter whose prompt is tokenized as one text, with the generation state
+/// the inner formatter reports. Every other method is the inner formatter's;
+/// forward any method added to [`OAIPromptFormatter`] here.
+struct WholeText(Arc<dyn OAIPromptFormatter>);
+
+impl OAIPromptFormatter for WholeText {
+    fn supports_add_generation_prompt(&self) -> bool {
+        self.0.supports_add_generation_prompt()
+    }
+
+    fn supports_native_tools(&self, request: &dyn super::OAIChatLikeRequest) -> bool {
+        self.0.supports_native_tools(request)
+    }
+
+    fn render(&self, req: &dyn super::OAIChatLikeRequest) -> Result<String> {
+        self.0.render(req)
+    }
+
+    fn media_message_order(&self, request: &dyn super::OAIChatLikeRequest) -> Option<Vec<usize>> {
+        self.0.media_message_order(request)
+    }
+
+    fn render_prompt(&self, req: &dyn super::OAIChatLikeRequest) -> Result<super::RenderedPrompt> {
+        let prompt = self.0.render_prompt(req)?;
+        let state = prompt.generation_state();
+        Ok(super::RenderedPrompt::text(prompt.into_text()).with_generation_state(state))
+    }
+
+    fn renders_continuation_natively(&self) -> bool {
+        self.0.renders_continuation_natively()
+    }
+}
+
 /// How message `content` is shaped before the HF chat template sees it, with
 /// the semantics of vLLM's `--chat-template-content-format`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

@@ -7,10 +7,8 @@ use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
 use super::common::{ThinkingMode, reasoning_text, resolve_thinking_mode};
-use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
+use super::v4::{Encoding, IMAGE_PLACEHOLDER, encode_owned_messages as encode_v4_messages};
 use crate::RenderedPrompt;
-
-const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
 
 fn validate_text(text: &str) -> Result<&str> {
     ensure!(
