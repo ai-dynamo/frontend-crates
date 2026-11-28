@@ -1,15 +1,15 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"fc98bd63bdd4ee338717c2787259f1a9cf2ba7dbe3aae695ab4a8225bed17621","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","surface":"unified","version":"0.10.11"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"glm47","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"9e34f2e15ac39a375315e48033a9283b3b7f500bd39f94d6f59b1039e3f55415","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_9c7c0602c574a2d9
+  origin: origin_2bf55717b648d631
 origins:
-  origin_9c7c0602c574a2d9:
-    crate_version: 0.10.11
-    source_sha256: e137b0174e2779e0ce9972e72e242b8b85358e9cf0bb631f09f1074d93aa9aa8
-    git_commit: 8f1e436cf8bdda0b533778e59e6e4f192d62bfc3
+  origin_2bf55717b648d631:
+    crate_version: 0.10.12
+    source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+    git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -41,7 +41,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.11.yaml
+  member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.10.12.yaml
   producer: producer_aad5f6f536370a6c
   context: context_cdf0b3c0134ec96f
 records:

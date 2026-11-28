@@ -331,6 +331,8 @@ def _validate_provenance_origin(repo_root: Path, recorded: dict) -> None:
         raise ValueError(f"capture feed source identity cannot be verified: Git anchor {commit} is unavailable") from exc
     if tree != recorded["git_head_tree"]:
         raise ValueError("capture feed source identity differs: Git commit/tree mismatch")
+    if source_fingerprint(repo_root, commit) != recorded["source_sha256"]:
+        raise ValueError("capture feed source identity differs: Git commit/source fingerprint mismatch; commit parser source before capturing")
 
 
 def main() -> None:
