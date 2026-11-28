@@ -13,8 +13,8 @@ use crate::structural_tag::policy::{
     ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_schema,
 };
 use crate::structural_tag::wire::{
-    AnyTextFormat, ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, OrFormat,
-    RegexFormat, RepeatFormat, SequenceFormat, TagFormat,
+    AnyTextFormat, ConstStringFormat, Format, GrammarFormat, JsonSchemaFormat, JsonSchemaStyle,
+    OrFormat, RegexFormat, RepeatFormat, SequenceFormat, TagFormat,
 };
 
 pub(crate) static MUSE_SPARK: StructuralTagBuilder = StructuralTagBuilder::new(&MuseSparkGrammar);
@@ -141,12 +141,12 @@ fn string_value(schema: &Map<String, Value>) -> anyhow::Result<Format> {
         .get("pattern")
         .map(|v| v.as_str().context("pattern must be a string"))
         .transpose()?;
-    let regex = pattern.map(regex::Regex::new).transpose()?;
     let values = schema
         .get("enum")
         .map(|v| v.as_array().context("enum must be an array"))
         .transpose()?;
     if values.is_some() || schema.contains_key("const") {
+        let regex = pattern.map(regex::Regex::new).transpose()?;
         let constants: Vec<&Value> = values
             .map(|v| v.iter().collect())
             .unwrap_or_else(|| vec![&schema["const"]]);
@@ -178,14 +178,92 @@ fn string_value(schema: &Map<String, Value>) -> anyhow::Result<Format> {
         );
         return Ok(alternatives(formats));
     }
-    // Unbounded raw-text regexes could consume a parameter-closing delimiter
-    // as value data. XGrammar has no intersection node to combine them with
-    // delimiter exclusion. Finite enums above can be checked safely instead.
-    ensure!(
-        pattern.is_none() && min == 0 && max.is_none(),
-        "unsupported raw ATEM string pattern/length constraints without enum or const"
-    );
-    Ok(raw_text(&[PARAM_END, "<|"]))
+    if let Some(pattern) = pattern {
+        return Ok(string_pattern_format(pattern));
+    }
+    Ok(string_length_format(min, max).unwrap_or_else(|| raw_text(&[PARAM_END, "<|"])))
+}
+
+/// One raw ATEM string character. A `<` may not start `</` or `<|`, so the
+/// value cannot contain the parameter close or a channel token.
+const STRING_ATOM: &str = r"(?:[^<]|<[^/|])";
+
+/// EBNF for `STRING_ATOM`, matching the same strings as the regex.
+const STRING_ATOM_EBNF: &str = r#"atom ::= [^<] | "<" [^/|]"#;
+
+/// Bounds above this keep the unbounded raw-text format.
+const MAX_STRING_LENGTH_BOUND: u64 = 4096;
+
+/// Translate string length bounds into a raw-text format.
+///
+/// A counted regex such as `STRING_ATOM{1,256}` makes XGrammar mask fills cost
+/// ~1.8 s per token with the Muse Spark tokenizer, and speculative decoding fills
+/// one mask per draft token, stalling the whole batch. The grammar below matches
+/// the same atoms, `atom{min} atom*`, and enforces the maximum with an XGrammar
+/// rule character budget (`body[max_chars=N]`, XGrammar 0.2.6+), which costs
+/// nothing per fill. The budget counts codepoints; the minimum counts atoms, so
+/// a `<` and the character after it count once toward it.
+fn string_length_format(min_len: u64, max_len: Option<u64>) -> Option<Format> {
+    if min_len > MAX_STRING_LENGTH_BOUND
+        || max_len.is_some_and(|max_len| max_len > MAX_STRING_LENGTH_BOUND)
+        || (min_len == 0 && max_len.is_none())
+    {
+        return None;
+    }
+    let body = if min_len == 0 {
+        "atom*".to_string()
+    } else {
+        format!("atom{{{min_len}}} atom*")
+    };
+    let budget = max_len.map_or(String::new(), |max_len| format!("[max_chars={max_len}]"));
+    Some(Format::Grammar(GrammarFormat {
+        grammar: format!("root ::= body\nbody{budget} ::= {body}\n{STRING_ATOM_EBNF}"),
+    }))
+}
+
+/// XGrammar 0.2.3 regexes do not support lookahead, so a general intersection
+/// of `pattern` with length bounds or with the parameter close cannot be
+/// expressed. Match XGrammar's JSON-schema policy: `pattern` takes precedence
+/// over length bounds. A pattern that admits the parameter close is used as
+/// written; the parser keeps a close followed by more value text as data.
+fn string_pattern_format(pattern: &str) -> Format {
+    let anchored_start = pattern.starts_with('^');
+    let anchored_end = has_unescaped_trailing_dollar(pattern);
+    let pattern = pattern.strip_prefix('^').unwrap_or(pattern);
+    let pattern = if anchored_end {
+        pattern
+            .strip_suffix('$')
+            .expect("anchored pattern ends with a dollar")
+    } else {
+        pattern
+    };
+    let prefix = if anchored_start {
+        String::new()
+    } else {
+        format!("{STRING_ATOM}*")
+    };
+    let suffix = if anchored_end {
+        String::new()
+    } else {
+        format!("{STRING_ATOM}*")
+    };
+    Format::Regex(RegexFormat {
+        pattern: format!("{prefix}(?:{pattern}){suffix}"),
+    })
+}
+
+fn has_unescaped_trailing_dollar(pattern: &str) -> bool {
+    let Some(prefix) = pattern.strip_suffix('$') else {
+        return false;
+    };
+    prefix
+        .as_bytes()
+        .iter()
+        .rev()
+        .take_while(|byte| **byte == b'\\')
+        .count()
+        % 2
+        == 0
 }
 
 fn value_format(schema: &Value, root: &Value, any_order: bool) -> anyhow::Result<Format> {

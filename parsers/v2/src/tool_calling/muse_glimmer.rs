@@ -116,12 +116,14 @@ fn parameter_schema<'a>(
         .and_then(|properties| properties.get(key))
 }
 
-/// A JSON value owns delimiter-looking bytes in its strings. Raw ATEM strings
-/// keep their first-delimiter framing; their grammar excludes that delimiter.
-fn parameter_end(value: &str, schema: Option<&serde_json::Value>) -> Option<usize> {
-    if !schema.is_some_and(|s| s["type"] == "string")
-        && value.trim_start().starts_with(['{', '[', '"'])
-    {
+/// A JSON value owns delimiter-looking bytes in its strings. A declared raw
+/// string owns a close that more value text follows; `complete` means no
+/// further text can arrive. Other raw values end at the first delimiter.
+fn parameter_end(value: &str, schema: Option<&serde_json::Value>, complete: bool) -> Option<usize> {
+    if schema.is_some_and(|s| s["type"] == "string") {
+        return string_parameter_end(value, complete);
+    }
+    if value.trim_start().starts_with(['{', '[', '"']) {
         match parsed_json_prefix_end(value) {
             Ok(Some(end)) => {
                 return value[end..].find(PARAMETER_CLOSE).map(|at| end + at);
@@ -134,11 +136,46 @@ fn parameter_end(value: &str, schema: Option<&serde_json::Value>) -> Option<usiz
     value.find(PARAMETER_CLOSE)
 }
 
+/// Markup that may follow a raw string's real close.
+const STRING_CLOSE_FOLLOWERS: &[&str] = &[PARAMETER_OPEN_PREFIX, INVOKE_CLOSE, BLOCK_CLOSE, "<|"];
+
+/// A pattern-constrained string can contain the parameter close as data, so a
+/// close is provisional until markup or the end of the text follows it. A close
+/// followed by other text is data. Without a later real close, the first close
+/// stands, as before.
+fn string_parameter_end(value: &str, complete: bool) -> Option<usize> {
+    let first = value.find(PARAMETER_CLOSE)?;
+    let mut at = first;
+    loop {
+        let rest = value[at + PARAMETER_CLOSE.len()..].trim_start();
+        if STRING_CLOSE_FOLLOWERS
+            .iter()
+            .any(|marker| rest.starts_with(marker))
+        {
+            return Some(at);
+        }
+        if STRING_CLOSE_FOLLOWERS
+            .iter()
+            .any(|marker| marker.starts_with(rest))
+        {
+            // The end of the text, or a partial follower, settles the close
+            // only once no more text can arrive.
+            return complete.then_some(at);
+        }
+        match value[at + PARAMETER_CLOSE.len()..].find(PARAMETER_CLOSE) {
+            Some(next) => at += PARAMETER_CLOSE.len() + next,
+            None => return complete.then_some(first),
+        }
+    }
+}
+
 /// An open parameter owns its bytes until its closer arrives, including framed channel headers.
+/// `settled` means `text` is final, which settles a declared string's provisional close.
 fn outside_parameter<'a>(
     text: &'a str,
     marker: &str,
     at_eof: bool,
+    settled: bool,
     tools: &[ToolDefinition],
     mut name: Option<&'a str>,
 ) -> Option<usize> {
@@ -162,8 +199,11 @@ fn outside_parameter<'a>(
         }
         let key = captures.name("key").expect("regex requires key").as_str();
         let value_start = cursor + parameter.end();
-        let Some(end) = parameter_end(&text[value_start..], parameter_schema(tools, name, key))
-        else {
+        let Some(end) = parameter_end(
+            &text[value_start..],
+            parameter_schema(tools, name, key),
+            settled,
+        ) else {
             return at_eof.then_some(cursor + at);
         };
         cursor = value_start + end + PARAMETER_CLOSE.len();
@@ -956,7 +996,7 @@ impl InvokeEmitter for MuseInvokeEmitter {
             let key = param.name("key").expect("regex requires key").as_str();
             let value = &tail[param.get(0).expect("regex match has group 0").end()..];
             let schema = parameter_schema(&self.tools, Some(&name), key);
-            let Some(end) = parameter_end(value, schema) else {
+            let Some(end) = parameter_end(value, schema, true) else {
                 break;
             };
             let raw = &value[..end];
@@ -1289,7 +1329,14 @@ impl MuseChannelScanner {
 
     fn body_marker(&self, marker: &str, at_eof: bool) -> Option<usize> {
         if self.state == State::InToolChannel {
-            outside_parameter(&self.buffer, marker, at_eof, &self.emitter.tools, None)
+            outside_parameter(
+                &self.buffer,
+                marker,
+                at_eof,
+                at_eof,
+                &self.emitter.tools,
+                None,
+            )
         } else {
             self.buffer.find(marker)
         }
@@ -1301,16 +1348,20 @@ impl MuseChannelScanner {
     fn tool_body_limit(&self, flush: bool) -> usize {
         [EOM, EOT, START]
             .iter()
-            .filter_map(|m| outside_parameter(&self.buffer, m, flush, &self.emitter.tools, None))
+            .filter_map(|m| {
+                outside_parameter(&self.buffer, m, flush, flush, &self.emitter.tools, None)
+            })
             .min()
             .unwrap_or(self.buffer.len())
     }
 
     /// Bounds of the first COMPLETE `<atem:invoke ...>...</atem:invoke>` block
     /// inside `buffer[..limit]`. An invoke without its close is not complete: both
-    /// engines require the literal close, so it waits for more input.
-    fn next_invoke(&self, limit: usize) -> Option<(usize, usize)> {
+    /// engines require the literal close, so it waits for more input. A limit
+    /// before the buffer end, or a flush, makes the body final.
+    fn next_invoke(&self, limit: usize, flush: bool) -> Option<(usize, usize)> {
         let body = &self.buffer[..limit];
+        let settled = flush || limit < self.buffer.len();
         let captures = invoke_open_re().captures(body)?;
         let open = captures.get(0)?;
         let suffix = &body[open.end()..];
@@ -1318,6 +1369,7 @@ impl MuseChannelScanner {
             suffix,
             INVOKE_CLOSE,
             false,
+            settled,
             &self.emitter.tools,
             captures.name("name").map(|m| m.as_str()),
         );
@@ -1356,11 +1408,18 @@ impl MuseChannelScanner {
                         else {
                             return ProseGrammarSpan::Pending;
                         };
-                        outside_parameter(&suffix[open.end()..], INVOKE_CLOSE, flush, &[], None)
-                            .map(|close| {
-                                ProseGrammarSpan::Owned(open.end() + close + INVOKE_CLOSE.len())
-                            })
-                            .unwrap_or(ProseGrammarSpan::Pending)
+                        outside_parameter(
+                            &suffix[open.end()..],
+                            INVOKE_CLOSE,
+                            flush,
+                            flush,
+                            &[],
+                            None,
+                        )
+                        .map(|close| {
+                            ProseGrammarSpan::Owned(open.end() + close + INVOKE_CLOSE.len())
+                        })
+                        .unwrap_or(ProseGrammarSpan::Pending)
                     },
                 );
                 let (length, waiting, unmatched) = match control {
@@ -1413,7 +1472,7 @@ impl MuseChannelScanner {
             // A complete invoke inside the OPEN tool body emits as soon as its
             // close has streamed, before the channel terminator arrives.
             if self.state == State::InToolChannel
-                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(flush))
+                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(flush), flush)
             {
                 let invoke = self.buffer[start..end].to_string();
                 self.buffer.drain(..end);
@@ -1735,14 +1794,17 @@ mod tests {
     fn json_parameter_boundaries_preserve_incomplete_and_invalid_fallbacks() {
         let quoted = r#"{"text":"</atem:parameter></atem:invoke>","n":invalid}"#;
         let value = format!("{quoted}{PARAMETER_CLOSE}tail");
-        assert_eq!(parameter_end(&value, None), value.find(PARAMETER_CLOSE));
+        assert_eq!(
+            parameter_end(&value, None, true),
+            value.find(PARAMETER_CLOSE)
+        );
         let prefix = r#"{"text":"</atem:parameter></atem:invoke>","n":1e"#;
-        assert_eq!(parameter_end(prefix, None), None);
+        assert_eq!(parameter_end(prefix, None, true), None);
         let raw = format!("raw{PARAMETER_CLOSE}tail{PARAMETER_CLOSE}");
-        assert_eq!(parameter_end(&raw, None), Some(3));
+        assert_eq!(parameter_end(&raw, None, true), Some(3));
         let string_schema = serde_json::json!({"type":"string"});
         assert_eq!(
-            parameter_end(&value, Some(&string_schema)),
+            parameter_end(&value, Some(&string_schema), true),
             value.find(PARAMETER_CLOSE)
         );
     }
