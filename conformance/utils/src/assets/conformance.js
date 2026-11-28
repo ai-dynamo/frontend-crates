@@ -1614,7 +1614,8 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     if (!key || key === 'golden') return '';
     if (byKey.has(key)) return key;
     const identity = legacyCandidates.get(key) || key;
-    return byIdentity.get(identity) || byIdentity.get(key) || '';
+    const canonicalKey = key.replace(/^[^@]+(?=@)/, producer => producer.toLowerCase());
+    return byIdentity.get(identity) || byIdentity.get(key) || byIdentity.get(canonicalKey) || '';
   };
   const legacyTabs = [...new Set([initialTab, tab.id].filter(Boolean))];
   const legacyBaseParam = legacyTabs.map(id => 'base_' + id).find(key => params.has(key));
