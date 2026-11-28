@@ -1,15 +1,15 @@
-capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v2","lineage":[{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.6.yaml","version":"0.10.6"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"564fe48db5c9e5e85916755bb97d30e0cba907381aeb4ea559568e64b8fa375b","source":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v2","lineage":[{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.13.yaml","version":"0.10.13"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.6.yaml","version":"0.10.6"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"qwen3_coder","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"d2f064894ffe0ca2ea4912fa957ebfbcf4c91d5194f47035d7b51445ce30a3cb","source":"conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.13.yaml","surface":"unified","version":"0.10.13"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_2bf55717b648d631
+  origin: origin_55202575e7e8010d
 origins:
-  origin_2bf55717b648d631:
-    crate_version: 0.10.12
-    source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
-    git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
+  origin_55202575e7e8010d:
+    crate_version: 0.10.13
+    source_sha256: 64438d499302f5fc4350506169695ba1b44c83644f6d09ebb9485d45b22811c2
+    git_commit: c6e40d1096cf1507d6d1905f8aaf8c2bf2be21e6
   origin_6bfdab078ceeecc5:
     crate_version: 0.10.6
     source_sha256: ceea4408160a3c17849525b03508ada3a6f7f54bb1a3d375675b6e4001fafc14
@@ -32,7 +32,7 @@ contexts:
     mode: unified
     record_metadata:
       parser_path: unified
-  context_ecfef8f5bad5698a:
+  context_8b98030ea13c11ce:
     mode: unified
     record_metadata:
       parser_path: unified
@@ -112,11 +112,11 @@ contexts:
 
                 </tool_call>'
         provenance:
-          crate_version: 0.10.12
-          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
-          git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
+          crate_version: 0.10.13
+          source_sha256: 64438d499302f5fc4350506169695ba1b44c83644f6d09ebb9485d45b22811c2
+          git_commit: c6e40d1096cf1507d6d1905f8aaf8c2bf2be21e6
           implementation: dynamo_v2
-          version: 0.10.12
+          version: 0.10.13
           adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
         resolution: fresh_execution
@@ -287,80 +287,7 @@ contexts:
           adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
         resolution: fresh_execution
-      - result:
-          assembled:
-          - kind: tool_call
-            name: capture_payload
-            arguments: '{"metrics":["temperature","humidity"],"count":5}'
-          chunks:
-          - expected:
-            - kind: tool_call
-              name: capture_payload
-              arguments: '{"metrics":["temperature","humidity"],"count":5}'
-              complete: true
-          - expected: []
-          capture_input:
-            init:
-              starting_state: None
-              tool_output_mode: Native
-              named_tool: null
-            finish_reason: stop
-            input: '<tool_call>
-
-              <function=capture_payload>
-
-              <parameter=metrics>
-
-              ["temperature","humidity"]
-
-              </parameter>
-
-              <parameter=count>
-
-              5
-
-              </parameter>
-
-              </function>
-
-              </tool_call>'
-            tools:
-            - name: capture_payload
-              parameters:
-                type: object
-                properties:
-                  metrics:
-                    type: array
-                    items:
-                      type: string
-                    enum:
-                    - temperature
-                    - humidity
-                    - co2
-                  count:
-                    type: integer
-                    enum:
-                    - auto
-            chunks:
-            - delta_text: '<tool_call>
-
-                <function=capture_payload>
-
-                <parameter=metrics>
-
-                ["temperature","humidity"]
-
-                </parameter>
-
-                <parameter=count>
-
-                5
-
-                </parameter>
-
-                </function>
-
-                </tool_call>'
+      - result_ref: 6195a2558bc9a1d00f61bd16b4ed6177c4d1cf39021ea5432bf24e0932d29993
         provenance:
           crate_version: 0.10.12
           source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
@@ -370,8 +297,38 @@ contexts:
           adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
           job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
         resolution: fresh_execution
+      - result_ref: 6195a2558bc9a1d00f61bd16b4ed6177c4d1cf39021ea5432bf24e0932d29993
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
+          git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
+        resolution: fresh_execution
+      - result_ref: 6195a2558bc9a1d00f61bd16b4ed6177c4d1cf39021ea5432bf24e0932d29993
+        provenance:
+          crate_version: 0.10.12
+          source_sha256: 96f0f9a24a26178c613928ad4196b806a32e0341148a873ff5ddd6c2d4cc867a
+          git_commit: 22f615cef3f604e703127b878a060cc2efea110c
+          implementation: dynamo_v2
+          version: 0.10.12
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
+        resolution: fresh_execution
+      - result_ref: 6195a2558bc9a1d00f61bd16b4ed6177c4d1cf39021ea5432bf24e0932d29993
+        provenance:
+          crate_version: 0.10.13
+          source_sha256: e633c1ca060b854cdc05a3058ba0de7252b03a33faf7b078e99331a18428dcbd
+          git_commit: 6ac28127d4cc4d281bc24a882bdc1a49c9d2b975
+          implementation: dynamo_v2
+          version: 0.10.13
+          adapter_sha256: 7590736f62684c273f10c4f47e065178134b4d2fafdfb6584b670f0819f22c82
+          job_sha256: 8f795c3210a437e4abe9f35fa4df019bf9e62d0533d02d4c4bf446b448df1889
+        resolution: fresh_execution
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.12.yaml
+  member: conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v2-0.10.13.yaml
   producer: producer_7fc319cb3947da5f
   context: context_cdf0b3c0134ec96f
 records:
@@ -1494,7 +1451,7 @@ records:
       - expected: []
   enum_contradicting_declared_type:
     case_key: UNIFIED.7-tool-argument-declared-types-enum_contradicting_declared_type
-    context: context_ecfef8f5bad5698a
+    context: context_8b98030ea13c11ce
     request: 35182c26d396b2a362752963a084e6f9a3e22ccdb79a7b6f16f21e980acb815a
     output:
       assembled:

@@ -1,15 +1,15 @@
-capture_selection: {"family":"hermes","implementation":"dynamo_v2","lineage":[{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"59e613fe63dd0f6528f2d9f459808d62fb652c3517f989dea4615e82f2c17221","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.12.yaml","surface":"unified","version":"0.10.12"}
+capture_selection: {"family":"hermes","implementation":"dynamo_v2","lineage":[{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.11.yaml","version":"0.10.11"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.12.yaml","version":"0.10.12"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.13.yaml","version":"0.10.13"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.7.yaml","version":"0.10.7"},{"family":"hermes","implementation":"dynamo_v2","kind":"history","path":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.9.yaml","version":"0.10.9"}],"mode":"unified","payload_sha256":"f3521e21db710542c833f60ab3f7114d7696f74557f062581aff9f5f8c9e2df5","source":"conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.13.yaml","surface":"unified","version":"0.10.13"}
 document:
   mode: unified
 schema_version: 3
 provenance:
   status: captured
-  origin: origin_2bf55717b648d631
+  origin: origin_55202575e7e8010d
 origins:
-  origin_2bf55717b648d631:
-    crate_version: 0.10.12
-    source_sha256: d77f2f546727fa4d61422005ad7d8fb80d5584080218d3de558e40b41b1971ba
-    git_commit: 9c625d90ea67a39d68a9d6573679eb04bccc34f2
+  origin_55202575e7e8010d:
+    crate_version: 0.10.13
+    source_sha256: 64438d499302f5fc4350506169695ba1b44c83644f6d09ebb9485d45b22811c2
+    git_commit: c6e40d1096cf1507d6d1905f8aaf8c2bf2be21e6
   origin_883f78c28b7d2088:
     crate_version: 0.10.7
     source_sha256: f619b8a811eb503baaf21c349ce337090f35340f22cc0e05a776dff1402e533f
@@ -25,7 +25,7 @@ contexts:
     record_metadata:
       parser_path: unified
 record_defaults:
-  member: conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.12.yaml
+  member: conformance/fixtures-unified-v2/families/hermes/dynamo_v2-0.10.13.yaml
   producer: producer_446828e67b23fad3
   context: context_cdf0b3c0134ec96f
 records:
