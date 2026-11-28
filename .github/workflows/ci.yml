@@ -73,6 +73,40 @@ jobs:
           CONFORMANCE_GRAMMAR_VERSION: "0.2.7"
         run: cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
 
+  # Measures Bazel action reuse beside the authoritative rust job; not required.
+  # Tool versions, cache keys, and Bazel flags live in ci/bazel/ci.sh.
+  bazel-rust:
+    runs-on:
+      group: Fastchecker
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Install Bazelisk and plan caches
+        id: plan
+        run: ci/bazel/ci.sh plan
+
+      - name: Restore Bazel caches
+        id: cache
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ${{ steps.plan.outputs.paths }}
+          key: ${{ steps.plan.outputs.key }}
+          restore-keys: ${{ steps.plan.outputs.restore-prefix }}
+
+      - name: Build and test with Bazel
+        run: ci/bazel/ci.sh test
+
+      - name: Save Bazel caches
+        if: ${{ always() && steps.plan.outputs.save == 'true' && steps.cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ${{ steps.plan.outputs.paths }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
   rust:
     runs-on:
       group: Fastchecker

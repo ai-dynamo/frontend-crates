@@ -65,3 +65,13 @@ cargo fmt --all -- --check
 cargo machete
 cargo deny --all-features check bans licenses
 ```
+
+## Bazel
+
+CI also runs the pure-Rust crates through Bazel in the `bazel-rust` job. Bazel keys each compile and test step by its inputs, so a push only rebuilds and reruns what it changed. Cargo stays the dependency authority: [`MODULE.bazel`](./MODULE.bazel) reads `Cargo.toml` and `Cargo.lock`, and the targets live in [`BUILD.bazel`](./BUILD.bazel) and [`ci/bazel/rust.bzl`](./ci/bazel/rust.bzl). `conformance`, `multimodal`, and `parsers/v2-py` are Cargo-only.
+
+```bash
+bazelisk test //... --disk_cache=$HOME/.cache/frontend-crates-bazel/actions
+```
+
+New `tests/*.rs` and `src/bin/*.rs` files are picked up without BUILD edits. After changing `Cargo.toml` or `Cargo.lock`, run `bazelisk build //... --lockfile_mode=update` and commit the updated `MODULE.bazel.lock`.
