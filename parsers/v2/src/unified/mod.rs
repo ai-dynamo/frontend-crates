@@ -52,6 +52,7 @@ pub mod beam;
 mod blank_tool_turn;
 pub mod deepseek_v4;
 pub mod deepseek_v41;
+mod family;
 pub mod gemma4;
 pub mod glm47;
 mod guided_cursor;
@@ -73,6 +74,10 @@ use crate::tool_calling::json_prefix::JsonPrefixState;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
+pub use family::{
+    ReasoningMarkers, ThinkingPolicy, UnifiedFamily, UnifiedFamilyInfo, register_unified_family,
+    unified_family_info, unified_family_names,
+};
 pub use guided_cursor::{CommittedCall, GuidedJsonCursor};
 
 use serde::{Deserialize, Serialize};
@@ -6569,15 +6574,22 @@ fn parse_required_guided_elements(payload: &str) -> Option<Vec<GuidedElement>> {
 /// belongs in the parser the factory returns (`I4`).
 pub type UnifiedParserFactory = fn(&[Tool]) -> Result<Box<dyn UnifiedParser>>;
 
+#[derive(Clone, Copy)]
+struct VendorRegistration {
+    factory: UnifiedParserFactory,
+    info: Option<UnifiedFamilyInfo>,
+}
+
+type VendorParsers = std::collections::BTreeMap<String, VendorRegistration>;
+
 /// Vendor-supplied families, consulted BEFORE the built-in table.
 ///
 /// Checking this first is what makes "implement your own version of a family we
 /// already ship" work: registering `qwen3` shadows the built-in `qwen3` for the
 /// whole process, and unregistering restores it. An add-only registry would force a
 /// vendor who disagrees with one of our families to fork the crate.
-static VENDOR_PARSERS: std::sync::LazyLock<
-    std::sync::RwLock<std::collections::HashMap<String, UnifiedParserFactory>>,
-> = std::sync::LazyLock::new(|| std::sync::RwLock::new(std::collections::HashMap::new()));
+static VENDOR_PARSERS: std::sync::LazyLock<std::sync::RwLock<VendorParsers>> =
+    std::sync::LazyLock::new(Default::default);
 
 /// Register `factory` for `family`, returning whatever it displaced.
 ///
@@ -6602,27 +6614,37 @@ pub fn register_unified_parser(
     family: &str,
     factory: UnifiedParserFactory,
 ) -> Option<UnifiedParserFactory> {
-    // Register under the CANONICAL name. A built-in family can be reached by more
-    // than one routing name (`qwen3` and `qwen3_coder` are one grammar), and keying
-    // on the caller's spelling shadowed only the spelling they happened to use:
-    // `register_unified_parser("qwen3", ..)` left `qwen3_coder` on the built-in, so
-    // the same family silently ran two different parsers depending on how the
-    // request was routed. Canonicalizing on both sides is what makes "replace a
-    // family this crate ships" true for every name that family answers to.
-    let key = canonical_unified_family(family).unwrap_or(family);
-    let previous = VENDOR_PARSERS
-        .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(key.to_string(), factory);
+    register_factory(family, factory, None)
+}
+
+fn register_factory(
+    family: &str,
+    factory: UnifiedParserFactory,
+    info: Option<UnifiedFamilyInfo>,
+) -> Option<UnifiedParserFactory> {
+    let builtin = canonical_unified_family(family);
+    let mut vendors = VENDOR_PARSERS.write().unwrap_or_else(|e| e.into_inner());
+    let key = match info {
+        Some(_) => builtin.unwrap_or(family),
+        None => vendor_key(&vendors, family),
+    };
+    let info = info
+        .map(|info| UnifiedFamilyInfo {
+            family: builtin.unwrap_or(info.family),
+            ..info
+        })
+        .or_else(|| vendors.get(key).and_then(|registration| registration.info));
+    let previous = vendors.insert(key.to_string(), VendorRegistration { factory, info });
+    drop(vendors);
     tracing::info!(
         target: "dynamo_parsers_v2",
         family = key,
         requested = family,
-        shadows_builtin = canonical_unified_family(family).is_some(),
+        shadows_builtin = builtin.is_some(),
         replaced_vendor = previous.is_some(),
         "unified parser registered"
     );
-    previous
+    previous.map(|registration| registration.factory)
 }
 
 /// Remove a vendor registration, returning it. A shadowed built-in becomes
@@ -6633,36 +6655,38 @@ pub fn register_unified_parser(
 /// can still finish building the parser it removes, so the returned factory may be used
 /// once more after this returns.
 pub fn unregister_unified_parser(family: &str) -> Option<UnifiedParserFactory> {
-    let key = canonical_unified_family(family).unwrap_or(family);
-    VENDOR_PARSERS
-        .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .remove(key)
+    let mut vendors = VENDOR_PARSERS.write().unwrap_or_else(|e| e.into_inner());
+    let key = vendor_key(&vendors, family);
+    vendors.remove(key).map(|registration| registration.factory)
 }
 
 /// Families currently registered by a vendor, sorted.
 pub fn vendor_unified_families() -> Vec<String> {
-    let mut v: Vec<String> = VENDOR_PARSERS
+    VENDOR_PARSERS
         .read()
         .unwrap_or_else(|e| e.into_inner())
         .keys()
         .cloned()
-        .collect();
-    v.sort();
-    v
+        .collect()
 }
 
-/// Look up a vendor factory without constructing anything.
-///
-/// Canonicalizes first, so every alias of a built-in family resolves to the same
-/// vendor registration.
-fn vendor_factory(family: &str) -> Option<UnifiedParserFactory> {
-    let key = canonical_unified_family(family).unwrap_or(family);
-    VENDOR_PARSERS
-        .read()
-        .unwrap_or_else(|e| e.into_inner())
-        .get(key)
-        .copied()
+fn vendor_key<'a>(vendors: &VendorParsers, name: &'a str) -> &'a str {
+    if let Some(canonical) = canonical_unified_family(name) {
+        return canonical;
+    }
+    if vendors.contains_key(name) {
+        return name;
+    }
+    vendors
+        .values()
+        .filter_map(|registration| registration.info)
+        .find(|info| info.aliases.contains(&name))
+        .map_or(name, |info| info.family)
+}
+
+fn vendor_registration(family: &str) -> Option<VendorRegistration> {
+    let vendors = VENDOR_PARSERS.read().unwrap_or_else(|e| e.into_inner());
+    vendors.get(vendor_key(&vendors, family)).copied()
 }
 
 /// THE built-in registry. One line per family — adding a family is adding a line
@@ -6679,12 +6703,12 @@ fn vendor_factory(family: &str) -> Option<UnifiedParserFactory> {
 /// not have to know which name they arrived with.
 macro_rules! unified_registry {
     ($($family:literal $(| $alias:literal)* => $ctor:path),+ $(,)?) => {
-        /// Every family `create_unified_parser_for_family` accepts, aliases included.
+        /// Built-in families and their conformance aliases.
         /// Tests iterate this, so a family here without conformance coverage fails the
         /// suite instead of silently skipping.
         pub const REGISTERED_UNIFIED_FAMILIES: &[&str] = &[$($family, $($alias,)*)+];
 
-        /// Every family built INTO this crate, aliases included.
+        /// Every family built into this crate, with its conformance aliases.
         ///
         /// Deliberately excludes vendor registrations: the conformance suite
         /// iterates this, and a vendor parser has no corpus here to be measured
@@ -6703,7 +6727,7 @@ macro_rules! unified_registry {
         pub fn canonical_unified_family(family: &str) -> Option<&'static str> {
             match family {
                 $($family $(| $alias)* => Some($family),)+
-                _ => None,
+                _ => family::builtin_family_info(family).map(|info| info.family),
             }
         }
 
@@ -6720,11 +6744,14 @@ macro_rules! unified_registry {
             family: &str,
             tools: &[Tool],
         ) -> Result<Box<dyn UnifiedParser>> {
-            if let Some(factory) = vendor_factory(family) {
-                let key = canonical_unified_family(family).unwrap_or(family);
+            if let Some(registration) = vendor_registration(family) {
+                let key = registration.info.map_or_else(
+                    || canonical_unified_family(family).unwrap_or(family),
+                    |info| info.family,
+                );
                 // A vendor parser for Nemotron V3 gets the same tool-only-turn rule as
                 // the built-in it may shadow, so routing never decides the answer.
-                let parser = blank_tool_turn::wrap(key, factory(tools)?);
+                let parser = blank_tool_turn::wrap(key, (registration.factory)(tools)?);
                 tracing::debug!(
                     target: "dynamo_parsers_v2",
                     family = key,
@@ -6742,8 +6769,9 @@ macro_rules! unified_registry {
                 return Ok(parser);
             }
 
-            let parser = match family {
-                $($family $(| $alias)* => $ctor(tools),)+
+            let canonical = canonical_unified_family(family).unwrap_or(family);
+            let parser = match canonical {
+                $($family => $ctor(tools),)+
                 other => anyhow::bail!(
                     "no unified parser for family '{other}'. Built-in: {:?}. \
                      Vendor-registered: {:?}. To supply your own, call \
@@ -6753,10 +6781,6 @@ macro_rules! unified_registry {
                     vendor_unified_families(),
                 ),
             };
-            // Same helper the vendor branch above uses. A second generated match cost an
-            // arm per family plus an `unreachable!` that existed only because the compiler
-            // cannot see that the `bail!` above already returned.
-            let canonical = canonical_unified_family(family).unwrap_or(family);
             // Applied here rather than in the scanner: whether whitespace is call
             // framing depends on the rest of the turn. Only Nemotron V3 is wrapped;
             // see `blank_tool_turn` for why.
