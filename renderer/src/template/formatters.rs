@@ -1020,6 +1020,13 @@ impl HfTokenizerConfigJsonFormatter {
         };
         let default_template_handles_native_tools = handles_native_tools("default");
         let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
+        let sorts_tool_results = |name| {
+            env.get_template(name).ok().is_some_and(|template| {
+                super::tool_result_order::sorts_tool_results(template.source())
+            })
+        };
+        let default_template_sorts_tool_results = sorts_tool_results("default");
+        let tool_use_template_sorts_tool_results = sorts_tool_results("tool_use");
 
         let control_markers = super::oai::ControlMarkers::from_config(&config);
 
@@ -1038,6 +1045,8 @@ impl HfTokenizerConfigJsonFormatter {
             exclude_tools_when_tool_choice_none,
             default_template_handles_native_tools,
             tool_use_template_handles_native_tools,
+            default_template_sorts_tool_results,
+            tool_use_template_sorts_tool_results,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
             default_template_requires_reasoning_string,
