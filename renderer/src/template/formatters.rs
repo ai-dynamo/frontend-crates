@@ -1365,6 +1365,22 @@ mod tests {
         );
     }
 
+    /// Python's `str.find` counts characters, and templates slice with the result, e.g.
+    /// a community Qwen3.6 template's `content[:content.find('<tool_call>')]`.
+    #[test]
+    fn test_find_returns_python_character_indices() {
+        let template = "{% set i = s.find('<tool_call>') %}{{ i }}|{{ s.rfind('x', 0, 3) }}|\
+            {{ s[:i] ~ '</think>' ~ s[i:] }}";
+        // CPython 3.12 for the same string and calls.
+        assert_eq!(
+            render_hf(
+                template,
+                context! { s => "\u{e9}x\u{4f60}\u{597d}x<tool_call>" }
+            ),
+            "5|1|\u{e9}x\u{4f60}\u{597d}x</think><tool_call>"
+        );
+    }
+
     #[test]
     fn test_strip_preserves_string_safety() {
         for (method, expected) in [
